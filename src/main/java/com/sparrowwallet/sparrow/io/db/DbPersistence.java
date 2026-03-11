@@ -3,10 +3,7 @@ package com.sparrowwallet.sparrow.io.db;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.Utils;
-import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
-import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
-import com.sparrowwallet.drongo.crypto.ECKey;
-import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.*;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
@@ -52,6 +49,8 @@ public class DbPersistence implements Persistence {
     private static final int H2_ENCRYPT_SALT_LENGTH_BYTES = 8;
     private static final int SALT_LENGTH_BYTES = 16;
     public static final byte[] HEADER_MAGIC_1 = "SPRW1\n".getBytes(StandardCharsets.UTF_8);
+    public static final byte[] HEADER_MAGIC_2 = "SPRW2\n".getBytes(StandardCharsets.UTF_8);
+    private static final byte FLAG_CHALLENGE_RESPONSE = 0x01;
     private static final String H2_USER = "sa";
     private static final String H2_PASSWORD = "";
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
@@ -59,6 +58,8 @@ public class DbPersistence implements Persistence {
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
+    private boolean challengeResponseEnabled;
+    private ChallengeResponseProvider challengeResponseProvider;
 
     private Wallet masterWallet;
     private final Map<Wallet, DirtyPersistables> dirtyPersistablesMap = new HashMap<>();
@@ -497,8 +498,20 @@ public class DbPersistence implements Persistence {
             dataSource.close();
         }
 
-        ByteBuffer header = ByteBuffer.allocate(HEADER_MAGIC_1.length + SALT_LENGTH_BYTES);
-        header.put(HEADER_MAGIC_1);
+        byte[] magic;
+        int extraBytes = 0;
+        if(challengeResponseEnabled) {
+            magic = HEADER_MAGIC_2;
+            extraBytes = 1;
+        } else {
+            magic = HEADER_MAGIC_1;
+        }
+
+        ByteBuffer header = ByteBuffer.allocate(magic.length + extraBytes + SALT_LENGTH_BYTES);
+        header.put(magic);
+        if(challengeResponseEnabled) {
+            header.put(FLAG_CHALLENGE_RESPONSE);
+        }
         header.put(keyDeriver.getSalt());
         header.flip();
 
@@ -568,8 +581,11 @@ public class DbPersistence implements Persistence {
             return Storage.NO_PASSWORD_KEY;
         }
 
-        AsymmetricKeyDeriver keyDeriver = getKeyDeriver(walletFile);
-        return keyDeriver.deriveECKey(password);
+        AsymmetricKeyDeriver deriver = getKeyDeriver(walletFile);
+        if(challengeResponseProvider != null) {
+            deriver = new ChallengeResponseKeyDeriver(deriver, challengeResponseProvider);
+        }
+        return deriver.deriveECKey(password);
     }
 
     @Override
@@ -580,6 +596,21 @@ public class DbPersistence implements Persistence {
     @Override
     public void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
         this.keyDeriver = keyDeriver;
+    }
+
+    @Override
+    public boolean isChallengeResponseEnabled() {
+        return challengeResponseEnabled;
+    }
+
+    @Override
+    public void setChallengeResponseEnabled(boolean enabled) {
+        this.challengeResponseEnabled = enabled;
+    }
+
+    @Override
+    public void setChallengeResponseProvider(ChallengeResponseProvider provider) {
+        this.challengeResponseProvider = provider;
     }
 
     private AsymmetricKeyDeriver getKeyDeriver(File walletFile) throws IOException {
@@ -596,7 +627,15 @@ public class DbPersistence implements Persistence {
 
             if(walletFile != null && walletFile.exists()) {
                 try(InputStream inputStream = new FileInputStream(walletFile)) {
-                    inputStream.skip(H2_ENCRYPT_HEADER.length + H2_ENCRYPT_SALT_LENGTH_BYTES + HEADER_MAGIC_1.length);
+                    inputStream.skip(H2_ENCRYPT_HEADER.length + H2_ENCRYPT_SALT_LENGTH_BYTES);
+                    byte[] magic = new byte[HEADER_MAGIC_1.length];
+                    inputStream.read(magic, 0, magic.length);
+
+                    if(Arrays.equals(HEADER_MAGIC_2, magic)) {
+                        int flags = inputStream.read();
+                        challengeResponseEnabled = (flags & FLAG_CHALLENGE_RESPONSE) != 0;
+                    }
+
                     inputStream.read(salt, 0, salt.length);
                 }
             } else {
@@ -619,7 +658,17 @@ public class DbPersistence implements Persistence {
         byte[] header = new byte[H2_ENCRYPT_HEADER.length];
         try(InputStream inputStream = new FileInputStream(walletFile)) {
             inputStream.read(header, 0, H2_ENCRYPT_HEADER.length);
-            return Arrays.equals(H2_ENCRYPT_HEADER, header);
+            if(Arrays.equals(H2_ENCRYPT_HEADER, header)) {
+                inputStream.skip(H2_ENCRYPT_SALT_LENGTH_BYTES);
+                byte[] magic = new byte[HEADER_MAGIC_1.length];
+                inputStream.read(magic, 0, magic.length);
+                if(Arrays.equals(HEADER_MAGIC_2, magic)) {
+                    int flags = inputStream.read();
+                    challengeResponseEnabled = (flags & FLAG_CHALLENGE_RESPONSE) != 0;
+                }
+                return true;
+            }
+            return false;
         }
     }
 

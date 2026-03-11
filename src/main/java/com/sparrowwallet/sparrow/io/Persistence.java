@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
+import com.sparrowwallet.drongo.crypto.ChallengeResponseProvider;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.wallet.Wallet;
 
@@ -20,6 +21,9 @@ public interface Persistence {
     ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException;
     AsymmetricKeyDeriver getKeyDeriver();
     void setKeyDeriver(AsymmetricKeyDeriver keyDeriver);
+    default boolean isChallengeResponseEnabled() { return false; }
+    default void setChallengeResponseEnabled(boolean enabled) {}
+    default void setChallengeResponseProvider(ChallengeResponseProvider provider) {}
     PersistenceType getType();
     boolean isEncrypted(File walletFile) throws IOException;
     String getWalletId(Storage storage, Wallet wallet);

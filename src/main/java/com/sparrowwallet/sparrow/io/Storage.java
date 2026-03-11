@@ -372,6 +372,18 @@ public class Storage {
         persistence.setKeyDeriver(keyDeriver);
     }
 
+    public boolean isChallengeResponseEnabled() {
+        return persistence.isChallengeResponseEnabled();
+    }
+
+    public void setChallengeResponseEnabled(boolean enabled) {
+        persistence.setChallengeResponseEnabled(enabled);
+    }
+
+    public void setChallengeResponseProvider(ChallengeResponseProvider provider) {
+        persistence.setChallengeResponseProvider(provider);
+    }
+
     public PersistenceType getType() {
         return persistence.getType();
     }
@@ -764,10 +776,16 @@ public class Storage {
     public static class DecryptWalletService extends Service<Wallet> {
         private final Wallet wallet;
         private final SecureString password;
+        private final Storage storage;
 
         public DecryptWalletService(Wallet wallet, SecureString password) {
+            this(wallet, password, null);
+        }
+
+        public DecryptWalletService(Wallet wallet, SecureString password, Storage storage) {
             this.wallet = wallet;
             this.password = password;
+            this.storage = storage;
         }
 
         @Override
@@ -775,7 +793,15 @@ public class Storage {
             return new Task<>() {
                 protected Wallet call() throws IOException, StorageException {
                     try {
-                        wallet.decrypt(password);
+                        if(storage != null && storage.isChallengeResponseEnabled()) {
+                            ECKey encryptionFullKey = storage.getEncryptionKey(password);
+                            Key key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                            wallet.decrypt(key);
+                            key.clear();
+                            encryptionFullKey.clear();
+                        } else {
+                            wallet.decrypt(password);
+                        }
                         return wallet;
                     } finally {
                         password.clear();
