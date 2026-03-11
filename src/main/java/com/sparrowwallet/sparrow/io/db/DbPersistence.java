@@ -577,7 +577,7 @@ public class DbPersistence implements Persistence {
             return alreadyDerivedKey;
         } else if(password == null) {
             return null;
-        } else if(password.equals("")) {
+        } else if(password.equals("") && challengeResponseProvider == null) {
             return Storage.NO_PASSWORD_KEY;
         }
 
