@@ -584,6 +584,7 @@ public class DbPersistence implements Persistence {
         AsymmetricKeyDeriver deriver = getKeyDeriver(walletFile);
         if(challengeResponseProvider != null) {
             deriver = new ChallengeResponseKeyDeriver(deriver, challengeResponseProvider);
+            challengeResponseProvider = null;
         }
         return deriver.deriveECKey(password);
     }
