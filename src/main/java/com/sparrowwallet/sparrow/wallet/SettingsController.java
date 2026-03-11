@@ -978,10 +978,14 @@ public class SettingsController extends WalletFormController implements Initiali
                     apply.setDisable(false);
                 }
             } else {
-                if(dlg.isYubikeyEnabled()) {
+                if(requirement == WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
+                    if(walletForm.getStorage().isChallengeResponseEnabled()) {
+                        walletForm.getStorage().setChallengeResponseProvider(AppServices.createYubiKeyProvider());
+                    }
+                } else if(dlg.isYubikeyEnabled()) {
                     walletForm.getStorage().setChallengeResponseEnabled(true);
                     walletForm.getStorage().setChallengeResponseProvider(AppServices.createYubiKeyProvider());
-                } else if(walletForm.getStorage().isChallengeResponseEnabled()) {
+                } else {
                     walletForm.getStorage().setChallengeResponseEnabled(false);
                     walletForm.getStorage().setChallengeResponseProvider(null);
                 }
