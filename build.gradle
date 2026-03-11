@@ -134,7 +134,7 @@ processResources {
 
 test {
     useJUnitPlatform()
-    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED"]
+    jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--add-opens=java.base/java.math=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED"]
 }
 
 application {
@@ -162,6 +162,7 @@ application {
                                  "--add-opens=javafx.graphics/javafx.scene.input=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.io=com.google.gson",
+                                 "--add-opens=java.base/java.math=com.sparrowwallet.drongo",
                                  "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
                                  "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
                                  "--add-reads=org.flywaydb.core=java.desktop"]
@@ -212,6 +213,7 @@ jlink {
                    "--add-opens=javafx.graphics/com.sun.javafx.application=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                    "--add-opens=java.base/java.io=com.google.gson",
+                   "--add-opens=java.base/java.math=com.sparrowwallet.drongo",
                    "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
                    "--add-reads=com.sparrowwallet.merged.module=java.desktop",
                    "--add-reads=com.sparrowwallet.merged.module=java.sql",
