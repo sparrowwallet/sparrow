@@ -235,6 +235,10 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
             }
 
             String header = reader.readLine();
+            if(header == null || !header.startsWith("BSMS")) {
+                throw new ImportException("Not a BSMS file");
+            }
+
             String descriptor = reader.readLine();
             String paths = reader.readLine();
             String address = reader.readLine();

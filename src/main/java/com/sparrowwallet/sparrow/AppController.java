@@ -1287,6 +1287,7 @@ public class AppController implements Initializable {
 
     private boolean attemptImportWallet(File file, SecureString password) {
         List<WalletImport> walletImporters = List.of(new ColdcardSinglesig(), new ColdcardMultisig(),
+                new Bip129(),
                 new Electrum(),
                 new SpecterDesktop(),
                 new Descriptor(),
