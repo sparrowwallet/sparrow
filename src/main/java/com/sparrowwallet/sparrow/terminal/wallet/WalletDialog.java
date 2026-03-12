@@ -70,7 +70,7 @@ public class WalletDialog extends DialogWindow {
     protected void addAccount(Wallet masterWallet, StandardAccount standardAccount, Runnable postAddition) {
         if(masterWallet.isEncrypted()) {
             if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
-                showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+                showErrorDialog("Challenge-Response Required", "This wallet requires a challenge-response device for authentication, which is not supported in terminal mode.");
                 return;
             }
 

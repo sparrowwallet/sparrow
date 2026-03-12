@@ -128,7 +128,7 @@ public class SettingsDialog extends WalletDialog {
         Wallet wallet = getWalletForm().getWallet().copy();
         if(wallet.isEncrypted()) {
             if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
-                showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+                showErrorDialog("Challenge-Response Required", "This wallet requires a challenge-response device for authentication, which is not supported in terminal mode.");
                 return;
             }
 
@@ -179,7 +179,7 @@ public class SettingsDialog extends WalletDialog {
     private void saveWallet(boolean changePassword, boolean suggestChangePassword) {
         WalletForm walletForm = getWalletForm();
         if(walletForm.getStorage().isChallengeResponseEnabled()) {
-            showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+            showErrorDialog("Challenge-Response Required", "This wallet requires a challenge-response device for authentication, which is not supported in terminal mode.");
             return;
         }
 

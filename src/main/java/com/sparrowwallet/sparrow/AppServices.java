@@ -893,9 +893,9 @@ public class AppServices {
         provider.setOnWaitingForTouch(() -> {
             Platform.runLater(() -> {
                 touchAlert[0] = new Alert(Alert.AlertType.INFORMATION);
-                touchAlert[0].setTitle("YubiKey");
-                touchAlert[0].setHeaderText("Touch your YubiKey");
-                touchAlert[0].setContentText("Waiting for YubiKey touch to complete authentication...");
+                touchAlert[0].setTitle("Challenge-Response");
+                touchAlert[0].setHeaderText("Touch your security key");
+                touchAlert[0].setContentText("Waiting for security key touch to complete authentication...");
                 touchAlert[0].getButtonTypes().setAll(ButtonType.CANCEL);
                 touchAlert[0].getDialogPane().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
                 setStageIcon(touchAlert[0].getDialogPane().getScene().getWindow());

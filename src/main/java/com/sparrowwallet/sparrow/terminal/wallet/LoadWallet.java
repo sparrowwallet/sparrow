@@ -59,7 +59,7 @@ public class LoadWallet implements Runnable {
             } else {
                 if(storage.isChallengeResponseEnabled()) {
                     SparrowTerminal.get().getGui().removeWindow(loadingDialog);
-                    showErrorDialog("YubiKey Required", "This wallet requires a YubiKey for authentication, which is not supported in terminal mode.");
+                    showErrorDialog("Challenge-Response Required", "This wallet requires a challenge-response device for authentication, which is not supported in terminal mode.");
                     return;
                 }
 

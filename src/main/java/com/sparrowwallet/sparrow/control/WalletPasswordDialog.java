@@ -37,7 +37,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
         this.backupExisting = new CheckBox("Backup existing wallet first");
         this.changePassword = new CheckBox("Change password");
         this.deleteBackups = new CheckBox("Delete any backups");
-        this.yubikey = new CheckBox("Require YubiKey for unlock");
+        this.yubikey = new CheckBox("Require challenge-response for unlock");
 
         final DialogPane dialogPane = getDialogPane();
         setTitle("Wallet Password" + (walletName != null ? " - " + walletName : ""));
@@ -109,7 +109,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
                     backupExisting.setVisible(true);
                     addingPassword = false;
                 } else if(newValue.isEmpty() && yubikey.isSelected()) {
-                    okButton.setText("Set YubiKey");
+                    okButton.setText("Set Challenge-Response");
                     passwordConfirm.setVisible(false);
                     passwordConfirm.setManaged(false);
                     backupExisting.setVisible(false);
@@ -124,7 +124,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
             });
             yubikey.selectedProperty().addListener((observable, oldValue, newValue) -> {
                 if(newValue && password.getText().isEmpty()) {
-                    okButton.setText("Set YubiKey");
+                    okButton.setText("Set Challenge-Response");
                     passwordConfirm.setVisible(false);
                     passwordConfirm.setManaged(false);
                     backupExisting.setVisible(false);

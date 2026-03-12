@@ -1194,7 +1194,7 @@ public class AppController implements Initializable {
             } else {
                 WalletPasswordDialog dlg = new WalletPasswordDialog(storage.getWalletName(null), WalletPasswordDialog.PasswordRequirement.LOAD);
                 if(storage.isChallengeResponseEnabled()) {
-                    dlg.setHeaderText("Enter the wallet password (leave empty if none).\nYubiKey touch will be required after unlocking.");
+                    dlg.setHeaderText("Enter the wallet password (leave empty if none).\nSecurity key touch will be required after unlocking.");
                     dlg.setAllowEmptyPassword(true);
                 }
                 dlg.initOwner(rootStack.getScene().getWindow());
@@ -1231,7 +1231,7 @@ public class AppController implements Initializable {
                         password.clear();
                     }
                 });
-                EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.START, storage.isChallengeResponseEnabled() ? "Touch your YubiKey..." : "Decrypting wallet..."));
+                EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.START, storage.isChallengeResponseEnabled() ? "Touch your security key..." : "Decrypting wallet..."));
                 loadWalletService.start();
             }
         } catch(Exception e) {
