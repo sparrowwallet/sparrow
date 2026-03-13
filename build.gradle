@@ -206,8 +206,8 @@ jlink {
                    'glob:/org.hid4java/win32-*/**,' +
                    'glob:/openpnp.capture.java/darwin-*/**,' +
                    'glob:/openpnp.capture.java/linux-*/**,' +
-                   'glob:/openpnp.capture.java/win32-*/**,' +
-                   'glob:/io.github.doblon8.jzbar/native/**']
+                   'glob:/openpnp.capture.java/win32-*/**']
+               // TODO: exclude glob:/io.github.doblon8.jzbar/native/** once jzbar supports pre-loaded natives
     launcher {
         name = 'sparrow'
         jvmArgs = ["--enable-native-access=com.sparrowwallet.drongo",
@@ -401,7 +401,7 @@ def nativeLibJars = [
         'openpnp-capture-java': "${jnaPlatform}/*",
         'jSerialComm-'        : "${serialOs}/${serialArch}/*",
         'usb4java-'           : "org/usb4java/${jnaPlatform}/*",
-        'jzbar-'              : "native/${osName}/${osArch}/*",
+        // TODO: add 'jzbar-' once jzbar supports pre-loaded natives
 ]
 
 tasks.register('extractNativeLibraries') {

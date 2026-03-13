@@ -10,15 +10,31 @@ import org.slf4j.LoggerFactory;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.File;
 
 public class ZBar {
     private static final Logger log = LoggerFactory.getLogger(ZBar.class);
+    private static boolean zbarLoaded;
 
     public static boolean isEnabled() {
         return com.sparrowwallet.sparrow.io.Config.get().isUseZbar();
     }
 
+    private static synchronized void loadZBar() {
+        if(!zbarLoaded) {
+            String javaHome = System.getProperty("java.home");
+            if(javaHome != null) {
+                File libFile = new File(javaHome, "lib" + java.io.File.separator + System.mapLibraryName("zbar"));
+                if(libFile.exists()) {
+                    System.load(libFile.getAbsolutePath());
+                }
+            }
+            zbarLoaded = true;
+        }
+    }
+
     public static Scan scan(BufferedImage bufferedImage) {
+        loadZBar();
         try {
             BufferedImage grayscale = new BufferedImage(bufferedImage.getWidth(), bufferedImage.getHeight(), BufferedImage.TYPE_BYTE_GRAY);
             Graphics2D g2d = (Graphics2D)grayscale.getGraphics();
