@@ -124,14 +124,6 @@ compileJava {
     }
 }
 
-processResources {
-    doLast {
-        delete fileTree("$buildDir/resources/main/native").matching {
-            exclude "${osName}/${osArch}/**"
-        }
-    }
-}
-
 test {
     useJUnitPlatform()
     jvmArgs = ["--add-opens=java.base/java.io=ALL-UNNAMED", "--enable-native-access=ALL-UNNAMED"]
@@ -188,7 +180,34 @@ jlink {
         uses 'org.eclipse.jetty.http.HttpFieldPreEncoder'
     }
 
-    options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', 'zip-6', '--no-header-files', '--no-man-pages', '--ignore-signing-information', '--exclude-files', '**.png', '--exclude-resources', 'glob:/com.sparrowwallet.merged.module/META-INF/*']
+    options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', 'zip-6',
+               '--no-header-files', '--no-man-pages', '--ignore-signing-information',
+               '--exclude-files', '**.png',
+               '--exclude-resources',
+                   'glob:/com.sparrowwallet.merged.module/META-INF/*,' +
+                   'glob:/javafx.graphics/*.dylib,' +
+                   'glob:/javafx.graphics/*.so,' +
+                   'glob:/javafx.graphics/*.dll,' +
+                   'glob:/com.sparrowwallet.drongo/native/**,' +
+                   'glob:/com.sparrowwallet.sparrow/native/**,' +
+                   'glob:/com.sparrowwallet.merged.module/com/sun/jna/**/*.so,' +
+                   'glob:/com.sparrowwallet.merged.module/com/sun/jna/**/*.dylib,' +
+                   'glob:/com.sparrowwallet.merged.module/com/sun/jna/**/*.jnilib,' +
+                   'glob:/com.sparrowwallet.merged.module/com/sun/jna/**/*.dll,' +
+                   'glob:/com.sparrowwallet.merged.module/com/sun/jna/**/*.a,' +
+                   'glob:/com.sparrowwallet.merged.module/darwin-*/**,' +
+                   'glob:/com.sparrowwallet.merged.module/linux-*/**,' +
+                   'glob:/com.sparrowwallet.merged.module/win32-*/**,' +
+                   'glob:/org.usb4java/org/usb4java/darwin-*/**,' +
+                   'glob:/org.usb4java/org/usb4java/linux-*/**,' +
+                   'glob:/org.usb4java/org/usb4java/win32-*/**,' +
+                   'glob:/org.hid4java/darwin-*/**,' +
+                   'glob:/org.hid4java/linux-*/**,' +
+                   'glob:/org.hid4java/win32-*/**,' +
+                   'glob:/openpnp.capture.java/darwin-*/**,' +
+                   'glob:/openpnp.capture.java/linux-*/**,' +
+                   'glob:/openpnp.capture.java/win32-*/**,' +
+                   'glob:/io.github.doblon8.jzbar/native/**']
     launcher {
         name = 'sparrow'
         jvmArgs = ["--enable-native-access=com.sparrowwallet.drongo",
@@ -277,13 +296,13 @@ jlink {
 }
 
 if(os.linux) {
-    tasks.jlink.finalizedBy('addUserWritePermission', 'copyUdevRules')
+    tasks.jlink.finalizedBy('addUserWritePermission', 'copyUdevRules', 'extractNativeLibraries')
     tasks.jpackageImage.finalizedBy('prepareResourceDir')
     if(!headless) {
         tasks.jpackage.dependsOn('copyMimeInfo')
     }
 } else {
-    tasks.jlink.finalizedBy('addUserWritePermission')
+    tasks.jlink.finalizedBy('addUserWritePermission', 'extractNativeLibraries')
 }
 
 tasks.register('addUserWritePermission', Exec) {
@@ -359,6 +378,74 @@ tasks.register('packageTarDistribution', Tar) {
     compression = Compression.GZIP
     from("$buildDir/jpackage/") {
         include "Sparrow/**"
+    }
+}
+
+def jnaPlatform
+if(os.macOsX) {
+    jnaPlatform = "darwin-${osArch == 'aarch64' ? 'aarch64' : 'x86-64'}"
+} else if(os.windows) {
+    jnaPlatform = "win32-x86-64"
+} else {
+    jnaPlatform = "linux-${osArch == 'aarch64' ? 'aarch64' : 'x86-64'}"
+}
+
+def serialOs = os.macOsX ? "OSX" : (os.windows ? "Windows" : "Linux")
+def serialArch = osArch == "aarch64" ? "aarch64" : "x86_64"
+
+// Map of JAR name prefix to the include glob for platform-specific natives inside the JAR.
+def nativeLibJars = [
+        'jna-'                : "com/sun/jna/${jnaPlatform}/*",
+        'argon2-jvm-2'        : "${jnaPlatform}/*",
+        'hid4java-'           : "${jnaPlatform}/*",
+        'openpnp-capture-java': "${jnaPlatform}/*",
+        'jSerialComm-'        : "${serialOs}/${serialArch}/*",
+        'usb4java-'           : "org/usb4java/${jnaPlatform}/*",
+        'jzbar-'              : "native/${osName}/${osArch}/*",
+]
+
+tasks.register('extractNativeLibraries') {
+    dependsOn 'jlink'
+    doLast {
+        def imageLib = file("$buildDir/image/lib")
+
+        // Project-owned natives
+        copy {
+            from "${project(':drongo').projectDir}/src/main/resources/native/${osName}/${osArch}", "src/main/resources/native/${osName}/${osArch}"
+            into imageLib
+            eachFile { it.permissions { unix('rw-r--r--') } }
+        }
+
+        // JavaFX natives
+        def javafxClassifier = ""
+        if(os.macOsX) {
+            javafxClassifier = osArch == "aarch64" ? "mac-aarch64" : "mac"
+        } else if(os.windows) {
+            javafxClassifier = "win"
+        } else {
+            javafxClassifier = osArch == "aarch64" ? "linux-aarch64" : "linux"
+        }
+        def javafxJar = configurations.runtimeClasspath.find { it.name == "javafx-graphics-${javafx.version}-${javafxClassifier}.jar" }
+        if(javafxJar) {
+            copy {
+                from(zipTree(javafxJar)) { include "*.dylib", "*.so", "*.dll" }
+                into imageLib
+                eachFile { it.permissions { unix('rw-r--r--') } }
+            }
+        }
+
+        // Third-party natives
+        nativeLibJars.each { prefix, includePattern ->
+            def jar = configurations.runtimeClasspath.find { it.name.startsWith(prefix) }
+            if(jar) {
+                copy {
+                    from(zipTree(jar)) { include includePattern }
+                    into imageLib
+                    eachFile { it.path = it.name; it.permissions { unix('rw-r--r--') } }
+                    includeEmptyDirs = false
+                }
+            }
+        }
     }
 }
 

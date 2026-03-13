@@ -88,7 +88,6 @@ public class AppController implements Initializable {
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
     public static final String CONNECTION_FAILED_PREFIX = "Connection failed: ";
     public static final String TRYING_ANOTHER_SERVER_MESSAGE = "trying another server...";
-    public static final String JPACKAGE_APP_PATH = "jpackage.app-path";
 
     @FXML
     private VBox rootBox;
@@ -420,7 +419,7 @@ public class AppController implements Initializable {
             networkItem.setOnAction(event -> restart(event, network));
             restart.getItems().add(networkItem);
         }
-        restart.setVisible(System.getProperty(JPACKAGE_APP_PATH) != null);
+        restart.setVisible(System.getProperty(SparrowWallet.JPACKAGE_APP_PATH) != null);
 
         saveTransaction.setDisable(true);
         showTransaction.visibleProperty().bind(Bindings.and(saveTransaction.visibleProperty(), saveTransaction.disableProperty().not()));
@@ -597,7 +596,7 @@ public class AppController implements Initializable {
                 sudo groupadd -f -r plugdev
                 sudo usermod -aG plugdev `whoami`
                 """;
-        String home = System.getProperty(JPACKAGE_APP_PATH);
+        String home = System.getProperty(SparrowWallet.JPACKAGE_APP_PATH);
         if(home != null && !home.startsWith("/opt/sparrowwallet") && home.endsWith("bin/Sparrow")) {
             home = home.replace("bin/Sparrow", "");
             commands = commands.replace("/opt/sparrowwallet/", home);
@@ -1045,8 +1044,8 @@ public class AppController implements Initializable {
     }
 
     public void restart(ActionEvent event, Network network) {
-        if(System.getProperty(JPACKAGE_APP_PATH) == null) {
-            throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
+        if(System.getProperty(SparrowWallet.JPACKAGE_APP_PATH) == null) {
+            throw new IllegalStateException("Property " + SparrowWallet.JPACKAGE_APP_PATH + " is not present");
         }
 
         Args args = getRestartArgs();
@@ -1067,7 +1066,7 @@ public class AppController implements Initializable {
     private void restart(ActionEvent event, Args args) {
         try {
             List<String> cmd = new ArrayList<>();
-            cmd.add(System.getProperty(JPACKAGE_APP_PATH));
+            cmd.add(System.getProperty(SparrowWallet.JPACKAGE_APP_PATH));
             cmd.addAll(args.toParams());
             final ProcessBuilder builder = new ProcessBuilder(cmd);
             if(OsType.getCurrent() == OsType.UNIX) {

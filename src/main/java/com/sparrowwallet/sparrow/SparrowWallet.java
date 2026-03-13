@@ -22,10 +22,20 @@ public class SparrowWallet {
     public static final String APP_VERSION_SUFFIX = "";
     public static final String APP_HOME_PROPERTY = "sparrow.home";
     public static final String NETWORK_ENV_PROPERTY = "SPARROW_NETWORK";
+    public static final String JPACKAGE_APP_PATH = "jpackage.app-path";
 
     private static Instance instance;
 
     public static void main(String[] argv) {
+        if(System.getProperty(JPACKAGE_APP_PATH) != null) {
+            String libDir = System.getProperty("java.home") + File.separator + "lib";
+            System.setProperty("jna.boot.library.path", libDir);
+            System.setProperty("jna.library.path", libDir);
+            System.setProperty("jSerialComm.library.path", libDir);
+            System.setProperty("org.usb4java.LibraryName", "usb4java");
+            System.setProperty("java.library.path", libDir);
+        }
+
         Args args = new Args();
         JCommander jCommander = JCommander.newBuilder().addObject(args).programName(APP_NAME.toLowerCase(Locale.ROOT)).acceptUnknownOptions(true).build();
         jCommander.parse(argv);
