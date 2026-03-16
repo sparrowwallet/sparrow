@@ -109,7 +109,7 @@ dependencies {
     implementation('com.github.hervegirod:fxsvgimage:1.1')
     implementation('com.sparrowwallet:toucan:0.9.0')
     implementation('com.jcraft:jzlib:1.1.3')
-    implementation('io.github.doblon8:jzbar:0.3.0')
+    implementation('io.github.doblon8:jzbar:0.3.1')
     testImplementation('org.junit.jupiter:junit-jupiter-api:5.14.1')
     testRuntimeOnly('org.junit.jupiter:junit-jupiter-engine:5.14.1')
     testRuntimeOnly('org.junit.platform:junit-platform-launcher')
@@ -206,8 +206,8 @@ jlink {
                    'glob:/org.hid4java/win32-*/**,' +
                    'glob:/openpnp.capture.java/darwin-*/**,' +
                    'glob:/openpnp.capture.java/linux-*/**,' +
-                   'glob:/openpnp.capture.java/win32-*/**']
-               // TODO: exclude glob:/io.github.doblon8.jzbar/native/** once jzbar supports pre-loaded natives
+                   'glob:/openpnp.capture.java/win32-*/**,' +
+                   'glob:/io.github.doblon8.jzbar/native/**']
     launcher {
         name = 'sparrow'
         jvmArgs = ["--enable-native-access=com.sparrowwallet.drongo",
@@ -217,6 +217,7 @@ jlink {
                    "--enable-native-access=com.fazecast.jSerialComm",
                    "--enable-native-access=org.usb4java",
                    "--enable-native-access=io.github.doblon8.jzbar",
+                   "--enable-native-access=com.sparrowwallet.sparrow",
                    "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                    "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
                    "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls",
@@ -401,7 +402,7 @@ def nativeLibJars = [
         'openpnp-capture-java': "${jnaPlatform}/*",
         'jSerialComm-'        : "${serialOs}/${serialArch}/*",
         'usb4java-'           : "org/usb4java/${jnaPlatform}/*",
-        // TODO: add 'jzbar-' once jzbar supports pre-loaded natives
+        'jzbar-'              : "native/${osName}/${osArch}/*",
 ]
 
 tasks.register('extractNativeLibraries') {
