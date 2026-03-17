@@ -23,5 +23,10 @@ public class DescriptorQRDisplayDialog extends QRDisplayDialog {
             PdfUtils.saveOutputDescriptor(walletName, outputDescriptor, ur, getEncoding() == QREncoding.BBQR ? bbqr : null);
             event.consume();
         });
+
+        ButtonBar buttonBar = (ButtonBar)dialogPane.lookup(".button-bar");
+        if(buttonBar != null) {
+            buttonBar.setButtonOrder("E+L+B+C+O");
+        }
     }
 }
