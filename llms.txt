@@ -1,0 +1,101 @@
+# Sparrow Wallet
+
+> Modern desktop Bitcoin wallet supporting most hardware wallets, built on PSBT with emphasis on transparency and usability.
+
+## Repository Structure
+
+- `src/main/java/com/sparrowwallet/sparrow/` — Main application source
+  - `control/` — JavaFX UI controllers (133 files): wallet management, transaction display, settings, UTXO management, server configuration
+  - `wallet/` — Wallet models and logic (27 files): wallets, UTXOs, labels, payments
+  - `net/` — Network layer (50 files): Electrum server connection, Bitcoin Core RPC, Tor integration, payment protocol (BIP70/BIP21/BIP353)
+  - `transaction/` — Transaction handling (17 files): PSBT creation, signing, broadcasting, RBF, CPFP
+  - `settings/` — Application settings (7 files): network, server, display preferences
+  - `io/` — File/import/export (71 files): wallet file persistence, CSV export, PDF generation, image handling
+  - `event/` — Event system (144 files): application-wide event bus using EventBus pattern
+  - `keystoreimport/` — Hardware wallet keystore imports: Ledger, Trezor, Coldcard, BitBox, Jade, Specter, Cobo, Keystone
+  - `payjoin/` — BIP78 Payjoin implementation (2 files)
+  - `paynym/` — PayNym (BIP47) implementation (6 files)
+  - `glyphfont/` — FontAwesome icon bindings (3 files)
+  - `terminal/` — Bitcoin RPC terminal interface
+  - `instance/` — Single-instance management (prevents multiple Sparrow processes)
+  - `AppServices.java` — Application services bootstrap and lifecycle
+  - `SparrowWallet.java` — Main application entry point
+  - `AppController.java` — Primary UI controller
+- `drongo/` — Submodule: core Bitcoin library (https://github.com/sparrowwallet/drongo)
+  - PSBT, descriptors, scripts, transactions, policies, HD keys, address derivation
+- `lark/` — Submodule: Bitcoin USB hardware wallet interface library (https://github.com/sparrowwallet/lark)
+  - Communication protocols for Ledger, Trezor, Coldcard, BitBox, Jade, Specter, Cobo, Keystone
+- `docs/` — Documentation (README.md, reproducible.md for deterministic builds)
+- `build.gradle` — Gradle build configuration (Java 25, JavaFX, jlink packaging)
+- `settings.gradle` — Multi-project settings (root + drongo + lark)
+
+## Build and Development
+
+Requires Java 25 or higher (release built with Eclipse Temurin 25.0.2+10).
+
+```bash
+# Clone with submodules
+git clone --recursive https://github.com/sparrowwallet/sparrow.git
+
+# Build release binary
+./gradlew jpackage
+
+# Run from source
+./sparrow
+
+# Update submodules after pull
+git pull --recurse-submodules
+```
+
+Additional packages may be needed: `rpm fakeroot binutils` (Debian/Ubuntu).
+
+Windows installer requires [WiX](https://github.com/wixtoolset/wix3/releases).
+
+## Supported Networks
+
+mainnet, testnet (testnet3), testnet4, regtest, signet.
+
+Set via CLI flag `--network` or environment variable `SPARROW_NETWORK`.
+
+## Key Dependencies
+
+- JavaFX (controls, fxml, swing, graphics)
+- drongo (Bitcoin primitives library, submodule)
+- lark (hardware wallet USB interface, submodule)
+- Guava, Gson, H2 database, JDBI, Flyway (migrations)
+- ZXing (QR codes), JCommander (CLI), RichTextFX (text rendering)
+- Tor (via `io.matthewnelson.kmp.tor` resource filter)
+
+## Code Style
+
+- Conventional lowercase imperative commit messages (e.g., "fix regression to restore save pdf button")
+- Java package structure: `com.sparrowwallet.sparrow.<domain>`
+- JavaFX controller-per-view pattern using FXML
+- Event-driven architecture with EventBus for cross-controller communication
+- No checkstyle, PMD, or spotbugs configured
+- No CLA, DCO, or GPG signing required for contributions
+
+## Testing
+
+```bash
+# Run tests
+./gradlew test
+```
+
+Test directory: `src/test/java/com/sparrowwallet/sparrow/` (primarily `io/` tests).
+
+## CI/CD
+
+- `.github/workflows/package.yaml` — Build and package for Windows, Linux (x64/arm), macOS (Intel/ARM)
+  - Triggered by `workflow_dispatch` only (no push-triggered CI)
+  - Uses JDK 25.0.2 (Eclipse Temurin)
+  - macOS builds include code signing and notarization
+
+## Reproducible Builds
+
+Binary reproducibility supported from v1.5.0 onwards (pre-codesigning and installer packaging).
+See `docs/reproducible.md` for instructions.
+
+## License
+
+Apache-2.0
