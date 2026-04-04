@@ -13,6 +13,8 @@ import com.sparrowwallet.sparrow.event.PSBTFinalizedEvent;
 import com.sparrowwallet.sparrow.event.ViewPSBTEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
@@ -385,6 +387,23 @@ public class MigrateUtxosDialog extends Dialog<Void> {
 
         TableColumn<MigrationRow, String> destCol = new TableColumn<>("Dest. Address");
         destCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().destAddress));
+        destCol.setCellFactory(col -> {
+            TableCell<MigrationRow, String> cell = new TableCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    setText(empty || item == null ? null : item);
+                }
+            };
+            cell.setOnMouseClicked(event -> {
+                if(event.getClickCount() == 2 && !cell.isEmpty() && cell.getItem() != null) {
+                    QRDisplayDialog qrDialog = new QRDisplayDialog(cell.getItem());
+                    qrDialog.initOwner(getDialogPane().getScene().getWindow());
+                    qrDialog.showAndWait();
+                }
+            });
+            return cell;
+        });
 
         TableColumn<MigrationRow, String> valueCol = new TableColumn<>("Value (sats)");
         valueCol.setCellValueFactory(cd -> new SimpleStringProperty(String.format("%,d", cd.getValue().value)));
@@ -459,35 +478,32 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                     saveMigrationState();
                 }
             });
-
-            tableRow.itemProperty().addListener((obs, oldItem, newItem) -> {
-                contextMenu.getItems().clear();
-                if(newItem == null) {
-                    tableRow.setContextMenu(null);
-                    return;
-                }
-                MigrationStatus status = newItem.getStatus();
-                if(status == MigrationStatus.UNSIGNED) {
-                    tableRow.setContextMenu(null);
-                } else if(status == MigrationStatus.SIGNED) {
-                    contextMenu.getItems().addAll(viewItem, redoItem);
-                    tableRow.setContextMenu(contextMenu);
-                } else {
-                    contextMenu.getItems().add(viewItem);
-                    tableRow.setContextMenu(contextMenu);
+            MenuItem verifyItem = new MenuItem("Verify address on device");
+            verifyItem.setOnAction(e -> {
+                MigrationRow row = tableRow.getItem();
+                if(row != null) {
+                    verifyDestAddressOnDevice(row);
                 }
             });
 
-            // Also update context menu when status changes
             tableRow.setOnMousePressed(e -> {
                 if(e.isSecondaryButtonDown() && !tableRow.isEmpty()) {
                     MigrationRow row = tableRow.getItem();
                     contextMenu.getItems().clear();
-                    if(row != null && row.getStatus() != MigrationStatus.UNSIGNED) {
+                    if(row == null) {
+                        tableRow.setContextMenu(null);
+                        return;
+                    }
+                    if(row.getStatus() != MigrationStatus.UNSIGNED) {
                         contextMenu.getItems().add(viewItem);
                         if(row.getStatus() == MigrationStatus.SIGNED) {
                             contextMenu.getItems().add(redoItem);
                         }
+                    }
+                    if(isDestWalletHardware(row)) {
+                        contextMenu.getItems().add(verifyItem);
+                    }
+                    if(!contextMenu.getItems().isEmpty()) {
                         tableRow.setContextMenu(contextMenu);
                     } else {
                         tableRow.setContextMenu(null);
@@ -638,6 +654,8 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                         row.getUtxo().getLabel() != null ? row.getUtxo().getLabel() : "",
                         row.getDestAddress(), row.getFeeRate(), fee, psbt
                 );
+                mr.destWallet = wd.wallet();
+                mr.destWalletNode = row.getDestWalletNode();
                 migrationRows.add(mr);
             } catch(Exception e) {
                 errors++;
@@ -1107,6 +1125,29 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         }
     }
 
+    // === Hardware wallet address verification ===
+
+    private boolean isDestWalletHardware(MigrationRow row) {
+        if(row.destWallet == null) {
+            return false;
+        }
+        return row.destWallet.getKeystores().stream().anyMatch(ks ->
+                ks.getSource().equals(KeystoreSource.HW_USB) || ks.getSource().equals(KeystoreSource.SW_WATCH));
+    }
+
+    private void verifyDestAddressOnDevice(MigrationRow row) {
+        if(row.destWallet == null || row.destWalletNode == null) {
+            AppServices.showErrorDialog("Cannot verify", "Destination wallet information is not available for this transaction.");
+            return;
+        }
+
+        OutputDescriptor addressDescriptor = OutputDescriptor.getOutputDescriptor(row.destWallet,
+                row.destWalletNode.getKeyPurpose(), row.destWalletNode.getIndex());
+        DeviceDisplayAddressDialog dlg = new DeviceDisplayAddressDialog(row.destWallet, addressDescriptor);
+        dlg.initOwner(getDialogPane().getScene().getWindow());
+        dlg.showAndWait();
+    }
+
     // === Persistence ===
 
     private File getMigrationFile() {
@@ -1237,6 +1278,8 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         double feeRate;
         final long fee;
         final PSBT psbt;
+        Wallet destWallet;
+        WalletNode destWalletNode;
         private final SimpleObjectProperty<MigrationStatus> status = new SimpleObjectProperty<>(MigrationStatus.UNSIGNED);
 
         public MigrationRow(String utxoId, long value, String label, String destAddress, double feeRate, long fee, PSBT psbt) {

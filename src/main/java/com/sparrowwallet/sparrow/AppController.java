@@ -1525,12 +1525,19 @@ public class AppController implements Initializable {
         }
     }
 
+    private MigrateUtxosDialog migrateUtxosDialog;
+
     public void migrateUtxos(ActionEvent event) {
+        if(migrateUtxosDialog != null && migrateUtxosDialog.isShowing()) {
+            migrateUtxosDialog.getDialogPane().getScene().getWindow().requestFocus();
+            return;
+        }
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null && selectedWalletForm.getWallet().isValid()) {
             Wallet wallet = selectedWalletForm.getWallet();
-            MigrateUtxosDialog dialog = new MigrateUtxosDialog(wallet, AppServices.get().getOpenWallets(), rootStack.getScene().getWindow());
-            dialog.show();
+            migrateUtxosDialog = new MigrateUtxosDialog(wallet, AppServices.get().getOpenWallets(), rootStack.getScene().getWindow());
+            migrateUtxosDialog.setOnCloseRequest(e -> migrateUtxosDialog = null);
+            migrateUtxosDialog.show();
         }
     }
 
