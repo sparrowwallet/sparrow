@@ -1215,7 +1215,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         }
         return row.destWallet.getKeystores().stream().anyMatch(ks ->
                 ks.getSource().equals(KeystoreSource.HW_USB)
-                || ks.getSource().equals(KeystoreSource.HW_AIRGAPPED)
                 || ks.getSource().equals(KeystoreSource.SW_WATCH));
     }
 
