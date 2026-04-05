@@ -9,6 +9,8 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TabData;
 import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.WalletTabData;
+import com.sparrowwallet.sparrow.event.NewBlockEvent;
 import com.sparrowwallet.sparrow.event.PSBTFinalizedEvent;
 import com.sparrowwallet.sparrow.event.ViewPSBTEvent;
 import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
@@ -167,12 +169,10 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         deselectAllBtn.setOnAction(e -> setupTable.getItems().forEach(r -> r.selectedProperty().set(false)));
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Button importPsbtsBtn = new Button("Import PSBTs");
-        importPsbtsBtn.setOnAction(e -> importSignedPsbts());
         Button createPsbtsBtn = new Button("Create PSBTs");
         createPsbtsBtn.setStyle("-fx-font-weight: bold;");
         createPsbtsBtn.setDisable(true);
-        selectButtons.getChildren().addAll(selectAllBtn, deselectAllBtn, spacer, importPsbtsBtn, createPsbtsBtn);
+        selectButtons.getChildren().addAll(selectAllBtn, deselectAllBtn, spacer, createPsbtsBtn);
 
         setupSummaryLabel = new Label("");
         setupSummaryLabel.setStyle("-fx-font-weight: bold;");
@@ -195,16 +195,12 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         manageButtons.setAlignment(Pos.CENTER_LEFT);
         Button clearBtn = new Button("Clear");
         clearBtn.setOnAction(e -> clearMigration());
-        Button exportAllBtn = new Button("Export All PSBTs");
-        exportAllBtn.setOnAction(e -> exportAllPsbts());
         Region spacer2 = new Region();
         HBox.setHgrow(spacer2, Priority.ALWAYS);
         Button signAllBtn = new Button("Sign All");
+        signAllBtn.setStyle("-fx-font-weight: bold;");
         signAllBtn.setOnAction(e -> signAllUnsigned());
-        Button broadcastAllBtn = new Button("Broadcast All Signed");
-        broadcastAllBtn.setStyle("-fx-font-weight: bold;");
-        broadcastAllBtn.setOnAction(e -> broadcastAllSigned());
-        manageButtons.getChildren().addAll(clearBtn, exportAllBtn, spacer2, signAllBtn, broadcastAllBtn);
+        manageButtons.getChildren().addAll(clearBtn, spacer2, signAllBtn);
 
         managePane.getChildren().addAll(manageTable, manageButtons, manageSummaryLabel);
         VBox.setVgrow(manageTable, Priority.ALWAYS);
@@ -447,12 +443,25 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         statusCol.setCellFactory(col -> new StatusCell());
         statusCol.setStyle(ALIGN_CENTER);
 
-        TableColumn<MigrationRow, Void> actionCol = new TableColumn<>("Action");
+        TableColumn<MigrationRow, String> targetBlockCol = new TableColumn<>("Target Block");
+        targetBlockCol.setCellValueFactory(cd -> {
+            MigrationRow row = cd.getValue();
+            if(row.targetBlock <= 0) {
+                return new SimpleStringProperty("");
+            }
+            if(row.getStatus() == MigrationStatus.BROADCAST) {
+                return new SimpleStringProperty(String.format("%,d", row.targetBlock));
+            }
+            return new SimpleStringProperty(String.format("%,d", row.targetBlock));
+        });
+        targetBlockCol.setStyle(ALIGN_CENTER);
+
+        TableColumn<MigrationRow, Void> actionCol = new TableColumn<>("Status");
         actionCol.setCellFactory(col -> new ActionCell());
         actionCol.setStyle(ALIGN_CENTER);
         actionCol.setMinWidth(ACTION_BTN_WIDTH + 20);
 
-        table.getColumns().addAll(utxoCol, destCol, valueCol, feeCol, labelCol, statusCol, actionCol);
+        table.getColumns().addAll(utxoCol, destCol, valueCol, feeCol, labelCol, statusCol, targetBlockCol, actionCol);
 
         // Double-click on row to view transaction details
         table.setRowFactory(tv -> {
@@ -505,7 +514,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                             contextMenu.getItems().add(redoItem);
                         }
                     }
-                    if(isDestWalletHardware(row)) {
+                    if(isDestWalletHardware(row) && row.getStatus() == MigrationStatus.UNSIGNED) {
                         contextMenu.getItems().add(verifyItem);
                     }
                     if(!contextMenu.getItems().isEmpty()) {
@@ -650,9 +659,18 @@ public class MigrateUtxosDialog extends Dialog<Void> {
 
         migrationRows.clear();
         int errors = 0;
+        Integer currentHeight = AppServices.getCurrentBlockHeight();
+        if(currentHeight == null) {
+            AppServices.showErrorDialog("Not connected", "A server connection is required to set transaction locktimes.");
+            return;
+        }
+        Random random = new Random();
+        long nextTargetBlock = currentHeight + 5;
+
         for(UtxoRow row : selected) {
             try {
-                PSBT psbt = createSingleUtxoPsbt(row);
+                long targetBlock = nextTargetBlock;
+                PSBT psbt = createSingleUtxoPsbt(row, targetBlock);
                 long fee = (long) Math.ceil(estimateTxVsize(row) * row.getFeeRate());
                 MigrationRow mr = new MigrationRow(
                         row.getUtxoId(), row.getUtxo().getValue(),
@@ -661,7 +679,9 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                 );
                 mr.destWallet = wd.wallet();
                 mr.destWalletNode = row.getDestWalletNode();
+                mr.targetBlock = targetBlock;
                 migrationRows.add(mr);
+                nextTargetBlock = targetBlock + 1 + random.nextInt(5);
             } catch(Exception e) {
                 errors++;
                 log.error("Failed to create PSBT for " + row.getUtxoId(), e);
@@ -693,7 +713,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         return sizeTx.getVirtualSize();
     }
 
-    private PSBT createSingleUtxoPsbt(UtxoRow row) {
+    private PSBT createSingleUtxoPsbt(UtxoRow row, long locktime) {
         BlockTransactionHashIndex utxo = row.getUtxo();
         WalletNode sourceNode = row.getSourceNode();
         Address destAddress = row.getDestWalletNode().getAddress();
@@ -723,6 +743,9 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         // Build final tx
         Transaction finalTx = new Transaction();
         finalTx.setVersion(2);
+        if(locktime > 0) {
+            finalTx.setLocktime(locktime);
+        }
         TransactionInput finalInput = Wallet.addDummySpendingInput(finalTx, sourceNode, prevTxOut);
         finalInput.setSequenceNumber(TransactionInput.SEQUENCE_RBF_ENABLED);
         TransactionOutput txOutput = finalTx.addOutput(outputValue, destAddress);
@@ -769,9 +792,12 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         long unsigned = migrationRows.stream().filter(r -> r.getStatus() == MigrationStatus.UNSIGNED).count();
         long signed = migrationRows.stream().filter(r -> r.getStatus() == MigrationStatus.SIGNED).count();
         long broadcast = migrationRows.stream().filter(r -> r.getStatus() == MigrationStatus.BROADCAST).count();
+        long confirmed = migrationRows.stream().filter(r -> r.getStatus() == MigrationStatus.CONFIRMED).count();
         long failed = migrationRows.stream().filter(r -> r.getStatus() == MigrationStatus.FAILED).count();
-        manageSummaryLabel.setText(String.format("%d total | %d unsigned | %d signed | %d broadcast%s",
-                total, unsigned, signed, broadcast, failed > 0 ? " | " + failed + " failed" : ""));
+        Integer currentHeight = AppServices.getCurrentBlockHeight();
+        String blockInfo = currentHeight != null ? " | Block: " + String.format("%,d", currentHeight) : "";
+        manageSummaryLabel.setText(String.format("%d total | %d unsigned | %d signed | %d unconfirmed | %d confirmed%s%s",
+                total, unsigned, signed, broadcast, confirmed, failed > 0 ? " | " + failed + " failed" : "", blockInfo));
     }
 
     private void openPsbtForSigning(MigrationRow row) {
@@ -883,6 +909,112 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                     }
                 });
                 break;
+            }
+        }
+    }
+
+    @Subscribe
+    public void newBlock(NewBlockEvent event) {
+        int height = event.getHeight();
+        Platform.runLater(() -> {
+            checkConfirmations();
+            manageTable.refresh();
+        });
+
+        List<MigrationRow> ready = migrationRows.stream()
+                .filter(r -> r.getStatus() == MigrationStatus.SIGNED && r.targetBlock > 0 && height >= r.targetBlock)
+                .toList();
+        if(ready.isEmpty()) {
+            return;
+        }
+
+        // Stagger broadcasts with random delays when multiple are ready (e.g. after reopening Sparrow)
+        Random random = new Random();
+        long delayMs = 0;
+        for(MigrationRow row : ready) {
+            final long thisDelay = delayMs;
+            new Thread(() -> {
+                try {
+                    if(thisDelay > 0) {
+                        Thread.sleep(thisDelay);
+                    }
+                    Platform.runLater(() -> autoBroadcast(row));
+                } catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
+            delayMs += 60_000L + random.nextInt(240_000); // 1-5 min between each
+        }
+    }
+
+    private void autoBroadcast(MigrationRow row) {
+        if(row.getStatus() != MigrationStatus.SIGNED || !row.psbt.isSigned()) {
+            return;
+        }
+        log.info("Auto-broadcasting migration tx {} at target block {}", row.utxoId, row.targetBlock);
+        broadcastTransactionSilent(row, () -> Platform.runLater(() -> {
+            manageTable.refresh();
+            updateManageSummary();
+            saveMigrationState();
+            checkMigrationComplete();
+        }));
+    }
+
+    private void checkConfirmations() {
+        boolean changed = false;
+        for(MigrationRow row : migrationRows) {
+            if(row.getStatus() == MigrationStatus.BROADCAST) {
+                Sha256Hash txId = row.psbt.getTransaction().getTxId();
+                BlockTransaction blockTx = sourceWallet.getTransactions().get(txId);
+                if(blockTx != null && blockTx.getHeight() > 0) {
+                    row.setStatus(MigrationStatus.CONFIRMED);
+                    changed = true;
+                }
+            }
+        }
+        if(changed) {
+            updateManageSummary();
+            saveMigrationState();
+            checkMigrationComplete();
+        }
+    }
+
+    private void checkMigrationComplete() {
+        boolean allConfirmed = migrationRows.stream().allMatch(r -> r.getStatus() == MigrationStatus.CONFIRMED);
+        if(allConfirmed) {
+            // Find the destination wallet from the first row
+            Wallet destWallet = migrationRows.stream()
+                    .filter(r -> r.destWallet != null)
+                    .map(r -> r.destWallet)
+                    .findFirst().orElse(null);
+
+            Alert info = new Alert(Alert.AlertType.INFORMATION,
+                    "All transactions have been confirmed.\nMigration complete.", ButtonType.OK);
+            info.initOwner(getDialogPane().getScene().getWindow());
+            info.showAndWait();
+
+            // Clear migration and close dialog
+            migrationRows.clear();
+            saveMigrationState();
+            close();
+
+            // Switch to destination wallet tab
+            if(destWallet != null && ownerWindow != null && ownerWindow.getScene() != null) {
+                javafx.scene.Node node = ownerWindow.getScene().getRoot().lookup("#tabs");
+                if(node instanceof TabPane tabPane) {
+                    for(Tab tab : tabPane.getTabs()) {
+                        if(tab.getUserData() instanceof WalletTabData) {
+                            TabPane subTabs = (TabPane) tab.getContent();
+                            for(Tab subTab : subTabs.getTabs()) {
+                                if(subTab.getUserData() instanceof WalletTabData wtd && wtd.getWallet() == destWallet) {
+                                    tabPane.getSelectionModel().select(tab);
+                                    subTabs.getSelectionModel().select(subTab);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1252,8 +1384,8 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             return;
         }
 
-        // Don't save if all are broadcast (migration complete)
-        boolean allDone = migrationRows.stream().allMatch(r -> r.getStatus() == MigrationStatus.BROADCAST);
+        // Don't save if all are confirmed (migration complete)
+        boolean allDone = migrationRows.stream().allMatch(r -> r.getStatus() == MigrationStatus.CONFIRMED);
         if(allDone) {
             File file = getMigrationFile();
             if(file.exists()) {
@@ -1277,6 +1409,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                 obj.addProperty("feeRate", row.feeRate);
                 obj.addProperty("fee", row.fee);
                 obj.addProperty("status", row.getStatus().name());
+                obj.addProperty("targetBlock", row.targetBlock);
                 obj.addProperty("psbt", Base64.getEncoder().encodeToString(row.psbt.serialize()));
                 rows.add(obj);
             }
@@ -1316,6 +1449,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                 PSBT psbt = new PSBT(psbtBytes);
                 MigrationRow mr = new MigrationRow(utxoId, value, label, destAddress, feeRate, fee, psbt);
                 mr.setStatus(MigrationStatus.valueOf(statusStr));
+                mr.targetBlock = obj.has("targetBlock") ? obj.get("targetBlock").getAsLong() : 0;
                 resolveDestWallet(mr);
                 migrationRows.add(mr);
             }
@@ -1337,6 +1471,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         UNSIGNED("Unsigned"),
         SIGNED("Signed"),
         BROADCAST("Broadcast"),
+        CONFIRMED("Confirmed"),
         FAILED("Failed");
 
         private final String label;
@@ -1364,6 +1499,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         final PSBT psbt;
         Wallet destWallet;
         WalletNode destWalletNode;
+        long targetBlock;
         private final SimpleObjectProperty<MigrationStatus> status = new SimpleObjectProperty<>(MigrationStatus.UNSIGNED);
 
         public MigrationRow(String utxoId, long value, String label, String destAddress, double feeRate, long fee, PSBT psbt) {
@@ -1403,12 +1539,16 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                     setStyle(ALIGN_CENTER + " -fx-text-fill: white; -fx-font-weight: bold;");
                 }
                 case BROADCAST -> {
-                    setText("Broadcast");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: #1e88cf; -fx-font-weight: bold;");
+                    setText("Signed");
+                    setStyle(ALIGN_CENTER + " -fx-text-fill: white; -fx-font-weight: bold;");
+                }
+                case CONFIRMED -> {
+                    setText("Signed");
+                    setStyle(ALIGN_CENTER + " -fx-text-fill: white; -fx-font-weight: bold;");
                 }
                 case FAILED -> {
                     setText("Failed");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: #cc0000;");
+                    setStyle(ALIGN_CENTER + " -fx-text-fill: white;");
                 }
             }
         }
@@ -1442,18 +1582,25 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                     buttons.getChildren().add(openBtn);
                 }
                 case SIGNED -> {
-                    Button broadcastBtn = new Button("Broadcast");
-                    broadcastBtn.setPrefWidth(ACTION_BTN_WIDTH);
-                    broadcastBtn.setDefaultButton(true);
-                    broadcastBtn.setOnAction(e -> broadcastTransaction(row));
-                    buttons.getChildren().add(broadcastBtn);
+                    Label waitLabel = new Label("Scheduled");
+                    waitLabel.setStyle("-fx-text-fill: #e8a838; -fx-font-weight: bold;");
+                    waitLabel.setPrefWidth(ACTION_BTN_WIDTH);
+                    waitLabel.setAlignment(Pos.CENTER);
+                    buttons.getChildren().add(waitLabel);
                 }
                 case BROADCAST -> {
-                    Label doneLabel = new Label("Done");
-                    doneLabel.setStyle("-fx-text-fill: #1e88cf; -fx-font-weight: bold;");
-                    doneLabel.setPrefWidth(ACTION_BTN_WIDTH);
-                    doneLabel.setAlignment(Pos.CENTER);
-                    buttons.getChildren().add(doneLabel);
+                    Label unconfLabel = new Label("Unconfirmed");
+                    unconfLabel.setStyle("-fx-text-fill: #e8a838; -fx-font-weight: bold;");
+                    unconfLabel.setPrefWidth(ACTION_BTN_WIDTH);
+                    unconfLabel.setAlignment(Pos.CENTER);
+                    buttons.getChildren().add(unconfLabel);
+                }
+                case CONFIRMED -> {
+                    Label confirmedLabel = new Label("Confirmed");
+                    confirmedLabel.setStyle("-fx-text-fill: #1e88cf; -fx-font-weight: bold;");
+                    confirmedLabel.setPrefWidth(ACTION_BTN_WIDTH);
+                    confirmedLabel.setAlignment(Pos.CENTER);
+                    buttons.getChildren().add(confirmedLabel);
                 }
                 case FAILED -> {
                     Button retryBtn = new Button("Retry");
