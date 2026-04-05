@@ -438,11 +438,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         TableColumn<MigrationRow, String> labelCol = new TableColumn<>("Label");
         labelCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().label));
 
-        TableColumn<MigrationRow, MigrationStatus> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(cd -> cd.getValue().statusProperty());
-        statusCol.setCellFactory(col -> new StatusCell());
-        statusCol.setStyle(ALIGN_CENTER);
-
         TableColumn<MigrationRow, String> targetBlockCol = new TableColumn<>("Target Block");
         targetBlockCol.setCellValueFactory(cd -> {
             MigrationRow row = cd.getValue();
@@ -461,7 +456,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         actionCol.setStyle(ALIGN_CENTER);
         actionCol.setMinWidth(ACTION_BTN_WIDTH + 20);
 
-        table.getColumns().addAll(utxoCol, destCol, valueCol, feeCol, labelCol, statusCol, targetBlockCol, actionCol);
+        table.getColumns().addAll(utxoCol, destCol, valueCol, feeCol, labelCol, targetBlockCol, actionCol);
 
         // Double-click on row to view transaction details
         table.setRowFactory(tv -> {
