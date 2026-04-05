@@ -46,8 +46,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class MigrateUtxosDialog extends Dialog<Void> {
     private static final Logger log = LoggerFactory.getLogger(MigrateUtxosDialog.class);
@@ -77,6 +75,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
 
     // State
     private final List<MigrationRow> migrationRows = new ArrayList<>();
+    private boolean batchSigningActive = false;
 
     public MigrateUtxosDialog(Wallet sourceWallet, Map<Wallet, Storage> openWallets, Window owner) {
         this.sourceWallet = sourceWallet;
@@ -200,10 +199,12 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         exportAllBtn.setOnAction(e -> exportAllPsbts());
         Region spacer2 = new Region();
         HBox.setHgrow(spacer2, Priority.ALWAYS);
+        Button signAllBtn = new Button("Sign All");
+        signAllBtn.setOnAction(e -> signAllUnsigned());
         Button broadcastAllBtn = new Button("Broadcast All Signed");
         broadcastAllBtn.setStyle("-fx-font-weight: bold;");
         broadcastAllBtn.setOnAction(e -> broadcastAllSigned());
-        manageButtons.getChildren().addAll(clearBtn, exportAllBtn, spacer2, broadcastAllBtn);
+        manageButtons.getChildren().addAll(clearBtn, exportAllBtn, spacer2, signAllBtn, broadcastAllBtn);
 
         managePane.getChildren().addAll(manageTable, manageButtons, manageSummaryLabel);
         VBox.setVgrow(manageTable, Priority.ALWAYS);
@@ -285,6 +286,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
 
         // Save state and unregister when dialog is closed
         setOnCloseRequest(e -> {
+            batchSigningActive = false;
             saveMigrationState();
             EventManager.get().unregister(this);
         });
@@ -334,6 +336,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         TableView<UtxoRow> table = new TableView<>();
         table.setEditable(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(30);
 
         TableColumn<UtxoRow, Boolean> selectCol = new TableColumn<>("");
         selectCol.setCellValueFactory(cd -> cd.getValue().selectedProperty());
@@ -381,6 +384,8 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         TableView<MigrationRow> table = new TableView<>();
         table.setEditable(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+
+        table.setFixedCellSize(30);
 
         TableColumn<MigrationRow, String> utxoCol = new TableColumn<>("UTXO");
         utxoCol.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().utxoId));
@@ -779,6 +784,61 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         }
     }
 
+    private void signAllUnsigned() {
+        long unsignedCount = migrationRows.stream().filter(r -> r.getStatus() == MigrationStatus.UNSIGNED).count();
+        if(unsignedCount == 0) {
+            AppServices.showErrorDialog("Nothing to sign", "No unsigned transactions.");
+            return;
+        }
+        batchSigningActive = true;
+        openNextUnsignedForBatch();
+    }
+
+    private void openNextUnsignedForBatch() {
+        Optional<MigrationRow> nextUnsigned = migrationRows.stream()
+                .filter(r -> r.getStatus() == MigrationStatus.UNSIGNED)
+                .findFirst();
+        if(nextUnsigned.isPresent()) {
+            openPsbtForSigning(nextUnsigned.get());
+            Platform.runLater(() -> attachBatchTabCloseListener(nextUnsigned.get()));
+        } else {
+            batchSigningActive = false;
+            Window dialogWindow = getDialogPane().getScene().getWindow();
+            if(dialogWindow instanceof Stage stage) {
+                stage.setIconified(false);
+                stage.toFront();
+            }
+        }
+    }
+
+    private void attachBatchTabCloseListener(MigrationRow row) {
+        if(ownerWindow == null || ownerWindow.getScene() == null) {
+            return;
+        }
+        javafx.scene.Node node = ownerWindow.getScene().getRoot().lookup("#tabs");
+        if(node instanceof TabPane tabPane) {
+            Sha256Hash txId = row.psbt.getTransaction().getTxId();
+            for(Tab tab : tabPane.getTabs()) {
+                if(tab.getUserData() instanceof TransactionTabData ttd
+                        && ttd.getTransaction().getTxId().equals(txId)) {
+                    tab.setOnClosed(e -> {
+                        if(row.getStatus() == MigrationStatus.UNSIGNED) {
+                            batchSigningActive = false;
+                            Platform.runLater(() -> {
+                                Window dialogWindow = getDialogPane().getScene().getWindow();
+                                if(dialogWindow instanceof Stage stage) {
+                                    stage.setIconified(false);
+                                    stage.toFront();
+                                }
+                            });
+                        }
+                    });
+                    break;
+                }
+            }
+        }
+    }
+
     private void showTransactionDetails(MigrationRow row) {
         // Open as a read-only Transaction view (no PSBT = no broadcast button)
         try {
@@ -810,11 +870,16 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                     // Close the PSBT tab in the main window
                     closeMigrationTab(eventTxId);
 
-                    // Restore and bring dialog to front
-                    Window dialogWindow = getDialogPane().getScene().getWindow();
-                    if(dialogWindow instanceof Stage stage) {
-                        stage.setIconified(false);
-                        stage.toFront();
+                    if(batchSigningActive) {
+                        // Chain to next unsigned PSBT
+                        openNextUnsignedForBatch();
+                    } else {
+                        // Single sign — restore dialog
+                        Window dialogWindow = getDialogPane().getScene().getWindow();
+                        if(dialogWindow instanceof Stage stage) {
+                            stage.setIconified(false);
+                            stage.toFront();
+                        }
                     }
                 });
                 break;
@@ -923,10 +988,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Import PSBTs");
         fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("All supported", "*.json", "*.zip", "*.psbt"),
-                new FileChooser.ExtensionFilter("JSON file", "*.json"),
-                new FileChooser.ExtensionFilter("ZIP archive", "*.zip"),
-                new FileChooser.ExtensionFilter("PSBT files", "*.psbt")
+                new FileChooser.ExtensionFilter("JSON file", "*.json")
         );
         List<File> files = fileChooser.showOpenMultipleDialog(getDialogPane().getScene().getWindow());
         if(files != null && !files.isEmpty()) {
@@ -970,6 +1032,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                         if(psbt.isSigned()) {
                             mr.setStatus(MigrationStatus.SIGNED);
                         }
+                        resolveDestWallet(mr);
                         migrationRows.add(mr);
                         loaded++;
                     } catch(Exception e) {
@@ -1020,26 +1083,11 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         List<byte[]> psbtDataList = new ArrayList<>();
         for(File file : files) {
             try {
-                String name = file.getName().toLowerCase();
-                if(name.endsWith(".json")) {
-                    String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-                    JsonArray array = JsonParser.parseString(content).getAsJsonArray();
-                    for(JsonElement el : array) {
-                        String b64 = el.getAsJsonObject().get("psbt").getAsString();
-                        psbtDataList.add(Base64.getDecoder().decode(b64));
-                    }
-                } else if(name.endsWith(".zip")) {
-                    try(ZipInputStream zis = new ZipInputStream(new java.io.FileInputStream(file))) {
-                        ZipEntry entry;
-                        while((entry = zis.getNextEntry()) != null) {
-                            if(!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".psbt")) {
-                                psbtDataList.add(zis.readAllBytes());
-                            }
-                            zis.closeEntry();
-                        }
-                    }
-                } else {
-                    psbtDataList.add(Files.readAllBytes(file.toPath()));
+                String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+                JsonArray array = JsonParser.parseString(content).getAsJsonArray();
+                for(JsonElement el : array) {
+                    String b64 = el.getAsJsonObject().get("psbt").getAsString();
+                    psbtDataList.add(Base64.getDecoder().decode(b64));
                 }
             } catch(IOException e) {
                 log.error("Failed to read file " + file.getName(), e);
@@ -1125,6 +1173,40 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         }
     }
 
+    // === Destination wallet resolution ===
+
+    private void resolveDestWallet(MigrationRow mr) {
+        try {
+            Address addr = Address.fromString(mr.destAddress);
+            for(Wallet w : AppServices.get().getOpenWallets().keySet()) {
+                Map<Address, WalletNode> addresses = w.getWalletAddresses();
+                WalletNode node = addresses.get(addr);
+                if(node != null) {
+                    mr.destWallet = w;
+                    mr.destWalletNode = node;
+                    log.debug("Resolved dest wallet for {} -> {}", mr.destAddress, w.getFullName());
+                    return;
+                }
+                // Also check child wallets directly
+                for(Wallet child : w.getChildWallets()) {
+                    if(child.isValid()) {
+                        Map<Address, WalletNode> childAddresses = child.getWalletAddresses();
+                        WalletNode childNode = childAddresses.get(addr);
+                        if(childNode != null) {
+                            mr.destWallet = child;
+                            mr.destWalletNode = childNode;
+                            log.debug("Resolved dest wallet (child) for {} -> {}", mr.destAddress, child.getFullName());
+                            return;
+                        }
+                    }
+                }
+            }
+            log.debug("Could not resolve dest wallet for address {}", mr.destAddress);
+        } catch(Exception e) {
+            log.error("Error resolving dest wallet for address {}", mr.destAddress, e);
+        }
+    }
+
     // === Hardware wallet address verification ===
 
     private boolean isDestWalletHardware(MigrationRow row) {
@@ -1132,7 +1214,9 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             return false;
         }
         return row.destWallet.getKeystores().stream().anyMatch(ks ->
-                ks.getSource().equals(KeystoreSource.HW_USB) || ks.getSource().equals(KeystoreSource.SW_WATCH));
+                ks.getSource().equals(KeystoreSource.HW_USB)
+                || ks.getSource().equals(KeystoreSource.HW_AIRGAPPED)
+                || ks.getSource().equals(KeystoreSource.SW_WATCH));
     }
 
     private void verifyDestAddressOnDevice(MigrationRow row) {
@@ -1233,6 +1317,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                 PSBT psbt = new PSBT(psbtBytes);
                 MigrationRow mr = new MigrationRow(utxoId, value, label, destAddress, feeRate, fee, psbt);
                 mr.setStatus(MigrationStatus.valueOf(statusStr));
+                resolveDestWallet(mr);
                 migrationRows.add(mr);
             }
 
