@@ -1,6 +1,9 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.google.common.eventbus.Subscribe;
+import com.google.gson.*;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -10,15 +13,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TabData;
 import com.sparrowwallet.sparrow.TransactionTabData;
 import com.sparrowwallet.sparrow.WalletTabData;
-import com.sparrowwallet.sparrow.event.NewBlockEvent;
-import com.sparrowwallet.sparrow.event.PSBTFinalizedEvent;
-import com.sparrowwallet.sparrow.event.ViewPSBTEvent;
-import com.sparrowwallet.sparrow.event.ViewTransactionEvent;
-import com.sparrowwallet.sparrow.event.WalletDataChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
-import com.google.common.eventbus.Subscribe;
-import com.sparrowwallet.drongo.OutputDescriptor;
-import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
@@ -27,7 +22,6 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.CheckBoxTableCell;
@@ -35,15 +29,15 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.gson.*;
+import tornadofx.control.Field;
+import tornadofx.control.Fieldset;
+import tornadofx.control.Form;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -53,9 +47,6 @@ import java.util.stream.Collectors;
 
 public class MigrateUtxosDialog extends Dialog<Void> {
     private static final Logger log = LoggerFactory.getLogger(MigrateUtxosDialog.class);
-
-    private static final String ALIGN_RIGHT = "-fx-alignment: CENTER-RIGHT;";
-    private static final String ALIGN_CENTER = "-fx-alignment: CENTER;";
 
     private final Wallet sourceWallet;
     private final Window ownerWindow;
@@ -68,8 +59,8 @@ public class MigrateUtxosDialog extends Dialog<Void> {
     private final ToggleGroup feeStrategyGroup;
     private final TextField minFeeField;
     private final TextField maxFeeField;
-    private final HBox randomRangeBox;
-    private final HBox fixedFeeBox;
+    private final Field randomFeeField;
+    private final Field fixedFeeField;
     private final Label setupSummaryLabel;
 
     // Manage phase UI
@@ -88,23 +79,27 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         final DialogPane dialogPane = getDialogPane();
         setTitle("Migrate UTXOs");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
-        dialogPane.setStyle("-fx-font-size: 13px;");
-        // Center column headers
-        Platform.runLater(() -> dialogPane.getScene().getRoot().setStyle(
-                dialogPane.getScene().getRoot().getStyle() +
-                "; -fx-alignment: CENTER;"));
-        dialogPane.getStylesheets().add("data:text/css," +
-                ".table-view .column-header .label { -fx-alignment: CENTER; }");
+        dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
+        dialogPane.getStylesheets().add(MigrateUtxosDialog.class.getResource("migrate-utxos.css").toExternalForm());
+        AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        dialogPane.getStyleClass().add("migrate-utxos");
         dialogPane.setHeaderText("Migrate UTXOs individually to a destination wallet.\nEach UTXO becomes a separate transaction for privacy.");
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         // === SETUP PHASE ===
         setupPane = new VBox(10);
-        setupPane.setPadding(new Insets(10));
+        setupPane.getStyleClass().add("setup-pane");
+
+        // Form fields using tornadofx pattern
+        Form form = new Form();
+        Fieldset fieldset = new Fieldset();
+        fieldset.setText("");
+        fieldset.setSpacing(10);
 
         // Destination wallet selector
         List<WalletDestination> destinations = buildDestinationList(sourceWallet, openWallets);
-        HBox destBox = new HBox(10);
-        destBox.setAlignment(Pos.CENTER_LEFT);
+        Field destField = new Field();
+        destField.setText("Destination:");
         destWalletCombo = new ComboBox<>(FXCollections.observableArrayList(destinations));
         destWalletCombo.setConverter(new StringConverter<>() {
             @Override
@@ -122,11 +117,11 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             destWalletCombo.setPromptText("Open a destination wallet first");
             destWalletCombo.setDisable(true);
         }
-        destBox.getChildren().addAll(new Label("Destination:"), destWalletCombo);
+        destField.getInputs().add(destWalletCombo);
 
         // Fee strategy
-        HBox feeBox = new HBox(10);
-        feeBox.setAlignment(Pos.CENTER_LEFT);
+        Field feeStrategyField = new Field();
+        feeStrategyField.setText("Fee strategy:");
         feeStrategyGroup = new ToggleGroup();
         RadioButton fixedRadio = new RadioButton("Fixed");
         fixedRadio.setToggleGroup(feeStrategyGroup);
@@ -138,26 +133,32 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         RadioButton randomRadio = new RadioButton("Random range");
         randomRadio.setToggleGroup(feeStrategyGroup);
         randomRadio.setUserData("random");
-        feeBox.getChildren().addAll(new Label("Fee strategy:"), fixedRadio, manualRadio, randomRadio);
+        HBox strategyRadios = new HBox(10, fixedRadio, manualRadio, randomRadio);
+        feeStrategyField.getInputs().add(strategyRadios);
 
         // Fixed fee rate input
-        fixedFeeBox = new HBox(10);
-        fixedFeeBox.setAlignment(Pos.CENTER_LEFT);
+        fixedFeeField = new Field();
+        fixedFeeField.setText("Fee rate (sat/vB):");
         feeRateField = new TextField("1.0");
         feeRateField.setPrefWidth(80);
-        fixedFeeBox.getChildren().addAll(new Label("Fee rate (sat/vB):"), feeRateField);
+        fixedFeeField.getInputs().add(feeRateField);
 
         // Random range input
-        randomRangeBox = new HBox(10);
-        randomRangeBox.setAlignment(Pos.CENTER_LEFT);
+        randomFeeField = new Field();
+        randomFeeField.setText("Fee range (sat/vB):");
         minFeeField = new TextField("0.5");
         minFeeField.setPrefWidth(60);
         maxFeeField = new TextField("4.0");
         maxFeeField.setPrefWidth(60);
         Button randomizeButton = new Button("Randomize");
-        randomRangeBox.getChildren().addAll(new Label("Min (sat/vB):"), minFeeField, new Label("Max:"), maxFeeField, randomizeButton);
-        randomRangeBox.setVisible(false);
-        randomRangeBox.setManaged(false);
+        HBox rangeInputs = new HBox(10, new Label("Min:"), minFeeField, new Label("Max:"), maxFeeField, randomizeButton);
+        rangeInputs.setAlignment(Pos.CENTER_LEFT);
+        randomFeeField.getInputs().add(rangeInputs);
+        randomFeeField.setVisible(false);
+        randomFeeField.setManaged(false);
+
+        fieldset.getChildren().addAll(destField, feeStrategyField, fixedFeeField, randomFeeField);
+        form.getChildren().add(fieldset);
 
         // Setup table
         setupTable = createSetupTable();
@@ -172,26 +173,26 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         Button createPsbtsBtn = new Button("Create PSBTs");
-        createPsbtsBtn.setStyle("-fx-font-weight: bold;");
+        createPsbtsBtn.getStyleClass().add("default-button");
         createPsbtsBtn.setDisable(true);
         selectButtons.getChildren().addAll(selectAllBtn, deselectAllBtn, spacer, createPsbtsBtn);
 
         setupSummaryLabel = new Label("");
-        setupSummaryLabel.setStyle("-fx-font-weight: bold;");
+        setupSummaryLabel.getStyleClass().add("summary-label");
 
-        setupPane.getChildren().addAll(destBox, feeBox, fixedFeeBox, randomRangeBox, setupTable, selectButtons, setupSummaryLabel);
+        setupPane.getChildren().addAll(form, setupTable, selectButtons, setupSummaryLabel);
         VBox.setVgrow(setupTable, Priority.ALWAYS);
 
         // === MANAGE PHASE ===
         managePane = new VBox(10);
-        managePane.setPadding(new Insets(10));
+        managePane.getStyleClass().add("manage-pane");
         managePane.setVisible(false);
         managePane.setManaged(false);
 
         manageTable = createManageTable();
 
         manageSummaryLabel = new Label("");
-        manageSummaryLabel.setStyle("-fx-font-weight: bold;");
+        manageSummaryLabel.getStyleClass().add("summary-label");
 
         HBox manageButtons = new HBox(10);
         manageButtons.setAlignment(Pos.CENTER_LEFT);
@@ -200,7 +201,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         Region spacer2 = new Region();
         HBox.setHgrow(spacer2, Priority.ALWAYS);
         Button signAllBtn = new Button("Sign All");
-        signAllBtn.setStyle("-fx-font-weight: bold;");
+        signAllBtn.getStyleClass().add("default-button");
         signAllBtn.setOnAction(e -> signAllUnsigned());
         manageButtons.getChildren().addAll(clearBtn, spacer2, signAllBtn);
 
@@ -228,9 +229,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         dialogPane.getButtonTypes().add(ButtonType.CLOSE);
         dialogPane.lookupButton(ButtonType.CLOSE).setVisible(false);
         dialogPane.lookupButton(ButtonType.CLOSE).setManaged(false);
-        // Remove button bar padding since there are no visible buttons
-        dialogPane.getStylesheets().add("data:text/css," +
-                ".dialog-pane .button-bar { -fx-padding: 0; -fx-min-height: 0; -fx-pref-height: 0; }");
+        // Button bar padding is hidden via migrate-utxos.css
 
         // Wire up events
         destWalletCombo.valueProperty().addListener((obs, old, newVal) -> {
@@ -246,10 +245,10 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             boolean isRandom = "random".equals(strategy);
             boolean isManual = "manual".equals(strategy);
             feeRateField.setDisable(isManual);
-            randomRangeBox.setVisible(isRandom);
-            randomRangeBox.setManaged(isRandom);
-            fixedFeeBox.setVisible(!isRandom);
-            fixedFeeBox.setManaged(!isRandom);
+            randomFeeField.setVisible(isRandom);
+            randomFeeField.setManaged(isRandom);
+            fixedFeeField.setVisible(!isRandom);
+            fixedFeeField.setManaged(!isRandom);
             if("fixed".equals(strategy)) {
                 applyFixedFeeRate();
             } else if(isRandom) {
@@ -270,7 +269,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         dialogPane.setPrefWidth(1100);
         dialogPane.setPrefHeight(700);
         setResizable(true);
-        AppServices.setStageIcon(dialogPane.getScene().getWindow());
         AppServices.moveToActiveWindowScreen(this);
         initModality(Modality.NONE);
 
@@ -341,7 +339,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         selectCol.setCellFactory(CheckBoxTableCell.forTableColumn(selectCol));
         selectCol.setMinWidth(35);
         selectCol.setMaxWidth(35);
-        selectCol.setStyle(ALIGN_CENTER);
+        selectCol.setStyle("-fx-alignment: CENTER;");
 
         TableColumn<UtxoRow, String> utxoCol = new TableColumn<>("UTXO");
         utxoCol.setCellValueFactory(cd -> cd.getValue().utxoIdProperty());
@@ -451,11 +449,11 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             }
             return new SimpleStringProperty(String.format("%,d", row.targetBlock));
         });
-        targetBlockCol.setStyle(ALIGN_CENTER);
+        targetBlockCol.setStyle("-fx-alignment: CENTER;");
 
         TableColumn<MigrationRow, Void> actionCol = new TableColumn<>("Status");
         actionCol.setCellFactory(col -> new ActionCell());
-        actionCol.setStyle(ALIGN_CENTER);
+        actionCol.setStyle("-fx-alignment: CENTER;");
         actionCol.setMinWidth(ACTION_BTN_WIDTH + 20);
 
         table.getColumns().addAll(utxoCol, destCol, valueCol, feeCol, labelCol, targetBlockCol, actionCol);
@@ -1065,231 +1063,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         }
     }
 
-    private void broadcastTransaction(MigrationRow row) {
-        if(!row.psbt.isSigned()) {
-            AppServices.showErrorDialog("Not Signed", "This transaction has not been signed yet. Open it to sign first.");
-            return;
-        }
-
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Broadcast transaction for " + row.utxoId + "?\nThis cannot be undone.", ButtonType.YES, ButtonType.NO);
-        confirm.initOwner(getDialogPane().getScene().getWindow());
-        Optional<ButtonType> result = confirm.showAndWait();
-        if(result.isEmpty() || result.get() != ButtonType.YES) {
-            return;
-        }
-
-        try {
-            Transaction finalTx = row.psbt.extractTransaction();
-            ElectrumServer.BroadcastTransactionService broadcastService = new ElectrumServer.BroadcastTransactionService(finalTx, row.fee);
-            broadcastService.setOnSucceeded(event -> {
-                row.setStatus(MigrationStatus.BROADCAST);
-                Platform.runLater(() -> {
-                    manageTable.refresh();
-                    updateManageSummary();
-                    saveMigrationState();
-                    AppServices.showErrorDialog("Broadcast Successful", "Transaction " + row.utxoId + " has been broadcast.");
-                });
-            });
-            broadcastService.setOnFailed(event -> {
-                row.setStatus(MigrationStatus.FAILED);
-                Platform.runLater(() -> {
-                    manageTable.refresh();
-                    updateManageSummary();
-                    saveMigrationState();
-                    AppServices.showErrorDialog("Broadcast Failed", event.getSource().getException().getMessage());
-                });
-            });
-            broadcastService.start();
-        } catch(Exception e) {
-            row.setStatus(MigrationStatus.FAILED);
-            manageTable.refresh();
-            updateManageSummary();
-            AppServices.showErrorDialog("Broadcast Failed", e.getMessage());
-        }
-    }
-
-    private void exportAllPsbts() {
-        List<MigrationRow> toExport = migrationRows.stream()
-                .filter(r -> r.getStatus() == MigrationStatus.UNSIGNED || r.getStatus() == MigrationStatus.SIGNED)
-                .toList();
-        if(toExport.isEmpty()) {
-            AppServices.showErrorDialog("Nothing to export", "No PSBTs to export.");
-            return;
-        }
-
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export All PSBTs");
-        fileChooser.setInitialFileName("migration_psbts.json");
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON file", "*.json"));
-        File file = fileChooser.showSaveDialog(getDialogPane().getScene().getWindow());
-        if(file != null) {
-            JsonArray psbtsArray = new JsonArray();
-            for(int i = 0; i < migrationRows.size(); i++) {
-                MigrationRow row = migrationRows.get(i);
-                if(row.getStatus() == MigrationStatus.UNSIGNED || row.getStatus() == MigrationStatus.SIGNED) {
-                    JsonObject obj = new JsonObject();
-                    obj.addProperty("utxoId", row.utxoId);
-                    obj.addProperty("status", row.getStatus().name());
-                    obj.addProperty("psbt", Base64.getEncoder().encodeToString(row.psbt.serialize()));
-                    psbtsArray.add(obj);
-                }
-            }
-            try(Writer writer = new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8)) {
-                new GsonBuilder().setPrettyPrinting().create().toJson(psbtsArray, writer);
-            } catch(IOException e) {
-                log.error("Failed to export PSBTs", e);
-                AppServices.showErrorDialog("Export Failed", e.getMessage());
-                return;
-            }
-            log.info("Exported {} PSBT(s) to {}", psbtsArray.size(), file.getName());
-        }
-    }
-
-    private void importSignedPsbts() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Import PSBTs");
-        fileChooser.getExtensionFilters().addAll(
-                new FileChooser.ExtensionFilter("JSON file", "*.json")
-        );
-        List<File> files = fileChooser.showOpenMultipleDialog(getDialogPane().getScene().getWindow());
-        if(files != null && !files.isEmpty()) {
-            List<byte[]> psbtDataList = readPsbtFiles(files);
-
-            if(migrationRows.isEmpty()) {
-                // Import from Setup phase: load PSBTs as new migration rows
-                int loaded = 0;
-                for(byte[] data : psbtDataList) {
-                    try {
-                        PSBT psbt = new PSBT(data);
-                        Transaction tx = psbt.getTransaction();
-                        String txId = tx.getTxId().toString();
-                        String utxoId = tx.getInputs().getFirst().getOutpoint().getHash().toString().substring(0, 8)
-                                + "...:" + tx.getInputs().getFirst().getOutpoint().getIndex();
-                        long value = 0;
-                        long fee = 0;
-                        String destAddress = "";
-                        if(!tx.getOutputs().isEmpty()) {
-                            TransactionOutput out = tx.getOutputs().getFirst();
-                            value = out.getValue();
-                            destAddress = out.getScript().getToAddress().toString();
-                        }
-                        // Estimate original UTXO value and fee from tx
-                        if(psbt.getPsbtInputs() != null && !psbt.getPsbtInputs().isEmpty()) {
-                            var psbtInput = psbt.getPsbtInputs().getFirst();
-                            if(psbtInput.getWitnessUtxo() != null) {
-                                long inputValue = psbtInput.getWitnessUtxo().getValue();
-                                fee = inputValue - value;
-                                value = inputValue;
-                            } else if(psbtInput.getNonWitnessUtxo() != null) {
-                                long inputIdx = tx.getInputs().getFirst().getOutpoint().getIndex();
-                                long inputValue = psbtInput.getNonWitnessUtxo().getOutputs().get((int) inputIdx).getValue();
-                                fee = inputValue - tx.getOutputs().getFirst().getValue();
-                                value = inputValue;
-                            }
-                        }
-                        double feeRate = fee > 0 ? (double) fee / tx.getVirtualSize() : 0;
-
-                        MigrationRow mr = new MigrationRow(utxoId, value, "", destAddress, feeRate, fee, psbt);
-                        if(psbt.isSigned()) {
-                            mr.setStatus(MigrationStatus.SIGNED);
-                        }
-                        resolveDestWallet(mr);
-                        migrationRows.add(mr);
-                        loaded++;
-                    } catch(Exception e) {
-                        log.error("Failed to parse PSBT for import", e);
-                    }
-                }
-
-                if(loaded > 0) {
-                    manageTable.setItems(FXCollections.observableArrayList(migrationRows));
-                    updateManageSummary();
-                    showManagePhase();
-                    saveMigrationState();
-                    log.info("Imported {} PSBT(s)", loaded);
-                }
-            } else {
-                // Import from Manage phase: combine signed PSBTs with existing rows
-                int combined = 0;
-                for(byte[] data : psbtDataList) {
-                    try {
-                        PSBT signedPsbt = new PSBT(data);
-                        for(MigrationRow row : migrationRows) {
-                            if(row.getStatus() == MigrationStatus.UNSIGNED
-                                    && row.psbt.getTransaction().getTxId().equals(signedPsbt.getTransaction().getTxId())) {
-                                row.psbt.combine(signedPsbt);
-                                if(row.psbt.isSigned()) {
-                                    row.setStatus(MigrationStatus.SIGNED);
-                                    combined++;
-                                }
-                                break;
-                            }
-                        }
-                    } catch(Exception e) {
-                        log.error("Failed to parse PSBT", e);
-                    }
-                }
-
-                manageTable.refresh();
-                updateManageSummary();
-                if(combined > 0) {
-                    saveMigrationState();
-                    log.info("Imported {} signed PSBT(s)", combined);
-                }
-            }
-        }
-    }
-
-    private List<byte[]> readPsbtFiles(List<File> files) {
-        List<byte[]> psbtDataList = new ArrayList<>();
-        for(File file : files) {
-            try {
-                String content = Files.readString(file.toPath(), StandardCharsets.UTF_8);
-                JsonArray array = JsonParser.parseString(content).getAsJsonArray();
-                for(JsonElement el : array) {
-                    String b64 = el.getAsJsonObject().get("psbt").getAsString();
-                    psbtDataList.add(Base64.getDecoder().decode(b64));
-                }
-            } catch(IOException e) {
-                log.error("Failed to read file " + file.getName(), e);
-            }
-        }
-        return psbtDataList;
-    }
-
-    private void broadcastAllSigned() {
-        List<MigrationRow> signed = migrationRows.stream()
-                .filter(r -> r.getStatus() == MigrationStatus.SIGNED)
-                .toList();
-        if(signed.isEmpty()) {
-            AppServices.showErrorDialog("Nothing to broadcast", "No signed transactions ready to broadcast.");
-            return;
-        }
-
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION,
-                "Broadcast " + signed.size() + " signed transaction(s)?\nThis cannot be undone.", ButtonType.YES, ButtonType.NO);
-        confirm.initOwner(getDialogPane().getScene().getWindow());
-        Optional<ButtonType> result = confirm.showAndWait();
-        if(result.isPresent() && result.get() == ButtonType.YES) {
-            final int[] success = {0};
-            final int[] failed = {0};
-            final int total = signed.size();
-            for(MigrationRow row : signed) {
-                broadcastTransactionSilent(row, () -> {
-                    if(row.getStatus() == MigrationStatus.BROADCAST) {
-                        success[0]++;
-                    } else {
-                        failed[0]++;
-                    }
-                    if(success[0] + failed[0] == total) {
-                        log.info("Broadcast complete: {} of {} succeeded, {} failed", success[0], total, failed[0]);
-                    }
-                });
-            }
-        }
-    }
-
     private void broadcastTransactionSilent(MigrationRow row, Runnable onDone) {
         if(!row.psbt.isSigned()) {
             row.setStatus(MigrationStatus.FAILED);
@@ -1597,41 +1370,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
 
     // === Table cells ===
 
-    private class StatusCell extends TableCell<MigrationRow, MigrationStatus> {
-        @Override
-        protected void updateItem(MigrationStatus item, boolean empty) {
-            super.updateItem(item, empty);
-            setText(null);
-            setGraphic(null);
-            setStyle("");
-            if(empty || item == null) {
-                return;
-            }
-            switch(item) {
-                case UNSIGNED -> {
-                    setText("Unsigned");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: white;");
-                }
-                case SIGNED -> {
-                    setText("Signed");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: white; -fx-font-weight: bold;");
-                }
-                case BROADCAST -> {
-                    setText("Signed");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: white; -fx-font-weight: bold;");
-                }
-                case CONFIRMED -> {
-                    setText("Signed");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: white; -fx-font-weight: bold;");
-                }
-                case FAILED -> {
-                    setText("Failed");
-                    setStyle(ALIGN_CENTER + " -fx-text-fill: white;");
-                }
-            }
-        }
-    }
-
     private static final double ACTION_BTN_WIDTH = 85;
 
     private class ActionCell extends TableCell<MigrationRow, Void> {
@@ -1661,21 +1399,21 @@ public class MigrateUtxosDialog extends Dialog<Void> {
                 }
                 case SIGNED -> {
                     Label waitLabel = new Label("Scheduled");
-                    waitLabel.setStyle("-fx-text-fill: #e8a838; -fx-font-weight: bold;");
+                    waitLabel.getStyleClass().add("status-scheduled");
                     waitLabel.setPrefWidth(ACTION_BTN_WIDTH);
                     waitLabel.setAlignment(Pos.CENTER);
                     buttons.getChildren().add(waitLabel);
                 }
                 case BROADCAST -> {
                     Label unconfLabel = new Label("Unconfirmed");
-                    unconfLabel.setStyle("-fx-text-fill: #e8a838; -fx-font-weight: bold;");
+                    unconfLabel.getStyleClass().add("status-unconfirmed");
                     unconfLabel.setPrefWidth(ACTION_BTN_WIDTH);
                     unconfLabel.setAlignment(Pos.CENTER);
                     buttons.getChildren().add(unconfLabel);
                 }
                 case CONFIRMED -> {
                     Label confirmedLabel = new Label("Confirmed");
-                    confirmedLabel.setStyle("-fx-text-fill: #1e88cf; -fx-font-weight: bold;");
+                    confirmedLabel.getStyleClass().add("status-confirmed");
                     confirmedLabel.setPrefWidth(ACTION_BTN_WIDTH);
                     confirmedLabel.setAlignment(Pos.CENTER);
                     buttons.getChildren().add(confirmedLabel);
@@ -1745,7 +1483,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             super.startEdit();
             if(textField == null) {
                 textField = new TextField();
-                textField.setStyle(ALIGN_RIGHT);
+                textField.getStyleClass().add("fee-text-field");
                 textField.setOnAction(e -> commitEdit(textField.getText()));
                 textField.focusedProperty().addListener((obs, wasFocused, isNow) -> {
                     if(!isNow) {
