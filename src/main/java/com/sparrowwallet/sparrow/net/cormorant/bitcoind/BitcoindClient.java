@@ -66,8 +66,8 @@ public class BitcoindClient {
     private final Map<String, Lock> descriptorLocks = Collections.synchronizedMap(new HashMap<>());
     private final Map<String, ScanDate> importedDescriptors = Collections.synchronizedMap(new HashMap<>());
 
-    private final Map<String, Date> descriptorBirthDates = new HashMap<>();
-    private final Map<String, Integer> descriptorUsedIndexes = new HashMap<>();
+    private final Map<String, Date> descriptorBirthDates = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, Integer> descriptorUsedIndexes = new ConcurrentHashMap<>();
 
     private boolean initialized;
     private boolean stopped;
