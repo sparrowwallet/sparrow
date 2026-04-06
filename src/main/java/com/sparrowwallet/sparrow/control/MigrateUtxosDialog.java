@@ -693,7 +693,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             return;
         }
 
-        applyLabelsToDestWallets();
         manageTable.setItems(FXCollections.observableArrayList(migrationRows));
         updateManageSummary();
         showManagePhase();
@@ -918,7 +917,6 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             checkConfirmations();
             manageTable.refresh();
         });
-
         List<MigrationRow> ready = migrationRows.stream()
                 .filter(r -> r.getStatus() == MigrationStatus.SIGNED && r.targetBlock > 0 && height >= r.targetBlock)
                 .toList();
@@ -945,9 +943,28 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         }
     }
 
+    private void broadcastNextReady() {
+        // Resume flow: one at a time, wait for confirmation before next
+        boolean anyBroadcast = migrationRows.stream().anyMatch(r -> r.getStatus() == MigrationStatus.BROADCAST);
+        if(anyBroadcast) {
+            return;
+        }
+
+        Integer currentHeight = AppServices.getCurrentBlockHeight();
+        if(currentHeight == null) {
+            return;
+        }
+
+        migrationRows.stream()
+                .filter(r -> r.getStatus() == MigrationStatus.SIGNED && r.targetBlock > 0 && currentHeight >= r.targetBlock)
+                .findFirst()
+                .ifPresent(row -> Platform.runLater(() -> autoBroadcast(row)));
+    }
+
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         Platform.runLater(() -> {
+            applyLabelsToDestTxos(event.getWallet());
             checkConfirmations();
             manageTable.refresh();
         });
@@ -987,6 +1004,7 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         if(changed) {
             updateManageSummary();
             saveMigrationState();
+            broadcastNextReady();
             checkMigrationComplete();
         }
     }
@@ -1377,40 +1395,42 @@ public class MigrateUtxosDialog extends Dialog<Void> {
 
     // === Label propagation to destination wallet ===
 
-    private void applyLabelsToDestWallets() {
-        Set<Wallet> modifiedWallets = new HashSet<>();
+    private void applyLabelsToDestTxos(Wallet changedWallet) {
+        boolean changed = false;
         for(MigrationRow mr : migrationRows) {
-            if(mr.destWalletNode == null || mr.label == null || mr.label.isEmpty()) {
+            if(mr.destWallet == null || mr.destWallet != changedWallet) {
                 continue;
             }
-            String baseLabel = stripLabelSuffix(mr.label);
-            if(baseLabel.isEmpty()) {
+            String label = mr.label;
+            if(label == null || label.isEmpty()) {
                 continue;
             }
-            if(mr.destWalletNode.getLabel() == null || mr.destWalletNode.getLabel().isEmpty()) {
-                mr.destWalletNode.setLabel(baseLabel);
-                if(mr.destWallet != null) {
-                    modifiedWallets.add(mr.destWallet);
+            Sha256Hash txId = mr.psbt.getTransaction().getTxId();
+
+            // Label the BlockTransaction
+            BlockTransaction blockTx = mr.destWallet.getTransactions().get(txId);
+            if(blockTx != null && (blockTx.getLabel() == null || blockTx.getLabel().isEmpty())) {
+                blockTx.setLabel(label);
+                changed = true;
+                log.debug("Applied label '{}' to dest tx {}", label, txId);
+            }
+
+            // Label the received UTXO
+            if(mr.destWalletNode != null) {
+                for(BlockTransactionHashIndex txo : mr.destWalletNode.getTransactionOutputs()) {
+                    if(txo.getHash().equals(txId) && (txo.getLabel() == null || txo.getLabel().isEmpty())) {
+                        txo.setLabel(label);
+                        changed = true;
+                        log.debug("Applied label '{}' to dest utxo {}:{}", label, txId, txo.getIndex());
+                    }
                 }
-                log.debug("Applied label '{}' to dest node {}", baseLabel, mr.destWalletNode.getDerivationPath());
             }
         }
-        for(Wallet w : modifiedWallets) {
-            EventManager.get().post(new WalletDataChangedEvent(w));
+        if(changed) {
+            EventManager.get().post(new WalletDataChangedEvent(changedWallet));
         }
     }
 
-    private static String stripLabelSuffix(String label) {
-        if(label == null) {
-            return "";
-        }
-        for(String suffix : List.of(" (received)", " (change)", " (sent)")) {
-            if(label.endsWith(suffix)) {
-                return label.substring(0, label.length() - suffix.length());
-            }
-        }
-        return label;
-    }
 
     // === Persistence ===
 
@@ -1504,8 +1524,15 @@ public class MigrateUtxosDialog extends Dialog<Void> {
             }
 
             if(!migrationRows.isEmpty()) {
-                applyLabelsToDestWallets();
+                // Apply labels to dest wallets for txs that arrived while app was closed
+                Set<Wallet> destWallets = migrationRows.stream()
+                        .map(mr -> mr.destWallet).filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+                for(Wallet dw : destWallets) {
+                    applyLabelsToDestTxos(dw);
+                }
                 checkConfirmations();
+                broadcastNextReady();
                 manageTable.setItems(FXCollections.observableArrayList(migrationRows));
                 updateManageSummary();
                 showManagePhase();
