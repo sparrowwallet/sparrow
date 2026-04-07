@@ -1014,6 +1014,9 @@ public class MigrateUtxosDialog extends Dialog<Void> {
         info.showAndWait();
 
         if(failed == 0) {
+            // Register a persistent label propagator that survives dialog close
+            registerLabelPropagator();
+
             // Switch to destination wallet tab
             Wallet destWallet = migrationRows.stream()
                     .filter(r -> r.destWallet != null)
@@ -1104,6 +1107,80 @@ public class MigrateUtxosDialog extends Dialog<Void> {
     }
 
     // === Label propagation to destination wallet ===
+
+    private void registerLabelPropagator() {
+        // Build a map of txid -> label for all sent txs with labels
+        Map<Sha256Hash, String> txLabels = new LinkedHashMap<>();
+        Map<Sha256Hash, Wallet> txDestWallets = new LinkedHashMap<>();
+        Map<Sha256Hash, WalletNode> txDestNodes = new LinkedHashMap<>();
+
+        for(MigrationRow mr : migrationRows) {
+            if(mr.getStatus() == MigrationStatus.SENT && mr.label != null && !mr.label.isEmpty()) {
+                Sha256Hash txId = mr.psbt.getTransaction().getTxId();
+                txLabels.put(txId, mr.label);
+                txDestWallets.put(txId, mr.destWallet);
+                txDestNodes.put(txId, mr.destWalletNode);
+            }
+        }
+
+        if(txLabels.isEmpty()) {
+            return;
+        }
+
+        // Anonymous listener that applies labels when dest wallet sees the txs
+        Object propagator = new Object() {
+            @Subscribe
+            public void walletHistoryChanged(WalletHistoryChangedEvent event) {
+                Platform.runLater(() -> {
+                    Wallet w = event.getWallet();
+                    boolean applied = false;
+                    Iterator<Map.Entry<Sha256Hash, String>> it = txLabels.entrySet().iterator();
+                    while(it.hasNext()) {
+                        Map.Entry<Sha256Hash, String> entry = it.next();
+                        Sha256Hash txId = entry.getKey();
+                        String label = entry.getValue();
+                        Wallet destWallet = txDestWallets.get(txId);
+                        if(destWallet == null || destWallet != w) {
+                            continue;
+                        }
+
+                        BlockTransaction blockTx = destWallet.getTransactions().get(txId);
+                        if(blockTx != null && (blockTx.getLabel() == null || blockTx.getLabel().isEmpty())) {
+                            blockTx.setLabel(label);
+                            applied = true;
+                        }
+
+                        WalletNode destNode = txDestNodes.get(txId);
+                        if(destNode != null) {
+                            for(BlockTransactionHashIndex txo : destNode.getTransactionOutputs()) {
+                                if(txo.getHash().equals(txId) && (txo.getLabel() == null || txo.getLabel().isEmpty())) {
+                                    txo.setLabel(label);
+                                    applied = true;
+                                }
+                            }
+                        }
+
+                        if(blockTx != null) {
+                            it.remove();
+                        }
+                    }
+
+                    if(applied) {
+                        EventManager.get().post(new WalletDataChangedEvent(w));
+                    }
+
+                    // Unregister when all labels applied
+                    if(txLabels.isEmpty()) {
+                        EventManager.get().unregister(this);
+                        log.info("Label propagation complete, listener unregistered");
+                    }
+                });
+            }
+        };
+
+        EventManager.get().register(propagator);
+        log.info("Registered label propagator for {} transactions", txLabels.size());
+    }
 
     private void applyLabelsToDestTxos(Wallet changedWallet) {
         boolean changed = false;
