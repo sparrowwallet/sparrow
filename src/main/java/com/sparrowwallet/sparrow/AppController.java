@@ -471,7 +471,7 @@ public class AppController implements Initializable {
 
     private void setPlatformApplicationMenu() {
         OsType osType = OsType.getCurrent();
-        if(osType == OsType.MACOS) {
+        if(osType == OsType.MACOS && Interface.get() == Interface.DESKTOP) {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem settings = new MenuItem("Settings...");
             settings.setOnAction(this::openSettings);

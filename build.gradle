@@ -1,6 +1,6 @@
 plugins {
     id 'application'
-    id 'org-openjfx-javafxplugin'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'org.beryx.jlink' version '3.2.1'
     id 'org.gradlex.extra-java-module-info' version '1.13.1'
     id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.21.0'
@@ -32,7 +32,7 @@ tasks.withType(AbstractArchiveTask).configureEach {
 }
 
 javafx {
-    version = headless ? "18" : "25.0.2"
+    version = "26"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 
@@ -162,7 +162,7 @@ application {
         applicationDefaultJvmArgs += ["-Dprism.lcdtext=false", "-Xdock:name=Sparrow"]
     }
     if(headless) {
-        applicationDefaultJvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
+        applicationDefaultJvmArgs += ["-Dglass.platform=Headless"]
     }
 }
 
@@ -256,7 +256,7 @@ jlink {
             jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
         }
         if(headless) {
-            jvmArgs += ["-Dglass.platform=Monocle", "-Dmonocle.platform=Headless", "-Dprism.order=sw"]
+            jvmArgs += ["-Dglass.platform=Headless"]
         }
     }
     addExtraDependencies("javafx")

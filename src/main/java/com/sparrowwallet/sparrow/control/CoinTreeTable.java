@@ -208,7 +208,6 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         return null;
     }
 
-    @SuppressWarnings("deprecation")
     protected void setupColumnWidths() {
         Double[] savedWidths = getSavedColumnWidths();
         for(int i = 0; i < getColumns().size(); i++) {
@@ -216,8 +215,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             column.setPrefWidth(savedWidths != null && getColumns().size() == savedWidths.length ? savedWidths[i] : STANDARD_WIDTH);
         }
 
-        //TODO: Replace with TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN when JavaFX 20+ has headless support
-        setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
+        setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         getColumns().getLast().widthProperty().addListener((_, _, _) -> walletTableChanged());
 

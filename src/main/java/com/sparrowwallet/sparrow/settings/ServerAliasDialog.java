@@ -29,7 +29,6 @@ public class ServerAliasDialog extends Dialog<Server> {
     private final TableView<ServerEntry> serverTable;
     private final Button closeButton;
 
-    @SuppressWarnings("deprecation")
     public ServerAliasDialog(ServerType serverType) {
         this.serverType = serverType;
 
@@ -61,7 +60,7 @@ public class ServerAliasDialog extends Dialog<Server> {
         serverTable.getColumns().add(urlColumn);
         serverTable.getColumns().add(aliasColumn);
         serverTable.setEditable(true);
-        serverTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        serverTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         List<Server> servers = serverType == ServerType.BITCOIN_CORE ? Config.get().getRecentCoreServers() : Config.get().getRecentElectrumServers();
         List<ServerEntry> serverEntries = servers.stream().map(server -> new ServerEntry(serverType, server)).collect(Collectors.toList());
