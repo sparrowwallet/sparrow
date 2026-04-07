@@ -39,12 +39,6 @@
 }
 
 .migrate-utxos .status-scheduled {
-    -fx-text-fill: derive(gold, -10%);
-    -fx-font-weight: bold;
-}
-
-.migrate-utxos .status-unconfirmed {
-    -fx-text-fill: derive(gold, -10%);
     -fx-font-weight: bold;
 }
 
