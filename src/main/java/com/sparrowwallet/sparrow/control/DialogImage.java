@@ -24,6 +24,7 @@ public class DialogImage extends StackPane {
     public ObjectProperty<DialogImage.Type> typeProperty = new SimpleObjectProperty<>();
 
     public DialogImage() {
+        getStyleClass().add("dialog-image");
         setPrefSize(WIDTH, HEIGHT);
         this.typeProperty.addListener((observable, oldValue, type) -> {
             refresh(type);
