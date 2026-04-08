@@ -240,7 +240,7 @@ public class PaymentController extends WalletFormController implements Initializ
                         recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
                     }
 
-                    if(recipientBip47Wallet != null) {
+                    if(recipientBip47Wallet != null && hasNotificationTransaction(paymentCode)) {
                         PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
                         Platform.runLater(() -> setPayNym(payNym));
                     } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
@@ -583,6 +583,21 @@ public class PaymentController extends WalletFormController implements Initializ
     private Wallet getWalletForPayNym(PayNym payNym) throws InvalidPaymentCodeException {
         Wallet masterWallet = sendController.getWalletForm().getMasterWallet();
         return masterWallet.getChildWallet(new PaymentCode(payNym.paymentCode().toString()), payNym.segwit() ? ScriptType.P2WPKH : ScriptType.P2PKH);
+    }
+
+    private boolean hasNotificationTransaction(PaymentCode externalPaymentCode) {
+        Wallet masterWallet = sendController.getWalletForm().getMasterWallet();
+        if(!masterWallet.getNotificationTransaction(externalPaymentCode).isEmpty()) {
+            return true;
+        }
+
+        for(Wallet childWallet : masterWallet.getChildWallets()) {
+            if(!childWallet.isNested() && !childWallet.getNotificationTransaction(externalPaymentCode).isEmpty()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     boolean isSentToSamePayNym(PaymentController paymentController) {
