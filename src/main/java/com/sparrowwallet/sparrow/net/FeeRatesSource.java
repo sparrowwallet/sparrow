@@ -72,6 +72,46 @@ public enum FeeRatesSource {
             return network == Network.MAINNET || network == Network.TESTNET || network == Network.TESTNET4 || network == Network.SIGNET;
         }
     },
+    BITVIEW_SPACE("bitview.space", true) {
+        @Override
+        public Map<Integer, Double> getBlockTargetFeeRates(Map<Integer, Double> defaultblockTargetFeeRates) {
+            String url = getApiUrl() + "v1/fees/precise";
+            return getThreeTierFeeRates(this, defaultblockTargetFeeRates, url);
+        }
+
+        @Override
+        public Double getNextBlockMedianFeeRate() throws Exception {
+            String url = getApiUrl() + "v1/fees/mempool-blocks";
+            return requestNextBlockMedianFeeRate(this, url);
+        }
+
+        @Override
+        public BlockSummary getBlockSummary(Sha256Hash blockId) throws Exception {
+            String url = getApiUrl() + "v1/block/" + Utils.bytesToHex(blockId.getReversedBytes());
+            return requestBlockSummary(this, url);
+        }
+
+        @Override
+        public Map<Integer, BlockSummary> getRecentBlockSummaries() throws Exception {
+            String url = getApiUrl() + "v1/blocks";
+            return requestBlockSummaries(this, url);
+        }
+
+        @Override
+        public List<BlockTransactionHash> getRecentMempoolTransactions() throws Exception {
+            String url = getApiUrl() + "mempool/recent";
+            return requestRecentMempoolTransactions(this, url);
+        }
+
+        private String getApiUrl() {
+            return "https://bitview.space/api/";
+        }
+
+        @Override
+        public boolean supportsNetwork(Network network) {
+            return network == Network.MAINNET;
+        }
+    },
     BLOCK_XYZ("block.xyz", true) {
         /*
             https://engineering.block.xyz/blog/augur-an-open-source-bitcoin-fee-estimation-library
