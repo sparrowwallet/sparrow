@@ -68,7 +68,7 @@ public class Bip39Dialog extends NewWalletDialog {
         buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER,false,false)).addTo(mainPanel);
         setComponent(mainPanel);
 
-        ScriptType.getAddressableScriptTypes(PolicyType.SINGLE).stream().map(DisplayScriptType::new).forEach(scriptType::addItem);
+        ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD).stream().map(DisplayScriptType::new).forEach(scriptType::addItem);
         scriptType.setSelectedItem(new DisplayScriptType(ScriptType.P2WPKH));
 
         seedWords.setTextChangeListener((newText, changedByUserInteraction) -> {
@@ -150,11 +150,11 @@ public class Bip39Dialog extends NewWalletDialog {
     @Override
     protected List<Wallet> getWallets() throws ImportException {
         Wallet wallet = new Wallet(walletName);
-        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(scriptType.getSelectedItem().scriptType);
         Keystore keystore = importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), 1));
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, wallet.getScriptType(), wallet.getKeystores(), 1));
         return List.of(wallet);
     }
 

@@ -1121,7 +1121,7 @@ public class AppController implements Initializable {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
             File walletFile = Storage.getWalletFile(nameAndBirthDate.getName());
             Storage storage = new Storage(walletFile);
-            Wallet wallet = new Wallet(nameAndBirthDate.getName(), PolicyType.SINGLE, ScriptType.P2WPKH, nameAndBirthDate.getBirthDate());
+            Wallet wallet = new Wallet(nameAndBirthDate.getName(), PolicyType.SINGLE_HD, ScriptType.P2WPKH, nameAndBirthDate.getBirthDate());
             addWalletTabOrWindow(storage, wallet, false);
         }
     }
@@ -1271,7 +1271,7 @@ public class AppController implements Initializable {
                 List<ExtendedKey> xpubs = wallet.getKeystores().stream().map(Keystore::getExtendedPublicKey).collect(Collectors.toList());
                 Optional<WalletForm> optNewWalletForm = walletTabData.stream()
                         .map(WalletTabData::getWalletForm)
-                        .filter(wf -> wf.getSettingsWalletForm() != null && wf.getSettingsWalletForm().getWallet().getPolicyType() == PolicyType.MULTI &&
+                        .filter(wf -> wf.getSettingsWalletForm() != null && wf.getSettingsWalletForm().getWallet().getPolicyType() == PolicyType.MULTI_HD &&
                                 wf.getSettingsWalletForm().getWallet().getScriptType() == wallet.getScriptType() && !wf.getSettingsWalletForm().getWallet().isValid() &&
                                 wf.getSettingsWalletForm().getWallet().getKeystores().stream().map(Keystore::getExtendedPublicKey).anyMatch(xpubs::contains)).findFirst();
                 if(optNewWalletForm.isPresent()) {

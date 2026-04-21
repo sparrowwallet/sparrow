@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
@@ -187,6 +188,7 @@ public class Storage {
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
+                    keystore.setSilentPaymentScanAddress(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS ? derivedKeystore.getSilentPaymentScanAddress() : null);
                     copyKeystore.getSeed().clear();
                 } else if(keystore.hasMasterPrivateExtendedKey()) {
                     Keystore copyKeystore = copy.getKeystores().get(i);
@@ -194,6 +196,7 @@ public class Storage {
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
+                    keystore.setSilentPaymentScanAddress(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS ? derivedKeystore.getSilentPaymentScanAddress() : null);
                     copyKeystore.getMasterPrivateKey().clear();
                 }
             }

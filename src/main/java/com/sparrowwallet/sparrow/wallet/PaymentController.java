@@ -61,7 +61,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
@@ -571,7 +570,7 @@ public class PaymentController extends WalletFormController implements Initializ
                     sendNode = recipientBip47Wallet.getFreshNode(KeyPurpose.SEND, sendNode);
                 }
                 ECKey pubKey = sendNode.getPubKey();
-                return recipientBip47Wallet.getScriptType().getAddress(pubKey);
+                return recipientBip47Wallet.getScriptType().getAddress(recipientBip47Wallet.getPolicyType(), pubKey);
             }
         } catch(InvalidPaymentCodeException e) {
             log.error("Error creating payment code from PayNym", e);

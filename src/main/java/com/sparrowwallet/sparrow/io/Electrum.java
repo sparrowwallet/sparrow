@@ -43,7 +43,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         Wallet wallet = importWallet(inputStream, password);
 
-        if(!wallet.getPolicyType().equals(PolicyType.SINGLE) || wallet.getKeystores().size() != 1) {
+        if(!wallet.getPolicyType().equals(PolicyType.SINGLE_HD) || wallet.getKeystores().size() != 1) {
             throw new ImportException("Multisig wallet detected - import it using File > Import Wallet");
         }
 
@@ -203,13 +203,13 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             wallet.setScriptType(scriptType);
 
             if(ew.wallet_type.equals("standard")) {
-                wallet.setPolicyType(PolicyType.SINGLE);
-                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), 1));
+                wallet.setPolicyType(PolicyType.SINGLE_HD);
+                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), 1));
             } else if(ew.wallet_type.contains("of")) {
-                wallet.setPolicyType(PolicyType.MULTI);
+                wallet.setPolicyType(PolicyType.MULTI_HD);
                 String[] mOfn = ew.wallet_type.split("of");
                 int threshold = Integer.parseInt(mOfn[0]);
-                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.MULTI, scriptType, wallet.getKeystores(), threshold));
+                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.MULTI_HD, scriptType, wallet.getKeystores(), threshold));
             } else {
                 throw new ImportException("Unknown Electrum wallet type of " + ew.wallet_type);
             }
@@ -308,9 +308,9 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             ElectrumJsonWallet ew = new ElectrumJsonWallet();
-            if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
+            if(wallet.getPolicyType().equals(PolicyType.SINGLE_HD)) {
                 ew.wallet_type = "standard";
-            } else if(wallet.getPolicyType().equals(PolicyType.MULTI)) {
+            } else if(wallet.getPolicyType().equals(PolicyType.MULTI_HD)) {
                 ew.wallet_type = wallet.getDefaultPolicy().getNumSignaturesRequired() + "of" + wallet.getKeystores().size();
             } else {
                 throw new ExportException("Could not export a wallet with a " + wallet.getPolicyType() + " policy");
@@ -367,9 +367,9 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
                     throw new ExportException("Cannot export a keystore of source " + keystore.getSource());
                 }
 
-                if(wallet.getPolicyType().equals(PolicyType.SINGLE)) {
+                if(wallet.getPolicyType().equals(PolicyType.SINGLE_HD)) {
                     ew.keystores.put("keystore", ek);
-                } else if(wallet.getPolicyType().equals(PolicyType.MULTI)) {
+                } else if(wallet.getPolicyType().equals(PolicyType.MULTI_HD)) {
                     ew.keystores.put("x" + index + "/", ek);
                 }
 

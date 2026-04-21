@@ -109,7 +109,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         Field keyScriptTypeField = new Field();
         keyScriptTypeField.setText("Script Type:");
         keyScriptType = new ComboBox<>();
-        keyScriptType.setItems(FXCollections.observableList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE)));
+        keyScriptType.setItems(FXCollections.observableList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD)));
         keyScriptTypeField.getInputs().add(keyScriptType);
 
         keyScriptType.setConverter(new StringConverter<ScriptType>() {
@@ -287,14 +287,14 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private void setFromAddress() {
         DumpedPrivateKey privateKey = getPrivateKey();
         ScriptType scriptType = keyScriptType.getValue();
-        Address address = scriptType.getAddress(privateKey.getKey());
+        Address address = scriptType.getAddress(PolicyType.SINGLE_HD, privateKey.getKey());
         keyAddress.setText(address.toString());
     }
 
     private void setScriptTypes(boolean isValidKey) {
         boolean compressed = !isValidKey || getPrivateKey().getKey().isCompressed();
-        if(compressed && !keyScriptType.getItems().equals(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE))) {
-            keyScriptType.getItems().addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE).stream().filter(s -> !keyScriptType.getItems().contains(s)).collect(Collectors.toList()));
+        if(compressed && !keyScriptType.getItems().equals(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD))) {
+            keyScriptType.getItems().addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD).stream().filter(s -> !keyScriptType.getItems().contains(s)).collect(Collectors.toList()));
         } else if(!compressed && !keyScriptType.getItems().equals(List.of(ScriptType.P2PKH))) {
             keyScriptType.getSelectionModel().select(0);
             keyScriptType.getItems().removeIf(scriptType -> scriptType != ScriptType.P2PKH);
@@ -346,7 +346,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         try {
             DumpedPrivateKey privateKey = getPrivateKey();
             ScriptType scriptType = keyScriptType.getValue();
-            Address fromAddress = scriptType.getAddress(privateKey.getKey());
+            Address fromAddress = scriptType.getAddress(PolicyType.SINGLE_HD, privateKey.getKey());
             Address destAddress = getToAddress();
 
             Date since = null;
@@ -389,7 +389,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         Transaction noFeeTransaction = new Transaction();
         long total = 0;
         for(TransactionOutput txOutput : txOutputs) {
-            scriptType.addSpendingInput(noFeeTransaction, txOutput, pubKey, TransactionSignature.dummy(scriptType == P2TR ? TransactionSignature.Type.SCHNORR : TransactionSignature.Type.ECDSA));
+            scriptType.addSpendingInput(PolicyType.SINGLE_HD, noFeeTransaction, txOutput, pubKey, TransactionSignature.dummy(scriptType == P2TR ? TransactionSignature.Type.SCHNORR : TransactionSignature.Type.ECDSA));
             total += txOutput.getValue();
         }
 
@@ -448,7 +448,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                 psbtInput.setWitnessScript(txInput.getWitness().getWitnessScript());
             }
 
-            if(!psbtInput.sign(scriptType.getOutputKey(privKey))) {
+            if(!psbtInput.sign(scriptType.getOutputKey(PolicyType.SINGLE_HD, privKey))) {
                 AppServices.showErrorDialog("Failed to sign", "Failed to sign for transaction output " + utxoOutput.getHash() + ":" + utxoOutput.getIndex());
                 return;
             }
@@ -456,7 +456,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             TransactionSignature signature = psbtInput.isTaproot() ? psbtInput.getTapKeyPathSignature() : psbtInput.getPartialSignature(pubKey);
 
             Transaction finalizeTransaction = new Transaction();
-            TransactionInput finalizedTxInput = scriptType.addSpendingInput(finalizeTransaction, utxoOutput, pubKey, signature);
+            TransactionInput finalizedTxInput = scriptType.addSpendingInput(PolicyType.SINGLE_HD, finalizeTransaction, utxoOutput, pubKey, signature);
             psbtInput.setFinalScriptSig(finalizedTxInput.getScriptSig());
             psbtInput.setFinalScriptWitness(finalizedTxInput.getWitness());
         }

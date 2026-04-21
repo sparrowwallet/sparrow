@@ -775,10 +775,10 @@ public class DevicePane extends TitledDescriptionPane {
         if(wallet.getScriptType() == null) {
             ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
             wallet.setName(device.getModel().toDisplayString());
-            wallet.setPolicyType(PolicyType.SINGLE);
+            wallet.setPolicyType(PolicyType.SINGLE_HD);
             wallet.setScriptType(scriptType);
             wallet.getKeystores().add(keystore);
-            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), null));
+            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), null));
 
             EventManager.get().post(new WalletImportEvent(wallet));
         } else {
@@ -926,7 +926,7 @@ public class DevicePane extends TitledDescriptionPane {
 
         List<StandardAccount> discoveryAccounts = new ArrayList<>(Arrays.asList(StandardAccount.values()).subList(0, optRange.get() + 1));
         Map<Hwi.WalletType, String> derivationPaths = new LinkedHashMap<>();
-        List<ScriptType> scriptTypes = new ArrayList<>(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE));
+        List<ScriptType> scriptTypes = new ArrayList<>(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD));
         if(device.getModel() == WalletModel.BITBOX_02) {
             scriptTypes.remove(ScriptType.P2PKH);
         }
@@ -943,7 +943,7 @@ public class DevicePane extends TitledDescriptionPane {
             for(Map.Entry<Hwi.WalletType, String> entry : accountXpubs.entrySet()) {
                 try {
                     Wallet wallet = new Wallet(device.getModel().toDisplayString());
-                    wallet.setPolicyType(PolicyType.SINGLE);
+                    wallet.setPolicyType(PolicyType.SINGLE_HD);
                     wallet.setScriptType(entry.getKey().scriptType());
                     Keystore keystore = new Keystore();
                     keystore.setLabel(device.getModel().toDisplayString());
@@ -952,7 +952,7 @@ public class DevicePane extends TitledDescriptionPane {
                     keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPaths.get(entry.getKey())));
                     keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(entry.getValue()));
                     wallet.getKeystores().add(keystore);
-                    wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, entry.getKey().scriptType(), wallet.getKeystores(), 1));
+                    wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, entry.getKey().scriptType(), wallet.getKeystores(), 1));
                     if(entry.getKey().standardAccount().equals(StandardAccount.ACCOUNT_0)) {
                         wallets.add(wallet);
                     } else {

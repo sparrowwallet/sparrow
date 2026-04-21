@@ -19,7 +19,7 @@ public class CaravanMultisigTest extends IoTest {
         CaravanMultisig ccMultisig = new CaravanMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("caravan-multisig-export-1.json"), null);
         Assertions.assertEquals("Test Wallet", wallet.getName());
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wsh(sortedmulti(2,mercury,venus,earth))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));

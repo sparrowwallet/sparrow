@@ -30,6 +30,10 @@ public class ElectrumPersonalServer implements WalletExport {
 
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS) {
+            throw new ExportException(getName() + " does not support silent payments wallets.");
+        }
+
         if(wallet.getScriptType() == ScriptType.P2TR) {
             throw new ExportException(getName() + " does not support Taproot wallets.");
         }

@@ -108,11 +108,11 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         discoverButton.setGraphic(progressIndicator);
         List<Wallet> wallets = new ArrayList<>();
 
-        List<List<ChildNumber>> derivations = ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE).stream().map(ScriptType::getDefaultDerivation).collect(Collectors.toList());
+        List<List<ChildNumber>> derivations = ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE_HD).stream().map(ScriptType::getDefaultDerivation).collect(Collectors.toList());
         derivations.add(List.of(new ChildNumber(0, true)));
         derivations.add(ScriptType.P2PKH.getDefaultDerivation(1)); //Bisq segwit misderivation
 
-        for(ScriptType scriptType : ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE)) {
+        for(ScriptType scriptType : ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE_HD)) {
             for(List<ChildNumber> derivation : derivations) {
                 try {
                     Wallet wallet = getWallet(scriptType, derivation);
@@ -165,11 +165,11 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
 
     private Wallet getWallet(ScriptType scriptType, List<ChildNumber> derivation) throws ImportException {
         Wallet wallet = new Wallet("");
-        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(scriptType);
         Keystore keystore = importer.getKeystore(derivation, wordEntriesProperty.get(), passphraseProperty.get());
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), 1));
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), 1));
         return wallet;
     }
 
@@ -178,7 +178,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
 
         HBox fieldBox = new HBox(5);
         fieldBox.setAlignment(Pos.CENTER_RIGHT);
-        ComboBox<ScriptType> scriptTypeComboBox = new ComboBox<>(FXCollections.observableArrayList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE)));
+        ComboBox<ScriptType> scriptTypeComboBox = new ComboBox<>(FXCollections.observableArrayList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD)));
         if(scriptTypeComboBox.getItems().contains(ScriptType.P2WPKH)) {
             scriptTypeComboBox.setValue(ScriptType.P2WPKH);
         }

@@ -1077,7 +1077,7 @@ public class AppServices {
         try {
             Auth47 auth47 = new Auth47(uri);
             List<ScriptType> scriptTypes = PaymentCode.SEGWIT_SCRIPT_TYPES;
-            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE), scriptTypes, false, true, "login to " + auth47.getCallback().getHost(), true);
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE_HD), scriptTypes, false, true, "login to " + auth47.getCallback().getHost(), true);
 
             if(wallet != null) {
                 try {
@@ -1097,8 +1097,8 @@ public class AppServices {
     private static void openLnurlAuthUri(URI uri) {
         try {
             LnurlAuth lnurlAuth = new LnurlAuth(uri);
-            List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE);
-            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE), scriptTypes, true, true, lnurlAuth.getLoginMessage(), true);
+            List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD);
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE_HD), scriptTypes, true, true, lnurlAuth.getLoginMessage(), true);
 
             if(wallet != null) {
                 if(wallet.isEncrypted()) {

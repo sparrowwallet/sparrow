@@ -45,7 +45,7 @@ public class StorageTest extends IoTest {
         Assertions.assertTrue(wallet.isValid());
 
         Assertions.assertEquals("testd2", wallet.getName());
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("pkh(60bcd3a7)", wallet.getDefaultPolicy().getMiniscript().getScript());

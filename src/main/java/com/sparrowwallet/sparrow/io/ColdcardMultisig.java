@@ -119,7 +119,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         Wallet wallet = new Wallet();
-        wallet.setPolicyType(PolicyType.MULTI);
+        wallet.setPolicyType(PolicyType.MULTI_HD);
 
         int threshold = 2;
         ScriptType scriptType = ScriptType.P2SH;
@@ -167,7 +167,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             }
 
 
-            Policy policy = Policy.getPolicy(PolicyType.MULTI, scriptType, wallet.getKeystores(), threshold);
+            Policy policy = Policy.getPolicy(PolicyType.MULTI_HD, scriptType, wallet.getKeystores(), threshold);
             wallet.setDefaultPolicy(policy);
             wallet.setScriptType(scriptType);
 
@@ -194,7 +194,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             throw new ExportException("Cannot export an incomplete wallet");
         }
 
-        if(!wallet.getPolicyType().equals(PolicyType.MULTI)) {
+        if(!wallet.getPolicyType().equals(PolicyType.MULTI_HD)) {
             throw new ExportException(getName() + " import requires a multisig wallet");
         }
 

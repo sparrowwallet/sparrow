@@ -22,7 +22,7 @@ public class ElectrumTest extends IoTest {
         Electrum electrum = new Electrum();
         Wallet wallet = electrum.importWallet(getInputStream("electrum-singlesig-wallet.json"), null);
 
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("sh(wpkh(trezortest))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -42,7 +42,7 @@ public class ElectrumTest extends IoTest {
 
         wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assertions.assertTrue(wallet.isValid());
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("sh(wpkh(trezortest))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -57,7 +57,7 @@ public class ElectrumTest extends IoTest {
         Electrum electrum = new Electrum();
         Wallet wallet = electrum.importWallet(getInputStream("electrum-multisig-wallet.json"), null);
 
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd,coldcard747b698,coldcard7bb026b,coldcard0f05694)))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -80,7 +80,7 @@ public class ElectrumTest extends IoTest {
 
         wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assertions.assertTrue(wallet.isValid());
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("sh(wsh(sortedmulti(2,coldcard6ba6cfd,coldcard747b698,coldcard7bb026b,coldcard0f05694)))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -98,7 +98,7 @@ public class ElectrumTest extends IoTest {
         Wallet wallet = electrum.importWallet(new ByteArrayInputStream(walletBytes), "pass");
 
         Assertions.assertTrue(wallet.isValid());
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wpkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -118,7 +118,7 @@ public class ElectrumTest extends IoTest {
 
         wallet = electrum.importWallet(new ByteArrayInputStream(baos.toByteArray()), null);
         Assertions.assertTrue(wallet.isValid());
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wpkh(electrum)", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));

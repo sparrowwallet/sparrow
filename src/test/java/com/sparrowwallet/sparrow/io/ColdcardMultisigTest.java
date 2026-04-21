@@ -62,7 +62,7 @@ public class ColdcardMultisigTest extends IoTest {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("cc-multisig-export-1.txt"), null);
         Assertions.assertEquals("CC-2-of-4", wallet.getName());
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -75,7 +75,7 @@ public class ColdcardMultisigTest extends IoTest {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("cc-multisig-export-2.txt"), null);
         Assertions.assertEquals("CC-2-of-4", wallet.getName());
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2SH_P2WSH, wallet.getScriptType());
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("sh(wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4)))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -87,7 +87,7 @@ public class ColdcardMultisigTest extends IoTest {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("cc-multisig-export-multideriv.txt"), null);
         Assertions.assertEquals("el-CC-3-of-3-sb-2", wallet.getName());
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assertions.assertEquals(3, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wsh(sortedmulti(3,coldcard1,coldcard2,coldcard3))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));

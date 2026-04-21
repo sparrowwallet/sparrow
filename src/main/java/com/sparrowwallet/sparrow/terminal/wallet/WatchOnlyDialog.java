@@ -113,12 +113,12 @@ public class WatchOnlyDialog extends NewWalletDialog {
         Set<ScriptType> scriptTypes = new LinkedHashSet<>();
         scriptTypes.add(ScriptType.P2WPKH);
         scriptTypes.add(header.getDefaultScriptType());
-        scriptTypes.addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE));
+        scriptTypes.addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD));
 
         List<Wallet> wallets = new ArrayList<>();
         for(ScriptType scriptType : scriptTypes) {
             Wallet wallet = new Wallet(walletName);
-            wallet.setPolicyType(PolicyType.SINGLE);
+            wallet.setPolicyType(PolicyType.SINGLE_HD);
             wallet.setScriptType(scriptType);
 
             Keystore keystore = new Keystore();

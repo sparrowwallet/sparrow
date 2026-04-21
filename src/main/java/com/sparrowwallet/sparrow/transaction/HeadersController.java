@@ -849,7 +849,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         if(headersForm.getWalletTransaction() != null && headersForm.getWalletTransaction().getWallet() != null
-                && headersForm.getWalletTransaction().getWallet().getPolicyType() == PolicyType.MULTI
+                && headersForm.getWalletTransaction().getWallet().getPolicyType() == PolicyType.MULTI_HD
                 && headersForm.getWalletTransaction().getWallet().getDefaultPolicy().getNumSignaturesRequired() < headersForm.getWalletTransaction().getWallet().getKeystores().size()) {
             signedByField.setVisible(true);
             Wallet wallet = headersForm.getWalletTransaction().getWallet();

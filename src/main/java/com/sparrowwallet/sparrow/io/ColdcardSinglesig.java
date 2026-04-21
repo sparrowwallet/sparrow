@@ -104,10 +104,10 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
         Keystore keystore = getKeystore(ScriptType.P2WPKH, inputStream, "");
 
         Wallet wallet = new Wallet();
-        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(ScriptType.P2WPKH);
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, ScriptType.P2WPKH, wallet.getKeystores(), null));
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, ScriptType.P2WPKH, wallet.getKeystores(), null));
 
         try {
             wallet.checkWallet();

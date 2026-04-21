@@ -49,6 +49,8 @@ public class WalletExportDialog extends Dialog<Wallet> {
         } else if(wallet.getPolicyType() == PolicyType.MULTI) {
             exporters = List.of(new Bip129(), new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new ElectrumPersonalServer(), new KeystoneMultisig(),
                     new Descriptor(), new JadeMultisig(), new PassportMultisig(), new SpecterDesktop(), new BlueWalletMultisig(), new SpecterDIY(), new Sparrow(), new WalletLabels(allWalletForms), new WalletTransactions(selectedWalletForm));
+        } else if(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS) {
+            exporters = List.of(new Sparrow(), new WalletLabels(allWalletForms), new WalletTransactions(selectedWalletForm));
         } else {
             throw new UnsupportedOperationException("Cannot export wallet with policy type " + wallet.getPolicyType());
         }

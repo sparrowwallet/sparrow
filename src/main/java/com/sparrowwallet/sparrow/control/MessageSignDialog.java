@@ -25,8 +25,6 @@ import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -297,8 +295,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private void checkWalletSigning(Wallet wallet) {
-        if(wallet.getKeystores().size() != 1) {
-            throw new IllegalArgumentException("Cannot sign messages using a wallet with multiple keystores - a single key is required");
+        if(wallet.getKeystores().size() != 1 || wallet.getPolicyType() != PolicyType.SINGLE_HD) {
+            throw new IllegalArgumentException("Cannot sign messages using a non-HD wallet or a wallet with multiple keystores");
         }
     }
 
@@ -323,7 +321,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private boolean isValidAddress() {
         try {
             Address address = getAddress();
-            return address.getScriptType().isAllowed(PolicyType.SINGLE) || address.getScriptType() == ScriptType.P2SH;
+            return address.getScriptType().isAllowed(PolicyType.SINGLE_HD) || address.getScriptType() == ScriptType.P2SH;
         } catch (InvalidAddressException e) {
             return false;
         }
@@ -466,11 +464,11 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         if(scriptType == ScriptType.P2SH) {
             scriptType = ScriptType.P2SH_P2WPKH;
         }
-        if(!ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE).contains(scriptType)) {
+        if(!ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE_HD).contains(scriptType)) {
             throw new IllegalArgumentException("Only single signature P2PKH, P2SH-P2WPKH or P2WPKH addresses can verify messages.");
         }
 
-        Address signedMessageAddress = scriptType.getAddress(signedMessageKey);
+        Address signedMessageAddress = scriptType.getAddress(PolicyType.SINGLE_HD, signedMessageKey);
         return providedAddress.equals(signedMessageAddress);
     }
 
@@ -527,7 +525,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             psbtInput.setTapInternalKey(pubKey);
             psbtInput.getTapDerivedPublicKeys().put(ECKey.fromPublicOnly(pubKey.getPubKeyXCoord()), Map.of(fullDerivation, Collections.emptyList()));
         } else {
-            psbtInput.getDerivedPublicKeys().put(scriptType.getOutputKey(pubKey), fullDerivation);
+            psbtInput.getDerivedPublicKeys().put(scriptType.getOutputKey(signingWallet.getPolicyType(), pubKey), fullDerivation);
         }
     }
 

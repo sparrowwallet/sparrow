@@ -50,12 +50,12 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         this.fileName = fileName;
         this.password = password;
 
-        List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE);
+        List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD);
         if(wallets != null && !wallets.isEmpty()) {
             if(wallets.size() == 1 && scriptTypes.contains(wallets.get(0).getScriptType())) {
                 Wallet wallet = wallets.get(0);
-                wallet.setPolicyType(PolicyType.SINGLE);
-                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), null));
+                wallet.setPolicyType(PolicyType.SINGLE_HD);
+                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, wallet.getScriptType(), wallet.getKeystores(), null));
                 wallet.setName(importer.getName());
                 EventManager.get().post(new WalletImportEvent(wallets.get(0)));
             } else {
@@ -81,8 +81,8 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         if(wallets != null && !wallets.isEmpty()) {
             Wallet wallet = wallets.stream().filter(wallet1 -> wallet1.getScriptType() == scriptType).findFirst().orElseThrow(ImportException::new);
             wallet.setName(importer.getName());
-            wallet.setPolicyType(PolicyType.SINGLE);
-            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), null));
+            wallet.setPolicyType(PolicyType.SINGLE_HD);
+            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, wallet.getScriptType(), wallet.getKeystores(), null));
             EventManager.get().post(new WalletImportEvent(wallet));
         } else {
             ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes);
@@ -90,10 +90,10 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
 
             Wallet wallet = new Wallet();
             wallet.setName(Files.getNameWithoutExtension(fileName));
-            wallet.setPolicyType(PolicyType.SINGLE);
+            wallet.setPolicyType(PolicyType.SINGLE_HD);
             wallet.setScriptType(scriptType);
             wallet.getKeystores().add(keystore);
-            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), null));
+            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), null));
 
             EventManager.get().post(new WalletImportEvent(wallet));
         }
