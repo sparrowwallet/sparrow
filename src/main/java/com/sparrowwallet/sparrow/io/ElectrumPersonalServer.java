@@ -30,7 +30,7 @@ public class ElectrumPersonalServer implements WalletExport {
 
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
-        if(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS) {
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
             throw new ExportException(getName() + " does not support silent payments wallets.");
         }
 
@@ -65,7 +65,7 @@ public class ElectrumPersonalServer implements WalletExport {
         writer.write(wallet.getFullName().replace(' ', '_') + " = ");
 
         ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromScriptType(wallet.getScriptType(), false);
-        if(wallet.getPolicyType() == PolicyType.MULTI) {
+        if(wallet.getPolicyType() == PolicyType.MULTI_HD) {
             writer.write(wallet.getDefaultPolicy().getNumSignaturesRequired() + " ");
         }
 

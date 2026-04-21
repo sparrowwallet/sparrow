@@ -19,6 +19,7 @@ public class WalletNodeMapper implements RowMapper<WalletNode> {
             ScriptType scriptType = ScriptType.values()[rs.getInt(6)];
             walletNode.setAddress(scriptType.getAddress(addressData));
         }
+        walletNode.setSilentPaymentTweak(rs.getBytes("walletNode.silentPaymentTweak"));
         return walletNode;
     }
 }

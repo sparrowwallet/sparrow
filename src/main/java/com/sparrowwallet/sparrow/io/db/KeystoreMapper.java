@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.EncryptedData;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.statement.StatementContext;
@@ -25,6 +26,7 @@ public class KeystoreMapper implements RowMapper<Keystore> {
         keystore.setKeyDerivation(new KeyDerivation(rs.getString("keystore.masterFingerprint"), rs.getString("keystore.derivationPath")));
         keystore.setExtendedPublicKey(rs.getString("keystore.extendedPublicKey") == null ? null : ExtendedKey.fromDescriptor(rs.getString("keystore.extendedPublicKey")));
         keystore.setExternalPaymentCode(rs.getString("keystore.externalPaymentCode") == null ? null : PaymentCode.fromString(rs.getString("keystore.externalPaymentCode")));
+        keystore.setSilentPaymentScanAddress(rs.getBytes("keystore.silentPaymentScanAddress") == null ? null : SilentPaymentScanAddress.fromBytes(rs.getBytes("keystore.silentPaymentScanAddress")));
         keystore.setDeviceRegistration(rs.getBytes("keystore.deviceRegistration"));
 
         if(rs.getBytes("masterPrivateExtendedKey.privateKey") != null) {

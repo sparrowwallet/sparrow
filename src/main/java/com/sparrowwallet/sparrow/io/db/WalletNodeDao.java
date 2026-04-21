@@ -16,7 +16,7 @@ import java.util.Date;
 import java.util.List;
 
 public interface WalletNodeDao {
-    @SqlQuery("select walletNode.id, walletNode.derivationPath, walletNode.label, walletNode.parent, walletNode.addressData, ?, " +
+    @SqlQuery("select walletNode.id, walletNode.derivationPath, walletNode.label, walletNode.parent, walletNode.addressData, walletNode.silentPaymentTweak, ?, " +
             "blockTransactionHashIndex.id, blockTransactionHashIndex.hash, blockTransactionHashIndex.height, blockTransactionHashIndex.date, blockTransactionHashIndex.fee, blockTransactionHashIndex.label, " +
             "blockTransactionHashIndex.index, blockTransactionHashIndex.outputValue, blockTransactionHashIndex.status, blockTransactionHashIndex.spentBy, blockTransactionHashIndex.node " +
             "from walletNode left join blockTransactionHashIndex on walletNode.id = blockTransactionHashIndex.node where walletNode.wallet = ? order by walletNode.parent asc nulls first, blockTransactionHashIndex.spentBy asc nulls first")
@@ -25,9 +25,9 @@ public interface WalletNodeDao {
     @UseRowReducer(WalletNodeReducer.class)
     List<WalletNode> getForWalletId(int scriptType, Long id);
 
-    @SqlUpdate("insert into walletNode (derivationPath, label, wallet, parent, addressData) values (?, ?, ?, ?, ?)")
+    @SqlUpdate("insert into walletNode (derivationPath, label, wallet, parent, addressData, silentPaymentTweak) values (?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insertWalletNode(String derivationPath, String label, long wallet, Long parent, byte[] addressData);
+    long insertWalletNode(String derivationPath, String label, long wallet, Long parent, byte[] addressData, byte[] silentPaymentTweak);
 
     @SqlUpdate("insert into blockTransactionHashIndex (hash, height, date, fee, label, index, outputValue, status, spentBy, node) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
@@ -62,12 +62,12 @@ public interface WalletNodeDao {
 
     default void addWalletNodes(Wallet wallet) {
         for(WalletNode purposeNode : wallet.getPurposeNodes()) {
-            long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null, null);
+            long purposeNodeId = insertWalletNode(purposeNode.getDerivationPath(), truncate(purposeNode.getLabel()), wallet.getId(), null, null, null);
             purposeNode.setId(purposeNodeId);
             addTransactionOutputs(purposeNode);
             List<WalletNode> childNodes = new ArrayList<>(purposeNode.getChildren());
             for(WalletNode addressNode : childNodes) {
-                long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId, addressNode.getAddressData());
+                long addressNodeId = insertWalletNode(addressNode.getDerivationPath(), truncate(addressNode.getLabel()), wallet.getId(), purposeNodeId, addressNode.getAddressData(), addressNode.getSilentPaymentTweak());
                 addressNode.setId(addressNodeId);
                 addTransactionOutputs(addressNode);
             }

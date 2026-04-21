@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
@@ -337,6 +338,8 @@ public class JsonPersistence implements Persistence {
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
         gsonBuilder.registerTypeAdapter(Address.class, new AddressSerializer());
         gsonBuilder.registerTypeAdapter(Address.class, new AddressDeserializer());
+        gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeSerializer());
+        gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeDeserializer());
         if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
             gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeSerializer());
@@ -450,6 +453,30 @@ public class JsonPersistence implements Persistence {
             } catch(InvalidAddressException e) {
                 throw new IllegalStateException(e);
             }
+        }
+    }
+
+    private static class PolicyTypeSerializer implements JsonSerializer<PolicyType> {
+        @Override
+        public JsonElement serialize(PolicyType src, Type typeOfSrc, JsonSerializationContext context) {
+            return switch(src) {
+                case SINGLE_HD -> new JsonPrimitive("SINGLE");
+                case MULTI_HD -> new JsonPrimitive("MULTI");
+                default -> new JsonPrimitive(src.name());
+            };
+        }
+    }
+
+    private static class PolicyTypeDeserializer implements JsonDeserializer<PolicyType> {
+        @Override
+        public PolicyType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            String value = json.getAsJsonPrimitive().getAsString();
+
+            return switch(value) {
+                case "SINGLE" -> PolicyType.SINGLE_HD;
+                case "MULTI" -> PolicyType.MULTI_HD;
+                default -> PolicyType.valueOf(value);
+            };
         }
     }
 

@@ -188,7 +188,7 @@ public class Storage {
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
-                    keystore.setSilentPaymentScanAddress(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS ? derivedKeystore.getSilentPaymentScanAddress() : null);
+                    keystore.setSilentPaymentScanAddress(wallet.getPolicyType() == PolicyType.SINGLE_SP ? derivedKeystore.getSilentPaymentScanAddress() : null);
                     copyKeystore.getSeed().clear();
                 } else if(keystore.hasMasterPrivateExtendedKey()) {
                     Keystore copyKeystore = copy.getKeystores().get(i);
@@ -196,7 +196,7 @@ public class Storage {
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
-                    keystore.setSilentPaymentScanAddress(wallet.getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS ? derivedKeystore.getSilentPaymentScanAddress() : null);
+                    keystore.setSilentPaymentScanAddress(wallet.getPolicyType() == PolicyType.SINGLE_SP ? derivedKeystore.getSilentPaymentScanAddress() : null);
                     copyKeystore.getMasterPrivateKey().clear();
                 }
             }
