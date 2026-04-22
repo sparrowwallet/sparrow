@@ -1212,6 +1212,7 @@ public class AppServices {
 
     public static boolean isWhirlpoolCompatible(Wallet wallet) {
         return WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getPolicyType() == PolicyType.SINGLE_HD
                 && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
                 && wallet.getKeystores().size() == 1
                 && wallet.getKeystores().get(0).hasSeed()
@@ -1222,6 +1223,7 @@ public class AppServices {
 
     public static boolean isWhirlpoolPostmixCompatible(Wallet wallet) {
         return WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getPolicyType() == PolicyType.SINGLE_HD
                 && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
                 && wallet.getKeystores().size() == 1
                 && wallet.getKeystores().getFirst().getWalletModel() != WalletModel.BITBOX_02; //BitBox02 does not support high account numbers

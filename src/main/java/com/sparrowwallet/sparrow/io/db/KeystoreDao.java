@@ -71,7 +71,7 @@ public interface KeystoreDao {
             long id = insert(truncate(keystore.getLabel()), keystore.getSource().ordinal(), keystore.getWalletModel().ordinal(),
                     keystore.hasMasterPrivateKey() || wallet.isBip47() ? null : keystore.getKeyDerivation().getMasterFingerprint(),
                     keystore.getKeyDerivation().getDerivationPath(),
-                    keystore.hasMasterPrivateKey() || wallet.isBip47() ? null : keystore.getExtendedPublicKey().toString(),
+                    keystore.hasMasterPrivateKey() || wallet.isBip47() || keystore.getExtendedPublicKey() == null ? null : keystore.getExtendedPublicKey().toString(),
                     keystore.getExternalPaymentCode() == null ? null : keystore.getExternalPaymentCode().toString(),
                     keystore.getSilentPaymentScanAddress() == null ? null : keystore.getSilentPaymentScanAddress().toBytes(),
                     keystore.getDeviceRegistration(),

@@ -11,6 +11,7 @@ import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.dns.DnsPaymentCache;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -314,14 +315,18 @@ public class PaymentController extends WalletFormController implements Initializ
                     label.requestFocus();
                 }
             } else if(newValue != null) {
-                List<Address> existingAddresses = getOtherAddresses();
-                WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
-                Address freshAddress = freshNode.getAddress();
-                while(existingAddresses.contains(freshAddress) || (freshNode.getLabel() != null && !freshNode.getLabel().isEmpty())) {
-                    freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE, freshNode);
-                    freshAddress = freshNode.getAddress();
+                if(newValue.getPolicyType() == PolicyType.SINGLE_SP) {
+                    address.setText(newValue.getKeystores().getFirst().getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+                } else {
+                    List<Address> existingAddresses = getOtherAddresses();
+                    WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
+                    Address freshAddress = freshNode.getAddress();
+                    while(existingAddresses.contains(freshAddress) || (freshNode.getLabel() != null && !freshNode.getLabel().isEmpty())) {
+                        freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE, freshNode);
+                        freshAddress = freshNode.getAddress();
+                    }
+                    address.setText(freshAddress.toString());
                 }
-                address.setText(freshAddress.toString());
                 label.requestFocus();
             }
         });

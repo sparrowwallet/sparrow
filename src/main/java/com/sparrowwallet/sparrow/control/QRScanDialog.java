@@ -51,6 +51,7 @@ import org.openpnp.capture.CaptureDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
@@ -582,6 +583,14 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
         }
 
+        private ECKey getKey(CryptoHDKey cryptoHDKey) {
+            if(cryptoHDKey.isPrivateKey()) {
+                return ECKey.fromPrivate(new BigInteger(1, cryptoHDKey.getKey()));
+            } else {
+                return ECKey.fromPublicOnly(cryptoHDKey.getKey());
+            }
+        }
+
         private OutputDescriptor getOutputDescriptor(CryptoOutput cryptoOutput) {
             ScriptType scriptType = getScriptType(cryptoOutput.getScriptExpressions());
 
@@ -679,11 +688,16 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             for(int i = 0; i < keys.size(); i++) {
                 RegistryItem key = keys.get(i);
                 if(key instanceof URHDKey urhdKey) {
-                    ExtendedKey extendedKey = getExtendedKey(urhdKey);
                     KeyDerivation keyDerivation = getKeyDerivation(urhdKey.getOrigin());
-                    source = source.replaceAll("@" + i, OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true));
-                    if(urhdKey.getName() != null) {
-                        mapExtendedPublicKeyLabels.put(extendedKey, urhdKey.getName());
+                    if(urhdKey.getChainCode() == null) {
+                        ECKey ecKey = getKey(urhdKey);
+                        source = source.replaceAll("@" + i, OutputDescriptor.writeKey(ecKey, keyDerivation, true));
+                    } else {
+                        ExtendedKey extendedKey = getExtendedKey(urhdKey);
+                        source = source.replaceAll("@" + i, OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true));
+                        if(urhdKey.getName() != null) {
+                            mapExtendedPublicKeyLabels.put(extendedKey, urhdKey.getName());
+                        }
                     }
                 } else {
                     throw new IllegalArgumentException("Only extended HD keys are supported in output descriptors");

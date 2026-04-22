@@ -3,10 +3,10 @@ package com.sparrowwallet.sparrow.io;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
-import com.sparrowwallet.sparrow.wallet.KeystoreController;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -29,26 +29,32 @@ public class Descriptor implements WalletImport, WalletExport {
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
         try {
             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
-            bufferedWriter.write("# Receive and change descriptor (BIP389):");
-            bufferedWriter.newLine();
+            if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+                OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
+                bufferedWriter.write(outputDescriptor.toString(true));
+                bufferedWriter.newLine();
+            } else {
+                bufferedWriter.write("# Receive and change descriptor:");
+                bufferedWriter.newLine();
 
-            OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null);
-            bufferedWriter.write(outputDescriptor.toString(true));
-            bufferedWriter.newLine();
-            bufferedWriter.newLine();
-            bufferedWriter.newLine();
+                OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.DEFAULT_PURPOSES, null);
+                bufferedWriter.write(outputDescriptor.toString(true));
+                bufferedWriter.newLine();
+                bufferedWriter.newLine();
+                bufferedWriter.newLine();
 
-            bufferedWriter.write("# Receive descriptor (Bitcoin Core):");
-            bufferedWriter.newLine();
-            OutputDescriptor receiveDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE, null);
-            bufferedWriter.write(receiveDescriptor.toString(true));
-            bufferedWriter.newLine();
-            bufferedWriter.newLine();
-            bufferedWriter.write("# Change descriptor (Bitcoin Core):");
-            bufferedWriter.newLine();
-            OutputDescriptor changeDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE, null);
-            bufferedWriter.write(changeDescriptor.toString(true));
-            bufferedWriter.newLine();
+                bufferedWriter.write("# Receive descriptor:");
+                bufferedWriter.newLine();
+                OutputDescriptor receiveDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.RECEIVE, null);
+                bufferedWriter.write(receiveDescriptor.toString(true));
+                bufferedWriter.newLine();
+                bufferedWriter.newLine();
+                bufferedWriter.write("# Change descriptor:");
+                bufferedWriter.newLine();
+                OutputDescriptor changeDescriptor = OutputDescriptor.getOutputDescriptor(wallet, KeyPurpose.CHANGE, null);
+                bufferedWriter.write(changeDescriptor.toString(true));
+                bufferedWriter.newLine();
+            }
 
             bufferedWriter.flush();
         } catch(Exception e) {

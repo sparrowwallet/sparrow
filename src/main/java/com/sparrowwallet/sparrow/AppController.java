@@ -1473,7 +1473,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             Wallet wallet = selectedWalletForm.getWallet();
-            if(wallet.getKeystores().size() == 1) {
+            if(wallet.getPolicyType() == PolicyType.SINGLE_HD) {
                 //Can sign and verify
                 messageSignDialog = new MessageSignDialog(wallet);
             }

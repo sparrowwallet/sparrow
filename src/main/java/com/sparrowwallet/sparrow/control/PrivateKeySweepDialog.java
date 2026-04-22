@@ -14,6 +14,8 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.psbt.PSBTProofException;
+import com.sparrowwallet.drongo.silentpayments.*;
+import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
@@ -66,6 +68,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final ComboBox<Wallet> toWallet;
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
+    private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
         final DialogPane dialogPane = getDialogPane();
@@ -204,18 +207,31 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         });
 
         toAddress.textProperty().addListener((observable, oldValue, newValue) -> {
+            try {
+                silentPaymentAddress = SilentPaymentAddress.from(newValue);
+            } catch(Exception e) {
+                silentPaymentAddress = null;
+            }
             createButton.setDisable(!isValidKey() || !isValidToAddress());
         });
 
         toWallet.valueProperty().addListener((observable, oldValue, selectedWallet) -> {
             if(selectedWallet != null) {
-                toAddress.setText(selectedWallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+                if(selectedWallet.getPolicyType() == PolicyType.SINGLE_SP) {
+                    toAddress.setText(selectedWallet.getKeystores().getFirst().getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+                } else {
+                    toAddress.setText(selectedWallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+                }
             }
         });
 
         keyScriptType.setValue(ScriptType.P2PKH);
         if(wallet != null) {
-            toAddress.setText(wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+            if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+                toAddress.setText(wallet.getKeystores().getFirst().getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+            } else {
+                toAddress.setText(wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+            }
         }
 
         AppServices.onEscapePressed(dialogPane.getScene(), () -> setResult(null));
@@ -272,10 +288,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     }
 
     private boolean isValidToAddress() {
-        try {
-            Address address = getToAddress();
+        if(silentPaymentAddress != null) {
             return true;
-        } catch (InvalidAddressException e) {
+        }
+        try {
+            getToAddress();
+            return true;
+        } catch(InvalidAddressException e) {
             return false;
         }
     }
@@ -347,7 +366,8 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             DumpedPrivateKey privateKey = getPrivateKey();
             ScriptType scriptType = keyScriptType.getValue();
             Address fromAddress = scriptType.getAddress(PolicyType.SINGLE_HD, privateKey.getKey());
-            Address destAddress = getToAddress();
+            Payment payment = silentPaymentAddress != null ? new SilentPayment(silentPaymentAddress, null, 0, true)
+                    : new Payment(getToAddress(), null, 0, true);
 
             Date since = null;
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
@@ -363,7 +383,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
             ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress, since);
             addressUtxosService.setOnSucceeded(successEvent -> {
-                createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), destAddress);
+                createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), payment);
             });
             addressUtxosService.setOnFailed(failedEvent -> {
                 Throwable rootCause = Throwables.getRootCause(failedEvent.getSource().getException());
@@ -383,7 +403,8 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         }
     }
 
-    private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Address destAddress) {
+    private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Payment payment) {
+        Address destAddress = payment instanceof SilentPayment silentPayment ? computeSilentPaymentAddress(privKey, scriptType, txOutputs, silentPayment) : payment.getAddress();
         ECKey pubKey = ECKey.fromPublicOnly(privKey);
 
         Transaction noFeeTransaction = new Transaction();
@@ -465,6 +486,29 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             setResult(psbt.extractTransaction());
         } catch(PSBTProofException e) {
             AppServices.showErrorDialog("Invalid Silent Payments Transaction", e.getMessage());
+        }
+    }
+
+    private Address computeSilentPaymentAddress(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, SilentPayment silentPayment) {
+        ECKey summedPrivateKey = scriptType.getOutputKey(PolicyType.SINGLE_HD, privKey);
+        if(scriptType == P2TR && summedPrivateKey.hasOddYCoord()) {
+            summedPrivateKey = summedPrivateKey.negatePrivate();
+        }
+
+        Set<HashIndex> outpoints = new LinkedHashSet<>();
+        for(TransactionOutput txOutput : txOutputs) {
+            outpoints.add(new HashIndex(txOutput.getHash(), txOutput.getIndex()));
+        }
+
+        try {
+            SilentPaymentUtils.computeOutputAddresses(List.of(silentPayment), summedPrivateKey, outpoints);
+            if(!silentPayment.isAddressComputed()) {
+                throw new IllegalStateException("Failed to compute silent payment address");
+            }
+
+            return silentPayment.getAddress();
+        } catch(InvalidSilentPaymentException e) {
+            throw new IllegalStateException("Failed to compute silent payment address", e);
         }
     }
 

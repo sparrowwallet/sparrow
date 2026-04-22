@@ -75,7 +75,7 @@ public class SettingsDialog extends WalletDialog {
             Panel leftButtonPanel = new Panel();
             leftButtonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
             leftButtonPanel.addComponent(new Button("Add Account", this::showAddAccount));
-            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE || getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SILENT_PAYMENTS) {
+            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_HD || getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
                 leftButtonPanel.addComponent(new Button("Show Seed", this::showSeed));
             } else {
                 leftButtonPanel.addComponent(new EmptySpace(TerminalSize.ZERO));

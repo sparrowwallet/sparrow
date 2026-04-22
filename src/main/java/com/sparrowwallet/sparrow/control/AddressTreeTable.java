@@ -80,6 +80,7 @@ public class AddressTreeTable extends CoinTreeTable {
         contextMenu.getItems().add(showCountItem);
         getColumns().forEach(col -> col.setContextMenu(contextMenu));
 
+        setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
         setupColumnWidths();
 
