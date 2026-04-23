@@ -87,6 +87,8 @@ public class OutputForm extends IndexedTransactionForm {
                     } else {
                         return new Label("Output #" + getIndex(), GlyphUtils.getOpcodeGlyph());
                     }
+                } else if(output instanceof WalletTransaction.SilentPaymentChangeOutput) {
+                    return new Label("Change", GlyphUtils.getChangeGlyph());
                 } else if(output instanceof WalletTransaction.PaymentOutput paymentOutput) {
                     Payment payment = paymentOutput.getPayment();
                     return new Label(payment.getLabel() != null && payment.getType() != Payment.Type.FAKE_MIX && payment.getType() != Payment.Type.MIX ? payment.getLabel() : payment.toString(),

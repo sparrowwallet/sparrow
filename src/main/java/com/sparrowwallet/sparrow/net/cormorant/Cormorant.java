@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net.cormorant;
 
 import com.google.common.eventbus.EventBus;
 import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Server;
@@ -35,6 +36,10 @@ public class Cormorant {
     }
 
     public Server start() throws CormorantBitcoindException {
+        if(useWallets && AppServices.get().getOpenWallets().keySet().stream().anyMatch(wallet -> wallet.getPolicyType() == PolicyType.SINGLE_SP)) {
+            throw new CormorantBitcoindException("Scanning silent payment wallets is not currently supported with Bitcoin Core");
+        }
+
         bitcoindClient = new BitcoindClient(useWallets);
         bitcoindClient.initialize();
 

@@ -250,7 +250,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         double vSize = tx.getVirtualSize();
         if(changeTotal == 0) {
             //Add change output length to vSize if change was not present on the original transaction
-            TransactionOutput changeOutput = new TransactionOutput(new Transaction(), 1L, transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getOutputScript());
+            TransactionOutput changeOutput = new TransactionOutput(new Transaction(), 1L, transactionEntry.getWallet().getNode(KeyPurpose.CHANGE).getOutputScript());
             vSize += changeOutput.getLength();
         }
         double inputSize = tx.getInputs().get(0).getLength() + (tx.getInputs().get(0).hasWitness() ? (double)tx.getInputs().get(0).getWitness().getLength() / Transaction.WITNESS_SCALE_FACTOR : 0);
@@ -335,8 +335,10 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
         if(cancelTransaction) {
             Payment existing = payments.get(0);
-            Address address = transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getAddress();
-            Payment payment = new Payment(address, existing.getLabel(), existing.getAmount(), true);
+            Payment payment = transactionEntry.getWallet().getPolicyType() == PolicyType.SINGLE_SP ?
+                    new SilentPayment(transactionEntry.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress(),
+                            existing.getLabel(), existing.getAmount(), true) :
+                    new Payment(transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getAddress(), existing.getLabel(), existing.getAmount(), true);
             payments.clear();
             payments.add(payment);
             opReturns.clear();
@@ -370,10 +372,10 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         }
 
         BlockTransactionHashIndex cpfpUtxo = ourOutputs.get(0);
-        Address freshAddress = transactionEntry.getWallet().getFreshNode(KeyPurpose.RECEIVE).getAddress();
-        TransactionOutput txOutput = new TransactionOutput(new Transaction(), cpfpUtxo.getValue(), freshAddress.getOutputScript());
-        long dustThreshold = freshAddress.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
-        double inputSize = freshAddress.getScriptType().getInputVbytes();
+        Address receiveAddress = transactionEntry.getWallet().getNode(KeyPurpose.RECEIVE).getAddress();
+        TransactionOutput txOutput = new TransactionOutput(new Transaction(), cpfpUtxo.getValue(), receiveAddress.getOutputScript());
+        long dustThreshold = receiveAddress.getScriptType().getDustThreshold(txOutput, Transaction.DUST_RELAY_TX_FEE);
+        double inputSize = receiveAddress.getScriptType().getInputVbytes();
         double vSize = inputSize + txOutput.getLength();
 
         List<TxoFilter> txoFilters = List.of(new ExcludeTxoFilter(List.of(cpfpUtxo)), new SpentTxoFilter(), new FrozenTxoFilter(), new CoinbaseTxoFilter(transactionEntry.getWallet()));
@@ -397,7 +399,10 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
         String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
         label += (label.isEmpty() ? "" : " ") + "(CPFP)";
-        Payment payment = new Payment(freshAddress, label, inputTotal, true);
+        Payment payment = transactionEntry.getWallet().getPolicyType() == PolicyType.SINGLE_SP ?
+                new SilentPayment(transactionEntry.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress(),
+                        label, inputTotal, true) :
+                new Payment(transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getAddress(), label, inputTotal, true);
 
         EventManager.get().post(new SendActionEvent(transactionEntry.getWallet(), utxos));
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(transactionEntry.getWallet(), utxos, List.of(payment), null, blockTransaction.getFee(), true, null, true)));

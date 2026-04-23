@@ -112,6 +112,7 @@ public class TransactionDiagramLabel extends HBox {
 
         Map<WalletNode, Long> changeMap = walletTx.getChangeMap();
         outputLabels.addAll(changeMap.entrySet().stream().map(changeEntry -> getOutputLabel(transactionDiagram, changeEntry)).collect(Collectors.toList()));
+        outputLabels.addAll(walletTx.getSilentPaymentChangeOutputs().stream().map(spChange -> getOutputLabel(transactionDiagram, spChange)).collect(Collectors.toList()));
 
         OutputLabel feeOutputLabel = getFeeOutputLabel(transactionDiagram);
         if(feeOutputLabel != null) {
@@ -216,6 +217,13 @@ public class TransactionDiagramLabel extends HBox {
 
         Glyph glyph = GlyphUtils.getChangeGlyph();
         String text = "Change of " + transactionDiagram.getCoinValue(changeEntry.getValue()) + " to " + walletTx.getChangeAddress(changeEntry.getKey()).toString();
+
+        return getOutputLabel(glyph, text);
+    }
+
+    private OutputLabel getOutputLabel(TransactionDiagram transactionDiagram, WalletTransaction.SilentPaymentChangeOutput spChangeOutput) {
+        Glyph glyph = GlyphUtils.getChangeGlyph();
+        String text = "Change of " + transactionDiagram.getCoinValue(spChangeOutput.getSilentPayment().getAmount()) + " to " + spChangeOutput.getSilentPayment();
 
         return getOutputLabel(glyph, text);
     }

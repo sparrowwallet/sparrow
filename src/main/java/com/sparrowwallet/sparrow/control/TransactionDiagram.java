@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.dns.DnsPayment;
 import com.sparrowwallet.drongo.dns.DnsPaymentCache;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
@@ -696,7 +697,7 @@ public class TransactionDiagram extends GridPane {
         List<Long> values = walletTx.getOutputs().stream().filter(output -> !(output instanceof WalletTransaction.NonAddressOutput))
                 .map(output -> output.getTransactionOutput().getValue()).collect(Collectors.toList());
         values.add(walletTx.getFee());
-        int numOutputs = displayedPayments.size() + walletTx.getChangeMap().size() + 1;
+        int numOutputs = displayedPayments.size() + walletTx.getChangeMap().size() + walletTx.getSilentPaymentChangeOutputs().size() + 1;
         for(int i = 1; i <= numOutputs; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("output-line");
@@ -789,8 +790,8 @@ public class TransactionDiagram extends GridPane {
         Set<Integer> seenIndexes = new HashSet<>();
         for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
             WalletNode changeNode = changeEntry.getKey();
-            WalletNode defaultChangeNode = walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE);
-            boolean overGapLimit = (changeNode.getIndex() - defaultChangeNode.getIndex()) > walletTx.getWallet().getGapLimit();
+            boolean overGapLimit = walletTx.getWallet().getPolicyType() != PolicyType.SINGLE_SP &&
+                    (changeNode.getIndex() - walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE).getIndex()) > walletTx.getWallet().getGapLimit();
 
             HBox actionBox = new HBox();
             actionBox.setAlignment(Pos.CENTER_LEFT);
@@ -843,6 +844,37 @@ public class TransactionDiagram extends GridPane {
                 }
             }
             outputNodes.add(changeIndex, new OutputNode(actionBox, changeAddress, changeEntry.getValue()));
+        }
+
+        for(WalletTransaction.SilentPaymentChangeOutput spChangeOutput : walletTx.getSilentPaymentChangeOutputs()) {
+            HBox actionBox = new HBox();
+            actionBox.setAlignment(Pos.CENTER_LEFT);
+            SilentPayment silentPayment = spChangeOutput.getSilentPayment();
+            SilentPaymentAddress spAddress = silentPayment.getSilentPaymentAddress();
+            String changeDesc = spAddress.toString().substring(0, 8) + "...";
+            Label changeLabel = new Label(changeDesc, getChangeGlyph());
+            changeLabel.getStyleClass().addAll("output-label", "change-label");
+            changeLabel.setSkin(new AddressLabelSkin(changeLabel));
+            Tooltip changeTooltip = new Tooltip("Change of " + getCoinValue(silentPayment.getAmount()) + "\n" + spAddress);
+            changeTooltip.getStyleClass().add("change-label");
+            changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+            changeTooltip.setShowDuration(Duration.INDEFINITE);
+            changeTooltip.setSkin(new AddressTooltipSkin(changeTooltip));
+            changeLabel.setTooltip(changeTooltip);
+            actionBox.getChildren().add(changeLabel);
+
+            if(isExpanded()) {
+                changeLabel.setMinWidth(120);
+                Region region = new Region();
+                region.setMinWidth(20);
+                HBox.setHgrow(region, Priority.ALWAYS);
+                CoinLabel amountLabel = new CoinLabel();
+                amountLabel.setValue(silentPayment.getAmount());
+                amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+                actionBox.getChildren().addAll(region, amountLabel);
+            }
+
+            outputNodes.add(new OutputNode(actionBox, silentPayment.isAddressComputed() ? silentPayment.getAddress() : null, silentPayment.getAmount(), null, spAddress));
         }
 
         for(OutputNode outputNode : outputNodes) {
