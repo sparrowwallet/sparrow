@@ -32,7 +32,7 @@
                     <DatePicker editable="false" fx:id="birthDate" prefWidth="140" />
                     <HelpLabel helpText="The date of the earliest transaction (used to avoid scanning the entire blockchain)."/>
                 </Field>
-                <Field text="Gap limit:">
+                <Field fx:id="gapLimitField" text="Gap limit:">
                     <IntegerSpinner fx:id="gapLimit" editable="true" prefWidth="90" />
                     <HelpLabel helpText="Change how far ahead to look for additional transactions beyond the highest derivation with previous transaction outputs."/>
                     <Label fx:id="gapWarning">

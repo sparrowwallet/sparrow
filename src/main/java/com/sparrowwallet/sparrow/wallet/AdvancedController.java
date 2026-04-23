@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.DateStringConverter;
@@ -12,6 +13,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import tornadofx.control.Field;
 import javafx.util.StringConverter;
 
 import java.net.URL;
@@ -29,6 +31,9 @@ public class AdvancedController implements Initializable {
 
     @FXML
     private DatePicker birthDate;
+
+    @FXML
+    private Field gapLimitField;
 
     @FXML
     private IntegerSpinner gapLimit;
@@ -55,6 +60,9 @@ public class AdvancedController implements Initializable {
                 EventManager.get().post(new SettingsChangedEvent(wallet, SettingsChangedEvent.Type.BIRTH_DATE));
             }
         });
+
+        gapLimitField.managedProperty().bind(gapLimitField.visibleProperty());
+        gapLimitField.setVisible(wallet.getPolicyType() != PolicyType.SINGLE_SP);
 
         gapLimit.setValueFactory(new IntegerSpinner.ValueFactory(Wallet.DEFAULT_LOOKAHEAD, MAX_GAP_LIMIT, wallet.getGapLimit()));
         gapLimit.valueProperty().addListener((observable, oldValue, newValue) -> {
@@ -84,6 +92,7 @@ public class AdvancedController implements Initializable {
         gapWarning.managedProperty().bind(gapWarning.visibleProperty());
         gapWarning.setVisible(wallet.getGapLimit() >= WARNING_GAP_LIMIT);
 
+        watchLast.setPrefWidth(birthDate.getPrefWidth());
         watchLast.setItems(getWatchListItems(wallet));
         watchLast.setConverter(new StringConverter<>() {
             @Override
