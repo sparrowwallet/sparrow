@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class QRCodeDialog extends DialogWindow {
     public QRCodeDialog(String data) throws WriterException {
-        super(data);
+        super(data.length() > 70 ? data.substring(0, 70) + "..." : data);
 
         setHints(List.of(Hint.CENTERED));
 

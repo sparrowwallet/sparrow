@@ -32,7 +32,7 @@
             <rowConstraints>
                 <RowConstraints />
             </rowConstraints>
-            <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
+            <Form fx:id="receiveForm" GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <Fieldset inputGrow="ALWAYS" text="Receive" styleClass="header">
                     <Field text="Address:">
                         <CopyableTextField fx:id="address" styleClass="address-text-field" editable="false"/>
@@ -40,22 +40,44 @@
                     <Field text="Label:">
                         <TextField fx:id="label" />
                     </Field>
-                    <Field fx:id="derivationField" text="Derivation:">
+                    <Field text="Derivation:">
                         <CopyableLabel fx:id="derivationPath" />
                     </Field>
-                    <Field fx:id="lastUsedField" text="Last Used:">
+                    <Field text="Last Used:">
                         <Label fx:id="lastUsed" />
                     </Field>
                 </Fieldset>
             </Form>
 
-            <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="0">
+            <AnchorPane fx:id="qrCodePane" GridPane.columnIndex="1" GridPane.rowIndex="0">
                 <ImageView fx:id="qrCode" styleClass="qr-code" AnchorPane.rightAnchor="5"/>
+            </AnchorPane>
+
+            <Form fx:id="spReceiveForm" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                <padding>
+                    <Insets bottom="10" />
+                </padding>
+                <Fieldset inputGrow="ALWAYS" text="Receive" styleClass="header">
+                    <Field text="Address:">
+                        <TextArea fx:id="spAddress" styleClass="address-text-field" wrapText="true" prefRowCount="2" maxHeight="52" editable="false" />
+                    </Field>
+                </Fieldset>
+            </Form>
+
+            <AnchorPane fx:id="spCopyPane" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                <padding>
+                    <Insets bottom="10" />
+                </padding>
+                <Button text="Copy" graphicTextGap="10" AnchorPane.rightAnchor="5" AnchorPane.bottomAnchor="18" prefHeight="52" prefWidth="100" onAction="#copySilentPaymentsAddress">
+                    <graphic>
+                        <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="COPY" />
+                    </graphic>
+                </Button>
             </AnchorPane>
 
             <Separator styleClass="form-separator" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="1" />
 
-            <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
+            <Form fx:id="scriptPubKeyForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="2">
                 <Fieldset inputGrow="SOMETIMES" text="Required ScriptPubKey">
                     <Field text="Script:">
                         <VirtualizedScrollPane>
@@ -67,7 +89,7 @@
                 </Fieldset>
             </Form>
 
-            <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3">
+            <Form fx:id="outputDescriptorForm" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="3">
                 <Fieldset inputGrow="SOMETIMES" text="Output Descriptor">
                     <Field text="Descriptor:">
                         <VirtualizedScrollPane>
@@ -75,6 +97,14 @@
                                 <SelectableCodeArea fx:id="outputDescriptor" editable="false" wrapText="true" prefHeight="68" maxHeight="68" styleClass="uneditable-codearea" />
                             </content>
                         </VirtualizedScrollPane>
+                    </Field>
+                </Fieldset>
+            </Form>
+
+            <Form fx:id="spQrForm" GridPane.columnIndex="0" GridPane.rowIndex="2" alignment="CENTER">
+                <Fieldset inputGrow="SOMETIMES" text="">
+                    <Field text="">
+                        <ImageView fx:id="spQrCode" styleClass="qr-code" />
                     </Field>
                 </Fieldset>
             </Form>

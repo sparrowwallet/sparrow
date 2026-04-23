@@ -4,6 +4,7 @@ import com.google.common.eventbus.Subscribe;
 import com.googlecode.lanterna.gui2.*;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletNode;
@@ -38,19 +39,28 @@ public class ReceiveDialog extends WalletDialog {
 
         Panel mainPanel = new Panel(new GridLayout(2).setHorizontalSpacing(2).setVerticalSpacing(1).setTopMarginSize(1));
 
+        boolean isSilentPayments = walletForm.getWallet().getPolicyType() == PolicyType.SINGLE_SP;
+
         mainPanel.addComponent(new Label("Address"));
         address = new Label("").addTo(mainPanel);
 
-        mainPanel.addComponent(new Label("Derivation"));
-        derivation = new Label("").addTo(mainPanel);
+        if(!isSilentPayments) {
+            mainPanel.addComponent(new Label("Derivation"));
+            derivation = new Label("").addTo(mainPanel);
 
-        mainPanel.addComponent(new Label("Last Used"));
-        lastUsed = new Label("").addTo(mainPanel);
+            mainPanel.addComponent(new Label("Last Used"));
+            lastUsed = new Label("").addTo(mainPanel);
+        } else {
+            derivation = new Label("");
+            lastUsed = new Label("");
+        }
 
         Panel buttonPanel = new Panel();
         buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
         buttonPanel.addComponent(new Button("Back", () -> onBack(Function.RECEIVE)));
-        buttonPanel.addComponent(new Button("Get Fresh Address", this::refreshAddress).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+        if(!isSilentPayments) {
+            buttonPanel.addComponent(new Button("Get Fresh Address", this::refreshAddress).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+        }
 
         mainPanel.addComponent(new Button("Show QR", this::showQR));
 
@@ -61,12 +71,17 @@ public class ReceiveDialog extends WalletDialog {
     }
 
     public void showQR() {
-        if(currentEntry == null) {
-            return;
-        }
-
         try {
-            QRCodeDialog qrCodeDialog = new QRCodeDialog(currentEntry.getAddress().toString());
+            String qrAddress;
+            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
+                qrAddress = getWalletForm().getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress();
+            } else if(currentEntry != null) {
+                qrAddress = currentEntry.getAddress().toString();
+            } else {
+                return;
+            }
+
+            QRCodeDialog qrCodeDialog = new QRCodeDialog(qrAddress);
             qrCodeDialog.showDialog(SparrowTerminal.get().getGui());
         } catch(Exception e) {
             log.error("Error creating QR", e);
@@ -76,6 +91,12 @@ public class ReceiveDialog extends WalletDialog {
 
     public void refreshAddress() {
         SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
+                String silentPaymentAddress = getWalletForm().getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress();
+                address.setText(silentPaymentAddress);
+                return;
+            }
+
             NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
             setNodeEntry(freshEntry);
         });
@@ -109,6 +130,10 @@ public class ReceiveDialog extends WalletDialog {
     }
 
     private void updateLastUsed() {
+        if(currentEntry == null) {
+            return;
+        }
+
         SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             Set<BlockTransactionHashIndex> currentOutputs = currentEntry.getNode().getTransactionOutputs();
             if(AppServices.onlineProperty().get() && currentOutputs.isEmpty()) {

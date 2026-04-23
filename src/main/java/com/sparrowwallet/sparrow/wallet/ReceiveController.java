@@ -9,6 +9,7 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
@@ -20,6 +21,8 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -27,9 +30,14 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.layout.AnchorPane;
+import javafx.util.Duration;
 import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tornadofx.control.Form;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,6 +53,9 @@ public class ReceiveController extends WalletFormController implements Initializ
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
     @FXML
+    private Form receiveForm;
+
+    @FXML
     private CopyableTextField address;
 
     @FXML
@@ -57,16 +68,43 @@ public class ReceiveController extends WalletFormController implements Initializ
     private Label lastUsed;
 
     @FXML
+    private AnchorPane qrCodePane;
+
+    @FXML
     private ImageView qrCode;
+
+    @FXML
+    private Form spReceiveForm;
+
+    @FXML
+    private AnchorPane spCopyPane;
+
+    @FXML
+    private TextArea spAddress;
+
+    @FXML
+    private Form scriptPubKeyForm;
 
     @FXML
     private ScriptArea scriptPubKeyArea;
 
     @FXML
+    private Form outputDescriptorForm;
+
+    @FXML
     private SelectableCodeArea outputDescriptor;
 
     @FXML
+    private Form spQrForm;
+
+    @FXML
+    private ImageView spQrCode;
+
+    @FXML
     private Button displayAddress;
+
+    @FXML
+    private Button nextAddress;
 
     private NodeEntry currentEntry;
 
@@ -80,12 +118,39 @@ public class ReceiveController extends WalletFormController implements Initializ
     @Override
     public void initializeView() {
         address.setSkin(new AddressTextFieldSkin(address));
+        receiveForm.managedProperty().bind(receiveForm.visibleProperty());
+        qrCodePane.managedProperty().bind(qrCodePane.visibleProperty());
+        spReceiveForm.managedProperty().bind(spReceiveForm.visibleProperty());
+        spCopyPane.managedProperty().bind(spCopyPane.visibleProperty());
+        scriptPubKeyForm.managedProperty().bind(scriptPubKeyForm.visibleProperty());
+        outputDescriptorForm.managedProperty().bind(outputDescriptorForm.visibleProperty());
+        spQrForm.managedProperty().bind(spQrForm.visibleProperty());
+
+        qrCodePane.visibleProperty().bind(receiveForm.visibleProperty());
+        spReceiveForm.visibleProperty().bind(receiveForm.visibleProperty().not());
+        spCopyPane.visibleProperty().bind(receiveForm.visibleProperty().not());
+        scriptPubKeyForm.visibleProperty().bind(receiveForm.visibleProperty());
+        outputDescriptorForm.visibleProperty().bind(receiveForm.visibleProperty());
+        spQrForm.visibleProperty().bind(receiveForm.visibleProperty().not());
+
+        updateFromWalletPolicy();
+
         initializeScriptField(scriptPubKeyArea);
 
         displayAddress.managedProperty().bind(displayAddress.visibleProperty());
         displayAddress.setVisible(false);
 
-        qrCode.setOnMouseClicked(event -> {
+        nextAddress.managedProperty().bind(nextAddress.visibleProperty());
+
+        spAddress.setOnMouseClicked(event -> {
+            copySilentPaymentsAddress(null);
+            Tooltip tooltip = new Tooltip("Copied!");
+            tooltip.show(spAddress, event.getScreenX(), event.getScreenY());
+            Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> tooltip.hide()));
+            timeline.play();
+        });
+
+        qrCode.setOnMouseClicked(_ -> {
             if(currentEntry != null && addressQrDialog == null) {
                 addressQrDialog = new QRDisplayDialog(currentEntry.getAddress().toString());
                 addressQrDialog.initOwner(address.getScene().getWindow());
@@ -94,7 +159,14 @@ public class ReceiveController extends WalletFormController implements Initializ
             }
         });
 
+        spQrCode.setOnMouseClicked(_ -> copySilentPaymentsAddress(null));
+
         refreshAddress();
+    }
+
+    public void updateFromWalletPolicy() {
+        receiveForm.setVisible(walletForm.getWallet().getPolicyType() != PolicyType.SINGLE_SP);
+        nextAddress.setVisible(walletForm.getWallet().getPolicyType() != PolicyType.SINGLE_SP);
     }
 
     public void setNodeEntry(NodeEntry nodeEntry) {
@@ -128,6 +200,10 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     private void updateLastUsed() {
+        if(currentEntry == null) {
+            return;
+        }
+
         Set<BlockTransactionHashIndex> currentOutputs = currentEntry.getNode().getTransactionOutputs();
         if(AppServices.isConnected() && currentOutputs.isEmpty()) {
             lastUsed.setText("Never");
@@ -192,6 +268,31 @@ public class ReceiveController extends WalletFormController implements Initializ
         return null;
     }
 
+    public void copySilentPaymentsAddress(ActionEvent actionEvent) {
+        if(walletForm.getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
+            ClipboardContent content = new ClipboardContent();
+            content.putString(walletForm.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress());
+            Clipboard.getSystemClipboard().setContent(content);
+        }
+    }
+
+    private Image getSilentPaymentsQrCode(String address) {
+        try {
+            QRCodeWriter qrCodeWriter = new QRCodeWriter();
+            BitMatrix qrMatrix = qrCodeWriter.encode(address, BarcodeFormat.QR_CODE, 400, 400, Map.of(EncodeHintType.MARGIN, 2));
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            MatrixToImageWriter.writeToStream(qrMatrix, "PNG", baos, new MatrixToImageConfig());
+
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            return new Image(bais);
+        } catch(Exception e) {
+            log.error("Error generating QR", e);
+        }
+
+        return null;
+    }
+
     public void getNewAddress(ActionEvent event) {
         refreshAddress();
         if(currentEntry != null) {
@@ -200,6 +301,16 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     public void refreshAddress() {
+        if(walletForm.getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
+            String silentPaymentAddress = walletForm.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress();
+            spAddress.setText(silentPaymentAddress);
+            Image qrImage = getSilentPaymentsQrCode(silentPaymentAddress);
+            if(qrImage != null) {
+                spQrCode.setImage(qrImage);
+            }
+            return;
+        }
+
         NodeEntry freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, currentEntry);
         while(freshEntry.getLabel() != null && !freshEntry.getLabel().isEmpty()) {
             freshEntry = getWalletForm().getFreshNodeEntry(KeyPurpose.RECEIVE, freshEntry);
@@ -315,6 +426,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
+        updateFromWalletPolicy();
         displayAddress.setUserData(null);
     }
 
