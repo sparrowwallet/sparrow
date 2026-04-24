@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
@@ -68,7 +69,11 @@ public class WalletLabels implements WalletImport, WalletExport {
 
             for(Keystore keystore : exportWallet.getKeystores()) {
                 if(keystore.getLabel() != null && !keystore.getLabel().isEmpty()) {
-                    labels.add(new Label(Type.xpub, keystore.getExtendedPublicKey().toString(), keystore.getLabel(), null, null));
+                    if(exportWallet.getPolicyType() == PolicyType.SINGLE_SP && keystore.getSilentPaymentScanAddress() != null) {
+                        labels.add(new Label(Type.spscan, keystore.getSilentPaymentScanAddress().toKeyString(), keystore.getLabel(), null, null));
+                    } else if(keystore.getExtendedPublicKey() != null) {
+                        labels.add(new Label(Type.xpub, keystore.getExtendedPublicKey().toString(), keystore.getLabel(), null, null));
+                    }
                 }
             }
 
@@ -220,7 +225,17 @@ public class WalletLabels implements WalletImport, WalletExport {
 
                 if(label.type == Type.xpub) {
                     for(Keystore keystore : wallet.getKeystores()) {
-                        if(keystore.getExtendedPublicKey().toString().equals(label.ref)) {
+                        if(keystore.getExtendedPublicKey() != null && keystore.getExtendedPublicKey().toString().equals(label.ref)) {
+                            keystore.setLabel(label.label);
+                            List<Keystore> changedKeystores = changedWalletKeystores.computeIfAbsent(wallet, w -> new ArrayList<>());
+                            changedKeystores.add(keystore);
+                        }
+                    }
+                }
+
+                if(label.type == Type.spscan) {
+                    for(Keystore keystore : wallet.getKeystores()) {
+                        if(keystore.getSilentPaymentScanAddress() != null && keystore.getSilentPaymentScanAddress().toKeyString().equals(label.ref)) {
                             keystore.setLabel(label.label);
                             List<Keystore> changedKeystores = changedWalletKeystores.computeIfAbsent(wallet, w -> new ArrayList<>());
                             changedKeystores.add(keystore);
@@ -432,7 +447,7 @@ public class WalletLabels implements WalletImport, WalletExport {
     }
 
     private enum Type {
-        tx, addr, pubkey, input, output, xpub
+        tx, addr, pubkey, input, output, xpub, spscan
     }
 
     private static class Label {

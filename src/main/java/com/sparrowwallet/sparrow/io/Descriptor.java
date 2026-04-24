@@ -31,7 +31,18 @@ public class Descriptor implements WalletImport, WalletExport {
             BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(outputStream));
             if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
                 OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(wallet);
+
+                bufferedWriter.write("# Single argument descriptor:");
+                bufferedWriter.newLine();
+
                 bufferedWriter.write(outputDescriptor.toString(true));
+                bufferedWriter.newLine();
+                bufferedWriter.newLine();
+
+                bufferedWriter.write("# Two argument descriptor:");
+                bufferedWriter.newLine();
+
+                bufferedWriter.write(outputDescriptor.toString(true, true, true, true));
                 bufferedWriter.newLine();
             } else {
                 bufferedWriter.write("# Receive and change descriptor:");

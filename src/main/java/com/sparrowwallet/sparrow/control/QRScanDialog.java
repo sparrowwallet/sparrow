@@ -691,7 +691,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     KeyDerivation keyDerivation = getKeyDerivation(urhdKey.getOrigin());
                     if(urhdKey.getChainCode() == null) {
                         ECKey ecKey = getKey(urhdKey);
-                        source = source.replaceAll("@" + i, OutputDescriptor.writeKey(ecKey, keyDerivation, true));
+                        source = source.replaceAll("@" + i, OutputDescriptor.writeKey(ecKey, keyDerivation, true, true));
                     } else {
                         ExtendedKey extendedKey = getExtendedKey(urhdKey);
                         source = source.replaceAll("@" + i, OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true));

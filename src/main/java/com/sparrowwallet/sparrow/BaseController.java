@@ -75,7 +75,11 @@ public abstract class BaseController {
             builder.append(keystore.getKeyDerivation().getMasterFingerprint());
             builder.append(KeyDerivation.writePath(KeyDerivation.parsePath(keystore.getKeyDerivation().getDerivationPath())).substring(1));
             builder.append("]");
-            builder.append(keystore.getExtendedPublicKey().toString());
+            if(keystore.getExtendedPublicKey() != null) {
+                builder.append(keystore.getExtendedPublicKey().toString());
+            } else if(keystore.getSilentPaymentScanAddress() != null) {
+                builder.append(keystore.getSilentPaymentScanAddress().toKeyString());
+            }
 
             return builder.toString();
         }

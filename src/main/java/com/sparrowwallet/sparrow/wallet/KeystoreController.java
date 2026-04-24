@@ -760,8 +760,8 @@ public class KeystoreController extends WalletFormController implements Initiali
     public void keystoreLabelsChanged(KeystoreLabelsChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
             for(Keystore changedKeystore : event.getChangedKeystores()) {
-                if(xpub.getText().trim().equals(changedKeystore.getExtendedPublicKey().toString()) && !label.getText().equals(changedKeystore.getLabel())
-                        || spScan.getText().trim().equals(changedKeystore.getSilentPaymentScanAddress().toKeyString()) && !label.getText().equals(changedKeystore.getLabel())) {
+                if((changedKeystore.getExtendedPublicKey() != null && xpub.getText().trim().equals(changedKeystore.getExtendedPublicKey().toString()) && !label.getText().equals(changedKeystore.getLabel()))
+                        || (changedKeystore.getSilentPaymentScanAddress() != null && spScan.getText().trim().equals(changedKeystore.getSilentPaymentScanAddress().toKeyString()) && !label.getText().equals(changedKeystore.getLabel()))) {
                     label.textProperty().removeListener(labelChangeListener);
                     label.setText(changedKeystore.getLabel());
                     keystore.setLabel(changedKeystore.getLabel());

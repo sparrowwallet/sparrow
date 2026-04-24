@@ -924,7 +924,7 @@ public class SettingsController extends WalletFormController implements Initiali
             List<Keystore> importedKeystores = event.getImportedWallet().getKeystores();
             List<Keystore> nonWatchKeystores = walletForm.getWallet().getKeystores().stream().filter(k -> k.isValid() && k.getSource() != KeystoreSource.SW_WATCH).collect(Collectors.toList());
             for(Keystore nonWatchKeystore : nonWatchKeystores) {
-                Optional<Keystore> optReplacedKeystore = importedKeystores.stream().filter(k -> nonWatchKeystore.getExtendedPublicKey().equals(k.getExtendedPublicKey())).findFirst();
+                Optional<Keystore> optReplacedKeystore = importedKeystores.stream().filter(k -> Objects.equals(nonWatchKeystore.getExtendedPublicKey(), k.getExtendedPublicKey())).findFirst();
                 if(optReplacedKeystore.isPresent()) {
                     int index = importedKeystores.indexOf(optReplacedKeystore.get());
                     importedKeystores.remove(index);

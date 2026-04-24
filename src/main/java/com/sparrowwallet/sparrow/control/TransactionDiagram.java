@@ -851,8 +851,7 @@ public class TransactionDiagram extends GridPane {
             actionBox.setAlignment(Pos.CENTER_LEFT);
             SilentPayment silentPayment = spChangeOutput.getSilentPayment();
             SilentPaymentAddress spAddress = silentPayment.getSilentPaymentAddress();
-            String changeDesc = spAddress.toString().substring(0, 8) + "...";
-            Label changeLabel = new Label(changeDesc, getChangeGlyph());
+            Label changeLabel = new Label("Change", getChangeGlyph());
             changeLabel.getStyleClass().addAll("output-label", "change-label");
             changeLabel.setSkin(new AddressLabelSkin(changeLabel));
             Tooltip changeTooltip = new Tooltip("Change of " + getCoinValue(silentPayment.getAmount()) + "\n" + spAddress);
