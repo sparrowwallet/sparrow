@@ -81,7 +81,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
     protected void onWordChange(boolean empty, boolean validWords, boolean validChecksum) {
         if(!empty && validWords) {
             try {
-                importer.getKeystore(ScriptType.P2WPKH.getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
+                importer.getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH.getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
                 validChecksum = true;
             } catch(ImportException e) {
                 if(e.getCause() instanceof MnemonicException.MnemonicTypeException) {
@@ -167,7 +167,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         Wallet wallet = new Wallet("");
         wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(scriptType);
-        Keystore keystore = importer.getKeystore(derivation, wordEntriesProperty.get(), passphraseProperty.get());
+        Keystore keystore = importer.getKeystore(PolicyType.SINGLE_HD, derivation, wordEntriesProperty.get(), passphraseProperty.get());
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), 1));
         return wallet;

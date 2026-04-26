@@ -141,7 +141,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     protected void onWordChange(boolean empty, boolean validWords, boolean validChecksum) {
         if(!empty && validWords) {
             try {
-                importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
+                importer.getKeystore(wallet.getPolicyType(), wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
                 validChecksum = true;
             } catch(ImportException e) {
                 if(e.getCause() instanceof MnemonicException.MnemonicTypeException) {
@@ -256,7 +256,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     private boolean importKeystore(List<ChildNumber> derivation, boolean dryrun) {
         importButton.setDisable(true);
         try {
-            Keystore keystore = importer.getKeystore(derivation, wordEntriesProperty.get(), passphraseProperty.get());
+            Keystore keystore = importer.getKeystore(wallet.getPolicyType(), derivation, wordEntriesProperty.get(), passphraseProperty.get());
             if(!dryrun) {
                 if(passphraseProperty.get() != null && !passphraseProperty.get().isEmpty()) {
                     KeystorePassphraseDialog keystorePassphraseDialog = new KeystorePassphraseDialog(null, keystore, true);

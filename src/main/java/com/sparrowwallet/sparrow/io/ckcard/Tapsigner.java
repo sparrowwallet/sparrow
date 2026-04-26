@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io.ckcard;
 
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.KeystoreCardImport;
@@ -52,7 +53,7 @@ public class Tapsigner implements KeystoreCardImport {
     }
 
     @Override
-    public Keystore getKeystore(String pin, List<ChildNumber> derivation, StringProperty messageProperty) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, String pin, List<ChildNumber> derivation, StringProperty messageProperty) throws ImportException {
         if(pin.length() < 6) {
             throw new ImportException("PIN too short.");
         }

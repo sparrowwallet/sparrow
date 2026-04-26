@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.*;
 
 import java.util.List;
@@ -22,11 +23,11 @@ public class Bip39 implements KeystoreMnemonicImport {
     }
 
     @Override
-    public Keystore getKeystore(List<ChildNumber> derivation, List<String> mnemonicWords, String passphrase) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, List<ChildNumber> derivation, List<String> mnemonicWords, String passphrase) throws ImportException {
         try {
             Bip39MnemonicCode.INSTANCE.check(mnemonicWords);
             DeterministicSeed seed = new DeterministicSeed(mnemonicWords, passphrase, System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
-            return Keystore.fromSeed(seed, derivation);
+            return Keystore.fromSeed(seed, policyType, derivation);
         } catch (Exception e) {
             try {
                 ElectrumMnemonicCode.INSTANCE.check(mnemonicWords);

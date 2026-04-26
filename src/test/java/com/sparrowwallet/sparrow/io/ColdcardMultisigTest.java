@@ -19,7 +19,7 @@ public class ColdcardMultisigTest extends IoTest {
     public void importKeystore1() throws ImportException {
         Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
-        Keystore keystore = ccMultisig.getKeystore(ScriptType.P2SH_P2WSH, getInputStream("cc-multisig-keystore-1.json"), null);
+        Keystore keystore = ccMultisig.getKeystore(PolicyType.MULTI_HD, ScriptType.P2SH_P2WSH, getInputStream("cc-multisig-keystore-1.json"), null);
         Assertions.assertEquals("Coldcard", keystore.getLabel());
         Assertions.assertEquals("m/48'/1'/0'/1'", keystore.getKeyDerivation().getDerivationPath());
         Assertions.assertEquals("0f056943", keystore.getKeyDerivation().getMasterFingerprint());
@@ -30,14 +30,14 @@ public class ColdcardMultisigTest extends IoTest {
     @Test
     public void importKeystore1IncorrectScriptType() throws ImportException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
-        Assertions.assertThrows(ImportException.class, () -> ccMultisig.getKeystore(ScriptType.P2SH_P2WPKH, getInputStream("cc-multisig-keystore-1.json"), null));
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.getKeystore(PolicyType.MULTI_HD, ScriptType.P2SH_P2WPKH, getInputStream("cc-multisig-keystore-1.json"), null));
     }
 
     @Test
     public void importKeystore2() throws ImportException {
         Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
-        Keystore keystore = ccMultisig.getKeystore(ScriptType.P2SH, getInputStream("cc-multisig-keystore-2.json"), null);
+        Keystore keystore = ccMultisig.getKeystore(PolicyType.MULTI_HD, ScriptType.P2SH, getInputStream("cc-multisig-keystore-2.json"), null);
         Assertions.assertEquals("Coldcard", keystore.getLabel());
         Assertions.assertEquals("m/45'", keystore.getKeyDerivation().getDerivationPath());
         Assertions.assertEquals("6ba6cfd0", keystore.getKeyDerivation().getMasterFingerprint());
@@ -49,7 +49,7 @@ public class ColdcardMultisigTest extends IoTest {
     public void importKeystore2b() throws ImportException {
         Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
-        Keystore keystore = ccMultisig.getKeystore(ScriptType.P2WSH, getInputStream("cc-multisig-keystore-2.json"), null);
+        Keystore keystore = ccMultisig.getKeystore(PolicyType.MULTI_HD, ScriptType.P2WSH, getInputStream("cc-multisig-keystore-2.json"), null);
         Assertions.assertEquals("Coldcard", keystore.getLabel());
         Assertions.assertEquals("m/48'/1'/0'/2'", keystore.getKeyDerivation().getDerivationPath());
         Assertions.assertEquals("6ba6cfd0", keystore.getKeyDerivation().getMasterFingerprint());

@@ -81,7 +81,7 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
     private void importKeystore(List<ChildNumber> derivation) {
         importButton.setDisable(true);
         try {
-            Keystore keystore = importer.getKeystore(derivation, secretShareProperty.get());
+            Keystore keystore = importer.getKeystore(wallet.getPolicyType(), derivation, secretShareProperty.get());
             EventManager.get().post(new KeystoreImportEvent(keystore));
         } catch(ImportException e) {
             String errorMessage = e.getMessage();
@@ -125,7 +125,7 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
     private void onInputChange(boolean empty, boolean validChecksum) {
         if(!empty) {
             try {
-                importer.getKeystore(ScriptType.P2WPKH.getDefaultDerivation(), secretShareProperty.get());
+                importer.getKeystore(wallet.getPolicyType(), ScriptType.P2WPKH.getDefaultDerivation(), secretShareProperty.get());
                 validChecksum = true;
             } catch(ImportException e) {
                 invalidLabel.setText("Invalid checksum");

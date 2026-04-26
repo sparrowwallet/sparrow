@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import org.junit.jupiter.api.Assertions;
@@ -10,7 +11,7 @@ public class KeystoneSinglesigTest extends IoTest {
     @Test
     public void testImport() throws ImportException {
         KeystoneSinglesig keystoneSingleSig = new KeystoneSinglesig();
-        Keystore keystore = keystoneSingleSig.getKeystore(ScriptType.P2WPKH, getInputStream("keystone-singlesig-keystore-1.txt"), null);
+        Keystore keystore = keystoneSingleSig.getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH, getInputStream("keystone-singlesig-keystore-1.txt"), null);
 
         Assertions.assertEquals("Keystone", keystore.getLabel());
         Assertions.assertEquals("m/84'/0'/0'", keystore.getKeyDerivation().getDerivationPath());
@@ -22,6 +23,6 @@ public class KeystoneSinglesigTest extends IoTest {
     @Test
     public void testIncorrectScriptType() throws ImportException {
         KeystoneSinglesig keystoneSingleSig = new KeystoneSinglesig();
-        Assertions.assertThrows(ImportException.class, () -> keystoneSingleSig.getKeystore(ScriptType.P2SH_P2WPKH, getInputStream("keystone-singlesig-keystore-1.txt"), null));
+        Assertions.assertThrows(ImportException.class, () -> keystoneSingleSig.getKeystore(PolicyType.SINGLE_HD, ScriptType.P2SH_P2WPKH, getInputStream("keystone-singlesig-keystore-1.txt"), null));
     }
 }

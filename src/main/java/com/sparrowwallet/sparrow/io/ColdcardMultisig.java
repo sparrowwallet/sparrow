@@ -32,7 +32,7 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             inputStream.transferTo(baos);
@@ -41,9 +41,9 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
 
             Keystore keystore;
             try {
-                keystore = getKeystoreMultisig(scriptType, firstClone, password);
+                keystore = getKeystoreMultisig(policyType, scriptType, firstClone, password);
             } catch(Exception e) {
-                keystore = getKeystoreSinglesig(scriptType, secondClone, password);
+                keystore = getKeystoreSinglesig(policyType, scriptType, secondClone, password);
             }
 
             return keystore;
@@ -52,18 +52,18 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         }
     }
 
-    private Keystore getKeystoreSinglesig(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    private Keystore getKeystoreSinglesig(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         ColdcardSinglesig coldcardSinglesig = new ColdcardSinglesig();
-        return coldcardSinglesig.getKeystore(scriptType, inputStream, password);
+        return coldcardSinglesig.getKeystore(policyType, scriptType, inputStream, password);
     }
 
-    public Keystore getKeystoreMultisig(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystoreMultisig(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8);
         ColdcardKeystore cck = JsonPersistence.getGson().fromJson(reader, ColdcardKeystore.class);
 
         Keystore keystore = new Keystore("Coldcard");
         keystore.setSource(KeystoreSource.HW_AIRGAPPED);
-        keystore.setWalletModel(WalletModel.COLDCARD);
+        keystore.setWalletModel(getWalletModel());
 
         try {
             if(cck.xpub != null && cck.path != null) {

@@ -86,7 +86,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
             EventManager.get().post(new WalletImportEvent(wallet));
         } else {
             ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes);
-            Keystore keystore = importer.getKeystore(scriptType, bais, password);
+            Keystore keystore = importer.getKeystore(PolicyType.SINGLE_HD, scriptType, bais, password);
 
             Wallet wallet = new Wallet();
             wallet.setName(Files.getNameWithoutExtension(fileName));

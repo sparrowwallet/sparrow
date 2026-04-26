@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.ECDSASignature;
 import com.sparrowwallet.drongo.crypto.SchnorrSignature;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -122,8 +123,8 @@ public class SatoCardApi extends CardApi {
     }
 
     @Override
-    public Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty) {
-        return new CardImportPane.CardImportService(new Satochip(), pin, derivation, messageProperty);
+    public Service<Keystore> getImportService(PolicyType policyType, List<ChildNumber> derivation, StringProperty messageProperty) {
+        return new CardImportPane.CardImportService(new Satochip(), policyType, pin, derivation, messageProperty);
     }
 
     /*

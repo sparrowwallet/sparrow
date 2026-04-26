@@ -40,10 +40,10 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         Wallet wallet = importWallet(inputStream, password);
 
-        if(!wallet.getPolicyType().equals(PolicyType.SINGLE_HD) || wallet.getKeystores().size() != 1) {
+        if(wallet.getPolicyType().equals(PolicyType.MULTI_HD) || wallet.getKeystores().size() != 1) {
             throw new ImportException("Multisig wallet detected - import it using File > Import Wallet");
         }
 

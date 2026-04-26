@@ -114,7 +114,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
     private void importKeystore(List<ChildNumber> derivation) {
         importButton.setDisable(true);
         try {
-            Keystore keystore = importer.getKeystore(derivation, xprv);
+            Keystore keystore = importer.getKeystore(wallet.getPolicyType(), derivation, xprv);
             EventManager.get().post(new KeystoreImportEvent(keystore));
         } catch (ImportException e) {
             String errorMessage = e.getMessage();

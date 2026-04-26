@@ -7,6 +7,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.SamouraiUtil;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
 
@@ -25,7 +26,7 @@ public class Samourai implements KeystoreFileImport {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             String input = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
@@ -52,7 +53,7 @@ public class Samourai implements KeystoreFileImport {
 
             SamouraiBackup backup = new Gson().fromJson(decrypted, SamouraiBackup.class);
             DeterministicSeed seed = new DeterministicSeed(Utils.hexToBytes(backup.wallet.seed), password, 0);
-            Keystore keystore = Keystore.fromSeed(seed, scriptType.getDefaultDerivation());
+            Keystore keystore = Keystore.fromSeed(seed, PolicyType.SINGLE_HD, scriptType.getDefaultDerivation());
             keystore.setLabel(getWalletModel().toDisplayString());
             return keystore;
         } catch(JsonParseException e) {

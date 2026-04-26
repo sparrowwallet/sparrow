@@ -4,6 +4,7 @@ import com.google.common.io.ByteStreams;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -18,7 +19,7 @@ public class SpecterDIYTest extends IoTest {
     public void testImport() throws ImportException {
         Network.set(Network.TESTNET);
         SpecterDIY specterDIY = new SpecterDIY();
-        Keystore keystore = specterDIY.getKeystore(ScriptType.P2WPKH, getInputStream("specter-diy-keystore.txt"), null);
+        Keystore keystore = specterDIY.getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH, getInputStream("specter-diy-keystore.txt"), null);
 
         Assertions.assertEquals("Specter DIY", keystore.getLabel());
         Assertions.assertEquals("m/84'/1'/0'", keystore.getKeyDerivation().getDerivationPath());

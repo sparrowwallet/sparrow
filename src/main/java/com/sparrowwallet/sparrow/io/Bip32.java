@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -25,10 +26,10 @@ public class Bip32 implements KeystoreXprvImport {
     }
 
     @Override
-    public Keystore getKeystore(List<ChildNumber> derivation, ExtendedKey xprv) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, List<ChildNumber> derivation, ExtendedKey xprv) throws ImportException {
         try {
             MasterPrivateExtendedKey masterPrivateExtendedKey = new MasterPrivateExtendedKey(xprv.getKey().getPrivKeyBytes(), xprv.getKey().getChainCode());
-            return Keystore.fromMasterPrivateExtendedKey(masterPrivateExtendedKey, derivation);
+            return Keystore.fromMasterPrivateExtendedKey(masterPrivateExtendedKey, policyType, derivation);
         } catch(Exception e) {
             throw new ImportException(e);
         }

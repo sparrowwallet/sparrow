@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.google.common.base.Throwables;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
@@ -44,6 +45,7 @@ public class CardImportPane extends TitledDescriptionPane {
     private static final Logger log = LoggerFactory.getLogger(CardImportPane.class);
 
     private final KeystoreCardImport importer;
+    private final PolicyType policyType;
     private List<ChildNumber> derivation;
     protected Button importButton;
     private final SimpleStringProperty pin = new SimpleStringProperty("");
@@ -51,6 +53,7 @@ public class CardImportPane extends TitledDescriptionPane {
     public CardImportPane(Wallet wallet, KeystoreCardImport importer, KeyDerivation defaultDerivation, KeyDerivation requiredDerivation) {
         super(importer.getName(), "Place card on reader", importer.getKeystoreImportDescription(getAccount(wallet, requiredDerivation)), importer.getWalletModel());
         this.importer = importer;
+        this.policyType = wallet.getPolicyType();
         this.derivation = requiredDerivation == null ? getDefaultDerivation(wallet, defaultDerivation) : requiredDerivation.getDerivation();
     }
 
@@ -59,7 +62,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return defaultDerivation.getDerivation();
         }
 
-        return wallet == null || wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
+        return wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
     }
 
     @Override
@@ -111,7 +114,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return;
         }
 
-        CardImportService cardImportService = new CardImportService(importer, pin.get(), derivation, messageProperty);
+        CardImportService cardImportService = new CardImportService(importer, policyType, pin.get(), derivation, messageProperty);
         cardImportService.setOnSucceeded(event -> {
             EventManager.get().post(new KeystoreImportEvent(cardImportService.getValue()));
         });
@@ -352,12 +355,14 @@ public class CardImportPane extends TitledDescriptionPane {
 
     public static class CardImportService extends Service<Keystore> {
         private final KeystoreCardImport cardImport;
+        private final PolicyType policyType;
         private final String pin;
         private final List<ChildNumber> derivation;
         private final StringProperty messageProperty;
 
-        public CardImportService(KeystoreCardImport cardImport, String pin, List<ChildNumber> derivation, StringProperty messageProperty) {
+        public CardImportService(KeystoreCardImport cardImport, PolicyType policyType, String pin, List<ChildNumber> derivation, StringProperty messageProperty) {
             this.cardImport = cardImport;
+            this.policyType = policyType;
             this.pin = pin;
             this.derivation = derivation;
             this.messageProperty = messageProperty;
@@ -368,7 +373,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return new Task<>() {
                 @Override
                 protected Keystore call() throws Exception {
-                    return cardImport.getKeystore(pin, derivation, messageProperty);
+                    return cardImport.getKeystore(policyType, pin, derivation, messageProperty);
                 }
             };
         }

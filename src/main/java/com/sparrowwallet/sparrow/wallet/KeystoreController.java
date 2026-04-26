@@ -656,7 +656,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                 AppServices.showErrorDialog("Missing Script Type", "QR Code did not contain any information for the " + getWalletForm().getWallet().getScriptType().getDescription() + " script type.");
             } else if(result.seed != null) {
                 try {
-                    Keystore keystore = Keystore.fromSeed(result.seed, getWalletForm().getWallet().getScriptType().getDefaultDerivation());
+                    Keystore keystore = Keystore.fromSeed(result.seed, getWalletForm().getWallet().getPolicyType(), getWalletForm().getWallet().getScriptType().getDefaultDerivation());
                     fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
                     derivation.setText(keystore.getKeyDerivation().getDerivationPath());
                     xpub.setText(keystore.getExtendedPublicKey().toString());

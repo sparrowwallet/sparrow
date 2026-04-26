@@ -35,7 +35,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
             CoboVaultSinglesigKeystore coboKeystore = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), CoboVaultSinglesigKeystore.class);
@@ -47,7 +47,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
             Keystore keystore = new Keystore();
             keystore.setLabel(getName());
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
-            keystore.setWalletModel(WalletModel.COBO_VAULT);
+            keystore.setWalletModel(getWalletModel());
             keystore.setKeyDerivation(new KeyDerivation(coboKeystore.MasterFingerprint.toLowerCase(Locale.ROOT), "m/" + coboKeystore.AccountKeyPath, true));
             keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(coboKeystore.ExtPubKey));
 
@@ -70,7 +70,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         //Use default of P2WPKH
-        Keystore keystore = getKeystore(ScriptType.P2WPKH, inputStream, "");
+        Keystore keystore = getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH, inputStream, "");
 
         Wallet wallet = new Wallet();
         wallet.setPolicyType(PolicyType.SINGLE_HD);

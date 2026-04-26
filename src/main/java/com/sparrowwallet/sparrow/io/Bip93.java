@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.DeterministicKey;
 import com.sparrowwallet.drongo.crypto.HDKeyDerivation;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
@@ -28,12 +29,12 @@ public class Bip93 implements KeystoreCodexImport {
     }
 
     @Override
-    public Keystore getKeystore(List<ChildNumber> derivation, String secretShare) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, List<ChildNumber> derivation, String secretShare) throws ImportException {
         try {
             Codex32.Codex32Data secretData = Codex32.decode(secretShare);
             DeterministicKey key = HDKeyDerivation.createMasterPrivateKey(secretData.payloadToBip32Secret());
             MasterPrivateExtendedKey mpek = new MasterPrivateExtendedKey(key);
-            Keystore keystore = Keystore.fromMasterPrivateExtendedKey(mpek, derivation);
+            Keystore keystore = Keystore.fromMasterPrivateExtendedKey(mpek, policyType, derivation);
             keystore.setLabel("BIP93");
             return keystore;
         } catch(MnemonicException e) {

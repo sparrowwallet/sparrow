@@ -34,7 +34,7 @@ public class StorageTest extends IoTest {
             Keystore keystore = wallet.getKeystores().get(i);
             if(keystore.hasSeed()) {
                 Keystore copyKeystore = copy.getKeystores().get(i);
-                Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), wallet.getPolicyType(), copyKeystore.getKeyDerivation().getDerivation());
                 keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                 keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                 keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());

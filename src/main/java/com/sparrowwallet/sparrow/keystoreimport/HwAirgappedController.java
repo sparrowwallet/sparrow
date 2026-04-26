@@ -30,6 +30,8 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             fileImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY(), new Krux(), new AirGapVault(), new KeycardShellSinglesig());
         } else if(getMasterController().getWallet().getPolicyType().equals(PolicyType.MULTI_HD)) {
             fileImporters = List.of(new Bip129(), new ColdcardMultisig(), new CoboVaultMultisig(), new JadeMultisig(), new KeystoneMultisig(), new PassportMultisig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY(), new Krux(), new KeycardShellMultisig());
+        } else if(getMasterController().getWallet().getPolicyType().equals(PolicyType.SINGLE_SP)) {
+            fileImporters = List.of(new ColdcardSinglesig());
         }
 
         for(KeystoreFileImport importer : fileImporters) {

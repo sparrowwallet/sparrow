@@ -74,7 +74,7 @@ public class Bip39Dialog extends NewWalletDialog {
         seedWords.setTextChangeListener((newText, changedByUserInteraction) -> {
             try {
                 String[] words = newText.split("[ \n]");
-                importer.getKeystore(scriptType.getSelectedItem().scriptType.getDefaultDerivation(), Arrays.asList(words), passphrase.getText());
+                importer.getKeystore(PolicyType.SINGLE_HD, scriptType.getSelectedItem().scriptType.getDefaultDerivation(), Arrays.asList(words), passphrase.getText());
                 createWallet.setEnabled(true);
             } catch(ImportException e) {
                 createWallet.setEnabled(false);
@@ -152,7 +152,7 @@ public class Bip39Dialog extends NewWalletDialog {
         Wallet wallet = new Wallet(walletName);
         wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(scriptType.getSelectedItem().scriptType);
-        Keystore keystore = importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
+        Keystore keystore = importer.getKeystore(PolicyType.SINGLE_HD, wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, wallet.getScriptType(), wallet.getKeystores(), 1));
         return List.of(wallet);

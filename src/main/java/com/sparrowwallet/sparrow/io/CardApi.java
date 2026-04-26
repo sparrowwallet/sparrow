@@ -5,6 +5,7 @@ import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.Keystore;
@@ -107,7 +108,7 @@ public abstract class CardApi {
 
     public abstract Service<Void> getInitializationService(byte[] entropy, StringProperty messageProperty);
 
-    public abstract Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty);
+    public abstract Service<Keystore> getImportService(PolicyType policyType, List<ChildNumber> derivation, StringProperty messageProperty);
 
     public abstract Service<PSBT> getSignService(Wallet wallet, PSBT psbt, StringProperty messageProperty);
 

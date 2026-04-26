@@ -711,7 +711,7 @@ public class DevicePane extends TitledDescriptionPane {
                     return;
                 }
 
-                Service<Keystore> importService = cardApi.getImportService(derivation, messageProperty);
+                Service<Keystore> importService = cardApi.getImportService(wallet.getPolicyType(), derivation, messageProperty);
                 handleCardOperation(importService, importButton, "Import", true, event -> {
                     importKeystore(derivation, importService.getValue());
                 });

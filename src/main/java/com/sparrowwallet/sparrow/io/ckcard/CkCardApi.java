@@ -142,12 +142,12 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
-    public Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty) {
+    public Service<Keystore> getImportService(PolicyType policyType, List<ChildNumber> derivation, StringProperty messageProperty) {
         if(cardType == WalletModel.SATSCHIP) {
-            return new CardImportPane.CardImportService(new Satschip(), cvc, derivation, messageProperty);
+            return new CardImportPane.CardImportService(new Satschip(), policyType, cvc, derivation, messageProperty);
         }
 
-        return new CardImportPane.CardImportService(new Tapsigner(), cvc, derivation, messageProperty);
+        return new CardImportPane.CardImportService(new Tapsigner(), policyType, cvc, derivation, messageProperty);
     }
 
     @Override

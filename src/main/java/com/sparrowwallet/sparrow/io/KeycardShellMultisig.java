@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -23,10 +24,9 @@ public class KeycardShellMultisig extends ColdcardMultisig {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
-        Keystore keystore = super.getKeystore(scriptType, inputStream, password);
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        Keystore keystore = super.getKeystore(policyType, scriptType, inputStream, password);
         keystore.setLabel("Keycard Shell");
-        keystore.setWalletModel(getWalletModel());
 
         return keystore;
     }

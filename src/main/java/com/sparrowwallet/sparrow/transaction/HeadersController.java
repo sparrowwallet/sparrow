@@ -1034,7 +1034,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void signFromSeed(DeterministicSeed seed) {
         try {
-            String masterFingerprint = Keystore.fromSeed(seed, ScriptType.P2PKH.getDefaultDerivation()).getKeyDerivation().getMasterFingerprint();
+            String masterFingerprint = Keystore.fromSeed(seed, PolicyType.SINGLE_HD, ScriptType.P2PKH.getDefaultDerivation()).getKeyDerivation().getMasterFingerprint();
             Wallet walletCopy = headersForm.getSigningWallet().copy();
             OptionalInt optIndex = IntStream.range(0, walletCopy.getKeystores().size())
                     .filter(i -> walletCopy.getKeystores().get(i).getKeyDerivation().getMasterFingerprint().equals(masterFingerprint)).findFirst();
@@ -1044,7 +1044,7 @@ public class HeadersController extends TransactionFormController implements Init
                     keystore.setMasterPrivateExtendedKey(null);
                 });
                 Keystore original = walletCopy.getKeystores().get(optIndex.getAsInt());
-                Keystore replacement = Keystore.fromSeed(seed, original.getKeyDerivation().getDerivation());
+                Keystore replacement = Keystore.fromSeed(seed, walletCopy.getPolicyType(), original.getKeyDerivation().getDerivation());
                 walletCopy.getKeystores().set(optIndex.getAsInt(), replacement);
                 signUnencryptedKeystores(walletCopy);
             } else {

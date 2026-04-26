@@ -25,7 +25,7 @@ public class FileKeystoreImportPane extends FileImportPane {
     protected void importFile(String fileName, InputStream inputStream, String password) throws ImportException {
         Keystore keystore = getScannedKeystore(wallet.getScriptType());
         if(keystore == null) {
-            keystore = importer.getKeystore(wallet.getScriptType(), inputStream, password);
+            keystore = importer.getKeystore(wallet.getPolicyType(), wallet.getScriptType(), inputStream, password);
         }
 
         if(requiredDerivation != null && !requiredDerivation.getDerivation().equals(keystore.getKeyDerivation().getDerivation())) {
