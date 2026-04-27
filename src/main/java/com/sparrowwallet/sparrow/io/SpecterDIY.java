@@ -21,7 +21,7 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
     public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             String text = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-            String outputDesc = "sh(" + text + ")";
+            String outputDesc = policyType == PolicyType.SINGLE_SP ? "sp(" + text + ")" : "sh(" + text + ")";
             OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(outputDesc);
             Wallet wallet = outputDescriptor.toWallet();
 

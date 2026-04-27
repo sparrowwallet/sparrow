@@ -62,8 +62,8 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
             }.getType();
             Map<String, JsonElement> map = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), stringStringMap);
 
-            if (map.get("xfp") == null) {
-                throw new ImportException("File was not a valid " + getName() + " wallet export");
+            if(map.get("xfp") == null) {
+                throw new ImportException("Export was not a valid " + getName() + " wallet export");
             }
 
             String masterFingerprint = map.get("xfp").getAsString();
@@ -71,7 +71,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
             if(policyType == PolicyType.SINGLE_SP) {
                 JsonElement bip352Element = map.get("bip352");
                 if(bip352Element == null) {
-                    throw new ImportException("File does not contain an export for silent payments");
+                    throw new ImportException("Export does not contain the spscan value for silent payments");
                 }
 
                 ColdcardKeystore ck = gson.fromJson(bip352Element, ColdcardKeystore.class);
@@ -84,8 +84,8 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                 return keystore;
             }
 
-            for (String key : map.keySet()) {
-                if (key.startsWith("bip")) {
+            for(String key : map.keySet()) {
+                if(key.startsWith("bip")) {
                     ColdcardKeystore ck = gson.fromJson(map.get(key), ColdcardKeystore.class);
 
                     if(ck.name != null) {
@@ -103,7 +103,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch(Exception e) {
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
 

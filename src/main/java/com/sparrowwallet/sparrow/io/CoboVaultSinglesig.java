@@ -36,6 +36,10 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
 
     @Override
     public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        if(policyType == PolicyType.SINGLE_SP) {
+            throw new ImportException(getName() + " does not support receiving silent payments");
+        }
+
         try {
             Gson gson = new Gson();
             CoboVaultSinglesigKeystore coboKeystore = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), CoboVaultSinglesigKeystore.class);

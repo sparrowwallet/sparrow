@@ -27,6 +27,10 @@ public class Samourai implements KeystoreFileImport {
 
     @Override
     public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        if(policyType == PolicyType.SINGLE_SP) {
+            throw new ImportException(getName() + " does not support receiving silent payments");
+        }
+
         try {
             String input = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 

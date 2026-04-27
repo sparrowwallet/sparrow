@@ -115,7 +115,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         for(ScriptType scriptType : ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE_HD)) {
             for(List<ChildNumber> derivation : derivations) {
                 try {
-                    Wallet wallet = getWallet(scriptType, derivation);
+                    Wallet wallet = getWallet(PolicyType.SINGLE_HD, scriptType, derivation);
                     wallets.add(wallet);
                 } catch(ImportException e) {
                     String errorMessage = e.getMessage();
@@ -148,7 +148,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
                 Optional<ButtonType> optButtonType = AppServices.showErrorDialog("No existing wallet found",
                         Config.get().getServerType() == ServerType.BITCOIN_CORE ? "The configured server type is Bitcoin Core, which does not support wallet discovery.\n\n" +
                                 "You can however import this wallet and scan the blockchain by supplying a start date. Do you want to import this wallet?" :
-                                "Could not find a wallet with existing transactions using this mnemonic. Import this wallet anyway?", ButtonType.NO, ButtonType.YES);
+                                "Could not find an HD wallet with existing transactions using this mnemonic. Import this wallet anyway?", ButtonType.NO, ButtonType.YES);
                 if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
                     setContent(getScriptTypeEntry());
                     setExpanded(true);
@@ -163,41 +163,49 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         walletDiscoveryService.start();
     }
 
-    private Wallet getWallet(ScriptType scriptType, List<ChildNumber> derivation) throws ImportException {
+    private Wallet getWallet(PolicyType policyType, ScriptType scriptType, List<ChildNumber> derivation) throws ImportException {
         Wallet wallet = new Wallet("");
-        wallet.setPolicyType(PolicyType.SINGLE_HD);
+        wallet.setPolicyType(policyType);
         wallet.setScriptType(scriptType);
-        Keystore keystore = importer.getKeystore(PolicyType.SINGLE_HD, derivation, wordEntriesProperty.get(), passphraseProperty.get());
+        Keystore keystore = importer.getKeystore(policyType, derivation, wordEntriesProperty.get(), passphraseProperty.get());
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), 1));
+        wallet.setDefaultPolicy(Policy.getPolicy(policyType, scriptType, wallet.getKeystores(), 1));
         return wallet;
     }
 
     private Node getScriptTypeEntry() {
-        Label label = new Label("Script Type:");
+        Label label = new Label("Type:");
+
+        List<PolicyAndScriptType> types = new ArrayList<>();
+        for(PolicyType policyType : List.of(PolicyType.SINGLE_HD, PolicyType.SINGLE_SP)) {
+            for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(policyType)) {
+                types.add(new PolicyAndScriptType(policyType, scriptType));
+            }
+        }
 
         HBox fieldBox = new HBox(5);
         fieldBox.setAlignment(Pos.CENTER_RIGHT);
-        ComboBox<ScriptType> scriptTypeComboBox = new ComboBox<>(FXCollections.observableArrayList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD)));
-        if(scriptTypeComboBox.getItems().contains(ScriptType.P2WPKH)) {
-            scriptTypeComboBox.setValue(ScriptType.P2WPKH);
+        ComboBox<PolicyAndScriptType> comboBox = new ComboBox<>(FXCollections.observableArrayList(types));
+        PolicyAndScriptType defaultType = new PolicyAndScriptType(PolicyType.SINGLE_HD, ScriptType.P2WPKH);
+        if(types.contains(defaultType)) {
+            comboBox.setValue(defaultType);
         }
-        scriptTypeComboBox.setConverter(new StringConverter<>() {
+        comboBox.setConverter(new StringConverter<>() {
             @Override
-            public String toString(ScriptType scriptType) {
-                return scriptType == null ? "" : scriptType.getDescription();
+            public String toString(PolicyAndScriptType type) {
+                return type == null ? "" : type.getDescription();
             }
 
             @Override
-            public ScriptType fromString(String string) {
+            public PolicyAndScriptType fromString(String string) {
                 return null;
             }
         });
-        scriptTypeComboBox.setMaxWidth(170);
+        comboBox.setMaxWidth(220);
 
         HelpLabel helpLabel = new HelpLabel();
-        helpLabel.setHelpText("Native Segwit is usually the best choice for new wallets.\nTaproot is a new type useful for specific needs.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
-        fieldBox.getChildren().addAll(scriptTypeComboBox, helpLabel);
+        helpLabel.setHelpText("Native Segwit is usually the best choice for new wallets.\nTaproot is a new type useful for specific needs.\nTaproot Silent Payments creates a silent payment wallet.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
+        fieldBox.getChildren().addAll(comboBox, helpLabel);
 
         Region region = new Region();
         HBox.setHgrow(region, Priority.SOMETIMES);
@@ -208,8 +216,8 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
             showHideLink.setVisible(true);
             setExpanded(false);
             try {
-                ScriptType scriptType = scriptTypeComboBox.getValue();
-                Wallet wallet = getWallet(scriptType, scriptType.getDefaultDerivation());
+                PolicyAndScriptType type = comboBox.getValue();
+                Wallet wallet = getWallet(type.policyType(), type.scriptType(), type.scriptType().getDefaultDerivation());
                 EventManager.get().post(new WalletImportEvent(wallet));
             } catch(ImportException e) {
                 log.error("Error importing mnemonic", e);
@@ -230,5 +238,11 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         contentBox.setPrefHeight(60);
 
         return contentBox;
+    }
+
+    protected record PolicyAndScriptType(PolicyType policyType, ScriptType scriptType) {
+        public String getDescription() {
+            return scriptType.getDescription() + (policyType == PolicyType.SINGLE_SP ? " SP" : " HD");
+        }
     }
 }

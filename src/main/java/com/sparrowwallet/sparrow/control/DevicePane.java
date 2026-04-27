@@ -305,15 +305,34 @@ public class DevicePane extends TitledDescriptionPane {
 
         if(importButton instanceof SplitMenuButton importMenuButton) {
             if(wallet.getScriptType() == null) {
-                ScriptType[] scriptTypes = new ScriptType[] {ScriptType.P2WPKH, ScriptType.P2SH_P2WPKH, ScriptType.P2PKH, ScriptType.P2TR};
-                for(ScriptType scriptType : scriptTypes) {
-                    MenuItem item = new MenuItem(scriptType.getDescription());
-                    final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
-                    item.setOnAction(event -> {
-                        importMenuButton.setDisable(true);
-                        importKeystore(derivation);
-                    });
-                    importMenuButton.getItems().add(item);
+                if(wallet.getPolicyType() == null) {
+                    List<PolicyAndScriptType> types = new ArrayList<>();
+                    for(PolicyType policyType : List.of(PolicyType.SINGLE_HD, PolicyType.SINGLE_SP)) {
+                        for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(policyType)) {
+                            types.add(new PolicyAndScriptType(policyType, scriptType));
+                        }
+                    }
+                    for(PolicyAndScriptType type : types) {
+                        MenuItem item = new MenuItem(type.getDescription());
+                        final List<ChildNumber> derivation = type.scriptType().getDefaultDerivation();
+                        item.setOnAction(event -> {
+                            importMenuButton.setDisable(true);
+                            wallet.setPolicyType(type.policyType());
+                            importKeystore(derivation);
+                        });
+                        importMenuButton.getItems().add(item);
+                    }
+                } else {
+                    List<ScriptType> scriptTypes = ScriptType.getScriptTypesForPolicyType(wallet.getPolicyType());
+                    for(ScriptType scriptType : scriptTypes) {
+                        MenuItem item = new MenuItem(scriptType.getDescription());
+                        final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
+                        item.setOnAction(event -> {
+                            importMenuButton.setDisable(true);
+                            importKeystore(derivation);
+                        });
+                        importMenuButton.getItems().add(item);
+                    }
                 }
                 importMenuButton.getItems().add(new SeparatorMenuItem());
                 MenuItem discoverItem = new MenuItem("Discover Wallet...");
@@ -811,12 +830,13 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void importKeystore(List<ChildNumber> derivation, Keystore keystore) {
         if(wallet.getScriptType() == null) {
-            ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().get(0).equals(derivation.get(0))).findFirst().orElse(ScriptType.P2PKH);
+            ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().getFirst().equals(derivation.getFirst())).findFirst().orElse(ScriptType.P2PKH);
+            PolicyType policyType = wallet.getPolicyType() != null ? wallet.getPolicyType() : PolicyType.SINGLE_HD;
             wallet.setName(device.getModel().toDisplayString());
-            wallet.setPolicyType(PolicyType.SINGLE_HD);
+            wallet.setPolicyType(policyType);
             wallet.setScriptType(scriptType);
             wallet.getKeystores().add(keystore);
-            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, scriptType, wallet.getKeystores(), null));
+            wallet.setDefaultPolicy(Policy.getPolicy(policyType, scriptType, wallet.getKeystores(), null));
 
             EventManager.get().post(new WalletImportEvent(wallet));
         } else {
@@ -1020,7 +1040,7 @@ public class DevicePane extends TitledDescriptionPane {
                     AppServices.showErrorDialog("No existing wallet found",
                             Config.get().getServerType() == ServerType.BITCOIN_CORE ? "The configured server type is Bitcoin Core, which does not support wallet discovery.\n\n" +
                                     "You can however import the " + device.getModel().toDisplayString() + " and scan the blockchain by supplying a start date." :
-                                    "Could not find a wallet with existing transactions using the " + device.getModel().toDisplayString() + ".");
+                                    "Could not find an HD wallet with existing transactions using the " + device.getModel().toDisplayString() + ".");
                     setDefaultStatus();
                     importButton.setDisable(false);
                 }
@@ -1392,5 +1412,11 @@ public class DevicePane extends TitledDescriptionPane {
 
     public enum DeviceOperation {
         IMPORT, SIGN, DISPLAY_ADDRESS, SIGN_MESSAGE, DISCOVER_KEYSTORES, GET_PRIVATE_KEY, GET_ADDRESS;
+    }
+
+    protected record PolicyAndScriptType(PolicyType policyType, ScriptType scriptType) {
+        public String getDescription() {
+            return scriptType.getDescription() + (policyType == PolicyType.SINGLE_SP ? " SP" : " HD");
+        }
     }
 }

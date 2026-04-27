@@ -45,24 +45,22 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
                 throw new IllegalArgumentException("Output descriptor describes a multisig wallet");
             }
 
+            if(policyType == PolicyType.SINGLE_SP && !descriptor.isSilentPayments()) {
+                throw new IllegalArgumentException("Export does not contain the spscan value for silent payments");
+            }
+
             if(descriptor.getScriptType() != scriptType) {
                 throw new IllegalArgumentException("Output descriptor describes a " + descriptor.getScriptType().getDescription() + " wallet");
             }
 
-            ExtendedKey xpub = descriptor.getSingletonExtendedPublicKey();
-            KeyDerivation keyDerivation = descriptor.getKeyDerivation(xpub);
-
-            Keystore keystore = new Keystore();
+            Wallet wallet = descriptor.toWallet();
+            Keystore keystore = wallet.getKeystores().getFirst();
             keystore.setLabel(getName());
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
             keystore.setWalletModel(getWalletModel());
-            keystore.setKeyDerivation(keyDerivation);
-            keystore.setExtendedPublicKey(xpub);
 
             return keystore;
-        } catch (IllegalArgumentException e) {
-            throw new ImportException("Error getting " + getName() + " keystore - not an output descriptor", e);
-        } catch (Exception e) {
+        } catch(Exception e) {
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }

@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.jupiter.api.Assertions;
@@ -25,6 +26,23 @@ public class SpecterDIYTest extends IoTest {
         Assertions.assertEquals("m/84'/1'/0'", keystore.getKeyDerivation().getDerivationPath());
         Assertions.assertEquals("b317ec86", keystore.getKeyDerivation().getMasterFingerprint());
         Assertions.assertEquals(ExtendedKey.fromDescriptor("vpub5YHLPnkkpPW1ecL7Di7Gv2wDHDtBNqRdt17gMULpxJ27ZA1MmW7xbZjdg1S7d5JKaJ8CiZEmRUHrEB6CGuLomA6ioVa1Pcke6fEb5CzDBU1"), keystore.getExtendedPublicKey());
+        Assertions.assertTrue(keystore.isValid());
+        Network.set(Network.MAINNET);
+    }
+
+    @Test
+    public void testImportSilentPayments() throws ImportException {
+        Network.set(Network.TESTNET);
+        SpecterDIY specterDIY = new SpecterDIY();
+        Keystore keystore = specterDIY.getKeystore(PolicyType.SINGLE_SP, ScriptType.P2TR, getInputStream("specter-diy-sp-keystore.txt"), null);
+
+        Assertions.assertEquals("Specter DIY", keystore.getLabel());
+        Assertions.assertEquals("m/352'/1'/0'", keystore.getKeyDerivation().getDerivationPath());
+        Assertions.assertEquals("0f056943", keystore.getKeyDerivation().getMasterFingerprint());
+        Assertions.assertNull(keystore.getExtendedPublicKey());
+        Assertions.assertNotNull(keystore.getSilentPaymentScanAddress());
+        Assertions.assertEquals(SilentPaymentScanAddress.fromKeyString("tspscan1q05wxw5wc7wqmkf8cnfc6ry76qej8vhr3a3mmxmwgv35s0tlw24fs82k0npv2hv6p97s8sd9t7vpf44kluka9w863zjwxzfrym2ay9ccfzt06c4"),
+                keystore.getSilentPaymentScanAddress());
         Assertions.assertTrue(keystore.isValid());
         Network.set(Network.MAINNET);
     }
