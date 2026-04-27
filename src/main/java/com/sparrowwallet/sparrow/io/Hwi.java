@@ -146,7 +146,7 @@ public class Hwi {
         }
     }
 
-    public Map<WalletType, String> getXpubs(Device device, String passphrase, Map<WalletType, String> accountDerivationPaths, Map<WalletType, String> accountXpubs) throws ImportException {
+    public Map<WalletType, ExtendedKey> getXpubs(Device device, String passphrase, Map<WalletType, String> accountDerivationPaths, Map<WalletType, ExtendedKey> accountXpubs) throws ImportException {
         for(Map.Entry<WalletType, String> entry : accountDerivationPaths.entrySet()) {
             accountXpubs.put(entry.getKey(), getXpub(device, passphrase, entry.getValue()));
         }
@@ -154,12 +154,12 @@ public class Hwi {
         return accountXpubs;
     }
 
-    public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
+    public ExtendedKey getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
         try {
             Lark lark = getLark(passphrase);
             ExtendedKey xpub = lark.getPubKeyAtPath(device.getType(), device.getPath(), derivationPath);
             isPromptActive = false;
-            return xpub.toString();
+            return xpub;
         } catch(DeviceException e) {
             throw new ImportException(e.getMessage(), e);
         } catch(RuntimeException e) {
@@ -436,7 +436,7 @@ public class Hwi {
         }
     }
 
-    public static class GetXpubService extends Service<String> {
+    public static class GetXpubService extends Service<ExtendedKey> {
         private final Device device;
         private final String passphrase;
         private final String derivationPath;
@@ -448,9 +448,9 @@ public class Hwi {
         }
 
         @Override
-        protected Task<String> createTask() {
+        protected Task<ExtendedKey> createTask() {
             return new Task<>() {
-                protected String call() throws ImportException {
+                protected ExtendedKey call() throws ImportException {
                     Hwi hwi = new Hwi();
                     return hwi.getXpub(device, passphrase, derivationPath);
                 }
@@ -480,7 +480,7 @@ public class Hwi {
         }
     }
 
-    public static class GetXpubsService extends Service<Map<WalletType, String>> {
+    public static class GetXpubsService extends Service<Map<WalletType, ExtendedKey>> {
         private final Device device;
         private final String passphrase;
         private final Map<WalletType, String> accountDerivationPaths;
@@ -492,13 +492,13 @@ public class Hwi {
         }
 
         @Override
-        protected Task<Map<WalletType, String>> createTask() {
+        protected Task<Map<WalletType, ExtendedKey>> createTask() {
             return new Task<>() {
-                protected Map<WalletType, String> call() throws ImportException {
+                protected Map<WalletType, ExtendedKey> call() throws ImportException {
                     Hwi hwi = new Hwi();
                     updateProgress(0, accountDerivationPaths.size());
-                    ObservableMap<WalletType, String> accountXpubs = FXCollections.observableMap(new LinkedHashMap<>());
-                    accountXpubs.addListener((MapChangeListener<? super WalletType, ? super String>) _ -> updateProgress(accountXpubs.size(), accountDerivationPaths.size()));
+                    ObservableMap<WalletType, ExtendedKey> accountXpubs = FXCollections.observableMap(new LinkedHashMap<>());
+                    accountXpubs.addListener((MapChangeListener<? super WalletType, ? super ExtendedKey>) _ -> updateProgress(accountXpubs.size(), accountDerivationPaths.size()));
                     return hwi.getXpubs(device, passphrase, accountDerivationPaths, accountXpubs);
                 }
             };

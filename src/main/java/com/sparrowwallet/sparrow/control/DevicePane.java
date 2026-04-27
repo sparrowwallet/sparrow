@@ -756,7 +756,7 @@ public class DevicePane extends TitledDescriptionPane {
 
         Hwi.GetXpubService getXpubService = new Hwi.GetXpubService(device, passphrase.get(), derivationPath);
         getXpubService.setOnSucceeded(workerStateEvent -> {
-            String xpub = getXpubService.getValue();
+            ExtendedKey xpub = getXpubService.getValue();
 
             try {
                 Keystore keystore = new Keystore();
@@ -764,7 +764,7 @@ public class DevicePane extends TitledDescriptionPane {
                 keystore.setSource(KeystoreSource.HW_USB);
                 keystore.setWalletModel(device.getModel());
                 keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
-                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(xpub));
+                keystore.setExtendedPublicKey(xpub);
 
                 importKeystore(derivation, keystore);
             } catch(Exception e) {
@@ -976,9 +976,9 @@ public class DevicePane extends TitledDescriptionPane {
 
         Hwi.GetXpubsService getXpubsService = new Hwi.GetXpubsService(device, passphrase.get(), derivationPaths);
         getXpubsService.setOnSucceeded(_ -> {
-            Map<Hwi.WalletType, String> accountXpubs = getXpubsService.getValue();
+            Map<Hwi.WalletType, ExtendedKey> accountXpubs = getXpubsService.getValue();
 
-            for(Map.Entry<Hwi.WalletType, String> entry : accountXpubs.entrySet()) {
+            for(Map.Entry<Hwi.WalletType, ExtendedKey> entry : accountXpubs.entrySet()) {
                 try {
                     Wallet wallet = new Wallet(device.getModel().toDisplayString());
                     wallet.setPolicyType(PolicyType.SINGLE_HD);
@@ -988,7 +988,7 @@ public class DevicePane extends TitledDescriptionPane {
                     keystore.setSource(KeystoreSource.HW_USB);
                     keystore.setWalletModel(device.getModel());
                     keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPaths.get(entry.getKey())));
-                    keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(entry.getValue()));
+                    keystore.setExtendedPublicKey(entry.getValue());
                     wallet.getKeystores().add(keystore);
                     wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, entry.getKey().scriptType(), wallet.getKeystores(), 1));
                     if(entry.getKey().standardAccount().equals(StandardAccount.ACCOUNT_0)) {
@@ -1070,16 +1070,16 @@ public class DevicePane extends TitledDescriptionPane {
         Map<StandardAccount, Keystore> importedKeystores = new LinkedHashMap<>();
         Hwi.GetXpubsService getXpubsService = new Hwi.GetXpubsService(device, passphrase.get(), accountDerivationPaths);
         getXpubsService.setOnSucceeded(workerStateEvent -> {
-            Map<Hwi.WalletType, String> accountXpubs = getXpubsService.getValue();
+            Map<Hwi.WalletType, ExtendedKey> accountXpubs = getXpubsService.getValue();
 
-            for(Map.Entry<Hwi.WalletType, String> entry : accountXpubs.entrySet()) {
+            for(Map.Entry<Hwi.WalletType, ExtendedKey> entry : accountXpubs.entrySet()) {
                 try {
                     Keystore keystore = new Keystore();
                     keystore.setLabel(device.getModel().toDisplayString());
                     keystore.setSource(KeystoreSource.HW_USB);
                     keystore.setWalletModel(device.getModel());
                     keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, accountDerivationPaths.get(entry.getKey())));
-                    keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(entry.getValue()));
+                    keystore.setExtendedPublicKey(entry.getValue());
                     importedKeystores.put(entry.getKey().standardAccount(), keystore);
                 } catch(Exception e) {
                     setError("Could not retrieve xpub", e.getMessage());
