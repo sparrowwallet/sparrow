@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.lark.DeviceException;
@@ -163,6 +164,20 @@ public class Hwi {
             throw new ImportException(e.getMessage(), e);
         } catch(RuntimeException e) {
             log.error("Error retrieving xpub", e);
+            throw e;
+        }
+    }
+
+    public SilentPaymentScanAddress getSpscan(Device device, String passphrase, String derivationPath) throws ImportException {
+        try {
+            Lark lark = getLark(passphrase);
+            SilentPaymentScanAddress spscan = lark.getSpscanAtPath(device.getType(), device.getPath(), derivationPath);
+            isPromptActive = false;
+            return spscan;
+        } catch(DeviceException e) {
+            throw new ImportException(e.getMessage(), e);
+        } catch(RuntimeException e) {
+            log.error("Error retrieving spscan", e);
             throw e;
         }
     }
@@ -438,6 +453,28 @@ public class Hwi {
                 protected String call() throws ImportException {
                     Hwi hwi = new Hwi();
                     return hwi.getXpub(device, passphrase, derivationPath);
+                }
+            };
+        }
+    }
+
+    public static class GetSpscanService extends Service<SilentPaymentScanAddress> {
+        private final Device device;
+        private final String passphrase;
+        private final String derivationPath;
+
+        public GetSpscanService(Device device, String passphrase, String derivationPath) {
+            this.device = device;
+            this.passphrase = passphrase;
+            this.derivationPath = derivationPath;
+        }
+
+        @Override
+        protected Task<SilentPaymentScanAddress> createTask() {
+            return new Task<>() {
+                protected SilentPaymentScanAddress call() throws ImportException {
+                    Hwi hwi = new Hwi();
+                    return hwi.getSpscan(device, passphrase, derivationPath);
                 }
             };
         }

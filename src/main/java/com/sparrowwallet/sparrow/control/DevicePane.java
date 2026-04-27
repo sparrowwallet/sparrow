@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -730,13 +731,21 @@ public class DevicePane extends TitledDescriptionPane {
                     }
                 }
 
-                importXpub(derivation);
+                importKey(derivation);
             });
             enumerateService.setOnFailed(workerStateEvent -> {
                 setError("Error", enumerateService.getException().getMessage());
                 importButton.setDisable(false);
             });
             enumerateService.start();
+        } else {
+            importKey(derivation);
+        }
+    }
+
+    private void importKey(List<ChildNumber> derivation) {
+        if(wallet != null && wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+            importSpscan(derivation);
         } else {
             importXpub(derivation);
         }
@@ -769,6 +778,35 @@ public class DevicePane extends TitledDescriptionPane {
         setDescription("Importing...");
         showHideLink.setVisible(false);
         getXpubService.start();
+    }
+
+    private void importSpscan(List<ChildNumber> derivation) {
+        String derivationPath = KeyDerivation.writePath(derivation);
+
+        Hwi.GetSpscanService getSpscanService = new Hwi.GetSpscanService(device, passphrase.get(), derivationPath);
+        getSpscanService.setOnSucceeded(workerStateEvent -> {
+            SilentPaymentScanAddress spscan = getSpscanService.getValue();
+
+            try {
+                Keystore keystore = new Keystore();
+                keystore.setLabel(device.getModel().toDisplayString());
+                keystore.setSource(KeystoreSource.HW_USB);
+                keystore.setWalletModel(device.getModel());
+                keystore.setKeyDerivation(new KeyDerivation(device.getFingerprint(), derivationPath));
+                keystore.setSilentPaymentScanAddress(spscan);
+
+                importKeystore(derivation, keystore);
+            } catch(Exception e) {
+                setError("Could not retrieve spscan", e.getMessage());
+            }
+        });
+        getSpscanService.setOnFailed(workerStateEvent -> {
+            setError("Could not retrieve spscan", getSpscanService.getException().getMessage());
+            importButton.setDisable(false);
+        });
+        setDescription("Importing...");
+        showHideLink.setVisible(false);
+        getSpscanService.start();
     }
 
     private void importKeystore(List<ChildNumber> derivation, Keystore keystore) {
@@ -1179,7 +1217,7 @@ public class DevicePane extends TitledDescriptionPane {
             showHideLink.setVisible(true);
             setExpanded(false);
             List<ChildNumber> importDerivation = KeyDerivation.parsePath(derivationField.getText());
-            importXpub(importDerivation);
+            importKey(importDerivation);
         });
 
         derivationField.textProperty().addListener((observable, oldValue, newValue) -> {

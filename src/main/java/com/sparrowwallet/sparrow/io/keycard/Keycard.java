@@ -54,6 +54,10 @@ public class Keycard implements KeystoreCardImport {
 
     @Override
     public Keystore getKeystore(PolicyType policyType, String pin, List<ChildNumber> derivation, StringProperty messageProperty) throws ImportException {
+        if(policyType == PolicyType.SINGLE_SP) {
+            throw new ImportException(getName() + " does not support receiving silent payments");
+        }
+
         if(!StringUtils.isNumeric(pin)) {
             throw new ImportException("PIN must be all digits.");
         }
