@@ -26,16 +26,16 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
             Wallet wallet = outputDescriptor.toWallet();
 
             if(wallet.getKeystores().size() != 1) {
-                throw new ImportException("Could not determine keystore from import");
+                throw new IllegalArgumentException("Could not determine keystore from import");
             }
 
-            Keystore keystore = wallet.getKeystores().get(0);
+            Keystore keystore = wallet.getKeystores().getFirst();
             keystore.setLabel(getName());
             keystore.setWalletModel(getWalletModel());
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
 
             return keystore;
-        } catch(IOException e) {
+        } catch(Exception e) {
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }
