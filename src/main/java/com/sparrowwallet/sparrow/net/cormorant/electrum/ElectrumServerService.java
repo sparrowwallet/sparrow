@@ -11,6 +11,8 @@ import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.MempoolEntriesInitializedEvent;
 import com.sparrowwallet.drongo.Version;
 import com.sparrowwallet.sparrow.net.BlockStats;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.ServerFeatures;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.*;
 import com.sparrowwallet.sparrow.net.cormorant.index.TxEntry;
@@ -22,32 +24,52 @@ import java.util.*;
 @JsonRpcService
 public class ElectrumServerService {
     private static final Logger log = LoggerFactory.getLogger(ElectrumServerService.class);
-    private static final Version VERSION = new Version("1.4");
+    private static final Version MIN_VERSION = new Version("1.4");
+    private static final Version MAX_VERSION = new Version("1.6");
     private static final long VSIZE_BIN_WIDTH = 50000;
     private static final double DEFAULT_FEE_RATE = 0.00001d;
 
     private final BitcoindClient bitcoindClient;
     private final RequestHandler requestHandler;
+    private final int electrumPort;
 
-    public ElectrumServerService(BitcoindClient bitcoindClient, RequestHandler requestHandler) {
+    public ElectrumServerService(BitcoindClient bitcoindClient, RequestHandler requestHandler, int electrumPort) {
         this.bitcoindClient = bitcoindClient;
         this.requestHandler = requestHandler;
+        this.electrumPort = electrumPort;
     }
 
     @JsonRpcMethod("server.version")
     public List<String> getServerVersion(@JsonRpcParam("client_name") String clientName, @JsonRpcParam("protocol_version") String[] protocolVersion) throws UnsupportedVersionException {
         String version = protocolVersion.length > 1 ? protocolVersion[1] : protocolVersion[0];
         Version clientVersion = new Version(version);
-        if(clientVersion.compareTo(VERSION) < 0) {
+        if(clientVersion.compareTo(MIN_VERSION) < 0) {
             throw new UnsupportedVersionException(version);
         }
 
-        return List.of(Cormorant.SERVER_NAME + " " + SparrowWallet.APP_VERSION, VERSION.get());
+        return List.of(Cormorant.SERVER_NAME + " " + SparrowWallet.APP_VERSION, MIN_VERSION.get());
     }
 
     @JsonRpcMethod("server.banner")
     public String getServerBanner() {
         return Cormorant.SERVER_NAME + " " + SparrowWallet.APP_VERSION + "\n" + bitcoindClient.getNetworkInfo().subversion() + (bitcoindClient.getNetworkInfo().networkactive() ? "" : " (disconnected)");
+    }
+
+    @JsonRpcMethod("server.features")
+    public ServerFeatures getServerFeatures() throws BitcoindIOException {
+        try {
+            ServerFeatures features = new ServerFeatures();
+            features.hosts = Map.of(ElectrumServer.CORE_ELECTRUM_HOST, Map.of("tcp_port", electrumPort));
+            features.genesis_hash = bitcoindClient.getBitcoindService().getBlockHash(0);
+            features.hash_function = "sha256";
+            features.server_version = Cormorant.SERVER_NAME + " " + SparrowWallet.APP_VERSION;
+            features.protocol_min = MIN_VERSION.get();
+            features.protocol_max = MAX_VERSION.get();
+            features.pruning = bitcoindClient.isPruned() ? bitcoindClient.getPruneHeight() : null;
+            return features;
+        } catch(IllegalStateException e) {
+            throw new BitcoindIOException(e);
+        }
     }
 
     @JsonRpcMethod("blockchain.estimatefee")

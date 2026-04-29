@@ -19,6 +19,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Server;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindException;
+import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindUnsupportedException;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
 import javafx.application.Platform;
@@ -171,6 +172,10 @@ public class ElectrumServer {
 
     public List<String> getServerVersion() throws ServerException {
         return electrumServerRpc.getServerVersion(getTransport(), "Sparrow", SUPPORTED_VERSIONS);
+    }
+
+    public ServerFeatures getServerFeatures() throws ServerException {
+        return electrumServerRpc.getServerFeatures(getTransport());
     }
 
     public String getServerBanner() throws ServerException {
@@ -1234,6 +1239,12 @@ public class ElectrumServer {
         return subscribedScriptHashes;
     }
 
+    public static void requireSilentPaymentsSupport() {
+        if(serverCapability == null || !serverCapability.supportsSilentPayments()) {
+            throw new ElectrumServerRpcException("This server does not support silent payments");
+        }
+    }
+
     public static String getSubscribedScriptHashStatus(String scriptHash) {
         List<String> existingStatuses = subscribedScriptHashes.get(scriptHash);
         if(existingStatuses != null && !existingStatuses.isEmpty()) {
@@ -1256,15 +1267,15 @@ public class ElectrumServer {
         if(!serverVersion.isEmpty()) {
             String server = serverVersion.getFirst().toLowerCase(Locale.ROOT);
             if(server.contains("electrumx")) {
-                return new ServerCapability(true, true);
+                return new ServerCapability(true, true, true);
             }
 
             if(server.startsWith("frigate")) {
-                return new ServerCapability(true, true);
+                return new ServerCapability(true, true, true);
             }
 
             if(server.startsWith("cormorant")) {
-                return new ServerCapability(true, false, true, false);
+                return new ServerCapability(true, false, true, false, true);
             }
 
             if(server.startsWith("electrs/")) {
@@ -1276,7 +1287,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(electrsVersion);
                     if(version.compareTo(ELECTRS_MIN_BATCHING_VERSION) >= 0) {
-                        return new ServerCapability(true, true);
+                        return new ServerCapability(true, true, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1292,7 +1303,7 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(fulcrumVersion);
                     if(version.compareTo(FULCRUM_MIN_BATCHING_VERSION) >= 0) {
-                        return new ServerCapability(true, true);
+                        return new ServerCapability(true, true, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1311,7 +1322,7 @@ public class ElectrumServer {
                     Version version = new Version(mempoolElectrsVersion);
                     if(version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) > 0 ||
                             (version.compareTo(MEMPOOL_ELECTRS_MIN_BATCHING_VERSION) == 0 && (!mempoolElectrsSuffix.contains("dev") || mempoolElectrsSuffix.contains("dev-249848d")))) {
-                        return new ServerCapability(true, 25, false);
+                        return new ServerCapability(true, 25, false, true);
                     }
                 } catch(Exception e) {
                     //ignore
@@ -1319,11 +1330,11 @@ public class ElectrumServer {
             }
 
             if(server.startsWith("electrumpersonalserver")) {
-                return new ServerCapability(false, false);
+                return new ServerCapability(false, false, false);
             }
         }
 
-        return new ServerCapability(false, true);
+        return new ServerCapability(false, true, true);
     }
 
     public static class ServerVersionService extends Service<List<String>> {
@@ -1386,6 +1397,8 @@ public class ElectrumServer {
                                 ElectrumServer.cormorant = new Cormorant(subscribe);
                                 ElectrumServer.coreElectrumServer = cormorant.start();
                             }
+                        } catch(CormorantBitcoindUnsupportedException e) {
+                            throw new ServerException(e.getMessage());
                         } catch(CormorantBitcoindException e) {
                             ElectrumServer.cormorant = null;
                             log.debug("Cannot start cormorant: " + e.getMessage() + ". Starting BWT...");
@@ -1459,11 +1472,19 @@ public class ElectrumServer {
                         List<String> serverVersion = electrumServer.getServerVersion();
                         firstCall = false;
 
-                        //If electrumx is detected, we can upgrade to batched RPC. Electrs/EPS do not support batching.
                         serverCapability = getServerCapability(serverVersion);
                         if(serverCapability.supportsBatching()) {
                             log.debug("Upgrading to batched JSON-RPC");
                             electrumServerRpc = new BatchedElectrumServerRpc(electrumServerRpc.getIdCounterValue(), serverCapability.getMaxTargetBlocks());
+                        }
+
+                        if(serverCapability.supportsServerFeatures()) {
+                            try {
+                                ServerFeatures features = electrumServer.getServerFeatures();
+                                serverCapability.withServerFeatures(features);
+                            } catch(ElectrumServerRpcException e) {
+                                log.debug("Call to server.features failed for " + serverVersion, e);
+                            }
                         }
 
                         BlockHeaderTip tip;

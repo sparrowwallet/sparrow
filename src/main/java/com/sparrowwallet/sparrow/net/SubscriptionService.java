@@ -7,6 +7,7 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 import com.google.common.collect.Iterables;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
+import com.sparrowwallet.sparrow.event.SilentPaymentsNotificationEvent;
 import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -39,5 +40,10 @@ public class SubscriptionService {
         }
 
         Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHash, status)));
+    }
+
+    @JsonRpcMethod("blockchain.silentpayments.subscribe")
+    public void silentPaymentsUpdate(@JsonRpcParam("subscription") final SilentPaymentsSubscription subscription, @JsonRpcParam("progress") final double progress, @JsonRpcParam("history") final List<SilentPaymentsTx> history) {
+        Platform.runLater(() -> EventManager.get().post(new SilentPaymentsNotificationEvent(subscription, progress, history)));
     }
 }

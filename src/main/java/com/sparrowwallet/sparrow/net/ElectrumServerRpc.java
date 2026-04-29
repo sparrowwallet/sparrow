@@ -12,6 +12,8 @@ public interface ElectrumServerRpc {
 
     List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions);
 
+    ServerFeatures getServerFeatures(Transport transport);
+
     String getServerBanner(Transport transport);
 
     BlockHeaderTip subscribeBlockHeaders(Transport transport);
@@ -23,6 +25,10 @@ public interface ElectrumServerRpc {
     Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes);
 
     Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes);
+
+    String subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels);
+
+    String unsubscribeSilentPayments(Transport transport, String scanPrivKeyHex, String spendPubKeyHex);
 
     Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights);
 

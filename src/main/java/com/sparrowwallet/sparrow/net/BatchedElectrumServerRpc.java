@@ -65,6 +65,17 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
+    public ServerFeatures getServerFeatures(Transport transport) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            return new RetryLogic<ServerFeatures>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(ServerFeatures.class).method("server.features").id(idCounter.incrementAndGet()).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error getting server features", e);
+        }
+    }
+
+    @Override
     public BlockHeaderTip subscribeBlockHeaders(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
@@ -168,6 +179,28 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         } catch(Exception e) {
             log.info("Failed to unsubscribe from script hashes: " + scriptHashes, e);
             return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public String subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+        try {
+            return new RetryLogic<String>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(String.class).method("blockchain.silentpayments.subscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex, start, labels).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to subscribe to silent payments for wallet " + wallet.getName(), e);
+        }
+    }
+
+    @Override
+    public String unsubscribeSilentPayments(Transport transport, String scanPrivKeyHex, String spendPubKeyHex) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+        try {
+            return new RetryLogic<String>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(String.class).method("blockchain.silentpayments.unsubscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to unsubscribe silent payments", e);
         }
     }
 

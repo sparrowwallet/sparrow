@@ -49,7 +49,7 @@ public class ElectrumServerRunnable implements Runnable {
                 }
                 throw new RuntimeException("Error accepting client connection", e);
             }
-            RequestHandler requestHandler = new RequestHandler(clientSocket, bitcoindClient);
+            RequestHandler requestHandler = new RequestHandler(clientSocket, bitcoindClient, getPort());
             this.threadPool.execute(requestHandler);
         }
 

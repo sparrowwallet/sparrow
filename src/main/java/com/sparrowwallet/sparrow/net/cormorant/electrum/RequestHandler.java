@@ -23,9 +23,9 @@ public class RequestHandler implements Runnable {
     private boolean headersSubscribed;
     private final Set<String> scriptHashesSubscribed = new HashSet<>();
 
-    public RequestHandler(Socket clientSocket, BitcoindClient bitcoindClient) {
+    public RequestHandler(Socket clientSocket, BitcoindClient bitcoindClient, int electrumPort) {
         this.clientSocket = clientSocket;
-        this.electrumServerService = new ElectrumServerService(bitcoindClient, this);
+        this.electrumServerService = new ElectrumServerService(bitcoindClient, this, electrumPort);
     }
 
     public void run() {

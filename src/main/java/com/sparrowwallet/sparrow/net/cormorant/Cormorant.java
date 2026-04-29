@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.net.Protocol;
 import com.sparrowwallet.sparrow.net.ServerException;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.BitcoindClient;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindException;
+import com.sparrowwallet.sparrow.net.cormorant.bitcoind.CormorantBitcoindUnsupportedException;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.ImportFailedException;
 import com.sparrowwallet.sparrow.net.cormorant.electrum.ElectrumServerRunnable;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ public class Cormorant {
 
     public Server start() throws CormorantBitcoindException {
         if(useWallets && AppServices.get().getOpenWallets().keySet().stream().anyMatch(wallet -> wallet.getPolicyType() == PolicyType.SINGLE_SP)) {
-            throw new CormorantBitcoindException("Scanning silent payment wallets is not currently supported with Bitcoin Core");
+            throw new CormorantBitcoindUnsupportedException("Scanning silent payment wallets is not currently supported with Bitcoin Core");
         }
 
         bitcoindClient = new BitcoindClient(useWallets);

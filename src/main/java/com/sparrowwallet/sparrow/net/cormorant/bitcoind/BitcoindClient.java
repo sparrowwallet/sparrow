@@ -76,6 +76,7 @@ public class BitcoindClient {
 
     private final boolean useWallets;
     private boolean pruned;
+    private Integer pruneHeight;
     private boolean legacyWalletExists;
 
     private final Lock syncingLock = new ReentrantLock();
@@ -119,6 +120,7 @@ public class BitcoindClient {
 
         BlockchainInfo blockchainInfo = getBitcoindService().getBlockchainInfo();
         pruned = blockchainInfo.pruned();
+        pruneHeight = blockchainInfo.pruneheight();
         VerboseBlockHeader blockHeader = getBitcoindService().getBlockHeader(blockchainInfo.bestblockhash());
         tip = blockHeader.getBlockHeader();
         timer.schedule(new PollTask(), 5000, 5000);
@@ -643,6 +645,14 @@ public class BitcoindClient {
 
     public boolean isUseWallets() {
         return useWallets;
+    }
+
+    public boolean isPruned() {
+        return pruned;
+    }
+
+    public Integer getPruneHeight() {
+        return pruneHeight;
     }
 
     public Store getStore() {
