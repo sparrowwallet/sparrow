@@ -218,7 +218,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         toWallet.valueProperty().addListener((observable, oldValue, selectedWallet) -> {
             if(selectedWallet != null) {
                 if(selectedWallet.getPolicyType() == PolicyType.SINGLE_SP) {
-                    toAddress.setText(selectedWallet.getKeystores().getFirst().getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+                    toAddress.setText(selectedWallet.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
                 } else {
                     toAddress.setText(selectedWallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
                 }
@@ -228,7 +228,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         keyScriptType.setValue(ScriptType.P2PKH);
         if(wallet != null) {
             if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
-                toAddress.setText(wallet.getKeystores().getFirst().getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+                toAddress.setText(wallet.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
             } else {
                 toAddress.setText(wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
             }

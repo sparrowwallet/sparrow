@@ -7,7 +7,8 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 import com.google.common.collect.Iterables;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
-import com.sparrowwallet.sparrow.event.SilentPaymentsNotificationEvent;
+import com.sparrowwallet.sparrow.event.SilentPaymentsHistoryUpdatedEvent;
+import com.sparrowwallet.sparrow.event.SilentPaymentsScanProgressEvent;
 import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -44,6 +45,34 @@ public class SubscriptionService {
 
     @JsonRpcMethod("blockchain.silentpayments.subscribe")
     public void silentPaymentsUpdate(@JsonRpcParam("subscription") final SilentPaymentsSubscription subscription, @JsonRpcParam("progress") final double progress, @JsonRpcParam("history") final List<SilentPaymentsTx> history) {
-        Platform.runLater(() -> EventManager.get().post(new SilentPaymentsNotificationEvent(subscription, progress, history)));
+        String silentPaymentAddress = subscription.address;
+        SilentPaymentsScanCache cache = ElectrumServer.getScanCache(silentPaymentAddress);
+        if(cache == null) {
+            log.trace("Received silent payments notification for unknown subscription: " + silentPaymentAddress);
+            return;
+        }
+
+        boolean justCompleted = false;
+        cache.lock();
+        try {
+            //Stale-notification filter: filter out notifications from a prior subscribe
+            Integer canonical = cache.getServerStart();
+            if(canonical == null || subscription.start_height != canonical) {
+                return;
+            }
+            cache.addEntries(history);
+            if(progress >= 1.0 && cache.isScanning()) {
+                cache.complete();
+                justCompleted = true;
+            }
+        } finally {
+            cache.unlock();
+        }
+
+        Platform.runLater(() -> EventManager.get().post(new SilentPaymentsScanProgressEvent(silentPaymentAddress, progress)));
+
+        if(progress >= 1.0 && !justCompleted && !history.isEmpty()) {
+            Platform.runLater(() -> EventManager.get().post(new SilentPaymentsHistoryUpdatedEvent(silentPaymentAddress)));
+        }
     }
 }

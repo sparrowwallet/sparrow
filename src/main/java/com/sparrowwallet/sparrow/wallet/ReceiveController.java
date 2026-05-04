@@ -271,7 +271,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     public void copySilentPaymentsAddress(ActionEvent actionEvent) {
         if(walletForm.getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
             ClipboardContent content = new ClipboardContent();
-            content.putString(walletForm.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress());
+            content.putString(walletForm.getWallet().getSilentPaymentScanAddress().getAddress());
             Clipboard.getSystemClipboard().setContent(content);
         }
     }
@@ -302,7 +302,7 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     public void refreshAddress() {
         if(walletForm.getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
-            String silentPaymentAddress = walletForm.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress();
+            String silentPaymentAddress = walletForm.getWallet().getSilentPaymentScanAddress().getAddress();
             spAddress.setText(silentPaymentAddress);
             Image qrImage = getSilentPaymentsQrCode(silentPaymentAddress);
             if(qrImage != null) {

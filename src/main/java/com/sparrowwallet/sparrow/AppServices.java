@@ -851,6 +851,10 @@ public class AppServices {
     public static void clearTransactionHistoryCache(Wallet wallet) {
         ElectrumServer.clearRetrievedScriptHashes(wallet);
 
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.isValid()) {
+            ElectrumServer.releaseSilentPaymentSubscription(wallet.getSilentPaymentScanAddress());
+        }
+
         for(Wallet childWallet : wallet.getChildWallets()) {
             if(childWallet.isNested()) {
                 AppServices.clearTransactionHistoryCache(childWallet);
@@ -1463,6 +1467,17 @@ public class AppServices {
             log.warn("Failed to fetch wallet history from " + Config.get().getServerDisplayName() + ", reconnecting to another server...");
             Config.get().changePublicServer();
             onlineProperty.set(true);
+        }
+    }
+
+    @Subscribe
+    public void silentPaymentsUnsubscribe(SilentPaymentsUnsubscribeEvent event) {
+        if(isConnected()) {
+            ElectrumServer.SilentPaymentsUnsubscribeService unsubscribeService = new ElectrumServer.SilentPaymentsUnsubscribeService(event.getScanAddress());
+            unsubscribeService.setOnFailed(workerStateEvent -> {
+                log.warn("Failed to unsubscribe silent payments for " + event.getScanAddress().getAddress(), workerStateEvent.getSource().getException());
+            });
+            unsubscribeService.start();
         }
     }
 }

@@ -182,11 +182,11 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    public String subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels) {
+    public SilentPaymentsSubscription subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels) {
         JsonRpcClient client = new JsonRpcClient(transport);
         try {
-            return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
-                    client.createRequest().returnAs(String.class).method("blockchain.silentpayments.subscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex, start, labels).execute());
+            return new RetryLogic<SilentPaymentsSubscription>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(SilentPaymentsSubscription.class).method("blockchain.silentpayments.subscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex, start, labels).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to subscribe to silent payments for wallet " + wallet.getName(), e);
         }

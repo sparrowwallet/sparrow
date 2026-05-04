@@ -26,7 +26,7 @@ public interface ElectrumServerRpc {
 
     Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes);
 
-    String subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels);
+    SilentPaymentsSubscription subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels);
 
     String unsubscribeSilentPayments(Transport transport, String scanPrivKeyHex, String spendPubKeyHex);
 

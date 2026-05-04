@@ -57,6 +57,7 @@ public class AdvancedController implements Initializable {
         birthDate.valueProperty().addListener((observable, oldValue, newValue) -> {
             if(newValue != null) {
                 wallet.setBirthDate(Date.from(newValue.atStartOfDay().atZone(ZoneId.systemDefault()).toInstant()));
+                wallet.setBirthHeight(null);
                 EventManager.get().post(new SettingsChangedEvent(wallet, SettingsChangedEvent.Type.BIRTH_DATE));
             }
         });

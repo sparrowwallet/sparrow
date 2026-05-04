@@ -316,7 +316,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 }
             } else if(newValue != null) {
                 if(newValue.getPolicyType() == PolicyType.SINGLE_SP) {
-                    address.setText(newValue.getKeystores().getFirst().getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+                    address.setText(newValue.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
                 } else {
                     List<Address> existingAddresses = getOtherAddresses();
                     WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);

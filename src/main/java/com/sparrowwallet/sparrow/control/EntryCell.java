@@ -336,7 +336,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         if(cancelTransaction) {
             Payment existing = payments.get(0);
             Payment payment = transactionEntry.getWallet().getPolicyType() == PolicyType.SINGLE_SP ?
-                    new SilentPayment(transactionEntry.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress(),
+                    new SilentPayment(transactionEntry.getWallet().getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress(),
                             existing.getLabel(), existing.getAmount(), true) :
                     new Payment(transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getAddress(), existing.getLabel(), existing.getAmount(), true);
             payments.clear();
@@ -400,7 +400,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         String label = transactionEntry.getLabel() == null ? "" : transactionEntry.getLabel();
         label += (label.isEmpty() ? "" : " ") + "(CPFP)";
         Payment payment = transactionEntry.getWallet().getPolicyType() == PolicyType.SINGLE_SP ?
-                new SilentPayment(transactionEntry.getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress(),
+                new SilentPayment(transactionEntry.getWallet().getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress(),
                         label, inputTotal, true) :
                 new Payment(transactionEntry.getWallet().getFreshNode(KeyPurpose.CHANGE).getAddress(), label, inputTotal, true);
 

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.SortDirection;
 import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -122,7 +123,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         StackPane stackPane = new StackPane();
         stackPane.getChildren().add(AppServices.isConnecting() ? new Label("Loading transactions...") : new Label("No transactions"));
 
-        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && !AppServices.isConnecting()) {
+        if((Config.get().getServerType() == ServerType.BITCOIN_CORE || wallet.getPolicyType() == PolicyType.SINGLE_SP) && !AppServices.isConnecting()) {
             Hyperlink hyperlink = new Hyperlink();
             hyperlink.setTranslateY(30);
             hyperlink.setOnAction(event -> {
@@ -133,6 +134,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                     Storage storage = AppServices.get().getOpenWallets().get(wallet);
                     Wallet pastWallet = wallet.copy();
                     wallet.setBirthDate(optDate.get());
+                    wallet.setBirthHeight(null);
                     //Trigger background save of birthdate
                     EventManager.get().post(new WalletDataChangedEvent(wallet));
                     //Trigger full wallet rescan

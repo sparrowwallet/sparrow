@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -51,6 +53,10 @@ public class WalletForm {
     private final ObjectProperty<WalletTransaction> createdWalletTransactionProperty = new SimpleObjectProperty<>(null);
 
     private ElectrumServer.TransactionMempoolService transactionMempoolService;
+
+    private boolean spScanInProgress;
+    private boolean spSubscriptionHeld;
+    private boolean spPendingRefresh;
 
     private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
 
@@ -155,80 +161,153 @@ public class WalletForm {
                 log.debug(nodes == null ? wallet.getFullName() + " refreshing full wallet history" : wallet.getFullName() + " requesting node wallet history for " + nodeRangesToString(nodes));
             }
 
-            Set<WalletNode> walletTransactionNodes = getWalletTransactionNodes(nodes);
-            if(!wallet.isNested() && (walletTransactionNodes == null || !walletTransactionNodes.isEmpty())) {
-                ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, filterToWallets, walletTransactionNodes);
-                historyService.setOnSucceeded(workerStateEvent -> {
-                    if(historyService.getValue()) {
-                        EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
-                        updateWallets(blockHeight, previousWallet);
-                    }
-                });
-                historyService.setOnFailed(workerStateEvent -> {
-                    if(workerStateEvent.getSource().getException() instanceof AllHistoryChangedException) {
-                        if(getWallet().isMasterWallet() && getWallet().getKeystores().stream().anyMatch(Keystore::needsPassphrase)) {
-                            Optional<ButtonType> optType = AppServices.showWarningDialog("Reopen " + getWallet().getMasterName() + "?",
-                                    "It appears that the history of this wallet has changed, which may be caused by an incorrect passphrase. " +
-                                    "Note that any typos when entering the passphrase will create an entirely different wallet, with a correspondingly different history.\n\n" +
-                                    "You can proceed with a full refresh of this wallet, or you can reopen it to enter the passphrase again.",
-                                    new ButtonType("Refresh Wallet", ButtonBar.ButtonData.CANCEL_CLOSE),
-                                    new ButtonType("Reopen Wallet", ButtonBar.ButtonData.OK_DONE));
-
-                            if(optType.isPresent() && optType.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
-                                EventManager.get().post(new RequestWalletOpenEvent(AppServices.get().getWindowForWallet(getWalletId()), getStorage().getWalletFile()));
-                                return;
-                            }
-                        }
-
-                        try {
-                            storage.backupWallet();
-                        } catch(IOException e) {
-                            log.error("Error backing up wallet", e);
-                        }
-
-                        wallet.clearHistory();
-                        AppServices.clearTransactionHistoryCache(wallet);
-                        EventManager.get().post(new WalletHistoryClearedEvent(wallet, previousWallet, getWalletId()));
-                    } else {
-                        if(AppServices.isConnected()) {
-                            log.error("Error retrieving wallet history", workerStateEvent.getSource().getException());
-                        } else {
-                            log.debug("Disconnected while retrieving wallet history", workerStateEvent.getSource().getException());
-                        }
-
-                        EventManager.get().post(new WalletHistoryFailedEvent(wallet, workerStateEvent.getSource().getException()));
-                    }
-                });
-
-                EventManager.get().post(new WalletHistoryStartedEvent(wallet, nodes));
-                historyService.start();
-            }
-
-            if(wallet.isMasterWallet() && wallet.hasPaymentCode() && refreshNotificationNode(nodes)) {
-                ElectrumServer.PaymentCodesService paymentCodesService = new ElectrumServer.PaymentCodesService(getWalletId(), wallet);
-                paymentCodesService.setOnSucceeded(successEvent -> {
-                    List<Wallet> addedWallets = paymentCodesService.getValue();
-                    for(Wallet addedWallet : addedWallets) {
-                        if(!storage.isPersisted(addedWallet)) {
-                            try {
-                                storage.saveWallet(addedWallet);
-                                EventManager.get().post(new NewChildWalletSavedEvent(storage, wallet, addedWallet));
-                            } catch(Exception e) {
-                                log.error("Error saving wallet", e);
-                                AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
-                            }
-                        }
-                    }
-                    if(!addedWallets.isEmpty()) {
-                        EventManager.get().post(new ChildWalletsAddedEvent(storage, wallet, addedWallets));
-                    }
-                });
-                paymentCodesService.setOnFailed(failedEvent -> {
-                    log.error("Could not determine payment codes for wallet " + wallet.getFullName(), failedEvent.getSource().getException());
-                });
-                paymentCodesService.start();
+            if(wallet.getPolicyType() == PolicyType.SINGLE_SP && nodes == null) {
+                refreshHistorySP(previousWallet, blockHeight);
+            } else {
+                refreshHistoryHD(previousWallet, blockHeight, filterToWallets, nodes);
             }
         }
+    }
+
+    private void refreshHistoryHD(Wallet previousWallet, Integer blockHeight, List<Wallet> filterToWallets, Set<WalletNode> nodes) {
+        Set<WalletNode> walletTransactionNodes = getWalletTransactionNodes(nodes);
+        if(!wallet.isNested() && (walletTransactionNodes == null || !walletTransactionNodes.isEmpty())) {
+            ElectrumServer.TransactionHistoryService historyService = new ElectrumServer.TransactionHistoryService(wallet, filterToWallets, walletTransactionNodes);
+            historyService.setOnSucceeded(workerStateEvent -> {
+                if(historyService.getValue()) {
+                    EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
+                    updateWallets(blockHeight, previousWallet);
+                }
+            });
+            historyService.setOnFailed(workerStateEvent -> {
+                handleHistoryFailed(previousWallet, workerStateEvent.getSource().getException());
+            });
+
+            EventManager.get().post(new WalletHistoryStartedEvent(wallet, nodes));
+            historyService.start();
+        }
+
+        if(wallet.isMasterWallet() && wallet.hasPaymentCode() && refreshNotificationNode(nodes)) {
+            ElectrumServer.PaymentCodesService paymentCodesService = new ElectrumServer.PaymentCodesService(getWalletId(), wallet);
+            paymentCodesService.setOnSucceeded(successEvent -> {
+                List<Wallet> addedWallets = paymentCodesService.getValue();
+                for(Wallet addedWallet : addedWallets) {
+                    if(!storage.isPersisted(addedWallet)) {
+                        try {
+                            storage.saveWallet(addedWallet);
+                            EventManager.get().post(new NewChildWalletSavedEvent(storage, wallet, addedWallet));
+                        } catch(Exception e) {
+                            log.error("Error saving wallet", e);
+                            AppServices.showErrorDialog("Error saving wallet " + addedWallet.getName(), e.getMessage());
+                        }
+                    }
+                }
+                if(!addedWallets.isEmpty()) {
+                    EventManager.get().post(new ChildWalletsAddedEvent(storage, wallet, addedWallets));
+                }
+            });
+            paymentCodesService.setOnFailed(failedEvent -> {
+                log.error("Could not determine payment codes for wallet " + wallet.getFullName(), failedEvent.getSource().getException());
+            });
+            paymentCodesService.start();
+        }
+    }
+
+    private void refreshHistorySP(Wallet previousWallet, Integer blockHeight) {
+        SilentPaymentScanAddress scanAddress = wallet.getSilentPaymentScanAddress();
+        //Self-heal: connection-change wipes spScanCaches without resetting per-form flags; reconcile here.
+        if(spSubscriptionHeld && !ElectrumServer.hasSilentPaymentsCache(scanAddress)) {
+            spSubscriptionHeld = false;
+        }
+
+        if(spScanInProgress) {
+            //Single-flight: defer until the in-flight scan settles; firePendingRefreshIfRequested re-triggers.
+            spPendingRefresh = true;
+            return;
+        }
+
+        boolean shouldHold = !spSubscriptionHeld;
+
+        ElectrumServer.SilentPaymentScanService scanService = new ElectrumServer.SilentPaymentScanService(wallet, shouldHold, computeNeededStart(wallet));
+        scanService.setOnSucceeded(workerStateEvent -> {
+            spScanInProgress = false;
+            spSubscriptionHeld = true;
+            if(scanService.getValue()) {
+                EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
+                updateWallets(blockHeight, previousWallet);
+            }
+            firePendingRefreshIfRequested();
+        });
+        scanService.setOnFailed(workerStateEvent -> {
+            spScanInProgress = false;
+            if(scanService.isReleasedHold()) {
+                spSubscriptionHeld = false;
+            }
+            handleHistoryFailed(previousWallet, workerStateEvent.getSource().getException());
+            firePendingRefreshIfRequested();
+        });
+
+        EventManager.get().post(new WalletHistoryStartedEvent(wallet, null));
+        spScanInProgress = true;
+        scanService.start();
+    }
+
+    private void firePendingRefreshIfRequested() {
+        if(spPendingRefresh) {
+            spPendingRefresh = false;
+            Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight()));
+        }
+    }
+
+    private void handleHistoryFailed(Wallet previousWallet, Throwable exception) {
+        if(exception instanceof AllHistoryChangedException) {
+            if(getWallet().isMasterWallet() && getWallet().getKeystores().stream().anyMatch(Keystore::needsPassphrase)) {
+                Optional<ButtonType> optType = AppServices.showWarningDialog("Reopen " + getWallet().getMasterName() + "?",
+                    "It appears that the history of this wallet has changed, which may be caused by an incorrect passphrase. " +
+                            "Note that any typos when entering the passphrase will create an entirely different wallet, with a correspondingly different history.\n\n" +
+                            "You can proceed with a full refresh of this wallet, or you can reopen it to enter the passphrase again.",
+                        new ButtonType("Refresh Wallet", ButtonBar.ButtonData.CANCEL_CLOSE),
+                        new ButtonType("Reopen Wallet", ButtonBar.ButtonData.OK_DONE));
+
+                if(optType.isPresent() && optType.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
+                    EventManager.get().post(new RequestWalletOpenEvent(AppServices.get().getWindowForWallet(getWalletId()), getStorage().getWalletFile()));
+                    return;
+                }
+            }
+
+            try {
+                storage.backupWallet();
+            } catch(IOException e) {
+                log.error("Error backing up wallet", e);
+            }
+
+            wallet.clearHistory();
+            AppServices.clearTransactionHistoryCache(wallet);
+            spSubscriptionHeld = false;
+            EventManager.get().post(new WalletHistoryClearedEvent(wallet, previousWallet, getWalletId()));
+        } else {
+            if(AppServices.isConnected()) {
+                log.error("Error retrieving wallet history", exception);
+            } else {
+                log.debug("Disconnected while retrieving wallet history", exception);
+            }
+
+            EventManager.get().post(new WalletHistoryFailedEvent(wallet, exception));
+        }
+    }
+
+    private static int computeNeededStart(Wallet wallet) {
+        Integer stored = wallet.getStoredBlockHeight();
+        if(stored != null && stored > 0) {
+            return Math.max(0, stored - BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM);
+        }
+        if(wallet.getBirthHeight() != null) {
+            return Math.max(0, wallet.getBirthHeight() - BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM);
+        }
+        if(wallet.getBirthDate() != null) {
+            return (int)(wallet.getBirthDate().getTime() / 1000L);
+        }
+        return 0;
     }
 
     private void updateWallets(Integer blockHeight, Wallet previousWallet) {
@@ -246,6 +325,11 @@ public class WalletForm {
     }
 
     private List<WalletNode> updateWallet(Integer blockHeight, Wallet currentWallet, Wallet previousWallet, List<WalletNode> nestedHistoryChangedNodes) {
+        OptionalInt min = currentWallet.getTransactions().values().stream().filter(blockTx -> blockTx.getHeight() > 0).mapToInt(BlockTransaction::getHeight).min();
+        if(min.isPresent() && (currentWallet.getBirthHeight() == null || min.getAsInt() < currentWallet.getBirthHeight())) {
+            currentWallet.setBirthHeight(min.getAsInt());
+        }
+
         if(blockHeight != null) {
             currentWallet.setStoredBlockHeight(blockHeight);
         }
@@ -402,6 +486,30 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void silentPaymentsScanProgress(SilentPaymentsScanProgressEvent event) {
+        if(wallet.getPolicyType() != PolicyType.SINGLE_SP || !wallet.isValid() || !event.getSpAddress().equals(wallet.getSilentPaymentScanAddress().getAddress())) {
+            return;
+        }
+
+        if(spScanInProgress && event.getProgress() < 1.0) {
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Scanning silent payments... (" + Math.round(event.getProgress() * 100) + "%)"));
+        }
+    }
+
+    @Subscribe
+    public void silentPaymentsHistoryUpdated(SilentPaymentsHistoryUpdatedEvent event) {
+        if(wallet.getPolicyType() != PolicyType.SINGLE_SP || !wallet.isValid() || !event.getSpAddress().equals(wallet.getSilentPaymentScanAddress().getAddress())) {
+            return;
+        }
+
+        if(spScanInProgress) {
+            spPendingRefresh = true;
+        } else {
+            refreshHistory(AppServices.getCurrentBlockHeight());
+        }
+    }
+
+    @Subscribe
     public void walletDataChanged(WalletDataChangedEvent event) {
         if(event.getWallet().equals(wallet)) {
             backgroundUpdate();
@@ -421,6 +529,7 @@ public class WalletForm {
 
             //Clear the cache - we will need to fetch everything again
             AppServices.clearTransactionHistoryCache(wallet);
+            spSubscriptionHeld = false;
             refreshHistory(AppServices.getCurrentBlockHeight());
         }
     }
@@ -658,15 +767,16 @@ public class WalletForm {
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {
-                if(wallet.isMasterWallet()) {
-                    storage.close();
-                }
-                if(wallet.isValid()) {
-                    AppServices.clearTransactionHistoryCache(wallet);
-                }
                 EventManager.get().unregister(this);
                 for(WalletForm nestedWalletForm : nestedWalletForms) {
                     EventManager.get().unregister(nestedWalletForm);
+                }
+                if(wallet.isValid()) {
+                    AppServices.clearTransactionHistoryCache(wallet);
+                    spSubscriptionHeld = false;
+                }
+                if(wallet.isMasterWallet()) {
+                    storage.close();
                 }
             }
         }

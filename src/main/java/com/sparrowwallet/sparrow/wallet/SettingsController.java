@@ -594,6 +594,7 @@ public class SettingsController extends WalletFormController implements Initiali
     private void replaceWallet(Wallet editedWallet) {
         editedWallet.setName(getWalletForm().getWallet().getName());
         editedWallet.setBirthDate(getWalletForm().getWallet().getBirthDate());
+        editedWallet.setBirthHeight(getWalletForm().getWallet().getBirthHeight());
         editedWallet.setGapLimit(getWalletForm().getWallet().getGapLimit());
         editedWallet.setWatchLast(getWalletForm().getWallet().getWatchLast());
         editedWallet.setMasterWallet(getWalletForm().getWallet().getMasterWallet());
@@ -878,20 +879,23 @@ public class SettingsController extends WalletFormController implements Initiali
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
-            updateBirthDate(event.getWallet());
+            updateBirth(event.getWallet());
         }
     }
 
     @Subscribe
     public void walletHistoryChanged(WalletHistoryChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
-            updateBirthDate(event.getWallet());
+            updateBirth(event.getWallet());
         }
     }
 
-    private void updateBirthDate(Wallet wallet) {
+    private void updateBirth(Wallet wallet) {
         if(!Objects.equals(wallet.getBirthDate(), walletForm.getWallet().getBirthDate())) {
             walletForm.getWallet().setBirthDate(wallet.getBirthDate());
+        }
+        if(!Objects.equals(wallet.getBirthHeight(), walletForm.getWallet().getBirthHeight())) {
+            walletForm.getWallet().setBirthHeight(wallet.getBirthHeight());
         }
     }
 

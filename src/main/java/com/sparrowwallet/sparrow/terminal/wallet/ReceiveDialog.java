@@ -74,7 +74,7 @@ public class ReceiveDialog extends WalletDialog {
         try {
             String qrAddress;
             if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
-                qrAddress = getWalletForm().getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress();
+                qrAddress = getWalletForm().getWallet().getSilentPaymentScanAddress().getAddress();
             } else if(currentEntry != null) {
                 qrAddress = currentEntry.getAddress().toString();
             } else {
@@ -92,7 +92,7 @@ public class ReceiveDialog extends WalletDialog {
     public void refreshAddress() {
         SparrowTerminal.get().getGuiThread().invokeLater(() -> {
             if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
-                String silentPaymentAddress = getWalletForm().getWallet().getKeystores().getFirst().getSilentPaymentScanAddress().getAddress();
+                String silentPaymentAddress = getWalletForm().getWallet().getSilentPaymentScanAddress().getAddress();
                 address.setText(silentPaymentAddress);
                 return;
             }

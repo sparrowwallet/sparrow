@@ -10,6 +10,11 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.protocol.*;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.silentpayments.InvalidSilentPaymentException;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanMatch;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentUtils;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.BlockSummary;
@@ -60,6 +65,8 @@ public class ElectrumServer {
 
     private static final int MINIMUM_BROADCASTS = 2;
 
+    private static final int[] NO_LABELS = new int[0];
+
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
 
     private static CloseableTransport transport;
@@ -79,6 +86,8 @@ public class ElectrumServer {
     private static final Set<String> sameHeightTxioScriptHashes = ConcurrentHashMap.newKeySet();
 
     private static final Map<Integer, WalletSyncLock> walletSyncLocks = Collections.synchronizedMap(new HashMap<>());
+
+    private static final Map<String, SilentPaymentsScanCache> spScanCaches = new ConcurrentHashMap<>();
 
     private final static Map<String, Integer> subscribedRecent = new ConcurrentHashMap<>();
 
@@ -199,6 +208,8 @@ public class ElectrumServer {
 
     public static synchronized void closeActiveConnection() throws ServerException {
         if(transport != null) {
+            cancelSilentPaymentScans();
+            spScanCaches.clear();
             closeConnection(transport);
             transport = null;
         }
@@ -1322,6 +1333,248 @@ public class ElectrumServer {
         }
     }
 
+    static SilentPaymentsScanCache getScanCache(String spAddress) {
+        return spScanCaches.get(spAddress);
+    }
+
+    public static boolean hasSilentPaymentsCache(SilentPaymentScanAddress scanAddress) {
+        return spScanCaches.containsKey(scanAddress.getAddress());
+    }
+
+    private static void cancelSilentPaymentScans() {
+        for(SilentPaymentsScanCache cache : spScanCaches.values()) {
+            cache.lock();
+            try {
+                cache.cancel();
+            } finally {
+                cache.unlock();
+            }
+        }
+    }
+
+    /**
+     * Holds a silent-payment subscription for the given scan address. Increments the per-cache refcount,
+     * issuing a subscribe RPC the first time the cache is established and re-issuing if the needed start
+     * is lower than the current subscription's start. On RPC failure the refcount is rolled back.
+     * Callers must pair every successful hold with a matching call.
+     */
+    public static void holdSilentPaymentSubscription(Wallet wallet, SilentPaymentScanAddress scanAddress, int neededStart) throws ServerException {
+        requireSilentPaymentsSupport();
+        String spAddress = scanAddress.getAddress();
+        SilentPaymentsScanCache cache = spScanCaches.computeIfAbsent(spAddress, k -> new SilentPaymentsScanCache());
+
+        boolean needSubscribe;
+        SilentPaymentsScanCache.Snapshot rollbackSnapshot = null;
+        cache.lock();
+        try {
+            boolean isFirstCaller = cache.incrementRefCount() == 1;
+            //If a concurrent caller is currently establishing the subscription, wait for serverStart to be
+            //captured before making our widening decision. awaitSubscriptionComplete() releases the cache
+            //lock during the wait, allowing notification handlers to proceed (avoids deadlock with
+            //TcpTransport's read thread).
+            while(cache.hasMultipleHolders() && cache.getServerStart() == null && cache.isScanning()) {
+                try {
+                    cache.awaitSubscriptionComplete();
+                } catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    if(cache.decrementRefCount()) {
+                        spScanCaches.remove(spAddress);
+                    }
+                    throw new ServerException("Interrupted waiting for silent payments subscription to establish", e);
+                }
+            }
+
+            if(cache.isCancelled()) {
+                //First caller's subscribe failed (or scan was cancelled) — propagate.
+                if(cache.decrementRefCount()) {
+                    spScanCaches.remove(spAddress);
+                }
+                throw new ServerException("Silent payments subscription failed for " + spAddress);
+            }
+
+            if(isFirstCaller) {
+                //Cache was just created by computeIfAbsent above, with all defaults. Establish the subscription.
+                needSubscribe = true;
+            } else if(needsWiderCoverage(neededStart, cache.getServerStart())) {
+                //New caller wants earlier history than current coverage; widen and trigger a rescan.
+                rollbackSnapshot = cache.captureSnapshot();
+                cache.restartScan();
+                needSubscribe = true;
+            } else {
+                needSubscribe = false;
+            }
+        } finally {
+            cache.unlock();
+        }
+
+        if(needSubscribe) {
+            try {
+                String scanPrivHex = Utils.bytesToHex(scanAddress.getScanKey().getPrivKeyBytes());
+                String spendPubHex = Utils.bytesToHex(scanAddress.getSpendKey().getPubKey(true));
+                SilentPaymentsSubscription response = electrumServerRpc.subscribeSilentPayments(getTransport(), wallet, scanPrivHex, spendPubHex, neededStart, NO_LABELS);
+                cache.lock();
+                try {
+                    cache.setServerStart(response.start_height);
+                } finally {
+                    cache.unlock();
+                }
+            } catch(Exception e) {
+                cache.lock();
+                try {
+                    if(rollbackSnapshot != null && cache.hasMultipleHolders()) {
+                        cache.restoreFromSnapshot(rollbackSnapshot);
+                    } else {
+                        cache.cancel();
+                    }
+                    if(cache.decrementRefCount()) {
+                        spScanCaches.remove(spAddress);
+                    }
+                } finally {
+                    cache.unlock();
+                }
+                throw e;
+            }
+        }
+    }
+
+    private static boolean needsWiderCoverage(int neededStart, int serverStart) {
+        boolean neededIsTimestamp = neededStart >= Transaction.MAX_BLOCK_LOCKTIME;
+        boolean serverIsTimestamp = serverStart >= Transaction.MAX_BLOCK_LOCKTIME;
+        if(neededIsTimestamp != serverIsTimestamp) {
+            return neededIsTimestamp;
+        }
+        return neededStart < serverStart;
+    }
+
+    public List<SilentPaymentsTx> getSilentPaymentHistory(SilentPaymentScanAddress scanAddress) throws ServerException {
+        String spAddress = scanAddress.getAddress();
+        SilentPaymentsScanCache cache = spScanCaches.get(spAddress);
+        if(cache == null) {
+            throw new IllegalStateException("No silent payments subscription is held for " + spAddress);
+        }
+
+        cache.lock();
+        try {
+            while(cache.isScanning()) {
+                try {
+                    cache.awaitScanComplete();
+                } catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    throw new ServerException("Interrupted waiting for silent payments scan to complete", e);
+                }
+            }
+            if(cache.isCancelled()) {
+                throw new ServerException("Silent payments scan was cancelled for " + spAddress);
+            }
+            return cache.snapshotEntries();
+        } finally {
+            cache.unlock();
+        }
+    }
+
+    public static void releaseSilentPaymentSubscription(SilentPaymentScanAddress scanAddress) {
+        String spAddress = scanAddress.getAddress();
+        SilentPaymentsScanCache cache = spScanCaches.get(spAddress);
+        if(cache == null) {
+            return;
+        }
+
+        boolean unsubscribe;
+        cache.lock();
+        try {
+            unsubscribe = cache.decrementRefCount();
+            if(unsubscribe) {
+                cache.cancel();
+                spScanCaches.remove(spAddress);
+            }
+        } finally {
+            cache.unlock();
+        }
+
+        if(unsubscribe) {
+            Platform.runLater(() -> EventManager.get().post(new SilentPaymentsUnsubscribeEvent(scanAddress)));
+        }
+    }
+
+    public Set<WalletNode> processSilentPaymentBatch(Wallet wallet, List<SilentPaymentsTx> entries) throws ServerException {
+        if(entries.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Map<BlockTransactionHash, Transaction> references = new TreeMap<>();
+        Map<Sha256Hash, byte[]> tweakMap = new HashMap<>();
+        for(SilentPaymentsTx entry : entries) {
+            Sha256Hash txid = Sha256Hash.wrap(entry.tx_hash);
+            tweakMap.putIfAbsent(txid, Utils.hexToBytes(entry.tweak_key));
+            if(wallet.getWalletTransaction(txid) == null) {
+                references.put(new BlockTransaction(txid, entry.height, null, null, null), null);
+            }
+        }
+        if(references.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, references.keySet());
+        Map<Sha256Hash, BlockTransaction> transactionMap = getTransactions(wallet, references, blockHeaderMap);
+
+        ECKey scanPriv = wallet.getSilentPaymentScanAddress().getScanKey();
+        ECKey spendPub = wallet.getSilentPaymentScanAddress().getSpendKey();
+
+        Map<Address, WalletNode> walletAddresses = wallet.getWalletAddresses();
+        Set<WalletNode> newNodes = new LinkedHashSet<>();
+
+        int receiveNextIndex = nextIndex(wallet.getNode(KeyPurpose.RECEIVE));
+        int changeNextIndex = nextIndex(wallet.getNode(KeyPurpose.CHANGE));
+
+        for(Map.Entry<Sha256Hash, BlockTransaction> entry : transactionMap.entrySet()) {
+            Sha256Hash txid = entry.getKey();
+            Transaction tx = entry.getValue().getTransaction();
+            byte[] tweakKey = tweakMap.get(txid);
+            if(tweakKey == null) {
+                continue;
+            }
+            try {
+                List<SilentPaymentScanMatch> matches = SilentPaymentUtils.scanTransactionOutputs(scanPriv, spendPub, Collections.emptySet(), tweakKey, tx.getOutputs());
+                for(SilentPaymentScanMatch match : matches) {
+                    KeyPurpose purpose = match.labelIndex() != null && match.labelIndex() == 0 ? KeyPurpose.CHANGE : KeyPurpose.RECEIVE;
+                    int newIndex = purpose == KeyPurpose.CHANGE ? changeNextIndex : receiveNextIndex;
+                    WalletNode newNode = createNodeForMatch(wallet, match, walletAddresses, purpose, newIndex);
+                    if(newNode != null) {
+                        newNodes.add(newNode);
+                        walletAddresses.put(wallet.getAddress(newNode), newNode);
+                        if(purpose == KeyPurpose.CHANGE) {
+                            changeNextIndex++;
+                        } else {
+                            receiveNextIndex++;
+                        }
+                    }
+                }
+            } catch(InvalidSilentPaymentException e) {
+                log.warn("Invalid silent payment tweak for tx " + txid + " — skipping", e);
+            }
+        }
+
+        return newNodes;
+    }
+
+    private static int nextIndex(WalletNode purposeNode) {
+        return purposeNode.getChildren().isEmpty() ? 0 : purposeNode.getChildren().stream().mapToInt(WalletNode::getIndex).max().getAsInt() + 1;
+    }
+
+    private WalletNode createNodeForMatch(Wallet wallet, SilentPaymentScanMatch match, Map<Address, WalletNode> walletAddresses, KeyPurpose purpose, int newIndex) {
+        WalletNode purposeNode = wallet.getNode(purpose);
+        Set<WalletNode> created = purposeNode.fillToIndex(wallet, newIndex);
+        WalletNode addressNode = created.stream().filter(n -> n.getIndex() == newIndex).findFirst().orElseThrow(() -> new IllegalStateException("fillToIndex did not create node at index " + newIndex));
+        addressNode.setSilentPaymentTweak(match.tweak());
+
+        if(walletAddresses.containsKey(wallet.getAddress(addressNode))) {
+            purposeNode.getChildren().removeAll(created);
+            return null;
+        }
+
+        return addressNode;
+    }
+
     public static String getSubscribedScriptHashStatus(String scriptHash) {
         List<String> existingStatuses = subscribedScriptHashes.get(scriptHash);
         if(existingStatuses != null && !existingStatuses.isEmpty()) {
@@ -1793,6 +2046,80 @@ public class ElectrumServer {
 
                     ElectrumServer electrumServer = new ElectrumServer();
                     return electrumServer.fetchAndCalculateHistory(mainWallet, filterToWallets, filterToNodes);
+                }
+            };
+        }
+    }
+
+    public static class SilentPaymentScanService extends Service<Boolean> {
+        private final Wallet wallet;
+        private final SilentPaymentScanAddress scanAddress;
+        private final boolean shouldHold;
+        private final int neededStart;
+        private volatile boolean releasedHold;
+
+        public SilentPaymentScanService(Wallet wallet, boolean shouldHold, int neededStart) {
+            this.wallet = wallet;
+            this.scanAddress = wallet.getSilentPaymentScanAddress();
+            this.shouldHold = shouldHold;
+            this.neededStart = neededStart;
+        }
+
+        public boolean isReleasedHold() {
+            return releasedHold;
+        }
+
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                @Override
+                protected Boolean call() throws ServerException {
+                    boolean acquired = shouldHold || !ElectrumServer.hasSilentPaymentsCache(scanAddress);
+                    if(acquired) {
+                        ElectrumServer.holdSilentPaymentSubscription(wallet, scanAddress, neededStart);
+                    }
+                    try {
+                        ElectrumServer electrumServer = new ElectrumServer();
+                        List<SilentPaymentsTx> entries = electrumServer.getSilentPaymentHistory(scanAddress);
+                        Set<WalletNode> newNodes = electrumServer.processSilentPaymentBatch(wallet, entries);
+
+                        //First refresh (acquired): fetch all nodes to re-subscribe scripthashes the server forgot. Live delta: only the new ones.
+                        Set<WalletNode> nodesToFetch = acquired ? null : newNodes;
+                        if(nodesToFetch != null && nodesToFetch.isEmpty()) {
+                            return true;
+                        }
+                        return electrumServer.fetchAndCalculateHistory(wallet, null, nodesToFetch);
+                    } catch(Exception e) {
+                        if(acquired) {
+                            ElectrumServer.releaseSilentPaymentSubscription(scanAddress);
+                            releasedHold = true;
+                        }
+                        throw e;
+                    }
+                }
+            };
+        }
+    }
+
+    public static class SilentPaymentsUnsubscribeService extends Service<Boolean> {
+        private final SilentPaymentScanAddress scanAddress;
+
+        public SilentPaymentsUnsubscribeService(SilentPaymentScanAddress scanAddress) {
+            this.scanAddress = scanAddress;
+        }
+
+        @Override
+        protected Task<Boolean> createTask() {
+            return new Task<>() {
+                @Override
+                protected Boolean call() throws ServerException {
+                    if(ElectrumServer.hasSilentPaymentsCache(scanAddress)) {
+                        return false;
+                    }
+                    String scanPrivHex = Utils.bytesToHex(scanAddress.getScanKey().getPrivKeyBytes());
+                    String spendPubHex = Utils.bytesToHex(scanAddress.getSpendKey().getPubKey(true));
+                    electrumServerRpc.unsubscribeSilentPayments(getTransport(), scanPrivHex, spendPubHex);
+                    return true;
                 }
             };
         }
