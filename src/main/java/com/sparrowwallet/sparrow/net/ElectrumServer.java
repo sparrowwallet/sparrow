@@ -1501,21 +1501,24 @@ public class ElectrumServer {
             return Collections.emptySet();
         }
 
-        Map<BlockTransactionHash, Transaction> references = new TreeMap<>();
+        Map<BlockTransactionHash, Transaction> referencesToFetch = new TreeMap<>();
+        Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
         Map<Sha256Hash, byte[]> tweakMap = new HashMap<>();
         for(SilentPaymentsTx entry : entries) {
             Sha256Hash txid = Sha256Hash.wrap(entry.tx_hash);
             tweakMap.putIfAbsent(txid, Utils.hexToBytes(entry.tweak_key));
-            if(wallet.getWalletTransaction(txid) == null) {
-                references.put(new BlockTransaction(txid, entry.height, null, null, null), null);
+            BlockTransaction existing = wallet.getWalletTransaction(txid);
+            if(existing != null) {
+                transactionMap.put(txid, existing);
+            } else {
+                referencesToFetch.put(new BlockTransaction(txid, entry.height, null, null, null), null);
             }
         }
-        if(references.isEmpty()) {
-            return Collections.emptySet();
-        }
 
-        Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, references.keySet());
-        Map<Sha256Hash, BlockTransaction> transactionMap = getTransactions(wallet, references, blockHeaderMap);
+        if(!referencesToFetch.isEmpty()) {
+            Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, referencesToFetch.keySet());
+            transactionMap.putAll(getTransactions(wallet, referencesToFetch, blockHeaderMap));
+        }
 
         ECKey scanPriv = wallet.getSilentPaymentScanAddress().getScanKey();
         ECKey spendPub = wallet.getSilentPaymentScanAddress().getSpendKey();
