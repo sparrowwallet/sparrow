@@ -229,7 +229,7 @@ public class TransactionDiagram extends GridPane {
         if(diagram.isExpanded()) {
             List<Map<BlockTransactionHashIndex, WalletNode>> utxoSets = diagram.getDisplayedUtxoSets();
             int maxSetSize = utxoSets.stream().mapToInt(Map::size).max().orElse(0);
-            int maxRows = Math.max(maxSetSize * utxoSets.size(), walletTx.getPayments().size() + 2);
+            int maxRows = Math.max(maxSetSize * utxoSets.size(), diagram.getDisplayedOutputs().size() + 1);
             double diagramHeight = Math.max(DIAGRAM_HEIGHT, Math.min(EXPANDED_DIAGRAM_HEIGHT, maxRows * ROW_HEIGHT));
             diagram.setMinHeight(diagramHeight);
             diagram.setMaxHeight(diagramHeight);
@@ -257,12 +257,12 @@ public class TransactionDiagram extends GridPane {
         Pane txPane = getTransactionPane();
         GridPane.setConstraints(txPane, 3, 0);
 
-        List<Payment> displayedPayments = getDisplayedPayments();
+        List<WalletTransaction.Output> displayedOutputs = getDisplayedOutputs();
 
-        Pane outputsLinesPane = getOutputsLines(displayedPayments);
+        Pane outputsLinesPane = getOutputsLines(displayedOutputs);
         GridPane.setConstraints(outputsLinesPane, 4, 0);
 
-        Pane outputsPane = getOutputsLabels(displayedPayments);
+        Pane outputsPane = getOutputsLabels(displayedOutputs);
         GridPane.setConstraints(outputsPane, 5, 0);
 
         getChildren().clear();
@@ -653,33 +653,48 @@ public class TransactionDiagram extends GridPane {
         return value * (1.0 - scaleFactor) + additional;
     }
 
-    private List<Payment> getDisplayedPayments() {
-        List<Payment> payments = walletTx.getPayments();
-
+    private List<WalletTransaction.Output> getDisplayedOutputs() {
+        List<WalletTransaction.Output> outputs = walletTx.getOutputs().stream().filter(o -> !(o instanceof WalletTransaction.NonAddressOutput)).toList();
         int maxPayments = getMaxPayments();
-        if(payments.size() > maxPayments) {
-            List<Payment> displayedPayments = new ArrayList<>();
-            List<Payment> additional = new ArrayList<>();
-            for(Payment payment : payments) {
-                if(displayedPayments.size() < maxPayments - 1) {
-                    displayedPayments.add(payment);
-                } else {
-                    additional.add(payment);
-                }
-            }
+        long paginableCount = outputs.stream().filter(this::isPaymentAndNotChange).count();
 
-            displayedPayments.add(new AdditionalPayment(additional));
-            return displayedPayments;
-        } else {
-            return payments;
+        if(paginableCount <= maxPayments) {
+            return outputs;
         }
+
+        List<WalletTransaction.Output> displayedOutputs = new ArrayList<>();
+        List<Payment> additional = new ArrayList<>();
+        int kept = 0;
+        int additionalIdx = 0;
+        for(WalletTransaction.Output output : outputs) {
+            if(isPaymentAndNotChange(output)) {
+                if(kept < maxPayments - 1) {
+                    displayedOutputs.add(output);
+                    kept++;
+                    additionalIdx = displayedOutputs.size();
+                } else {
+                    additional.add(output instanceof WalletTransaction.PaymentOutput po ? po.getPayment() : ((WalletTransaction.ConsolidationOutput)output).getWalletNodePayment());
+                }
+            } else {
+                displayedOutputs.add(output);
+            }
+        }
+        Payment additionalPayment = new AdditionalPayment(additional);
+        TransactionOutput additionalOutput = new TransactionOutput(null, additionalPayment.getAmount(), new byte[0]);
+        displayedOutputs.add(additionalIdx, new WalletTransaction.PaymentOutput(additionalOutput, additionalPayment));
+
+        return displayedOutputs;
+    }
+
+    boolean isPaymentAndNotChange(WalletTransaction.Output output) {
+        return (output instanceof WalletTransaction.PaymentOutput && !(output instanceof WalletTransaction.SilentPaymentChangeOutput)) || output instanceof WalletTransaction.ConsolidationOutput;
     }
 
     private List<Payment> getUserPayments() {
         return walletTx.getPayments().stream().filter(payment -> payment.getType() == Payment.Type.DEFAULT || payment.getType() == Payment.Type.ANCHOR).toList();
     }
 
-    private Pane getOutputsLines(List<Payment> displayedPayments) {
+    private Pane getOutputsLines(List<WalletTransaction.Output> displayedOutputs) {
         VBox pane = new VBox();
         Group group = new Group();
         VBox.setVgrow(group, Priority.ALWAYS);
@@ -694,10 +709,9 @@ public class TransactionDiagram extends GridPane {
 
         double width = 140.0;
         long sum = walletTx.getTotal();
-        List<Long> values = walletTx.getOutputs().stream().filter(output -> !(output instanceof WalletTransaction.NonAddressOutput))
-                .map(output -> output.getTransactionOutput().getValue()).collect(Collectors.toList());
+        List<Long> values = displayedOutputs.stream().map(o -> o.getTransactionOutput().getValue()).collect(Collectors.toList());
         values.add(walletTx.getFee());
-        int numOutputs = displayedPayments.size() + walletTx.getChangeMap().size() + walletTx.getSilentPaymentChangeOutputs().size() + 1;
+        int numOutputs = displayedOutputs.size() + 1;
         for(int i = 1; i <= numOutputs; i++) {
             CubicCurve curve = new CubicCurve();
             curve.getStyleClass().add("output-line");
@@ -729,151 +743,21 @@ public class TransactionDiagram extends GridPane {
         return pane;
     }
 
-    private Pane getOutputsLabels(List<Payment> displayedPayments) {
+    private Pane getOutputsLabels(List<WalletTransaction.Output> displayedOutputs) {
         VBox outputsBox = new VBox();
         outputsBox.setPadding(new Insets(0, 20, 0, 10));
         outputsBox.setAlignment(Pos.BASELINE_LEFT);
         outputsBox.getChildren().add(createSpacer());
 
         List<OutputNode> outputNodes = new ArrayList<>();
-        for(Payment payment : displayedPayments) {
-            Glyph outputGlyph = GlyphUtils.getOutputGlyph(walletTx, payment);
-            boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon", "anchor-icon").contains(style)) || payment instanceof AdditionalPayment || payment.getLabel() != null;
-            boolean addressLabel = payment.getLabel() == null || payment.getType() == Payment.Type.FAKE_MIX || payment.getType() == Payment.Type.MIX;
-            Label recipientLabel = new Label(addressLabel ? payment.toString().substring(0, 8) + "..." : payment.getLabel(), outputGlyph);
-            recipientLabel.getStyleClass().add("output-label");
-            recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
-            if(addressLabel) {
-                recipientLabel.setSkin(new AddressLabelSkin(recipientLabel));
+        for(WalletTransaction.Output output : displayedOutputs) {
+            if(output instanceof WalletTransaction.SilentPaymentChangeOutput spChangeOutput) {
+                outputNodes.add(buildSpChangeNode(spChangeOutput));
+            } else if(output instanceof WalletTransaction.ChangeOutput changeOutput) {
+                outputNodes.add(buildHdChangeNode(changeOutput));
+            } else if(output instanceof WalletTransaction.PaymentOutput || output instanceof WalletTransaction.ConsolidationOutput) {
+                outputNodes.add(buildPaymentNode(output));
             }
-            Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
-            WalletNode toNode = payment instanceof WalletNodePayment walletNodePayment ? walletNodePayment.getWalletNode() : null;
-            Wallet toBip47Wallet = getBip47SendWallet(payment);
-            DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(payment);
-            Tooltip recipientTooltip = new Tooltip((toWallet == null ? (toNode != null ? "Consolidate " : "Pay ") : "Receive ")
-                    + getCoinValue(payment.getAmount()) + " to "
-                    + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toWallet == null ? (dnsPayment == null ? (payment.getLabel() == null ? (toNode != null ? toNode : (toBip47Wallet == null ? "external address" : toBip47Wallet.getDisplayName())) : payment.getLabel()) : dnsPayment.toString()) : toWallet.getFullDisplayName()) + "\n" + payment.getDisplayAddress())
-                    + (walletTx.isDuplicateAddress(payment) ? " (Duplicate)" : ""));
-            recipientTooltip.getStyleClass().add("recipient-label");
-            recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
-            recipientTooltip.setShowDuration(Duration.INDEFINITE);
-            recipientTooltip.setWrapText(true);
-            recipientTooltip.setSkin(new AddressTooltipSkin(recipientTooltip));
-            Window activeWindow = AppServices.getActiveWindow();
-            if(activeWindow != null) {
-                recipientTooltip.setMaxWidth(activeWindow.getWidth());
-            }
-            recipientLabel.setTooltip(recipientTooltip);
-            HBox paymentBox = new HBox();
-            paymentBox.setAlignment(Pos.CENTER_LEFT);
-            paymentBox.getChildren().add(recipientLabel);
-            if(isExpanded()) {
-                recipientLabel.setMinWidth(120);
-                Region region = new Region();
-                region.setMinWidth(20);
-                HBox.setHgrow(region, Priority.ALWAYS);
-                CoinLabel amountLabel = new CoinLabel();
-                amountLabel.setValue(payment.getAmount());
-                amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
-                paymentBox.getChildren().addAll(region, amountLabel);
-            }
-
-            if(payment instanceof SilentPayment silentPayment) {
-                outputNodes.add(new OutputNode(paymentBox, silentPayment.isAddressComputed() ? silentPayment.getAddress() : null, payment.getAmount(), null, silentPayment.getSilentPaymentAddress()));
-            } else {
-                Wallet bip47Wallet = toWallet != null && toWallet.isBip47() ? toWallet : (toBip47Wallet != null && toBip47Wallet.isBip47() ? toBip47Wallet : null);
-                PaymentCode paymentCode = bip47Wallet == null ? null : bip47Wallet.getKeystores().getFirst().getExternalPaymentCode();
-                outputNodes.add(new OutputNode(paymentBox, payment.getAddress(), payment.getAmount(), paymentCode, null));
-            }
-        }
-
-        Set<Integer> seenIndexes = new HashSet<>();
-        for(Map.Entry<WalletNode, Long> changeEntry : walletTx.getChangeMap().entrySet()) {
-            WalletNode changeNode = changeEntry.getKey();
-            boolean overGapLimit = walletTx.getWallet().getPolicyType() != PolicyType.SINGLE_SP &&
-                    (changeNode.getIndex() - walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE).getIndex()) > walletTx.getWallet().getGapLimit();
-
-            HBox actionBox = new HBox();
-            actionBox.setAlignment(Pos.CENTER_LEFT);
-            Address changeAddress = walletTx.getChangeAddress(changeNode);
-            String changeDesc = changeAddress.toString().substring(0, 8) + "...";
-            Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
-            changeLabel.getStyleClass().addAll("output-label", "change-label");
-            changeLabel.setSkin(new AddressLabelSkin(changeLabel));
-            Tooltip changeTooltip = new Tooltip("Change of " + getCoinValue(changeEntry.getValue()) + " to " + changeNode + "\n" + walletTx.getChangeAddress(changeNode).toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
-            changeTooltip.getStyleClass().add("change-label");
-            changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
-            changeTooltip.setShowDuration(Duration.INDEFINITE);
-            changeTooltip.setSkin(new AddressTooltipSkin(changeTooltip));
-            changeLabel.setTooltip(changeTooltip);
-            actionBox.getChildren().add(changeLabel);
-
-            if(!isFinal()) {
-                Button nextChangeAddressButton = new Button("");
-                nextChangeAddressButton.setGraphic(getChangeReplaceGlyph());
-                nextChangeAddressButton.setOnAction(event -> {
-                    EventManager.get().post(new ReplaceChangeAddressEvent(walletTx));
-                });
-                Tooltip replaceChangeTooltip = new Tooltip("Use next change address");
-                nextChangeAddressButton.setTooltip(replaceChangeTooltip);
-                Label replaceChangeLabel = new Label("", nextChangeAddressButton);
-                replaceChangeLabel.getStyleClass().add("replace-change-label");
-                replaceChangeLabel.setVisible(false);
-                actionBox.setOnMouseEntered(event -> replaceChangeLabel.setVisible(true));
-                actionBox.setOnMouseExited(event -> replaceChangeLabel.setVisible(false));
-                actionBox.getChildren().add(replaceChangeLabel);
-            }
-
-            if(isExpanded()) {
-                changeLabel.setMinWidth(120);
-                Region region = new Region();
-                region.setMinWidth(20);
-                HBox.setHgrow(region, Priority.ALWAYS);
-                CoinLabel amountLabel = new CoinLabel();
-                amountLabel.setValue(changeEntry.getValue());
-                amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
-                actionBox.getChildren().addAll(region, amountLabel);
-            }
-
-            int changeIndex = outputNodes.size();
-            if(isFinal()) {
-                changeIndex = getOutputIndex(changeAddress, changeEntry.getValue(), seenIndexes);
-                seenIndexes.add(changeIndex);
-                if(changeIndex > outputNodes.size()) {
-                    changeIndex = outputNodes.size();
-                }
-            }
-            outputNodes.add(changeIndex, new OutputNode(actionBox, changeAddress, changeEntry.getValue()));
-        }
-
-        for(WalletTransaction.SilentPaymentChangeOutput spChangeOutput : walletTx.getSilentPaymentChangeOutputs()) {
-            HBox actionBox = new HBox();
-            actionBox.setAlignment(Pos.CENTER_LEFT);
-            SilentPayment silentPayment = spChangeOutput.getSilentPayment();
-            SilentPaymentAddress spAddress = silentPayment.getSilentPaymentAddress();
-            Label changeLabel = new Label("Change", getChangeGlyph());
-            changeLabel.getStyleClass().addAll("output-label", "change-label");
-            changeLabel.setSkin(new AddressLabelSkin(changeLabel));
-            Tooltip changeTooltip = new Tooltip("Change of " + getCoinValue(silentPayment.getAmount()) + "\n" + spAddress);
-            changeTooltip.getStyleClass().add("change-label");
-            changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
-            changeTooltip.setShowDuration(Duration.INDEFINITE);
-            changeTooltip.setSkin(new AddressTooltipSkin(changeTooltip));
-            changeLabel.setTooltip(changeTooltip);
-            actionBox.getChildren().add(changeLabel);
-
-            if(isExpanded()) {
-                changeLabel.setMinWidth(120);
-                Region region = new Region();
-                region.setMinWidth(20);
-                HBox.setHgrow(region, Priority.ALWAYS);
-                CoinLabel amountLabel = new CoinLabel();
-                amountLabel.setValue(silentPayment.getAmount());
-                amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
-                actionBox.getChildren().addAll(region, amountLabel);
-            }
-
-            outputNodes.add(new OutputNode(actionBox, silentPayment.isAddressComputed() ? silentPayment.getAddress() : null, silentPayment.getAmount(), null, spAddress));
         }
 
         for(OutputNode outputNode : outputNodes) {
@@ -918,6 +802,143 @@ public class TransactionDiagram extends GridPane {
         }
 
         return outputsBox;
+    }
+
+    private OutputNode buildPaymentNode(WalletTransaction.Output output) {
+        Payment payment = output instanceof WalletTransaction.PaymentOutput po ? po.getPayment() : ((WalletTransaction.ConsolidationOutput)output).getWalletNodePayment();
+        boolean spConsolidation = output instanceof WalletTransaction.SilentPaymentConsolidationOutput;
+
+        Glyph outputGlyph = GlyphUtils.getOutputGlyph(walletTx, payment);
+        boolean labelledPayment = outputGlyph.getStyleClass().stream().anyMatch(style -> List.of("premix-icon", "badbank-icon", "whirlpoolfee-icon", "anchor-icon").contains(style)) || payment instanceof AdditionalPayment || payment.getLabel() != null;
+        boolean addressLabel = payment.getLabel() == null || payment.getType() == Payment.Type.MIX;
+        Label recipientLabel = new Label(payment.getType() == Payment.Type.FAKE_MIX ? payment.getType().toDisplayString() : (addressLabel ? payment.toString().substring(0, 8) + "..." : payment.getLabel()), outputGlyph);
+        recipientLabel.getStyleClass().add("output-label");
+        recipientLabel.getStyleClass().add(labelledPayment ? "payment-label" : "recipient-label");
+        if(addressLabel) {
+            recipientLabel.setSkin(new AddressLabelSkin(recipientLabel));
+        }
+        Wallet toWallet = walletTx.getToWallet(AppServices.get().getOpenWallets().keySet(), payment);
+        WalletNode toNode = payment instanceof WalletNodePayment walletNodePayment ? walletNodePayment.getWalletNode() : null;
+        Wallet toBip47Wallet = getBip47SendWallet(payment);
+        DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(payment);
+        Tooltip recipientTooltip = new Tooltip((toNode != null || spConsolidation ? "Consolidate " : (toWallet == null ? "Pay " : "Receive "))
+                + getCoinValue(payment.getAmount()) + " to "
+                + (payment instanceof AdditionalPayment ? (isExpanded() ? "\n" : "(click to expand)\n") + payment : (toNode != null ? toNode : (spConsolidation ? walletTx.getWallet().getFullDisplayName() : (toWallet == null ? (dnsPayment == null ? (payment.getLabel() == null ? (toBip47Wallet == null ? "external address" : toBip47Wallet.getDisplayName()) : payment.getLabel()) : dnsPayment.toString()) : toWallet.getFullDisplayName()))) + "\n" + payment.getDisplayAddress())
+                + (walletTx.isDuplicateAddress(payment) ? " (Duplicate)" : ""));
+        recipientTooltip.getStyleClass().add("recipient-label");
+        recipientTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        recipientTooltip.setShowDuration(Duration.INDEFINITE);
+        recipientTooltip.setWrapText(true);
+        recipientTooltip.setSkin(new AddressTooltipSkin(recipientTooltip));
+        Window activeWindow = AppServices.getActiveWindow();
+        if(activeWindow != null) {
+            recipientTooltip.setMaxWidth(activeWindow.getWidth());
+        }
+        recipientLabel.setTooltip(recipientTooltip);
+        HBox paymentBox = new HBox();
+        paymentBox.setAlignment(Pos.CENTER_LEFT);
+        paymentBox.getChildren().add(recipientLabel);
+        if(isExpanded()) {
+            recipientLabel.setMinWidth(120);
+            Region region = new Region();
+            region.setMinWidth(20);
+            HBox.setHgrow(region, Priority.ALWAYS);
+            CoinLabel amountLabel = new CoinLabel();
+            amountLabel.setValue(payment.getAmount());
+            amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+            paymentBox.getChildren().addAll(region, amountLabel);
+        }
+
+        if(payment instanceof SilentPayment silentPayment) {
+            return new OutputNode(paymentBox, silentPayment.isAddressComputed() ? silentPayment.getAddress() : null, payment.getAmount(), null, silentPayment.getSilentPaymentAddress());
+        }
+
+        Wallet bip47Wallet = toWallet != null && toWallet.isBip47() ? toWallet : (toBip47Wallet != null && toBip47Wallet.isBip47() ? toBip47Wallet : null);
+        PaymentCode paymentCode = bip47Wallet == null ? null : bip47Wallet.getKeystores().getFirst().getExternalPaymentCode();
+
+        return new OutputNode(paymentBox, payment.getAddress(), payment.getAmount(), paymentCode, null);
+    }
+
+    private OutputNode buildHdChangeNode(WalletTransaction.ChangeOutput changeOutput) {
+        WalletNode changeNode = changeOutput.getWalletNode();
+        long value = changeOutput.getValue();
+        boolean overGapLimit = walletTx.getWallet().getPolicyType() != PolicyType.SINGLE_SP &&
+                (changeNode.getIndex() - walletTx.getWallet().getFreshNode(KeyPurpose.CHANGE).getIndex()) > walletTx.getWallet().getGapLimit();
+
+        HBox actionBox = new HBox();
+        actionBox.setAlignment(Pos.CENTER_LEFT);
+        Address changeAddress = walletTx.getChangeAddress(changeNode);
+        String changeDesc = changeAddress.toString().substring(0, 8) + "...";
+        Label changeLabel = new Label(changeDesc, overGapLimit ? getChangeWarningGlyph() : getChangeGlyph());
+        changeLabel.getStyleClass().addAll("output-label", "change-label");
+        changeLabel.setSkin(new AddressLabelSkin(changeLabel));
+        Tooltip changeTooltip = new Tooltip("Change of " + getCoinValue(value) + " to " + changeNode + "\n" + changeAddress.toString() + (overGapLimit ? "\nAddress is beyond the gap limit!" : ""));
+        changeTooltip.getStyleClass().add("change-label");
+        changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        changeTooltip.setShowDuration(Duration.INDEFINITE);
+        changeTooltip.setSkin(new AddressTooltipSkin(changeTooltip));
+        changeLabel.setTooltip(changeTooltip);
+        actionBox.getChildren().add(changeLabel);
+
+        if(!isFinal()) {
+            Button nextChangeAddressButton = new Button("");
+            nextChangeAddressButton.setGraphic(getChangeReplaceGlyph());
+            nextChangeAddressButton.setOnAction(event -> {
+                EventManager.get().post(new ReplaceChangeAddressEvent(walletTx));
+            });
+            Tooltip replaceChangeTooltip = new Tooltip("Use next change address");
+            nextChangeAddressButton.setTooltip(replaceChangeTooltip);
+            Label replaceChangeLabel = new Label("", nextChangeAddressButton);
+            replaceChangeLabel.getStyleClass().add("replace-change-label");
+            replaceChangeLabel.setVisible(false);
+            actionBox.setOnMouseEntered(event -> replaceChangeLabel.setVisible(true));
+            actionBox.setOnMouseExited(event -> replaceChangeLabel.setVisible(false));
+            actionBox.getChildren().add(replaceChangeLabel);
+        }
+
+        if(isExpanded()) {
+            changeLabel.setMinWidth(120);
+            Region region = new Region();
+            region.setMinWidth(20);
+            HBox.setHgrow(region, Priority.ALWAYS);
+            CoinLabel amountLabel = new CoinLabel();
+            amountLabel.setValue(value);
+            amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+            actionBox.getChildren().addAll(region, amountLabel);
+        }
+
+        return new OutputNode(actionBox, changeAddress, value);
+    }
+
+    private OutputNode buildSpChangeNode(WalletTransaction.SilentPaymentChangeOutput spChangeOutput) {
+        SilentPayment silentPayment = spChangeOutput.getSilentPayment();
+        SilentPaymentAddress spAddress = silentPayment.getSilentPaymentAddress();
+
+        HBox actionBox = new HBox();
+        actionBox.setAlignment(Pos.CENTER_LEFT);
+        Label changeLabel = new Label("Change", getChangeGlyph());
+        changeLabel.getStyleClass().addAll("output-label", "payment-label");
+        changeLabel.setSkin(new AddressLabelSkin(changeLabel));
+        Tooltip changeTooltip = new Tooltip("Change of " + getCoinValue(silentPayment.getAmount()) + "\n" + silentPayment.getDisplayAddress());
+        changeTooltip.getStyleClass().add("change-label");
+        changeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
+        changeTooltip.setShowDuration(Duration.INDEFINITE);
+        changeTooltip.setSkin(new AddressTooltipSkin(changeTooltip));
+        changeLabel.setTooltip(changeTooltip);
+        actionBox.getChildren().add(changeLabel);
+
+        if(isExpanded()) {
+            changeLabel.setMinWidth(120);
+            Region region = new Region();
+            region.setMinWidth(20);
+            HBox.setHgrow(region, Priority.ALWAYS);
+            CoinLabel amountLabel = new CoinLabel();
+            amountLabel.setValue(silentPayment.getAmount());
+            amountLabel.setMinWidth(TextUtils.computeTextWidth(amountLabel.getFont(), amountLabel.getText(), 0.0D) + 2);
+            actionBox.getChildren().addAll(region, amountLabel);
+        }
+
+        return new OutputNode(actionBox, silentPayment.isAddressComputed() ? silentPayment.getAddress() : null, silentPayment.getAmount(), null, spAddress);
     }
 
     private Pane getTransactionPane() {
@@ -1001,8 +1022,8 @@ public class TransactionDiagram extends GridPane {
     }
 
     private String getDiagramTitle() {
-        if(!isFinal() && walletTx.getPayments().size() > 0 && walletTx.getPayments().get(0).getLabel() != null) {
-            return walletTx.getPayments().get(0).getLabel();
+        if(!isFinal() && !walletTx.getPayments().isEmpty() && walletTx.getPayments().getFirst().getLabel() != null) {
+            return walletTx.getPayments().getFirst().getLabel();
         } else {
             return "[" + walletTx.getTransaction().getTxId().toString().substring(0, 6) + "]";
         }
@@ -1052,15 +1073,6 @@ public class TransactionDiagram extends GridPane {
         final Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         return spacer;
-    }
-
-    private int getOutputIndex(Address address, long amount, Collection<Integer> seenIndexes) {
-        List<TransactionOutput> addressOutputs = walletTx.getOutputs().stream().filter(output -> !(output instanceof WalletTransaction.NonAddressOutput))
-                .map(WalletTransaction.Output::getTransactionOutput).collect(Collectors.toList());
-        TransactionOutput output = addressOutputs.stream()
-                .filter(txOutput -> address.equals(txOutput.getScript().getToAddress()) && txOutput.getValue() == amount && !seenIndexes.contains(txOutput.getIndex()))
-                .findFirst().orElseThrow();
-        return addressOutputs.indexOf(output);
     }
 
     private Wallet getBip47SendWallet(Payment payment) {

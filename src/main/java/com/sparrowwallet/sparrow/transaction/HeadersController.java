@@ -642,17 +642,18 @@ public class HeadersController extends TransactionFormController implements Init
     private WalletTransaction getWalletTransaction(Map<Sha256Hash, BlockTransaction> inputTransactions) {
         Wallet wallet = getWalletFromTransactionInputs();
 
+        Transaction transaction = headersForm.getTransaction();
         if(wallet != null) {
             Map<Sha256Hash, BlockTransaction> walletInputTransactions = inputTransactions;
             if(walletInputTransactions == null) {
-                Set<Sha256Hash> refs = headersForm.getTransaction().getInputs().stream().map(txInput -> txInput.getOutpoint().getHash()).collect(Collectors.toSet());
+                Set<Sha256Hash> refs = transaction.getInputs().stream().map(txInput -> txInput.getOutpoint().getHash()).collect(Collectors.toSet());
                 walletInputTransactions = wallet.getWalletTransactions();
                 walletInputTransactions.keySet().retainAll(refs);
             }
 
             Map<BlockTransactionHashIndex, WalletNode> selectedTxos = new LinkedHashMap<>();
             Map<BlockTransactionHashIndex, WalletNode> walletTxos = wallet.getWalletTxos();
-            for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
+            for(TransactionInput txInput : transaction.getInputs()) {
                 BlockTransactionHashIndex selectedTxo = walletTxos.keySet().stream().filter(txo -> txInput.getOutpoint().getHash().equals(txo.getHash()) && txInput.getOutpoint().getIndex() == txo.getIndex())
                         .findFirst().orElse(getBlockTransactionInput(walletInputTransactions, txInput));
                 selectedTxos.put(selectedTxo, walletTxos.get(selectedTxo));
@@ -663,73 +664,86 @@ public class HeadersController extends TransactionFormController implements Init
             Map<WalletNode, Long> changeMap = new LinkedHashMap<>();
             Map<Script, WalletNode> receiveOutputScripts = wallet.getWalletOutputScripts(KeyPurpose.RECEIVE);
             Map<Script, WalletNode> changeOutputScripts = wallet.getWalletOutputScripts(wallet.getChangeKeyPurpose());
-            for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
+            for(TransactionOutput txOutput : transaction.getOutputs()) {
                 WalletNode changeNode = changeOutputScripts.get(txOutput.getScript());
                 if(changeNode != null) {
-                    if(headersForm.getTransaction().getOutputs().size() == 4 && headersForm.getTransaction().getOutputs().stream().anyMatch(txo -> txo != txOutput && txo.getValue() == txOutput.getValue())) {
-                        if(selectedTxos.values().stream().allMatch(Objects::nonNull)) {
-                            payments.add(new WalletNodePayment(changeNode, ".." + changeNode + " (Fake Mix)", txOutput.getValue(), false, Payment.Type.FAKE_MIX));
-                        } else {
-                            payments.add(new WalletNodePayment(changeNode, ".." + changeNode + " (Mix)", txOutput.getValue(), false, Payment.Type.MIX));
-                        }
+                    if(transaction.getOutputs().size() == 4 && transaction.getOutputs().stream().anyMatch(txo -> txo != txOutput && txo.getValue() == txOutput.getValue())) {
+                        Payment.Type type = selectedTxos.values().stream().allMatch(Objects::nonNull) ? Payment.Type.FAKE_MIX : Payment.Type.MIX;
+                        WalletNodePayment mixPayment = new WalletNodePayment(changeNode, ".." + changeNode + " (" + type.toDisplayString() + ")", txOutput.getValue(), false, type);
+                        payments.add(mixPayment);
+                        outputs.add(new WalletTransaction.ConsolidationOutput(txOutput, mixPayment, txOutput.getValue()));
                     } else {
-                        if(changeMap.containsKey(changeNode)) {
-                            payments.add(new WalletNodePayment(changeNode, headersForm.getName(), txOutput.getValue(), false, Payment.Type.DEFAULT));
-                        } else {
+                        if(!changeMap.containsKey(changeNode)) {
                             changeMap.put(changeNode, txOutput.getValue());
                         }
+                        outputs.add(new WalletTransaction.ChangeOutput(txOutput, changeNode, txOutput.getValue()));
                     }
-                    outputs.add(new WalletTransaction.ChangeOutput(txOutput, changeNode, txOutput.getValue()));
                 } else {
-                    Payment.Type paymentType = Payment.Type.DEFAULT;
-                    Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
-                    Wallet premixWallet = masterWallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
-                    if(premixWallet != null && headersForm.getTransaction().getOutputs().stream().anyMatch(premixWallet::isWalletTxo) && txOutput.getIndex() == 1) {
-                        paymentType = Payment.Type.WHIRLPOOL_FEE;
-                    }
-
-                    BlockTransactionHashIndex receivedTxo = walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txOutput.getHash()) && txo.getIndex() == txOutput.getIndex()).findFirst().orElse(null);
-                    String label = headersForm.getName() == null || (headersForm.getName().startsWith("[") && headersForm.getName().endsWith("]") && headersForm.getName().length() == 8) ? null : headersForm.getName();
-                    Address address = txOutput.getScript().getToAddress();
-                    WalletNode receiveNode = receiveOutputScripts.get(txOutput.getScript());
-                    SilentPaymentAddress silentPaymentAddress = headersForm.getSilentPaymentAddress(txOutput);
-                    label = receivedTxo != null ? receivedTxo.getLabel() : label;
-                    if(address != null || silentPaymentAddress != null) {
-                        Payment payment;
-                        if(silentPaymentAddress != null) {
-                            payment = new SilentPayment(silentPaymentAddress, address, label, txOutput.getValue(), false);
-                        } else if(receiveNode != null) {
-                            payment = new WalletNodePayment(receiveNode, label, txOutput.getValue(), false, paymentType);
+                    Address toAddress = txOutput.getScript().getToAddress();
+                    SilentPaymentAddress spAddress = headersForm.getSilentPaymentAddress(txOutput);
+                    if(spAddress != null && wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.getSilentPaymentScanAddress().getChangeAddress().getSilentPaymentAddress().equals(spAddress)) {
+                        if(transaction.getOutputs().size() == 4 && transaction.getOutputs().stream().anyMatch(txo -> txo != txOutput && txo.getValue() == txOutput.getValue())) {
+                            Payment.Type type = selectedTxos.values().stream().allMatch(Objects::nonNull) ? Payment.Type.FAKE_MIX : Payment.Type.MIX;
+                            SilentPayment mixPayment = new SilentPayment(spAddress, toAddress, "(" + type.toDisplayString() + ")", txOutput.getValue(), false, type);
+                            payments.add(mixPayment);
+                            outputs.add(new WalletTransaction.SilentPaymentConsolidationOutput(txOutput, mixPayment));
                         } else {
-                            payment = new Payment(address, label, txOutput.getValue(), false, paymentType);
-                        }
-                        WalletTransaction createdTx = AppServices.get().getCreatedTransaction(selectedTxos.keySet());
-                        if(createdTx != null) {
-                            Optional<String> optLabel = createdTx.getPayments().stream()
-                                    .filter(pymt -> (pymt instanceof SilentPayment silentPayment ? silentPayment.getSilentPaymentAddress().equals(silentPaymentAddress) :
-                                            pymt.getAddress().equals(payment.getAddress())) && pymt.getAmount() == payment.getAmount()).map(Payment::getLabel).findFirst();
-                            if(optLabel.isPresent()) {
-                                payment.setLabel(optLabel.get());
-                                outputIndexLabels.put(txOutput.getIndex(), optLabel.get());
-                            }
-                        }
-                        payments.add(payment);
-                        if(payment instanceof SilentPayment silentPayment) {
-                            outputs.add(new WalletTransaction.SilentPaymentOutput(txOutput, silentPayment));
-                        } else if(payment instanceof WalletNodePayment walletNodePayment) {
-                            outputs.add(new WalletTransaction.ConsolidationOutput(txOutput, walletNodePayment, walletNodePayment.getAmount()));
-                        } else {
-                            outputs.add(new WalletTransaction.PaymentOutput(txOutput, payment));
+                            SilentPayment changePayment = new SilentPayment(spAddress, toAddress, null, txOutput.getValue(), false);
+                            outputs.add(new WalletTransaction.SilentPaymentChangeOutput(txOutput, changePayment));
                         }
                     } else {
-                        outputs.add(new WalletTransaction.NonAddressOutput(txOutput));
+                        Payment.Type paymentType = Payment.Type.DEFAULT;
+                        Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
+                        Wallet premixWallet = masterWallet.getChildWallet(StandardAccount.WHIRLPOOL_PREMIX);
+                        if(premixWallet != null && transaction.getOutputs().stream().anyMatch(premixWallet::isWalletTxo) && txOutput.getIndex() == 1) {
+                            paymentType = Payment.Type.WHIRLPOOL_FEE;
+                        }
+
+                        BlockTransactionHashIndex receivedTxo = walletTxos.keySet().stream().filter(txo -> txo.getHash().equals(txOutput.getHash()) && txo.getIndex() == txOutput.getIndex()).findFirst().orElse(null);
+                        String label = headersForm.getName() == null || (headersForm.getName().startsWith("[") && headersForm.getName().endsWith("]") && headersForm.getName().length() == 8) ? null : headersForm.getName();
+                        WalletNode receiveNode = receiveOutputScripts.get(txOutput.getScript());
+                        label = receivedTxo != null ? receivedTxo.getLabel() : label;
+                        if(toAddress != null || spAddress != null) {
+                            Payment payment;
+                            if(spAddress != null) {
+                                payment = new SilentPayment(spAddress, toAddress, label, txOutput.getValue(), false);
+                            } else if(receiveNode != null) {
+                                payment = new WalletNodePayment(receiveNode, label, txOutput.getValue(), false, paymentType);
+                            } else {
+                                payment = new Payment(toAddress, label, txOutput.getValue(), false, paymentType);
+                            }
+                            WalletTransaction createdTx = AppServices.get().getCreatedTransaction(selectedTxos.keySet());
+                            if(createdTx != null) {
+                                Optional<String> optLabel = createdTx.getPayments().stream()
+                                        .filter(pymt -> (pymt instanceof SilentPayment silentPayment ? silentPayment.getSilentPaymentAddress().equals(spAddress) :
+                                                pymt.getAddress().equals(payment.getAddress())) && pymt.getAmount() == payment.getAmount()).map(Payment::getLabel).findFirst();
+                                if(optLabel.isPresent()) {
+                                    payment.setLabel(optLabel.get());
+                                    outputIndexLabels.put(txOutput.getIndex(), optLabel.get());
+                                }
+                            }
+                            payments.add(payment);
+                            if(payment instanceof SilentPayment silentPayment) {
+                                if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.getSilentPaymentScanAddress().getSilentPaymentAddress().equals(spAddress)) {
+                                    outputs.add(new WalletTransaction.SilentPaymentConsolidationOutput(txOutput, silentPayment));
+                                } else {
+                                    outputs.add(new WalletTransaction.SilentPaymentOutput(txOutput, silentPayment));
+                                }
+                            } else if(payment instanceof WalletNodePayment walletNodePayment) {
+                                outputs.add(new WalletTransaction.ConsolidationOutput(txOutput, walletNodePayment, walletNodePayment.getAmount()));
+                            } else {
+                                outputs.add(new WalletTransaction.PaymentOutput(txOutput, payment));
+                            }
+                        } else {
+                            outputs.add(new WalletTransaction.NonAddressOutput(txOutput));
+                        }
                     }
                 }
             }
 
-            return new WalletTransaction(wallet, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, outputs, changeMap, fee.getValue(), walletInputTransactions);
+            return new WalletTransaction(wallet, transaction, Collections.emptyList(), List.of(selectedTxos), payments, outputs, changeMap, fee.getValue(), walletInputTransactions);
         } else {
-            Map<BlockTransactionHashIndex, WalletNode> selectedTxos = headersForm.getTransaction().getInputs().stream()
+            Map<BlockTransactionHashIndex, WalletNode> selectedTxos = transaction.getInputs().stream()
                     .collect(Collectors.toMap(txInput -> getBlockTransactionInput(inputTransactions, txInput),
                             txInput -> new WalletNode("m/0"),
                             (u, v) -> { throw new IllegalStateException("Duplicate TXOs"); },
@@ -738,7 +752,7 @@ public class HeadersController extends TransactionFormController implements Init
 
             List<Payment> payments = new ArrayList<>();
             List<WalletTransaction.Output> outputs = new ArrayList<>();
-            for(TransactionOutput txOutput : headersForm.getTransaction().getOutputs()) {
+            for(TransactionOutput txOutput : transaction.getOutputs()) {
                 Address address = txOutput.getScript().getToAddress();
                 SilentPaymentAddress silentPaymentAddress = headersForm.getSilentPaymentAddress(txOutput);
                 BlockTransactionHashIndex receivedTxo = getBlockTransactionOutput(txOutput);
@@ -755,7 +769,7 @@ public class HeadersController extends TransactionFormController implements Init
                 }
             }
 
-            return new WalletTransaction(null, headersForm.getTransaction(), Collections.emptyList(), List.of(selectedTxos), payments, outputs, Collections.emptyMap(), fee.getValue(), inputTransactions);
+            return new WalletTransaction(null, transaction, Collections.emptyList(), List.of(selectedTxos), payments, outputs, Collections.emptyMap(), fee.getValue(), inputTransactions);
         }
     }
 
