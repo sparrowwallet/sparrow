@@ -1566,12 +1566,13 @@ public class ElectrumServer {
 
     private WalletNode createNodeForMatch(Wallet wallet, SilentPaymentScanMatch match, Map<Address, WalletNode> walletAddresses, KeyPurpose purpose, int newIndex) {
         WalletNode purposeNode = wallet.getNode(purpose);
-        Set<WalletNode> created = purposeNode.fillToIndex(wallet, newIndex);
-        WalletNode addressNode = created.stream().filter(n -> n.getIndex() == newIndex).findFirst().orElseThrow(() -> new IllegalStateException("fillToIndex did not create node at index " + newIndex));
-        addressNode.setSilentPaymentTweak(match.tweak());
+        WalletNode addressNode = purposeNode.addSilentPaymentChild(wallet, newIndex, match.tweak());
+        if(addressNode == null) {
+            throw new IllegalStateException("Silent payment child already exists at index " + newIndex);
+        }
 
         if(walletAddresses.containsKey(wallet.getAddress(addressNode))) {
-            purposeNode.getChildren().removeAll(created);
+            purposeNode.getChildren().remove(addressNode);
             return null;
         }
 
