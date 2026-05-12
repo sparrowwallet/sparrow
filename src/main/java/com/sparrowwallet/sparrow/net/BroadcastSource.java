@@ -87,7 +87,7 @@ public enum BroadcastSource {
             }
         }
     },
-    MEMPOOL_BISQ_SERVICES("mempool.bisq.services", "https://mempool.bisq.services", "http://mempoolcutehjtynu4k4rd746acmssvj2vz4jbz4setb72clbpx2dfqd.onion") {
+    MEMPOOL_BISQ_SERVICES("markets.bisq.network", "https://markets.bisq.network", "http://runbtcxzz4v2haszypwbrn2baqdo7tlwt6dw7g27cwwaootd4gktwayd.onion/") {
         public Sha256Hash broadcastTransaction(Transaction transaction) throws BroadcastException {
             String data = Utils.bytesToHex(transaction.bitcoinSerialize());
             return postTransactionData(data);
