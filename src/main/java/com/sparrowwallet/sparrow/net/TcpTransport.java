@@ -32,6 +32,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     public static final int DEFAULT_MAX_TIMEOUT = 34;
     private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, DEFAULT_MAX_TIMEOUT};
+    private static final int[] TOR_READ_TIMEOUT_SECS = {5, 10, 20, DEFAULT_MAX_TIMEOUT};
     private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
@@ -71,8 +72,15 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         this.server = server;
         this.socketFactory = (proxy == null ? SocketFactory.getDefault() : new ProxySocketFactory(proxy));
 
-        int[] timeouts = (Config.get().getServerType() == ServerType.BITCOIN_CORE && Protocol.isOnionAddress(Config.get().getCoreServer()) ?
-                Arrays.copyOf(SLOW_READ_TIMEOUT_SECS, SLOW_READ_TIMEOUT_SECS.length) : Arrays.copyOf(BASE_READ_TIMEOUT_SECS, BASE_READ_TIMEOUT_SECS.length));
+        int[] baseTimeouts;
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE && Protocol.isOnionAddress(Config.get().getCoreServer())) {
+            baseTimeouts = SLOW_READ_TIMEOUT_SECS;
+        } else if(proxy != null) {
+            baseTimeouts = TOR_READ_TIMEOUT_SECS;
+        } else {
+            baseTimeouts = BASE_READ_TIMEOUT_SECS;
+        }
+        int[] timeouts = Arrays.copyOf(baseTimeouts, baseTimeouts.length);
         if(Config.get().getMaxServerTimeout() > timeouts[timeouts.length - 1]) {
             timeouts[timeouts.length - 1] = Config.get().getMaxServerTimeout();
         }
