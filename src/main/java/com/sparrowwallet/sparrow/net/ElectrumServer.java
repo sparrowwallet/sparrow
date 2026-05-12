@@ -524,20 +524,41 @@ public class ElectrumServer {
             }
 
             //Optimistic optimizations from guessing the script hash status based on known information
+            Map<Sha256Hash, BlockTransaction> candidateTxs = new LinkedHashMap<>(broadcastedTransactions);
+            wallet.getTransactions().forEach((txid, blkTx) -> {
+                if(blkTx.getHeight() <= 0) {
+                    candidateTxs.putIfAbsent(txid, blkTx);
+                }
+            });
+
+            //Precompute the predicted height per candidate by inspecting in-wallet parents
+            Map<Sha256Hash, Integer> candidateHeights = new HashMap<>(candidateTxs.size());
+            for(Map.Entry<Sha256Hash, BlockTransaction> e : candidateTxs.entrySet()) {
+                int predicted = 0;
+                for(TransactionInput input : e.getValue().getTransaction().getInputs()) {
+                    BlockTransaction parent = wallet.getWalletTransaction(input.getOutpoint().getHash());
+                    if(parent != null && parent.getHeight() <= 0) {
+                        predicted = -1;
+                        break;
+                    }
+                }
+                candidateHeights.put(e.getKey(), predicted);
+            }
+
             for(Map.Entry<WalletNode, ScriptHashTx[]> entry : nodeHashHistory.entrySet()) {
                 WalletNode node = entry.getKey();
                 String scriptHash = pathScriptHashes.get(node.getDerivationPath());
                 List<String> statuses = subscribedScriptHashes.get(scriptHash);
 
                 if(statuses != null && !statuses.isEmpty()) {
-                    //Optimize for new transactions that have been recently broadcasted
-                    for(Sha256Hash txid : broadcastedTransactions.keySet()) {
-                        BlockTransaction blkTx = broadcastedTransactions.get(txid);
+                    //Optimize for txs that are already known (broadcasted or mempool-persisted)
+                    for(Sha256Hash txid : candidateTxs.keySet()) {
+                        BlockTransaction blkTx = candidateTxs.get(txid);
                         if(blkTx.getTransaction().getOutputs().stream().map(ElectrumServer::getScriptHash).anyMatch(scriptHash::equals) ||
                             blkTx.getTransaction().getInputs().stream().map(txInput -> getPrevOutput(wallet, txInput))
                                     .filter(Objects::nonNull).map(ElectrumServer::getScriptHash).anyMatch(scriptHash::equals)) {
                             List<ScriptHashTx> scriptHashTxes = new ArrayList<>(getScriptHashes(scriptHash, node));
-                            scriptHashTxes.add(new ScriptHashTx(0, txid.toString(), blkTx.getFee() == null ? 0 : blkTx.getFee()));
+                            scriptHashTxes.add(new ScriptHashTx(candidateHeights.get(txid), txid.toString(), blkTx.getFee() == null ? 0 : blkTx.getFee()));
 
                             String status = getScriptHashStatus(scriptHashTxes);
                             if(Objects.equals(status, statuses.getLast())) {
@@ -741,7 +762,7 @@ public class ElectrumServer {
             BlockTransactionHash reference = entry.getKey();
             BlockTransaction blockTransaction = wallet.getWalletTransaction(reference.getHash());
             if(blockTransaction != null) {
-                if(reference.getHeight() == blockTransaction.getHeight()) {
+                if(reference.getHeight() == blockTransaction.getHeight() && (reference.getFee() == null || blockTransaction.getFee() != null)) {
                     iter.remove();
                 } else {
                     entry.setValue(blockTransaction.getTransaction());
@@ -866,7 +887,14 @@ public class ElectrumServer {
                     blockDate = blockHeader.getTimeAsDate();
                 }
 
-                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockDate, reference.getFee(), transaction);
+                Long fee = reference.getFee();
+                if(fee == null) {
+                    BlockTransaction cached = wallet.getWalletTransaction(reference.getHash());
+                    if(cached != null && cached.getFee() != null) {
+                        fee = cached.getFee();
+                    }
+                }
+                BlockTransaction blockchainTransaction = new BlockTransaction(reference.getHash(), reference.getHeight(), blockDate, fee, transaction);
 
                 transactionMap.put(reference.getHash(), blockchainTransaction);
                 checkReferences.remove(reference);
@@ -1176,13 +1204,21 @@ public class ElectrumServer {
     }
 
     public Sha256Hash broadcastTransaction(Transaction transaction, Long fee) throws ServerException {
-        Sha256Hash txid = broadcastTransactionPrivately(transaction);
-        if(txid != null) {
-            BlockTransaction blkTx = new BlockTransaction(txid, 0, null, fee, transaction);
-            broadcastedTransactions.put(txid, blkTx);
-        }
+        //Eagerly populate broadcastedTransactions before broadcasting and roll back on broadcast failure
+        Sha256Hash txid = transaction.getTxId();
+        BlockTransaction blkTx = new BlockTransaction(txid, 0, null, fee, transaction);
+        broadcastedTransactions.put(txid, blkTx);
 
-        return txid;
+        try {
+            Sha256Hash broadcastTxid = broadcastTransactionPrivately(transaction);
+            if(broadcastTxid == null) {
+                broadcastedTransactions.remove(txid);
+            }
+            return broadcastTxid;
+        } catch(Exception e) {
+            broadcastedTransactions.remove(txid);
+            throw e;
+        }
     }
 
     public Sha256Hash broadcastTransactionPrivately(Transaction transaction) throws ServerException {
@@ -1191,14 +1227,14 @@ public class ElectrumServer {
             List<BroadcastSource> broadcastSources = Arrays.stream(BroadcastSource.values()).filter(src -> src.getSupportedNetworks().contains(Network.get())).collect(Collectors.toList());
             Sha256Hash txid = null;
             for(int i = 1; !broadcastSources.isEmpty(); i++) {
+                BroadcastSource broadcastSource = broadcastSources.remove(new Random().nextInt(broadcastSources.size()));
                 try {
-                    BroadcastSource broadcastSource = broadcastSources.remove(new Random().nextInt(broadcastSources.size()));
                     txid = broadcastSource.broadcastTransaction(transaction);
                     if(Network.get() != Network.MAINNET || i >= MINIMUM_BROADCASTS || broadcastSources.isEmpty()) {
                         return txid;
                     }
                 } catch(BroadcastSource.BroadcastException e) {
-                    //ignore, already logged
+                    log.error("Could not post transaction via " + broadcastSource.getName(), e);
                 }
             }
 
@@ -1504,27 +1540,39 @@ public class ElectrumServer {
         Map<BlockTransactionHash, Transaction> referencesToFetch = new TreeMap<>();
         Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
         Map<Sha256Hash, byte[]> tweakMap = new HashMap<>();
+        //Track which batch txids the wallet already had. Everything else in transactionMap (via
+        //broadcastedTransactions or via the fetch below) is newly introduced to the wallet by this
+        //batch and needs its spent-input nodes identified.
+        Set<Sha256Hash> alreadyInWallet = new HashSet<>();
         for(SilentPaymentsTx entry : entries) {
             Sha256Hash txid = Sha256Hash.wrap(entry.tx_hash);
             tweakMap.putIfAbsent(txid, Utils.hexToBytes(entry.tweak_key));
             BlockTransaction existing = wallet.getWalletTransaction(txid);
             if(existing != null) {
                 transactionMap.put(txid, existing);
+                alreadyInWallet.add(txid);
             } else {
-                referencesToFetch.put(new BlockTransaction(txid, entry.height, null, null, null), null);
+                existing = broadcastedTransactions.get(txid);
+                if(existing != null) {
+                    transactionMap.put(txid, existing);
+                } else {
+                    referencesToFetch.put(new BlockTransaction(txid, entry.height, null, null, null), null);
+                }
             }
         }
 
         if(!referencesToFetch.isEmpty()) {
             Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, referencesToFetch.keySet());
-            transactionMap.putAll(getTransactions(wallet, referencesToFetch, blockHeaderMap));
+            Map<Sha256Hash, BlockTransaction> fetched = getTransactions(wallet, referencesToFetch, blockHeaderMap);
+            transactionMap.putAll(fetched);
+            wallet.updateTransactions(fetched);
         }
 
         ECKey scanPriv = wallet.getSilentPaymentScanAddress().getScanKey();
         ECKey spendPub = wallet.getSilentPaymentScanAddress().getSpendKey();
 
         Map<Address, WalletNode> walletAddresses = wallet.getWalletAddresses();
-        Set<WalletNode> newNodes = new LinkedHashSet<>();
+        Set<WalletNode> affectedNodes = new LinkedHashSet<>();
 
         int receiveNextIndex = nextIndex(wallet.getNode(KeyPurpose.RECEIVE));
         int changeNextIndex = nextIndex(wallet.getNode(KeyPurpose.CHANGE));
@@ -1543,7 +1591,7 @@ public class ElectrumServer {
                     int newIndex = purpose == KeyPurpose.CHANGE ? changeNextIndex : receiveNextIndex;
                     WalletNode newNode = createNodeForMatch(wallet, match, walletAddresses, purpose, newIndex);
                     if(newNode != null) {
-                        newNodes.add(newNode);
+                        affectedNodes.add(newNode);
                         walletAddresses.put(wallet.getAddress(newNode), newNode);
                         if(purpose == KeyPurpose.CHANGE) {
                             changeNextIndex++;
@@ -1557,7 +1605,28 @@ public class ElectrumServer {
             }
         }
 
-        return newNodes;
+        //Include wallet nodes whose UTXOs are spent by any tx newly introduced to the wallet by this
+        //batch (either fetched here or pulled in from broadcastedTransactions), so calculateNodeHistory
+        //runs for them in the same atomic pass and sets spentBy on the spent TXOs.
+        Map<HashIndex, WalletNode> walletTxoNodes = new HashMap<>();
+        for(Map.Entry<BlockTransactionHashIndex, WalletNode> e : wallet.getWalletTxos().entrySet()) {
+            walletTxoNodes.put(new HashIndex(e.getKey().getHash(), e.getKey().getIndex()), e.getValue());
+        }
+        Set<WalletNode> spentInputNodes = new LinkedHashSet<>();
+        for(Map.Entry<Sha256Hash, BlockTransaction> e : transactionMap.entrySet()) {
+            if(alreadyInWallet.contains(e.getKey())) {
+                continue;
+            }
+            for(TransactionInput input : e.getValue().getTransaction().getInputs()) {
+                WalletNode node = walletTxoNodes.get(new HashIndex(input.getOutpoint().getHash(), input.getOutpoint().getIndex()));
+                if(node != null) {
+                    spentInputNodes.add(node);
+                }
+            }
+        }
+        affectedNodes.addAll(spentInputNodes);
+
+        return affectedNodes;
     }
 
     private static int nextIndex(WalletNode purposeNode) {
@@ -2085,10 +2154,20 @@ public class ElectrumServer {
                     try {
                         ElectrumServer electrumServer = new ElectrumServer();
                         List<SilentPaymentsTx> entries = electrumServer.getSilentPaymentHistory(scanAddress);
-                        Set<WalletNode> newNodes = electrumServer.processSilentPaymentBatch(wallet, entries);
+                        Set<WalletNode> affectedNodes = electrumServer.processSilentPaymentBatch(wallet, entries);
 
-                        //First refresh (acquired): fetch all nodes to re-subscribe scripthashes the server forgot. Live delta: only the new ones.
-                        Set<WalletNode> nodesToFetch = acquired ? null : newNodes;
+                        //Force affected nodes to be marked in subscribeWalletNodes regardless of whether
+                        //their scripthash status push has arrived yet. Without this, a spent-input node
+                        //whose push lags the SP-discovery channel won't be marked (its server-reported
+                        //status still matches retrievedScriptHashes), and calculateNodeHistory won't run
+                        //for it in this pass — leaving spentBy unset on the spent TXO.
+                        for(WalletNode node : affectedNodes) {
+                            clearRetrievedScriptHash(getScriptHash(node));
+                        }
+
+                        //First refresh (acquired): fetch all nodes to re-subscribe scripthashes the server forgot.
+                        //Live delta: only the affected ones (newly-discovered SP nodes + nodes spent by the batch).
+                        Set<WalletNode> nodesToFetch = acquired ? null : affectedNodes;
                         if(nodesToFetch != null && nodesToFetch.isEmpty()) {
                             return true;
                         }
