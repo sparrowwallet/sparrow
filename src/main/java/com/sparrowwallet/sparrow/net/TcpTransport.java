@@ -3,7 +3,6 @@ package com.sparrowwallet.sparrow.net;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.base.Splitter;
 import com.google.common.net.HostAndPort;
-import com.google.gson.Gson;
 import com.sparrowwallet.sparrow.io.Config;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -17,20 +16,26 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Objects;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
+    private static final Logger wireLog = LoggerFactory.getLogger("electrum.wire");
 
     public static final int DEFAULT_MAX_TIMEOUT = 34;
     private static final int[] BASE_READ_TIMEOUT_SECS = {3, 8, 16, DEFAULT_MAX_TIMEOUT};
     private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
+    private static final Pattern ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -57,7 +62,6 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private final SubscriptionService subscriptionService = new SubscriptionService();
 
     private Exception lastException;
-    private final Gson gson = new Gson();
 
     public TcpTransport(HostAndPort server) {
         this(server, null);
@@ -77,19 +81,22 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     @Override
     public @NotNull String pass(@NotNull String request) throws IOException {
+        Set<String> sentIdSet = extractIdSet(request);
         clientRequestLock.lock();
         try {
-            Rpc sentRpc = request.startsWith("{") ? gson.fromJson(request, Rpc.class) : null;
-            Rpc recvRpc;
-            String recv;
-
             //Count number of requests in batched query to increase read timeout appropriately
             requestIdCount = Splitter.on("\"id\"").splitToList(request).size() - 1;
             writeRequest(request);
+
+            String recv;
+            Set<String> recvIdSet;
             do {
                 recv = readResponse();
-                recvRpc = recv.startsWith("{") ? gson.fromJson(response, Rpc.class) : null;
-            } while(!Objects.equals(recvRpc, sentRpc));
+                recvIdSet = extractIdSet(recv);
+                if(!sentIdSet.equals(recvIdSet)) {
+                    log.info("Discarding stale response with ids " + recvIdSet + " (expected " + sentIdSet + ")");
+                }
+            } while(!sentIdSet.equals(recvIdSet));
 
             return recv;
         } finally {
@@ -105,6 +112,8 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         if(socket == null) {
             throw new IllegalStateException("Socket connection has not been established.");
         }
+
+        wireLog.info("> " + request);
 
         PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8)));
         out.println(request);
@@ -183,6 +192,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             while(running) {
                 try {
                     String received = readInputStream(in);
+                    wireLog.info("< " + received);
                     if(received.contains("method") && !received.contains("error")) {
                         //Handle subscription notification
                         jsonRpcServer.handle(received, subscriptionService);
@@ -294,24 +304,15 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         return readTimeoutIndex;
     }
 
-    private static class Rpc {
-        public String id;
-
-        @Override
-        public boolean equals(Object o) {
-            if(this == o) {
-                return true;
-            }
-            if(o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Rpc rpc = (Rpc) o;
-            return Objects.equals(id, rpc.id);
+    private static Set<String> extractIdSet(String json) {
+        if(json == null || json.isEmpty()) {
+            return Collections.emptySet();
         }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(id);
+        Matcher m = ID_PATTERN.matcher(json);
+        Set<String> ids = new LinkedHashSet<>();
+        while(m.find()) {
+            ids.add(m.group(1));
         }
+        return ids;
     }
 }
