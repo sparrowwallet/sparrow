@@ -142,6 +142,13 @@ class SilentPaymentsScanCache {
      */
     void restoreFromSnapshot(Snapshot snapshot) {
         assert lock.isHeldByCurrentThread();
+        //If the cache was cancelled between captureSnapshot and now (e.g., a server disconnect ran
+        //cancelSilentPaymentScans during the widening RPC), preserve the cancellation rather than
+        //resurrecting a CANCELLED cache to its pre-widening state. Cancel already signalled both
+        //conditions, so no further signal is needed here.
+        if(state == State.CANCELLED) {
+            return;
+        }
         state = snapshot.state;
         serverStart = snapshot.serverStart;
         entries.clear();
