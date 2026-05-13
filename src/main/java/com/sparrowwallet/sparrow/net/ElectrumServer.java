@@ -1593,6 +1593,23 @@ public class ElectrumServer {
                     if(newNode != null) {
                         affectedNodes.add(newNode);
                         walletAddresses.put(wallet.getAddress(newNode), newNode);
+
+                        //Pre-populate the new SP node's transactionOutputs from the match data so the
+                        //first WalletHistoryChangedEvent's isComplete check sees both sides of the spend
+                        //already linked. Without this, the new SP node remains unmarked in
+                        //subscribeWalletNodes (its subscribe-response status is typically null if
+                        //server's scripthash index lags the SP discovery channel), calculateNodeHistory
+                        //never runs for it in this pass, and the user sees a partial first notification
+                        //(spend without self-change credit) corrected by a second notification when the
+                        //scripthash push catches up. A later refresh's calculateNodeHistory rebuilds the
+                        //TXOs from authoritative server history; the matching-(hash,index) preservation
+                        //logic in WalletNode.updateTransactionOutputs keeps labels/statuses intact.
+                        TransactionOutput output = tx.getOutputs().get(match.outputIndex());
+                        BlockTransaction blkTx = entry.getValue();
+                        Set<BlockTransactionHashIndex> initialTxos = new TreeSet<>();
+                        initialTxos.add(new BlockTransactionHashIndex(txid, blkTx.getHeight(), blkTx.getDate(), blkTx.getFee(), match.outputIndex(), output.getValue()));
+                        newNode.updateTransactionOutputs(wallet, initialTxos);
+
                         if(purpose == KeyPurpose.CHANGE) {
                             changeNextIndex++;
                         } else {
@@ -1609,22 +1626,58 @@ public class ElectrumServer {
         //batch (either fetched here or pulled in from broadcastedTransactions), so calculateNodeHistory
         //runs for them in the same atomic pass and sets spentBy on the spent TXOs.
         Map<HashIndex, WalletNode> walletTxoNodes = new HashMap<>();
-        for(Map.Entry<BlockTransactionHashIndex, WalletNode> e : wallet.getWalletTxos().entrySet()) {
-            walletTxoNodes.put(new HashIndex(e.getKey().getHash(), e.getKey().getIndex()), e.getValue());
+        Map<HashIndex, BlockTransactionHashIndex> walletTxoIndex = new HashMap<>();
+        for(Map.Entry<BlockTransactionHashIndex, WalletNode> entry : wallet.getWalletTxos().entrySet()) {
+            HashIndex hashIndex = new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex());
+            walletTxoNodes.put(hashIndex, entry.getValue());
+            walletTxoIndex.put(hashIndex, entry.getKey());
         }
         Set<WalletNode> spentInputNodes = new LinkedHashSet<>();
-        for(Map.Entry<Sha256Hash, BlockTransaction> e : transactionMap.entrySet()) {
-            if(alreadyInWallet.contains(e.getKey())) {
+        Map<WalletNode, Map<HashIndex, BlockTransactionHashIndex>> nodeSpendsByHashIndex = new LinkedHashMap<>();
+        for(Map.Entry<Sha256Hash, BlockTransaction> entry : transactionMap.entrySet()) {
+            if(alreadyInWallet.contains(entry.getKey())) {
                 continue;
             }
-            for(TransactionInput input : e.getValue().getTransaction().getInputs()) {
-                WalletNode node = walletTxoNodes.get(new HashIndex(input.getOutpoint().getHash(), input.getOutpoint().getIndex()));
-                if(node != null) {
-                    spentInputNodes.add(node);
+            Sha256Hash spendingTxid = entry.getKey();
+            BlockTransaction spendingBlkTx = entry.getValue();
+            List<TransactionInput> inputs = spendingBlkTx.getTransaction().getInputs();
+            for(int inputIndex = 0; inputIndex < inputs.size(); inputIndex++) {
+                TransactionInput input = inputs.get(inputIndex);
+                HashIndex inputHashIndex = new HashIndex(input.getOutpoint().getHash(), input.getOutpoint().getIndex());
+                WalletNode node = walletTxoNodes.get(inputHashIndex);
+                if(node == null) {
+                    continue;
                 }
+                spentInputNodes.add(node);
+
+                BlockTransactionHashIndex existingTxo = walletTxoIndex.get(inputHashIndex);
+                if(existingTxo == null || existingTxo.getSpentBy() != null) {
+                    //Already-spent UTXO (e.g. RBF chain) — leave the prior spentBy untouched and let
+                    //calculateNodeHistory reconcile on the next refresh against server-authoritative data.
+                    continue;
+                }
+                BlockTransactionHashIndex spendingTxi = new BlockTransactionHashIndex(spendingTxid, spendingBlkTx.getHeight(), spendingBlkTx.getDate(), spendingBlkTx.getFee(),
+                        inputIndex, existingTxo.getValue());
+                nodeSpendsByHashIndex.computeIfAbsent(node, n -> new HashMap<>()).put(inputHashIndex, spendingTxi);
             }
         }
         affectedNodes.addAll(spentInputNodes);
+
+        //Apply the spentBy pre-populates via TreeSet rebuild for each affected node.
+        for(Map.Entry<WalletNode, Map<HashIndex, BlockTransactionHashIndex>> entry : nodeSpendsByHashIndex.entrySet()) {
+            WalletNode node = entry.getKey();
+            Map<HashIndex, BlockTransactionHashIndex> spendsByHashIndex = entry.getValue();
+            Set<BlockTransactionHashIndex> rebuilt = new TreeSet<>();
+            for(BlockTransactionHashIndex txo : new ArrayList<>(node.getTransactionOutputs())) {
+                BlockTransactionHashIndex spendingTxi = spendsByHashIndex.get(new HashIndex(txo.getHash(), txo.getIndex()));
+                if(spendingTxi != null && txo.getSpentBy() == null) {
+                    rebuilt.add(new BlockTransactionHashIndex(txo.getHash(), txo.getHeight(), txo.getDate(), txo.getFee(), txo.getIndex(), txo.getValue(), spendingTxi));
+                } else {
+                    rebuilt.add(txo);
+                }
+            }
+            node.updateTransactionOutputs(wallet, rebuilt);
+        }
 
         return affectedNodes;
     }
