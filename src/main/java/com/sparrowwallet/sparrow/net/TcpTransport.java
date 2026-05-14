@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.base.Splitter;
 import com.google.common.net.HostAndPort;
@@ -37,6 +40,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
     private static final Pattern ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
+    private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -201,11 +205,9 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
                 try {
                     String received = readInputStream(in);
                     wireLog.info("< " + received);
-                    if(received.contains("method") && !received.contains("error")) {
-                        //Handle subscription notification
+                    if(isNotification(received)) {
                         jsonRpcServer.handle(received, subscriptionService);
                     } else {
-                        //Handle client's response
                         response = received;
                         reading = false;
                         readingCondition.signal();
@@ -310,6 +312,26 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     @Override
     public int getTimeoutCount() {
         return readTimeoutIndex;
+    }
+
+    private static boolean isNotification(String json) {
+        try(JsonParser parser = JSON_FACTORY.createParser(json)) {
+            if(parser.nextToken() != JsonToken.START_OBJECT) {
+                return false;
+            }
+            while(parser.nextToken() == JsonToken.FIELD_NAME) {
+                String field = parser.currentName();
+                JsonToken value = parser.nextToken();
+                if("method".equals(field)) {
+                    return value == JsonToken.VALUE_STRING;
+                }
+                parser.skipChildren();
+            }
+            return false;
+        } catch(Exception e) {
+            log.warn("Could not parse JSON-RPC message from server: " + e.getMessage());
+            return false;
+        }
     }
 
     private static Set<String> extractIdSet(String json) {
