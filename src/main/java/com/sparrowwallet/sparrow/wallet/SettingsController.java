@@ -259,6 +259,9 @@ public class SettingsController extends WalletFormController implements Initiali
             revert.setDisable(true);
             apply.setDisable(true);
             boolean addressChange = ((SettingsWalletForm)walletForm).isAddressChange();
+            if(walletForm.getWallet().getPolicyType() == PolicyType.SINGLE_SP && walletForm.getWallet().getBirthDate() == null && walletForm.getStorage().getEncryptionPubKey() == null) {
+                walletForm.getWallet().setBirthDate(new Date());
+            }
             saveWallet(false, false);
 
             Wallet wallet = walletForm.getWallet();

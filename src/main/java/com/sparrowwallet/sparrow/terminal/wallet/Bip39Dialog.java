@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class Bip39Dialog extends NewWalletDialog {
@@ -160,6 +161,9 @@ public class Bip39Dialog extends NewWalletDialog {
         Keystore keystore = importer.getKeystore(type.policyType(), wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(type.policyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
+        if(type.policyType() == PolicyType.SINGLE_SP) {
+            wallet.setBirthDate(new Date());
+        }
         return List.of(wallet);
     }
 

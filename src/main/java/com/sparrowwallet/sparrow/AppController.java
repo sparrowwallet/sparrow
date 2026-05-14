@@ -1328,13 +1328,16 @@ public class AppController implements Initializable {
             return;
         }
 
-        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getBirthDate());
+        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getPolicyType(), wallet.getBirthDate(), false);
         nameDlg.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
         if(optNameAndBirthDate.isPresent()) {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
             wallet.setName(nameAndBirthDate.getName());
             wallet.setBirthDate(nameAndBirthDate.getBirthDate());
+            if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.getBirthDate() == null) {
+                wallet.setBirthDate(new Date());
+            }
         } else {
             return;
         }
