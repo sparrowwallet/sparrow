@@ -228,7 +228,7 @@ public class WalletForm {
 
         boolean shouldHold = !spSubscriptionHeld;
 
-        ElectrumServer.SilentPaymentScanService scanService = new ElectrumServer.SilentPaymentScanService(wallet, shouldHold, computeNeededStart(wallet));
+        ElectrumServer.SilentPaymentScanService scanService = new ElectrumServer.SilentPaymentScanService(wallet, shouldHold, wallet.getNeededScanStart());
         scanService.setOnSucceeded(workerStateEvent -> {
             spScanInProgress = false;
             spSubscriptionHeld = true;
@@ -294,20 +294,6 @@ public class WalletForm {
 
             EventManager.get().post(new WalletHistoryFailedEvent(wallet, exception));
         }
-    }
-
-    private static int computeNeededStart(Wallet wallet) {
-        Integer stored = wallet.getStoredBlockHeight();
-        if(stored != null && stored > 0) {
-            return Math.max(0, stored - BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM);
-        }
-        if(wallet.getBirthHeight() != null) {
-            return Math.max(0, wallet.getBirthHeight() - BlockTransactionHash.BLOCKS_TO_FULLY_CONFIRM);
-        }
-        if(wallet.getBirthDate() != null) {
-            return (int)(wallet.getBirthDate().getTime() / 1000L);
-        }
-        return 0;
     }
 
     private void updateWallets(Integer blockHeight, Wallet previousWallet) {

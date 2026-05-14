@@ -89,6 +89,8 @@ public class ElectrumServer {
 
     private static final Map<String, SilentPaymentsScanCache> spScanCaches = new ConcurrentHashMap<>();
 
+    private static final int TAPROOT_ACTIVATION_HEIGHT = 709632;
+
     private final static Map<String, Integer> subscribedRecent = new ConcurrentHashMap<>();
 
     private final static Map<String, String> broadcastRecent = new ConcurrentHashMap<>();
@@ -1375,6 +1377,33 @@ public class ElectrumServer {
 
     public static boolean hasSilentPaymentsCache(SilentPaymentScanAddress scanAddress) {
         return spScanCaches.containsKey(scanAddress.getAddress());
+    }
+
+    public static boolean isSilentPaymentsFullyCovered(SilentPaymentScanAddress scanAddress) {
+        if(scanAddress == null) {
+            return false;
+        }
+
+        SilentPaymentsScanCache cache = spScanCaches.get(scanAddress.getAddress());
+        if(cache == null) {
+            return false;
+        }
+
+        cache.lock();
+        try {
+            Integer serverStart = cache.getServerStart();
+            if(!cache.isCompleted() || serverStart == null) {
+                return false;
+            }
+            int earliestPossibleStart = Network.get() == Network.MAINNET ? TAPROOT_ACTIVATION_HEIGHT : 0;
+            return serverStart <= earliestPossibleStart;
+        } finally {
+            cache.unlock();
+        }
+    }
+
+    public static Cormorant getCormorant() {
+        return cormorant;
     }
 
     private static void cancelSilentPaymentScans() {

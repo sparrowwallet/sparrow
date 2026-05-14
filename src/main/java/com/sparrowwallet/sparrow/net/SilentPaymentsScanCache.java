@@ -43,6 +43,10 @@ class SilentPaymentsScanCache {
         return state == State.CANCELLED;
     }
 
+    boolean isCompleted() {
+        return state == State.COMPLETED;
+    }
+
     void cancel() {
         assert lock.isHeldByCurrentThread();
         if(state == State.SCANNING) {

@@ -115,4 +115,8 @@ public class Cormorant {
     public static EventBus getEventBus() {
         return EVENT_BUS;
     }
+
+    public BitcoindClient getBitcoindClient() {
+        return bitcoindClient;
+    }
 }

@@ -77,6 +77,7 @@ public class BitcoindClient {
     private final boolean useWallets;
     private boolean pruned;
     private Integer pruneHeight;
+    private volatile Date cachedPrunedDate;
     private boolean legacyWalletExists;
 
     private final Lock syncingLock = new ReentrantLock();
@@ -285,10 +286,16 @@ public class BitcoindClient {
         if(blockchainInfo.pruned()) {
             String pruneBlockHash = getBitcoindService().getBlockHash(blockchainInfo.pruneheight());
             VerboseBlockHeader pruneBlockHeader = getBitcoindService().getBlockHeader(pruneBlockHash);
-            return Optional.of(new Date(pruneBlockHeader.time() * 1000));
+            Date prunedDate = new Date(pruneBlockHeader.time() * 1000);
+            cachedPrunedDate = prunedDate;
+            return Optional.of(prunedDate);
         }
 
         return Optional.empty();
+    }
+
+    public Date getCachedPrunedDate() {
+        return cachedPrunedDate;
     }
 
     private ScanDate getScanDate(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose, Date earliestBirthDate) {
