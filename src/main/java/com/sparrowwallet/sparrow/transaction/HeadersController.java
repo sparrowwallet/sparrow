@@ -532,8 +532,10 @@ public class HeadersController extends TransactionFormController implements Init
             noWalletsWarningLink.visibleProperty().bind(noWalletsWarning.visibleProperty());
 
             boolean taprootInput = psbt.getPsbtInputs().stream().anyMatch(PSBTInput::isTaproot);
-            SigHash psbtSigHash = psbt.getPsbtInputs().stream().map(PSBTInput::getSigHash).filter(Objects::nonNull).findFirst().orElse(taprootInput ? SigHash.DEFAULT : SigHash.ALL);
-            sigHash.setItems(FXCollections.observableList(taprootInput ? SigHash.TAPROOT_SIGNING_TYPES : SigHash.LEGACY_SIGNING_TYPES));
+            boolean silentPaymentOutput = psbt.getPsbtOutputs().stream().anyMatch(o -> o.getSilentPaymentAddress() != null);
+            SigHash requiredSigHash = taprootInput ? SigHash.DEFAULT : SigHash.ALL;
+            SigHash psbtSigHash = silentPaymentOutput ? requiredSigHash : psbt.getPsbtInputs().stream().map(PSBTInput::getSigHash).filter(Objects::nonNull).findFirst().orElse(requiredSigHash);
+            sigHash.setItems(FXCollections.observableList(silentPaymentOutput ? List.of(requiredSigHash) : (taprootInput ? SigHash.TAPROOT_SIGNING_TYPES : SigHash.LEGACY_SIGNING_TYPES)));
             sigHash.setValue(psbtSigHash);
             sigHash.setConverter(new StringConverter<>() {
                 @Override
@@ -542,7 +544,8 @@ public class HeadersController extends TransactionFormController implements Init
                         return "";
                     }
 
-                    return sigHash.getName() + ((taprootInput && sigHash == SigHash.DEFAULT) || (!taprootInput && sigHash == SigHash.ALL) ? " (Recommended)" : "");
+                    boolean recommended = (taprootInput && sigHash == SigHash.DEFAULT) || (!taprootInput && sigHash == SigHash.ALL);
+                    return sigHash.getName() + (recommended ? (silentPaymentOutput ? " (Required)" : " (Recommended)") : "");
                 }
 
                 @Override
