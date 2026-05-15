@@ -136,7 +136,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 HBox actionBox = new HBox();
                 actionBox.getStyleClass().add("cell-actions");
 
-                if(!nodeEntry.getNode().getWallet().isBip47()) {
+                if(!nodeEntry.getNode().getWallet().isBip47() && nodeEntry.getNode().getWallet().getPolicyType() != PolicyType.SINGLE_SP) {
                     Button receiveButton = new Button("");
                     receiveButton.setGraphic(getReceiveGlyph());
                     receiveButton.setOnAction(event -> {
@@ -669,7 +669,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
     public static class AddressContextMenu extends ContextMenu {
         public AddressContextMenu(Address address, String outputDescriptor, NodeEntry nodeEntry, boolean addUtxoItems, TreeTableView<Entry> treetable) {
-            if(nodeEntry == null || !nodeEntry.getWallet().isBip47()) {
+            if(nodeEntry == null || (!nodeEntry.getWallet().isBip47() && nodeEntry.getWallet().getPolicyType() != PolicyType.SINGLE_SP)) {
                 MenuItem receiveToAddress = new MenuItem("Receive To");
                 receiveToAddress.setGraphic(getReceiveGlyph());
                 receiveToAddress.setOnAction(event -> {
