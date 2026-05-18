@@ -31,6 +31,9 @@ public interface WalletDao {
     DetachedLabelDao createDetachedLabelDao();
 
     @CreateSqlObject
+    SilentPaymentAddressDao createSilentPaymentAddressDao();
+
+    @CreateSqlObject
     WalletConfigDao createWalletConfigDao();
 
     @CreateSqlObject
@@ -121,6 +124,8 @@ public interface WalletDao {
         Map<String, String> detachedLabels = createDetachedLabelDao().getAll();
         wallet.getDetachedLabels().putAll(detachedLabels);
 
+        wallet.getSilentPaymentAddresses().putAll(createSilentPaymentAddressDao().getAll());
+
         wallet.setWalletConfig(createWalletConfigDao().getForWalletId(wallet.getId()));
 
         Map<TableType, WalletTable> walletTables = createWalletTableDao().getForWalletId(wallet.getId());
@@ -144,6 +149,7 @@ public interface WalletDao {
             createWalletNodeDao().addWalletNodes(wallet);
             createBlockTransactionDao().addBlockTransactions(wallet);
             createDetachedLabelDao().clearAndAddAll(wallet);
+            createSilentPaymentAddressDao().clearAndAddAll(wallet);
             createWalletConfigDao().addWalletConfig(wallet);
             createWalletTableDao().addWalletTables(wallet);
             createMixConfigDao().addMixConfig(wallet);

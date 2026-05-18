@@ -578,6 +578,8 @@ public class HeadersController extends TransactionFormController implements Init
 
             int threshold = signingWallet.getDefaultPolicy().getNumSignaturesRequired();
             signaturesProgressBar.initialize(headersForm.getSignatureKeystoreMap(), threshold);
+
+            learnSilentPaymentAddresses(signingWallet, headersForm.getPsbt());
         });
 
         blockchainForm.setDynamicUpdate(this);
@@ -1156,6 +1158,11 @@ public class HeadersController extends TransactionFormController implements Init
             Map<PSBTInput, WalletNode> signingNodes = unencryptedWallet.getSigningNodes(headersForm.getPsbt());
             List<SilentPayment> silentPayments = unencryptedWallet.computeSilentPaymentOutputs(headersForm.getPsbt(), signingNodes);
             if(!silentPayments.isEmpty()) {
+                Wallet signingWallet = headersForm.getSigningWallet();
+                for(SilentPayment silentPayment : silentPayments) {
+                    signingWallet.addSilentPaymentAddress(silentPayment.getAddress(), silentPayment.getSilentPaymentAddress());
+                }
+                EventManager.get().post(new WalletSilentPaymentAddressesChangedEvent(signingWallet));
                 EventManager.get().post(new TransactionOutputsChangedEvent(headersForm.getTransaction()));
             }
             unencryptedWallet.sign(signingNodes);
@@ -1443,6 +1450,37 @@ public class HeadersController extends TransactionFormController implements Init
         requestPayjoinPSBTService.start();
     }
 
+    private void learnSilentPaymentAddresses(Wallet wallet, PSBT psbt) {
+        if(wallet == null || psbt == null) {
+            return;
+        }
+
+        Map<Address, SilentPaymentAddress> pending = new LinkedHashMap<>();
+        for(PSBTOutput psbtOutput : psbt.getPsbtOutputs()) {
+            SilentPaymentAddress spAddress = psbtOutput.getSilentPaymentAddress();
+            if(spAddress != null) {
+                Script script = psbtOutput.getScript();
+                Address address = script == null ? null : script.getToAddress();
+                if(address == null) {
+                    return;
+                }
+                pending.put(address, spAddress);
+            }
+        }
+
+        boolean changed = false;
+        for(Map.Entry<Address, SilentPaymentAddress> entry : pending.entrySet()) {
+            if(!entry.getValue().equals(wallet.getSilentPaymentAddress(entry.getKey()))) {
+                wallet.addSilentPaymentAddress(entry.getKey(), entry.getValue());
+                changed = true;
+            }
+        }
+
+        if(changed) {
+            EventManager.get().post(new WalletSilentPaymentAddressesChangedEvent(wallet));
+        }
+    }
+
     @Override
     public void update() {
         BlockTransaction blockTransaction = headersForm.getBlockTransaction();
@@ -1664,6 +1702,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void psbtCombined(PSBTCombinedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt())) {
+            learnSilentPaymentAddresses(headersForm.getSigningWallet(), headersForm.getPsbt());
             if(headersForm.getSigningWallet() != null) {
                 updateSignedKeystores(headersForm.getSigningWallet());
             } else if(headersForm.getPsbt().isSigned()) {
@@ -1678,6 +1717,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void psbtFinalized(PSBTFinalizedEvent event) {
         if(event.getPsbt().equals(headersForm.getPsbt())) {
+            learnSilentPaymentAddresses(headersForm.getSigningWallet(), headersForm.getPsbt());
             if(headersForm.getSigningWallet() != null) {
                 updateSignedKeystores(headersForm.getSigningWallet());
             }

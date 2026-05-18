@@ -1559,6 +1559,11 @@ public class SendController extends WalletFormController implements Initializabl
     @Subscribe
     public void excludeUtxo(ExcludeUtxoEvent event) {
         if(event.getWalletTransaction() == walletTransactionProperty.get()) {
+            BlockTransaction replacedTransaction = replacedTransactionProperty.get();
+            if(replacedTransaction != null && !getWalletForm().getWallet().isSafeToAddInputsOrOutputs(replacedTransaction)) {
+                AppServices.showErrorDialog("Cannot Exclude Input", "Removing an input from this replacement transaction could break silent payment outputs as the original output script depends on the input set.");
+                return;
+            }
             UtxoSelector utxoSelector = utxoSelectorProperty.get();
             if(utxoSelector instanceof MaxUtxoSelector) {
                 Collection<BlockTransactionHashIndex> utxos = event.getWalletTransaction().getSelectedUtxos().keySet();

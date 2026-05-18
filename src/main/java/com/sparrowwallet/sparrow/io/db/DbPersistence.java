@@ -337,6 +337,11 @@ public class DbPersistence implements Persistence {
                     walletConfigDao.addOrUpdate(wallet, wallet.getWalletConfig());
                 }
 
+                if(dirtyPersistables.silentPaymentAddresses) {
+                    SilentPaymentAddressDao silentPaymentAddressDao = handle.attach(SilentPaymentAddressDao.class);
+                    silentPaymentAddressDao.clearAndAddAll(wallet);
+                }
+
                 if(dirtyPersistables.walletTable != null) {
                     WalletTableDao walletTableDao = handle.attach(WalletTableDao.class);
                     walletTableDao.addOrUpdate(wallet, dirtyPersistables.walletTable.getTableType(), dirtyPersistables.walletTable);
@@ -888,6 +893,13 @@ public class DbPersistence implements Persistence {
         }
     }
 
+    @Subscribe
+    public void walletSilentPaymentAddressesChanged(WalletSilentPaymentAddressesChangedEvent event) {
+        if(persistsFor(event.getWallet())) {
+            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).silentPaymentAddresses = true);
+        }
+    }
+
     private static class DirtyPersistables {
         public boolean deleteAccount;
         public boolean clearHistory;
@@ -906,6 +918,7 @@ public class DbPersistence implements Persistence {
         public final List<Keystore> labelKeystores = new ArrayList<>();
         public final List<Keystore> encryptionKeystores = new ArrayList<>();
         public final List<Keystore> registrationKeystores = new ArrayList<>();
+        public boolean silentPaymentAddresses;
 
         public String toString() {
             return "Dirty Persistables" +
@@ -927,7 +940,8 @@ public class DbPersistence implements Persistence {
                     "\nUTXO mixes removed:" + removedUtxoMixes +
                     "\nKeystore labels:" + labelKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
                     "\nKeystore encryptions:" + encryptionKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
-                    "\nKeystore registrations:" + registrationKeystores.stream().map(Keystore::getDeviceRegistration).collect(Collectors.toList());
+                    "\nKeystore registrations:" + registrationKeystores.stream().map(Keystore::getDeviceRegistration).collect(Collectors.toList()) +
+                    "\nSilent payment addresses:" + silentPaymentAddresses;
         }
     }
 }
