@@ -295,8 +295,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private void checkWalletSigning(Wallet wallet) {
-        if(wallet.getKeystores().size() != 1 || wallet.getPolicyType() != PolicyType.SINGLE_HD) {
-            throw new IllegalArgumentException("Cannot sign messages using a non-HD wallet or a wallet with multiple keystores");
+        if(wallet.getKeystores().size() != 1 || (wallet.getPolicyType() != PolicyType.SINGLE_HD && wallet.getPolicyType() != PolicyType.SINGLE_SP)) {
+            throw new IllegalArgumentException("Cannot sign messages using this wallet type");
         }
     }
 
@@ -377,18 +377,24 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private void signUnencryptedKeystore(Wallet decryptedWallet) {
         try {
             Keystore keystore = decryptedWallet.getKeystores().getFirst();
-            ECKey privKey = keystore.getKey(walletNode);
             String signatureText;
-            if(isBip322()) {
-                ScriptType scriptType = decryptedWallet.getScriptType();
-                signatureText = Bip322.signMessageBip322(scriptType, message.getText().trim(), privKey);
+            if(decryptedWallet.getPolicyType() == PolicyType.SINGLE_SP) {
+                ECKey spendPrivKey = keystore.getSpendPrivateKey(Collections.emptyMap());
+                signatureText = Bip322.signMessageBip322Sp(walletNode.getAddress(), message.getText().trim(), spendPrivKey, walletNode.getSilentPaymentTweak());
+                spendPrivKey.clear();
             } else {
-                ScriptType scriptType = isElectrumSignatureFormat() ? ScriptType.P2PKH : decryptedWallet.getScriptType();
-                signatureText = privKey.signMessage(message.getText().trim(), scriptType);
+                ECKey privKey = keystore.getKey(walletNode);
+                if(isBip322()) {
+                    ScriptType scriptType = decryptedWallet.getScriptType();
+                    signatureText = Bip322.signMessageBip322(scriptType, message.getText().trim(), privKey);
+                } else {
+                    ScriptType scriptType = isElectrumSignatureFormat() ? ScriptType.P2PKH : decryptedWallet.getScriptType();
+                    signatureText = privKey.signMessage(message.getText().trim(), scriptType);
+                }
+                privKey.clear();
             }
             signature.clear();
             signature.appendText(signatureText);
-            privKey.clear();
         } catch(Exception e) {
             log.error("Could not sign message", e);
             AppServices.showErrorDialog("Could not sign message", e.getMessage());
@@ -498,10 +504,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void showBip322Qr() {
         Wallet signingWallet = walletNode.getWallet();
-        ScriptType scriptType = signingWallet.getScriptType();
-
-        PSBT psbt = Bip322.getBip322Psbt(scriptType, walletNode.getAddress(), message.getText().trim());
-        addBip322DerivationInfo(psbt, signingWallet);
+        PSBT psbt = buildBip322Psbt(signingWallet);
 
         byte[] psbtBytes = psbt.getForExport().serialize();
         CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
@@ -512,6 +515,30 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         if(optButtonType.isPresent() && optButtonType.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
             scanQr();
         }
+    }
+
+    private PSBT buildBip322Psbt(Wallet signingWallet) {
+        if(signingWallet.getPolicyType() == PolicyType.SINGLE_SP) {
+            Keystore keystore = signingWallet.getKeystores().getFirst();
+            ECKey spendPubKey = keystore.getSilentPaymentScanAddress().getSpendKey();
+            KeyDerivation spendDerivation = new KeyDerivation(keystore.getKeyDerivation().getMasterFingerprint(), KeyDerivation.writePath(KeyDerivation.getBip352SpendDerivation(keystore.getKeyDerivation().getDerivation())));
+            return Bip322.getBip322PsbtSp(walletNode.getAddress(), message.getText().trim(), walletNode.getSilentPaymentTweak(), Map.of(spendPubKey, spendDerivation));
+        }
+
+        PSBT psbt = Bip322.getBip322Psbt(signingWallet.getScriptType(), walletNode.getAddress(), message.getText().trim());
+        addBip322DerivationInfo(psbt, signingWallet);
+
+        return psbt;
+    }
+
+    private String extractBip322Signature(PSBT signedPsbt) {
+        Wallet signingWallet = walletNode.getWallet();
+        if(signingWallet.getPolicyType() == PolicyType.SINGLE_SP) {
+            return Bip322.getBip322SignatureFromPsbtSp(signedPsbt);
+        }
+
+        ECKey pubKey = signingWallet.getKeystores().getFirst().getPubKey(walletNode);
+        return Bip322.getBip322SignatureFromPsbt(signingWallet.getScriptType(), signedPsbt, pubKey);
     }
 
     private void addBip322DerivationInfo(PSBT psbt, Wallet signingWallet) {
@@ -537,9 +564,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             QRScanDialog.Result result = optionalResult.get();
             if(result.psbt != null) {
                 try {
-                    Wallet signingWallet = walletNode.getWallet();
-                    ECKey pubKey = signingWallet.getKeystores().get(0).getPubKey(walletNode);
-                    String sig = Bip322.getBip322SignatureFromPsbt(signingWallet.getScriptType(), result.psbt, pubKey);
+                    String sig = extractBip322Signature(result.psbt);
                     signature.clear();
                     signature.appendText(sig);
                 } catch(Exception e) {
@@ -599,9 +624,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
     private void exportBip322File() {
         Wallet signingWallet = walletNode.getWallet();
-        ScriptType scriptType = signingWallet.getScriptType();
-        PSBT psbt = Bip322.getBip322Psbt(scriptType, walletNode.getAddress(), message.getText().trim());
-        addBip322DerivationInfo(psbt, signingWallet);
+        PSBT psbt = buildBip322Psbt(signingWallet);
 
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
@@ -642,8 +665,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 try {
                     byte[] psbtBytes = Files.readAllBytes(file.toPath());
                     PSBT signedPsbt = new PSBT(psbtBytes, false);
-                    ECKey pubKey = walletNode.getWallet().getKeystores().get(0).getPubKey(walletNode);
-                    String sig = Bip322.getBip322SignatureFromPsbt(walletNode.getWallet().getScriptType(), signedPsbt, pubKey);
+                    String sig = extractBip322Signature(signedPsbt);
                     signature.clear();
                     signature.appendText(sig);
                     return;
