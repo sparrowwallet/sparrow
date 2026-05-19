@@ -1293,7 +1293,7 @@ public class HeadersController extends TransactionFormController implements Init
                         Platform.runLater(() -> EventManager.get().post(new WalletNodeHistoryChangedEvent(scriptHashes.iterator().next())));
                     }
 
-                    if(transactionMempoolService.getIterationCount() > 3 && !transactionMempoolService.isCancelled()) {
+                    if(transactionMempoolService.getIterationCount() > 12 && !transactionMempoolService.isCancelled()) {
                         transactionMempoolService.cancel();
                         broadcastProgressBar.setProgress(0);
                         log.error("Timeout searching for broadcasted transaction");
