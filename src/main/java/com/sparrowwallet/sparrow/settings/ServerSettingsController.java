@@ -6,6 +6,8 @@ import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OsType;
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.Mode;
@@ -47,10 +49,9 @@ import java.io.FileInputStream;
 import java.security.cert.CertificateFactory;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 public class ServerSettingsController extends SettingsDetailController {
     private static final Logger log = LoggerFactory.getLogger(ServerSettingsController.class);
@@ -215,6 +216,9 @@ public class ServerSettingsController extends SettingsDetailController {
         }
         serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == serverType).findFirst().orElse(null));
 
+        List<PolicyType> policyTypes = AppServices.get().getOpenWallets().keySet().stream().map(Wallet::getPolicyType).filter(Objects::nonNull).collect(Collectors.toList());
+        publicElectrumServer.setButtonCell(new PublicElectrumServerButtonCell());
+        publicElectrumServer.setCellFactory(_ -> new PublicElectrumServerListCell(policyTypes));
         publicElectrumServer.setItems(FXCollections.observableList(PublicElectrumServer.getServers()));
         publicElectrumServer.getSelectionModel().selectedItemProperty().addListener(getPublicElectrumServerListener(config));
 
@@ -442,7 +446,7 @@ public class ServerSettingsController extends SettingsDetailController {
         if(configPublicElectrumServer == null && PublicElectrumServer.supportedNetwork()) {
             List<PublicElectrumServer> servers = PublicElectrumServer.getServers();
             if(!servers.isEmpty()) {
-                publicElectrumServer.setValue(servers.get(new Random().nextInt(servers.size())));
+                publicElectrumServer.setValue(servers.get(ThreadLocalRandom.current().nextInt(servers.size())));
             }
         } else {
             publicElectrumServer.setValue(configPublicElectrumServer);
@@ -1035,6 +1039,40 @@ public class ServerSettingsController extends SettingsDetailController {
                     setText(server.getHost());
                     setGraphic(null);
                 }
+            }
+        }
+    }
+
+    private static class PublicElectrumServerButtonCell extends ListCell<PublicElectrumServer> {
+        @Override
+        protected void updateItem(PublicElectrumServer server, boolean empty) {
+            super.updateItem(server, empty);
+            if(server == null || empty) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                setText(server.toString());
+                setGraphic(null);
+            }
+        }
+    }
+
+    private static class PublicElectrumServerListCell extends ListCell<PublicElectrumServer> {
+        private final List<PolicyType> openPolicyTypes;
+
+        public PublicElectrumServerListCell(List<PolicyType> openPolicyTypes) {
+            this.openPolicyTypes = openPolicyTypes;
+        }
+
+        @Override
+        protected void updateItem(PublicElectrumServer server, boolean empty) {
+            super.updateItem(server, empty);
+            if(server == null || empty) {
+                setText(null);
+                setGraphic(null);
+            } else {
+                setText(server + (openPolicyTypes.contains(PolicyType.SINGLE_SP) && server.isSupportedPolicyType(PolicyType.SINGLE_SP) ? " (supports Silent Payments)" : ""));
+                setGraphic(null);
             }
         }
     }

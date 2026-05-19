@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.terminal.settings;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.PublicElectrumServer;
 
@@ -32,7 +33,7 @@ public class PublicElectrumDialog extends ServerProxyDialog {
             url.addItem(server);
         }
         if(Config.get().getPublicElectrumServer() == null) {
-            Config.get().changePublicServer();
+            AppServices.get().changePublicServer();
         }
         url.setSelectedItem(PublicElectrumServer.fromServer(Config.get().getPublicElectrumServer()));
         url.addListener((selectedIndex, previousSelection, changedByUserInteraction) -> {

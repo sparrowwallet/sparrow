@@ -556,13 +556,6 @@ public class Config {
         flush();
     }
 
-    public void changePublicServer() {
-        List<Server> otherServers = PublicElectrumServer.getServers().stream().map(PublicElectrumServer::getServer).filter(server -> !server.equals(getPublicElectrumServer())).collect(Collectors.toList());
-        if(!otherServers.isEmpty()) {
-            setPublicElectrumServer(otherServers.get(new Random().nextInt(otherServers.size())));
-        }
-    }
-
     public Server getCoreServer() {
         return coreServer;
     }

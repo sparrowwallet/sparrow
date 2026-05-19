@@ -69,9 +69,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppController.CONNECTION_FAILED_PREFIX;
 import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
 
 public class AppServices {
@@ -367,15 +369,18 @@ public class AppServices {
             onlineProperty.setValue(false);
             onlineProperty.addListener(onlineServicesListener);
 
+            log.debug("Connection failed", failEvent.getSource().getException());
             if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
-                Config.get().changePublicServer();
-                connectionService.setPeriod(Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS));
+                boolean changed = changePublicServer();
+                connectionService.setPeriod(changed ? Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS) : Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
+                EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
+                if(!changed) {
+                    Platform.runLater(() -> EventManager.get().post(new StatusEvent(CONNECTION_FAILED_PREFIX + "No public servers available that can serve the open wallets, retrying later...")));
+                }
             } else {
                 connectionService.setPeriod(Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
+                EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
             }
-
-            log.debug("Connection failed", failEvent.getSource().getException());
-            EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
         });
 
         return connectionService;
@@ -864,6 +869,22 @@ public class AppServices {
 
     public static boolean isWalletFile(File file) {
         return Storage.isWalletFile(file);
+    }
+
+    public boolean changePublicServer() {
+        List<PolicyType> policyTypes = getOpenWallets().keySet().stream().map(Wallet::getPolicyType).filter(Objects::nonNull).collect(Collectors.toList());
+        return changePublicServer(policyTypes.isEmpty() ? List.of(PolicyType.SINGLE_HD) : policyTypes);
+    }
+
+    private boolean changePublicServer(List<PolicyType> policyTypes) {
+        Config config = Config.get();
+        List<Server> otherServers = PublicElectrumServer.getServers().stream().filter(pes -> pes.supportsAllPolicyTypes(policyTypes))
+                .map(PublicElectrumServer::getServer).filter(server -> !server.equals(config.getPublicElectrumServer())).collect(Collectors.toList());
+        if(!otherServers.isEmpty()) {
+            config.setPublicElectrumServer(otherServers.get(ThreadLocalRandom.current().nextInt(otherServers.size())));
+            return true;
+        }
+        return false;
     }
 
     public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
@@ -1463,9 +1484,16 @@ public class AppServices {
     @Subscribe
     public void walletHistoryFailed(WalletHistoryFailedEvent event) {
         if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && isConnected()) {
+            String currentName = Config.get().getServerDisplayName();
             onlineProperty.set(false);
-            log.warn("Failed to fetch wallet history from " + Config.get().getServerDisplayName() + ", reconnecting to another server...");
-            Config.get().changePublicServer();
+            boolean changed = changePublicServer();
+            if(changed) {
+                log.warn("Failed to fetch wallet history from " + currentName + ", reconnecting to another server...");
+            } else {
+                log.warn("Failed to fetch wallet history from " + currentName + ", retrying later");
+                connectionService.setDelay(Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
+                EventManager.get().post(new StatusEvent("Wallet load failed: No other public servers available that can serve the open wallets, retrying later..."));
+            }
             onlineProperty.set(true);
         }
     }

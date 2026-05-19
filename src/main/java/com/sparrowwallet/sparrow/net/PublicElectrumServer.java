@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.sparrow.io.Server;
 
 import java.util.Arrays;
@@ -20,17 +21,24 @@ public enum PublicElectrumServer {
     TESTNET_QTORNADO_COM("testnet.qtornado.com", "ssl://testnet.qtornado.com:51002", Network.TESTNET),
     SIGNET_MEMPOOL_SPACE("mempool.space", "ssl://mempool.space:60602", Network.SIGNET),
     TESTNET4_MEMPOOL_SPACE("mempool.space", "ssl://mempool.space:40002", Network.TESTNET4),
-    TESTNET4_C3_SOFT("blackie.c3-soft.com", "ssl://blackie.c3-soft.com:57010", Network.TESTNET4);
+    TESTNET4_C3_SOFT("blackie.c3-soft.com", "ssl://blackie.c3-soft.com:57010", Network.TESTNET4),
+    FRIGATE_2140_DEV("frigate.2140.dev", "ssl://frigate.2140.dev:50002", Network.MAINNET, List.of(PolicyType.SINGLE_HD, PolicyType.MULTI_HD, PolicyType.SINGLE_SP));
 
     PublicElectrumServer(String name, String url, Network network) {
+        this(name, url, network, List.of(PolicyType.SINGLE_HD, PolicyType.MULTI_HD));
+    }
+
+    PublicElectrumServer(String name, String url, Network network, List<PolicyType> supportedPolicyTypes) {
         this.server = new Server(url, name);
         this.network = network;
+        this.supportedPolicyTypes = supportedPolicyTypes;
     }
 
     public static final List<Network> SUPPORTED_NETWORKS = List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET, Network.TESTNET4);
 
     private final Server server;
     private final Network network;
+    private final List<PolicyType> supportedPolicyTypes;
 
     public Server getServer() {
         return server;
@@ -42,6 +50,14 @@ public enum PublicElectrumServer {
 
     public Network getNetwork() {
         return network;
+    }
+
+    public boolean isSupportedPolicyType(PolicyType policyType) {
+        return supportedPolicyTypes.contains(policyType);
+    }
+
+    public boolean supportsAllPolicyTypes(List<PolicyType> policyTypes) {
+        return policyTypes.stream().allMatch(this::isSupportedPolicyType);
     }
 
     public static List<PublicElectrumServer> getServers() {
