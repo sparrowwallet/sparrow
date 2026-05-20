@@ -41,7 +41,7 @@
                                 </FXCollections>
                             </items>
                         </ComboBox>
-                        <HelpLabel helpText="Single signature wallets use a single keystore (hardware wallet or seed).\nMultisignature wallets require multiple keystores (N), of which a certain number (M) need to sign." />
+                        <HelpLabel helpText="Single signature wallets use a single keystore (hardware wallet or seed).\nMultisignature wallets require multiple keystores, of which a certain number need to sign.\nSilent Payments wallets also use a single keystore and can receive privately to a reusable address." />
                     </Field>
                     <Field text="Script Type:">
                         <ComboBox fx:id="scriptType">
@@ -57,7 +57,7 @@
                                 </FXCollections>
                             </items>
                         </ComboBox>
-                        <HelpLabel helpText="Native Segwit types are the default and are usually the best choice.\nNested Segwit types are a good choice for the widest compatibility with older wallets.\nLegacy types should be avoided, unless configuring an old wallet." />
+                        <HelpLabel helpText="Native Segwit the type chosen for most new wallets.\nTaproot is a newer type useful for specific needs.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are restoring." />
                     </Field>
                 </Fieldset>
             </Form>
