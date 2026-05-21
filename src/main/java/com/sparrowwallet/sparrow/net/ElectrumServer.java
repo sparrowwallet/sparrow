@@ -1529,7 +1529,7 @@ public class ElectrumServer {
                 }
             }
             if(cache.isCancelled()) {
-                throw new ServerException("Silent payments scan was cancelled for " + spAddress);
+                throw new ServerException("Silent payments scan was cancelled for " + spAddress.substring(0, 10) + "...");
             }
             return cache.snapshotEntries();
         } finally {

@@ -32,7 +32,7 @@
             <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <Fieldset inputGrow="SOMETIMES" text="Settings" styleClass="header">
                     <Field text="Policy Type:">
-                        <ComboBox fx:id="policyType" prefWidth="160">
+                        <ComboBox fx:id="policyType" prefWidth="170">
                             <items>
                                 <FXCollections fx:factory="observableArrayList">
                                     <PolicyType fx:constant="SINGLE_HD" />
