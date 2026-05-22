@@ -125,9 +125,8 @@ public class SettingsController extends WalletFormController implements Initiali
             walletForm.getWallet().setPolicyType(policyType);
 
             scriptType.setItems(FXCollections.observableArrayList(ScriptType.getAddressableScriptTypes(policyType)));
-            scriptType.getSelectionModel().select(policyType.getDefaultScriptType());
-
             if(!initialising) {
+                scriptType.getSelectionModel().select(policyType.getDefaultScriptType());
                 clearKeystoreTabs();
             }
             initialising = false;
