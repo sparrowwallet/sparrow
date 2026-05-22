@@ -532,6 +532,16 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private String extractBip322Signature(PSBT signedPsbt) {
+        String psbtMessage = signedPsbt.getGenericSignedMessage();
+        if(psbtMessage != null && !psbtMessage.equals(message.getText().trim())) {
+            Optional<ButtonType> response = AppServices.showWarningDialog("Message mismatch",
+                    "The message in the signed PSBT does not match the message in this dialog.\n\nPSBT message: " + psbtMessage +
+                            "\n\nContinue extracting the signature?", ButtonType.NO, ButtonType.YES);
+            if(response.isEmpty() || response.get() != ButtonType.YES) {
+                return null;
+            }
+        }
+
         Wallet signingWallet = walletNode.getWallet();
         if(signingWallet.getPolicyType() == PolicyType.SINGLE_SP) {
             return Bip322.getBip322SignatureFromPsbtSp(signedPsbt);
@@ -565,8 +575,10 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             if(result.psbt != null) {
                 try {
                     String sig = extractBip322Signature(result.psbt);
-                    signature.clear();
-                    signature.appendText(sig);
+                    if(sig != null) {
+                        signature.clear();
+                        signature.appendText(sig);
+                    }
                 } catch(Exception e) {
                     log.error("Error extracting BIP-322 signature from PSBT", e);
                     AppServices.showErrorDialog("Error extracting signature", e.getMessage());
@@ -666,8 +678,10 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                     byte[] psbtBytes = Files.readAllBytes(file.toPath());
                     PSBT signedPsbt = new PSBT(psbtBytes, false);
                     String sig = extractBip322Signature(signedPsbt);
-                    signature.clear();
-                    signature.appendText(sig);
+                    if(sig != null) {
+                        signature.clear();
+                        signature.appendText(sig);
+                    }
                     return;
                 } catch(Exception e) {
                     if(file.getName().toLowerCase(Locale.ROOT).endsWith(".psbt")) {
