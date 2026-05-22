@@ -245,8 +245,11 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
     public Long getVSizeFromTip() {
         if(!AppServices.getMempoolHistogram().isEmpty()) {
+            Double feeRate = blockTransaction.getFeeRate();
+            if(feeRate == null) {
+                return null;
+            }
             Set<MempoolRateSize> rateSizes = AppServices.getMempoolHistogram().get(AppServices.getMempoolHistogram().lastKey());
-            double feeRate = blockTransaction.getFeeRate();
             return rateSizes.stream().filter(rateSize -> rateSize.getFee() > feeRate).mapToLong(MempoolRateSize::getVSize).sum();
         }
 
