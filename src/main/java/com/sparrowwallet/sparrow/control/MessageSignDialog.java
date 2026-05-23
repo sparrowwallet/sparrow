@@ -160,6 +160,17 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         signature.setStyle("-fx-pref-height: 80px");
         signature.setWrapText(true);
         signature.setOnMouseClicked(event -> signature.selectAll());
+
+        ContextMenu signatureMenu = new ContextMenu();
+        MenuItem copyItem = new MenuItem("Copy");
+        copyItem.setOnAction(e -> signature.copy());
+        MenuItem pasteItem = new MenuItem("Paste");
+        pasteItem.setOnAction(e -> signature.paste());
+        MenuItem clearItem = new MenuItem("Clear");
+        clearItem.setOnAction(e -> signature.clear());
+        signatureMenu.getItems().addAll(copyItem, pasteItem, clearItem);
+        signature.setContextMenu(signatureMenu);
+
         signatureField.getInputs().add(signature);
 
         Field formatField = new Field();
