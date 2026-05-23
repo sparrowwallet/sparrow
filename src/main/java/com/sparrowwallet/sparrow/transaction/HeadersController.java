@@ -1455,21 +1455,10 @@ public class HeadersController extends TransactionFormController implements Init
             return;
         }
 
-        Map<Address, SilentPaymentAddress> pending = new LinkedHashMap<>();
-        for(PSBTOutput psbtOutput : psbt.getPsbtOutputs()) {
-            SilentPaymentAddress spAddress = psbtOutput.getSilentPaymentAddress();
-            if(spAddress != null) {
-                Script script = psbtOutput.getScript();
-                Address address = script == null ? null : script.getToAddress();
-                if(address == null) {
-                    return;
-                }
-                pending.put(address, spAddress);
-            }
-        }
+        Map<Address, SilentPaymentAddress> verified = wallet.verifySilentPaymentOutputs(psbt);
 
         boolean changed = false;
-        for(Map.Entry<Address, SilentPaymentAddress> entry : pending.entrySet()) {
+        for(Map.Entry<Address, SilentPaymentAddress> entry : verified.entrySet()) {
             if(!entry.getValue().equals(wallet.getSilentPaymentAddress(entry.getKey()))) {
                 wallet.addSilentPaymentAddress(entry.getKey(), entry.getValue());
                 changed = true;
