@@ -18,12 +18,12 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.ENUMERATE_HW_PERIOD_SECS;
 import static com.sparrowwallet.sparrow.net.PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE;
 import static com.sparrowwallet.sparrow.net.TcpTransport.DEFAULT_MAX_TIMEOUT;
 import static com.sparrowwallet.sparrow.wallet.WalletUtxosEntry.DUST_ATTACK_THRESHOLD_SATS;
+import static com.sparrowwallet.sparrow.wallet.WalletUtxosEntry.DUST_ATTACK_THRESHOLD_SP_SATS;
 
 public class Config {
     private static final Logger log = LoggerFactory.getLogger(Config.class);
@@ -64,6 +64,7 @@ public class Config {
     private List<File> recentWalletFiles;
     private Integer keyDerivationPeriod;
     private long dustAttackThreshold = DUST_ATTACK_THRESHOLD_SATS;
+    private long dustAttackThresholdSp = DUST_ATTACK_THRESHOLD_SP_SATS;
     private int enumerateHwPeriod = ENUMERATE_HW_PERIOD_SECS;
     private QRDensity qrDensity;
     private QREncoding qrEncoding;
@@ -446,6 +447,10 @@ public class Config {
 
     public long getDustAttackThreshold() {
         return dustAttackThreshold;
+    }
+
+    public long getDustAttackThresholdSp() {
+        return dustAttackThresholdSp;
     }
 
     public int getEnumerateHwPeriod() {

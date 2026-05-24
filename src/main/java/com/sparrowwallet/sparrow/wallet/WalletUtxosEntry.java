@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.io.Config;
@@ -9,6 +10,7 @@ import java.util.stream.Collectors;
 
 public class WalletUtxosEntry extends Entry {
     public static final int DUST_ATTACK_THRESHOLD_SATS = 1000;
+    public static final int DUST_ATTACK_THRESHOLD_SP_SATS = 5000;
 
     public WalletUtxosEntry(Wallet wallet) {
         super(wallet, wallet.getName(), wallet.getWalletUtxos().entrySet().stream().map(entry -> new UtxoEntry(entry.getValue().getWallet(), entry.getKey(), HashIndexEntry.Type.OUTPUT, entry.getValue())).collect(Collectors.toList()));
@@ -50,14 +52,22 @@ public class WalletUtxosEntry extends Entry {
     }
 
     protected void calculateDust() {
-        long dustAttackThreshold = Config.get().getDustAttackThreshold();
-        Set<WalletNode> duplicateNodes = getWallet().getWalletTxos().values().stream()
-                .collect(Collectors.groupingBy(e -> e, Collectors.counting()))
-                .entrySet().stream().filter(e -> e.getValue() > 1).map(Map.Entry::getKey).collect(Collectors.toSet());
+        if(getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
+            long dustAttackThreshold = Config.get().getDustAttackThresholdSp();
+            for(Entry entry : getChildren()) {
+                UtxoEntry utxoEntry = (UtxoEntry) entry;
+                utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && !utxoEntry.getWallet().allInputsFromWallet(utxoEntry.getHashIndex().getHash()));
+            }
+        } else {
+            long dustAttackThreshold = Config.get().getDustAttackThreshold();
+            Set<WalletNode> duplicateNodes = getWallet().getWalletTxos().values().stream()
+                    .collect(Collectors.groupingBy(e -> e, Collectors.counting()))
+                    .entrySet().stream().filter(e -> e.getValue() > 1).map(Map.Entry::getKey).collect(Collectors.toSet());
 
-        for(Entry entry : getChildren()) {
-            UtxoEntry utxoEntry = (UtxoEntry) entry;
-            utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && duplicateNodes.contains(utxoEntry.getNode()) && !utxoEntry.getWallet().allInputsFromWallet(utxoEntry.getHashIndex().getHash()));
+            for(Entry entry : getChildren()) {
+                UtxoEntry utxoEntry = (UtxoEntry) entry;
+                utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && duplicateNodes.contains(utxoEntry.getNode()) && !utxoEntry.getWallet().allInputsFromWallet(utxoEntry.getHashIndex().getHash()));
+            }
         }
     }
 
