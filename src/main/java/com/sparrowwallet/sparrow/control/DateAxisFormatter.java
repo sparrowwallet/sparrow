@@ -11,7 +11,7 @@ import java.util.Date;
 public class DateAxisFormatter extends StringConverter<Number> {
     private static final DateFormat HOUR_FORMAT = new SimpleDateFormat("HH:mm");
     private static final DateFormat DAY_FORMAT = new SimpleDateFormat("d MMM");
-    private static final DateFormat MONTH_FORMAT = new SimpleDateFormat("MMM yy");
+    private static final DateFormat MONTH_FORMAT = new SimpleDateFormat("MMM yyyy");
 
     private final DateFormat dateFormat;
     private int oddCounter;
