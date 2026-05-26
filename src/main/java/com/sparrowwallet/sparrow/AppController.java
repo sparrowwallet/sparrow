@@ -35,6 +35,7 @@ import de.jangassen.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.DoubleBinding;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
@@ -85,6 +86,9 @@ public class AppController implements Initializable {
     public static final int TAB_LABEL_MAX_WIDTH = 300;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_INACTIVE = 0.8;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
+    private static final double SUBTAB_MIN_SIZE = 90.0;
+    private static final double SUBTAB_MAX_SIZE = 180.0;
+    private static final double SUBTAB_HEIGHT_MARGIN = 20.0;
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
     public static final String CONNECTION_FAILED_PREFIX = "Connection failed: ";
     public static final String TRYING_ANOTHER_SERVER_MESSAGE = "trying another server...";
@@ -1851,6 +1855,12 @@ public class AppController implements Initializable {
                 subTabLabel.setTooltip(new Tooltip(label));
             }
             subTab.setGraphic(subTabLabel);
+
+            DoubleBinding subTabSize = Bindings.createDoubleBinding(() ->
+                    computeSubTabSize(subTabs.getHeight(), subTabs.getTabs().size()),
+                    subTabs.heightProperty(), subTabs.getTabs());
+            subTab.styleProperty().bind(subTabSize.asString(Locale.ROOT, "-fx-pref-width: %.0fpx;"));
+            subTabLabel.prefWidthProperty().bind(subTabSize);
             FXMLLoader walletLoader = new FXMLLoader(getClass().getResource("wallet/wallet.fxml"));
             subTab.setContent(walletLoader.load());
             WalletController controller = walletLoader.getController();
@@ -2478,7 +2488,15 @@ public class AppController implements Initializable {
     }
 
     private boolean isSubTabLabelTruncated(Label subTabLabel, String label) {
-        return TextUtils.computeTextWidth(subTabLabel.getFont(), label, 0.0D) > (90-6);
+        return TextUtils.computeTextWidth(subTabLabel.getFont(), label, 0.0D) > (SUBTAB_MIN_SIZE - 6);
+    }
+
+    static double computeSubTabSize(double tabPaneHeight, int tabCount) {
+        int count = Math.max(1, tabCount);
+        if(tabPaneHeight <= 0) {
+            return SUBTAB_MIN_SIZE;
+        }
+        return Math.max(SUBTAB_MIN_SIZE, Math.min(SUBTAB_MAX_SIZE, (tabPaneHeight - SUBTAB_HEIGHT_MARGIN) / count));
     }
 
     private void configureSwitchServer() {
