@@ -2062,8 +2062,17 @@ public class AppController implements Initializable {
 
         //Skip the warning for already-confirmed transactions loaded for inspection
         if(blockTransaction == null) {
-            List<TransactionOutput> unknownScriptOutputs = transaction.getOutputs().stream()
-                    .filter(o -> o.getValue() > 0 && o.getScript().getToAddress() == null).toList();
+            List<TransactionOutput> unknownScriptOutputs = new ArrayList<>();
+            for(int i = 0; i < transaction.getOutputs().size(); i++) {
+                TransactionOutput txOutput = transaction.getOutputs().get(i);
+                if(txOutput.getValue() > 0 && txOutput.getScript().getToAddress() == null) {
+                    //Silent payment outputs have an empty script and non-zero value until the recipient script is computed
+                    if(psbt != null && i < psbt.getPsbtOutputs().size() && psbt.getPsbtOutputs().get(i).getSilentPaymentAddress() != null) {
+                        continue;
+                    }
+                    unknownScriptOutputs.add(txOutput);
+                }
+            }
             if(!unknownScriptOutputs.isEmpty() && !confirmUnknownScriptOutputs(unknownScriptOutputs)) {
                 return;
             }
