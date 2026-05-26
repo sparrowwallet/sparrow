@@ -2060,6 +2060,15 @@ public class AppController implements Initializable {
             }
         }
 
+        //Skip the warning for already-confirmed transactions loaded for inspection
+        if(blockTransaction == null) {
+            List<TransactionOutput> unknownScriptOutputs = transaction.getOutputs().stream()
+                    .filter(o -> o.getValue() > 0 && o.getScript().getToAddress() == null).toList();
+            if(!unknownScriptOutputs.isEmpty() && !confirmUnknownScriptOutputs(unknownScriptOutputs)) {
+                return;
+            }
+        }
+
         try {
             String tabName = name;
 
@@ -2161,6 +2170,23 @@ public class AppController implements Initializable {
                         "The tab " + tabName + " contains a similar transaction spending to a silent payments address, " +
                         "but this transaction does not contain enough information to determine if the recipient address is correct.\n\n" +
                         "Open the transaction in another tab?", ButtonType.YES, ButtonType.NO);
+        return result.isPresent() && result.get() == ButtonType.YES;
+    }
+
+    private boolean confirmUnknownScriptOutputs(List<TransactionOutput> unknownScriptOutputs) {
+        long totalAmount = unknownScriptOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = totalAmount >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS;
+        }
+        String amount = unit.equals(BitcoinUnit.BTC) ? format.formatBtcValue(totalAmount) + " BTC" : format.formatSatsValue(totalAmount) + " sats";
+        String outputDesc = unknownScriptOutputs.size() == 1 ? "an output" : unknownScriptOutputs.size() + " outputs";
+        Optional<ButtonType> result = AppServices.showWarningDialog("Unknown Script Type",
+                "This transaction contains " + outputDesc + " of a non-standard or unrecognised script type, totalling " + amount + ".\n\n" +
+                        "Sparrow cannot resolve these outputs to addresses, so they will not appear in the transaction diagram. " +
+                        "Review the individual output(s) in the transaction tree carefully before signing or broadcasting.\n\n" +
+                        "Open the transaction?", ButtonType.YES, ButtonType.NO);
         return result.isPresent() && result.get() == ButtonType.YES;
     }
 
