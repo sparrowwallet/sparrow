@@ -842,8 +842,36 @@ public class AppServices {
         return payjoinURIs.get(address);
     }
 
+    public static URI getSecurePayjoinUrl(BitcoinURI bitcoinURI) {
+        if(bitcoinURI != null) {
+            Object payjoinUrlObj = bitcoinURI.getParameterByName(BitcoinURI.FIELD_PAYJOIN_URL);
+            if(payjoinUrlObj instanceof String payjoinUrl) {
+                try {
+                    URI uri = new URI(payjoinUrl);
+                    if(isSecurePayjoinUrl(uri)) {
+                        return uri;
+                    }
+                    log.error("Insecure payjoin URL provided, must be https or http .onion: " + payjoinUrl);
+                } catch(URISyntaxException e) {
+                    log.error("Invalid payjoin URL provided", e);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static boolean isSecurePayjoinUrl(URI uri) {
+        if(uri == null || uri.getScheme() == null || uri.getHost() == null) {
+            return false;
+        }
+
+        String scheme = uri.getScheme().toLowerCase(Locale.ROOT);
+        return "https".equals(scheme) || ("http".equals(scheme) && Protocol.isOnionHost(uri.getHost()));
+    }
+
     public static void addPayjoinURI(BitcoinURI bitcoinURI) {
-        if(bitcoinURI.getPayjoinUrl() == null || bitcoinURI.getAddress() == null) {
+        if(getSecurePayjoinUrl(bitcoinURI) == null || bitcoinURI.getAddress() == null) {
             throw new IllegalArgumentException("Not a valid payjoin URI");
         }
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);

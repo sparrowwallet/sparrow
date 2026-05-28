@@ -57,10 +57,10 @@ public class Payjoin {
             allowOutputSubstitution = false;
         }
 
-        URI uri = payjoinURI.getPayjoinUrl();
+        URI uri = AppServices.getSecurePayjoinUrl(payjoinURI);
         if(uri == null) {
-            log.error("No payjoin URL provided");
-            throw new PayjoinReceiverException("No payjoin URL provided");
+            log.error("No valid payjoin URL provided");
+            throw new PayjoinReceiverException("No valid payjoin URL provided");
         }
 
         long additionalFeeContribution = getAdditionalFeeContribution();
