@@ -34,4 +34,30 @@ public class BBQRDecoderTest {
             }
         }
     }
+
+    @Test
+    public void rejectsOversizedZlibPayload() {
+        byte[] data = new byte[BBQREncoding.MAX_DECODED_DATA_LENGTH + 1];
+        BBQREncoder encoder = new BBQREncoder(BBQRType.BINARY, BBQREncoding.ZLIB, data, 2000, 0);
+        BBQRDecoder decoder = new BBQRDecoder();
+
+        while(decoder.getResult() == null) {
+            decoder.receivePart(encoder.nextPart());
+        }
+
+        Assertions.assertEquals(BBQRDecoder.ResultType.FAILURE, decoder.getResult().getResultType());
+    }
+
+    @Test
+    public void rejectsOversizedBase32Payload() {
+        byte[] data = new byte[BBQREncoding.MAX_DECODED_DATA_LENGTH + 1];
+        BBQREncoder encoder = new BBQREncoder(BBQRType.BINARY, BBQREncoding.BASE32, data, 2000, 0);
+        BBQRDecoder decoder = new BBQRDecoder();
+
+        while(decoder.getResult() == null) {
+            decoder.receivePart(encoder.nextPart());
+        }
+
+        Assertions.assertEquals(BBQRDecoder.ResultType.FAILURE, decoder.getResult().getResultType());
+    }
 }

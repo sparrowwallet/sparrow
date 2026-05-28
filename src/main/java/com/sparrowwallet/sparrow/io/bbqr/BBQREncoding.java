@@ -17,7 +17,9 @@ public enum BBQREncoding {
 
         @Override
         public byte[] decode(String part) throws BBQREncodingException {
-            return Utils.hexToBytes(part);
+            byte[] decoded = Utils.hexToBytes(part);
+            checkDecodedLength(decoded.length);
+            return decoded;
         }
 
         @Override
@@ -32,7 +34,9 @@ public enum BBQREncoding {
 
         @Override
         public byte[] decode(String part) throws BBQREncodingException {
-            return BaseEncoding.base32().decode(part);
+            byte[] decoded = BaseEncoding.base32().decode(part);
+            checkDecodedLength(decoded.length);
+            return decoded;
         }
 
         @Override
@@ -67,14 +71,21 @@ public enum BBQREncoding {
 
         @Override
         public byte[] inflate(byte[] data) throws BBQREncodingException {
-            try {
-                Inflater inflater = new Inflater(10, true);
-                ByteArrayInputStream in = new ByteArrayInputStream(data);
-                InflaterInputStream zIn = new InflaterInputStream(in, inflater);
-                byte[] decoded = zIn.readAllBytes();
-                zIn.close();
+            try(ByteArrayInputStream in = new ByteArrayInputStream(data);
+                InflaterInputStream zIn = new InflaterInputStream(in, new Inflater(10, true));
+                ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while((bytesRead = zIn.read(buffer)) != -1) {
+                    if(out.size() > MAX_DECODED_DATA_LENGTH - bytesRead) {
+                        throw new BBQREncodingException("Decoded BBQr data exceeds maximum size of " + MAX_DECODED_DATA_LENGTH + " bytes");
+                    }
+                    out.write(buffer, 0, bytesRead);
+                }
 
-                return decoded;
+                return out.toByteArray();
+            } catch(BBQREncodingException e) {
+                throw e;
             } catch(Exception e) {
                 throw new BBQREncodingException("Error inflating with zlib", e);
             }
@@ -85,6 +96,9 @@ public enum BBQREncoding {
             return 8;
         }
     };
+
+    // BBQr targets PSBT and transaction payloads up to 500k; enforce the cap before parsing decoded data.
+    public static final int MAX_DECODED_DATA_LENGTH = 500_000;
 
     public static BBQREncoding fromString(String code) {
         for(BBQREncoding encoding : values()) {
@@ -111,7 +125,14 @@ public enum BBQREncoding {
     }
 
     public byte[] inflate(byte[] data) throws BBQREncodingException {
+        checkDecodedLength(data.length);
         return data;
+    }
+
+    static void checkDecodedLength(int length) throws BBQREncodingException {
+        if(length > MAX_DECODED_DATA_LENGTH) {
+            throw new BBQREncodingException("Decoded BBQr data exceeds maximum size of " + MAX_DECODED_DATA_LENGTH + " bytes");
+        }
     }
 
     public abstract String encode(byte[] data) throws BBQREncodingException;

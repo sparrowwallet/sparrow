@@ -42,4 +42,13 @@ public class BBQREncodingTest {
 
         Assertions.assertArrayEquals(data, inflated);
     }
+
+    @Test
+    public void rejectsOversizedZlibInflate() {
+        byte[] data = new byte[BBQREncoding.MAX_DECODED_DATA_LENGTH + 1];
+
+        byte[] deflated = BBQREncoding.ZLIB.deflate(data);
+
+        Assertions.assertThrows(BBQREncodingException.class, () -> BBQREncoding.ZLIB.inflate(deflated));
+    }
 }

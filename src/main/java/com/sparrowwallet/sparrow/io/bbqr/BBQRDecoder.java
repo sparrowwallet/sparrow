@@ -37,7 +37,9 @@ public class BBQRDecoder {
 
             if(receivedParts.size() == totalParts) {
                 byte[] data = concatParts();
+                BBQREncoding.checkDecodedLength(data.length);
                 data = header.inflate(data);
+                BBQREncoding.checkDecodedLength(data.length);
 
                 if(type == BBQRType.PSBT) {
                     result = new Result(new PSBT(data));
@@ -58,6 +60,9 @@ public class BBQRDecoder {
     private byte[] concatParts() {
         int totalLength = 0;
         for(byte[] part : receivedParts.values()) {
+            if(totalLength > BBQREncoding.MAX_DECODED_DATA_LENGTH - part.length) {
+                throw new BBQREncodingException("Decoded BBQr data exceeds maximum size of " + BBQREncoding.MAX_DECODED_DATA_LENGTH + " bytes");
+            }
             totalLength += part.length;
         }
 
