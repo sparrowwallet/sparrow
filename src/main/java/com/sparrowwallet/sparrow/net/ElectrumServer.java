@@ -877,6 +877,11 @@ public class ElectrumServer {
 
             for(BlockTransactionHash reference : references.keySet()) {
                 Transaction transaction = references.get(reference);
+                if(transaction == null) {
+                    transactionMap.put(reference.getHash(), UNFETCHABLE_BLOCK_TRANSACTION);
+                    checkReferences.removeIf(ref -> ref.getHash().equals(reference.getHash()));
+                    continue;
+                }
 
                 Date blockDate = null;
                 if(reference.getHeight() > 0) {
@@ -890,7 +895,7 @@ public class ElectrumServer {
                 }
 
                 Long fee = reference.getFee();
-                if(fee == null) {
+                if(fee == null && wallet != null) {
                     BlockTransaction cached = wallet.getWalletTransaction(reference.getHash());
                     if(cached != null && cached.getFee() != null) {
                         fee = cached.getFee();
