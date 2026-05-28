@@ -70,6 +70,9 @@ public class Auth47 {
             this.callback = new URI(HTTPS_PROTOCOL + srbnUrl.getHost()).toURL();
         } else {
             this.callback = new URI(strCallback).toURL();
+            if(!isHttpCallback(this.callback)) {
+                throw new IllegalArgumentException("Invalid callback parameter (not http/s or srbn): " + strCallback);
+            }
         }
 
         this.expiry = parameterMap.get("e");
@@ -77,7 +80,7 @@ public class Auth47 {
         if(resource == null) {
             if(srbn) {
                 this.resource = "srbn";
-            } else if(strCallback.startsWith("http")) {
+            } else if(isHttpCallback(this.callback)) {
                 this.resource = strCallback;
             } else {
                 throw new IllegalArgumentException("Invalid callback parameter (not http/s or srbn): " + strCallback);
@@ -186,6 +189,11 @@ public class Auth47 {
 
     public URL getCallback() {
         return callback;
+    }
+
+    private static boolean isHttpCallback(URL callback) {
+        String protocol = callback.getProtocol();
+        return "http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol);
     }
 
     private static class Response {
