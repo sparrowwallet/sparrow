@@ -9,13 +9,13 @@ import com.sparrowwallet.drongo.dns.DnsPayment;
 import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.dns.DnsPaymentResolver;
 import com.sparrowwallet.drongo.dns.DnsPaymentValidationException;
-import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURIParseException;
 import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.event.RequestConnectEvent;
 import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import com.sparrowwallet.sparrow.io.Config;
@@ -28,6 +28,8 @@ import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
@@ -35,20 +37,26 @@ import org.controlsfx.control.spreadsheet.*;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SendToManyDialog extends Dialog<List<Payment>> {
     private final BitcoinUnit bitcoinUnit;
+    private final UnitFormat unitFormat;
+    private final UnitFormatDoubleCellType amountCellType;
     private final SpreadsheetView spreadsheetView;
     public static final SendToAddressCellType SEND_TO_ADDRESS = new SendToAddressCellType();
 
-    public SendToManyDialog(BitcoinUnit bitcoinUnit, List<Payment> payments) {
+    public SendToManyDialog(BitcoinUnit bitcoinUnit, UnitFormat unitFormat, List<Payment> payments) {
         this.bitcoinUnit = bitcoinUnit;
+        this.unitFormat = unitFormat == null ? UnitFormat.DOT : unitFormat;
+        this.amountCellType = new UnitFormatDoubleCellType(this.unitFormat);
 
         final DialogPane dialogPane = new SendToManyDialogPane();
         setDialogPane(dialogPane);
@@ -119,11 +127,9 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             addressCell.getStyleClass().add("fixed-width");
             list.add(addressCell);
 
-            double amount = (double)sendToPayment.payment().getAmount();
-            if(bitcoinUnit == BitcoinUnit.BTC) {
-                amount = amount / Transaction.SATOSHIS_PER_BITCOIN;
-            }
-            SpreadsheetCell amountCell = SpreadsheetCellType.DOUBLE.createCell(row, 1, 1, 1, amount < 0 ? null : amount);
+            long rawAmount = sendToPayment.payment().getAmount();
+            Double amount = rawAmount < 0 ? null : bitcoinUnit.getValue(rawAmount);
+            SpreadsheetCell amountCell = amountCellType.createCell(row, 1, 1, 1, amount);
             amountCell.setFormat(bitcoinUnit == BitcoinUnit.BTC ? "0.00000000" : "###,###");
             amountCell.getStyleClass().add("number-value");
             if(OsType.getCurrent() == OsType.MACOS) {
@@ -177,7 +183,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         for(int row = 0; row < spreadsheetView.getGrid().getRowCount(); row++) {
             ObservableList<SpreadsheetCell> rowCells = spreadsheetView.getItems().get(row);
             SendToAddress sendToAddress = (SendToAddress)rowCells.getFirst().getItem();
-            if(sendToAddress.hrn != null && DnsPaymentCache.getDnsPayment(sendToAddress.hrn) == null) {
+            if(sendToAddress != null && sendToAddress.hrn != null && DnsPaymentCache.getDnsPayment(sendToAddress.hrn) == null) {
                 return true;
             }
         }
@@ -216,12 +222,15 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                                     }
 
                                     try {
+                                        String rawAmount = csvReader.get(1).trim();
+                                        String groupingStripped = rawAmount.replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "");
                                         long amount;
                                         if(bitcoinUnit == BitcoinUnit.BTC) {
-                                            double doubleAmount = Double.parseDouble(csvReader.get(1).replace(",", ""));
+                                            String normalised = groupingStripped.replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
+                                            double doubleAmount = Double.parseDouble(normalised);
                                             amount = bitcoinUnit.getSatsValue(doubleAmount);
                                         } else {
-                                            amount = Long.parseLong(csvReader.get(1).replace(",", ""));
+                                            amount = Long.parseLong(groupingStripped);
                                         }
                                         String label = csvReader.get(2);
                                         Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(csvReader.get(0));
@@ -358,6 +367,160 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             return ((StringConverterWithFormat<SendToAddress>)converter).toStringFormat(item, format);
         }
     };
+
+    private static class UnitFormatDoubleCellType extends SpreadsheetCellType<Double> {
+        private final UnitFormat unitFormat;
+
+        UnitFormatDoubleCellType(UnitFormat unitFormat) {
+            super(new UnitFormatDoubleConverter(unitFormat));
+            this.unitFormat = unitFormat;
+        }
+
+        @Override
+        public String toString() {
+            return "double";
+        }
+
+        public SpreadsheetCell createCell(int row, int column, int rowSpan, int columnSpan, Double value) {
+            SpreadsheetCell cell = new SpreadsheetCellBase(row, column, rowSpan, columnSpan, this);
+            cell.setItem(value);
+            return cell;
+        }
+
+        @Override
+        public SpreadsheetCellEditor createEditor(SpreadsheetView view) {
+            return new UnitFormatDoubleEditor(view, unitFormat);
+        }
+
+        @Override
+        public boolean match(Object value, Object... options) {
+            if(value == null || value instanceof Number) {
+                return true;
+            }
+            try {
+                String s = value.toString();
+                return s == null || s.isEmpty() || converter.fromString(s) != null;
+            } catch(Exception e) {
+                return false;
+            }
+        }
+
+        @Override
+        public Double convertValue(Object value) {
+            if(value instanceof Double d) {
+                return d;
+            }
+            if(value instanceof Number n) {
+                return n.doubleValue();
+            }
+            return converter.fromString(value == null ? null : value.toString());
+        }
+
+        @Override
+        public String toString(Double item) {
+            return converter.toString(item);
+        }
+
+        @Override
+        public String toString(Double item, String format) {
+            return ((StringConverterWithFormat<Double>)converter).toStringFormat(item, format);
+        }
+    }
+
+    private static class UnitFormatDoubleConverter extends StringConverterWithFormat<Double> {
+        private final UnitFormat unitFormat;
+
+        UnitFormatDoubleConverter(UnitFormat unitFormat) {
+            this.unitFormat = unitFormat;
+        }
+
+        @Override
+        public Double fromString(String str) {
+            if(str == null || str.isEmpty()) {
+                return null;
+            }
+            String normalised = str.trim()
+                    .replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "")
+                    .replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
+            try {
+                return Double.valueOf(normalised);
+            } catch(NumberFormatException e) {
+                return null;
+            }
+        }
+
+        @Override
+        public String toString(Double item) {
+            return toStringFormat(item, "");
+        }
+
+        @Override
+        public String toStringFormat(Double item, String format) {
+            if(item == null || item.isNaN()) {
+                return "";
+            }
+            if(format == null || format.isEmpty()) {
+                return Double.toString(item);
+            }
+            return new DecimalFormat(format, unitFormat.getDecimalFormatSymbols()).format(item);
+        }
+    }
+
+    private static class UnitFormatDoubleEditor extends SpreadsheetCellEditor {
+        private final UnitFormat unitFormat;
+        private final TextField textField;
+
+        UnitFormatDoubleEditor(SpreadsheetView view, UnitFormat unitFormat) {
+            super(view);
+            this.unitFormat = unitFormat;
+            this.textField = new TextField();
+            this.textField.setTextFormatter(new CoinTextFormatter(unitFormat));
+        }
+
+        @Override
+        public void startEdit(Object item, String format, Object... options) {
+            if(item instanceof Double d && !d.isNaN()) {
+                String text = (format == null || format.isEmpty())
+                        ? Double.toString(d)
+                        : new DecimalFormat(format, unitFormat.getDecimalFormatSymbols()).format(d);
+                textField.setText(text);
+            } else {
+                textField.setText("");
+            }
+            textField.getStyleClass().removeAll("error");
+            textField.setOnKeyPressed(this::onKeyPressed);
+            textField.requestFocus();
+            textField.selectAll();
+        }
+
+        @Override
+        public void end() {
+            textField.setOnKeyPressed(null);
+            textField.setOnKeyReleased(null);
+            textField.getStyleClass().removeAll("error");
+        }
+
+        @Override
+        public TextField getEditor() {
+            return textField;
+        }
+
+        @Override
+        public String getControlValue() {
+            String raw = textField.getText();
+            return raw == null ? "" : raw.trim();
+        }
+
+        private void onKeyPressed(KeyEvent event) {
+            if(event.getCode() == KeyCode.ENTER) {
+                endEdit(true);
+                event.consume();
+            } else if(event.getCode() == KeyCode.ESCAPE) {
+                endEdit(false);
+                event.consume();
+            }
+        }
+    }
 
     public static class SendToAddress {
         private final String hrn;
