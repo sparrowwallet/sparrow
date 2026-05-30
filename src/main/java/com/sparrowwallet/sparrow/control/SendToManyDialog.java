@@ -219,7 +219,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                                         long amount;
                                         if(bitcoinUnit == BitcoinUnit.BTC) {
                                             double doubleAmount = Double.parseDouble(csvReader.get(1).replace(",", ""));
-                                            amount = (long)(doubleAmount * Transaction.SATOSHIS_PER_BITCOIN);
+                                            amount = bitcoinUnit.getSatsValue(doubleAmount);
                                         } else {
                                             amount = Long.parseLong(csvReader.get(1).replace(",", ""));
                                         }
@@ -487,11 +487,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                 }
 
                 if(sendToAddress != null && value != null) {
-                    if(bitcoinUnit == BitcoinUnit.BTC) {
-                        value = value * Transaction.SATOSHIS_PER_BITCOIN;
-                    }
-
-                    payments.add(sendToAddress.toPayment(label, value.longValue(), false));
+                    payments.add(sendToAddress.toPayment(label, bitcoinUnit.getSatsValue(value), false));
                 }
             }
 
