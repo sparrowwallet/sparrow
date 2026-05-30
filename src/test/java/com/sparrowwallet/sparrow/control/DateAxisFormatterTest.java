@@ -3,7 +3,9 @@ package com.sparrowwallet.sparrow.control;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
@@ -28,27 +30,27 @@ public class DateAxisFormatterTest {
     @Test
     public void multiYearDurationIncludesFourDigitYear() {
         DateAxisFormatter formatter = new DateAxisFormatter(2 * YEAR);
-        String label = thirdLabel(formatter, timestamp(2024, Calendar.AUGUST, 15));
-        Assertions.assertTrue(label.matches("\\p{L}+ \\d{4}"),
-                "Expected month + 4-digit year, got: " + label);
-        Assertions.assertTrue(label.endsWith("2024"),
-                "Expected year 2024 in label, got: " + label);
+        long ts = timestamp(2024, Calendar.AUGUST, 15);
+        String actual = thirdLabel(formatter, ts);
+        String fourDigitYear = new SimpleDateFormat("yyyy").format(new Date(ts));
+        Assertions.assertTrue(actual.contains(fourDigitYear),
+                "Expected 4-digit year " + fourDigitYear + " in label, got: " + actual);
     }
 
     @Test
     public void subYearDurationUsesDayMonth() {
         DateAxisFormatter formatter = new DateAxisFormatter(30 * DAY);
-        String label = thirdLabel(formatter, timestamp(2024, Calendar.AUGUST, 15));
-        Assertions.assertTrue(label.matches("\\d{1,2} \\p{L}+"),
-                "Expected day + month, got: " + label);
+        long ts = timestamp(2024, Calendar.AUGUST, 15);
+        Assertions.assertEquals(new SimpleDateFormat("d MMM").format(new Date(ts)),
+                thirdLabel(formatter, ts));
     }
 
     @Test
     public void subDayDurationUsesHourMinute() {
         DateAxisFormatter formatter = new DateAxisFormatter(2 * HOUR);
-        String label = thirdLabel(formatter, timestamp(2024, Calendar.AUGUST, 15));
-        Assertions.assertTrue(label.matches("\\d{2}:\\d{2}"),
-                "Expected HH:mm, got: " + label);
+        long ts = timestamp(2024, Calendar.AUGUST, 15);
+        Assertions.assertEquals(new SimpleDateFormat("HH:mm").format(new Date(ts)),
+                thirdLabel(formatter, ts));
     }
 
     @Test
