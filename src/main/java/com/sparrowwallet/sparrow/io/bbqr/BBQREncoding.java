@@ -17,9 +17,7 @@ public enum BBQREncoding {
 
         @Override
         public byte[] decode(String part) throws BBQREncodingException {
-            byte[] decoded = Utils.hexToBytes(part);
-            checkDecodedLength(decoded.length);
-            return decoded;
+            return Utils.hexToBytes(part);
         }
 
         @Override
@@ -34,9 +32,7 @@ public enum BBQREncoding {
 
         @Override
         public byte[] decode(String part) throws BBQREncodingException {
-            byte[] decoded = BaseEncoding.base32().decode(part);
-            checkDecodedLength(decoded.length);
-            return decoded;
+            return BaseEncoding.base32().decode(part);
         }
 
         @Override
