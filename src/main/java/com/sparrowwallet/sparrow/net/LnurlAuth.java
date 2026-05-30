@@ -41,9 +41,17 @@ public class LnurlAuth {
     public LnurlAuth(URI uri) throws MalformedURLException, URISyntaxException {
         String lnurl = uri.getSchemeSpecificPart();
         Bech32.Bech32Data bech32 = Bech32.decode(lnurl, 2000);
+        if(!"lnurl".equals(bech32.hrp)) {
+            throw new IllegalArgumentException("LNURL-auth bech32 prefix must be lnurl");
+        }
+
         byte[] urlBytes = Bech32.convertBits(bech32.data, 0, bech32.data.length, 5, 8, false);
         String strUrl = new String(urlBytes, StandardCharsets.UTF_8);
-        this.url = new URI(strUrl).toURL();
+        URI decodedUri = new URI(strUrl);
+        if(!Utils.isSecureUrl(decodedUri)) {
+            throw new IllegalArgumentException("LNURL-auth URL must be https or http .onion");
+        }
+        this.url = decodedUri.toURL();
 
         Map<String, String> parameterMap = new LinkedHashMap<>();
         String query = url.getQuery();

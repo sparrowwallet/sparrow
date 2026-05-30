@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -69,19 +70,17 @@ public class Auth47 {
             this.srbnName = srbnUrl.getUserInfo();
             this.callback = new URI(HTTPS_PROTOCOL + srbnUrl.getHost()).toURL();
         } else {
-            this.callback = new URI(strCallback).toURL();
+            URI callbackUri = new URI(strCallback);
+            if(!Utils.isSecureUrl(callbackUri)) {
+                throw new IllegalArgumentException("Invalid callback parameter (not https, http .onion or srbn): " + strCallback);
+            }
+            this.callback = callbackUri.toURL();
         }
 
         this.expiry = parameterMap.get("e");
         this.resource = parameterMap.get("r");
         if(resource == null) {
-            if(srbn) {
-                this.resource = "srbn";
-            } else if(strCallback.startsWith("http")) {
-                this.resource = strCallback;
-            } else {
-                throw new IllegalArgumentException("Invalid callback parameter (not http/s or srbn): " + strCallback);
-            }
+            this.resource = srbn ? "srbn" : strCallback;
         }
     }
 
