@@ -2062,8 +2062,8 @@ public class AppController implements Initializable {
             try {
                 psbt.verifySigHashes();
             } catch(PSBTSignatureException e) {
-                Optional<ButtonType> result = AppServices.showWarningDialog("Unsafe PSBT",
-                        e.getMessage() + "\n\nThis PSBT may be unsafe to sign.\n\nOpen the transaction?", ButtonType.YES, ButtonType.NO);
+                Optional<ButtonType> result = AppServices.showWarningDialog("Non-Default Sighash",
+                        e.getMessage() + "\n\nReview this PSBT carefully before signing.\n\nOpen the transaction?", ButtonType.YES, ButtonType.NO);
                 if(result.isEmpty() || result.get() != ButtonType.YES) {
                     return;
                 }
