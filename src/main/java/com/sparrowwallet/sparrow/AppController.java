@@ -2058,6 +2058,16 @@ public class AppController implements Initializable {
                 AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
                 return;
             }
+
+            try {
+                psbt.verifySigHashes();
+            } catch(PSBTSignatureException e) {
+                Optional<ButtonType> result = AppServices.showWarningDialog("Unsafe PSBT",
+                        e.getMessage() + "\n\nThis PSBT may be unsafe to sign.\n\nOpen the transaction?", ButtonType.YES, ButtonType.NO);
+                if(result.isEmpty() || result.get() != ButtonType.YES) {
+                    return;
+                }
+            }
         }
 
         //Skip the warning for already-confirmed transactions loaded for inspection
