@@ -195,6 +195,9 @@ public class AppController implements Initializable {
     private MenuItem sendToMany;
 
     @FXML
+    private MenuItem migrateUtxos;
+
+    @FXML
     private MenuItem sweepPrivateKey;
 
     @FXML
@@ -436,6 +439,7 @@ public class AppController implements Initializable {
         searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        migrateUtxos.disableProperty().bind(exportWallet.disableProperty());
         sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
         showPayNym.setDisable(true);
 
@@ -1521,6 +1525,22 @@ public class AppController implements Initializable {
                     Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(wallet, payments)));
                 }
             });
+        }
+    }
+
+    private MigrateUtxosDialog migrateUtxosDialog;
+
+    public void migrateUtxos(ActionEvent event) {
+        if(migrateUtxosDialog != null && migrateUtxosDialog.isShowing()) {
+            migrateUtxosDialog.getDialogPane().getScene().getWindow().requestFocus();
+            return;
+        }
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null && selectedWalletForm.getWallet().isValid()) {
+            Wallet wallet = selectedWalletForm.getWallet();
+            migrateUtxosDialog = new MigrateUtxosDialog(wallet, AppServices.get().getOpenWallets(), rootStack.getScene().getWindow());
+            migrateUtxosDialog.setOnCloseRequest(e -> migrateUtxosDialog = null);
+            migrateUtxosDialog.show();
         }
     }
 
