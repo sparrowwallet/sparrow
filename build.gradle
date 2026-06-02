@@ -73,7 +73,7 @@ dependencies {
     implementation('com.fasterxml.jackson.core:jackson-databind:2.21.1')
     implementation('com.sparrowwallet:hummingbird:1.7.4')
     implementation('co.nstant.in:cbor:0.9')
-    implementation('org.openpnp:openpnp-capture-java:0.0.30-1')
+    implementation('io.github.doblon8:openpnp-capture-java:0.0.1')
     implementation("io.matthewnelson.kmp-tor:runtime:2.5.0")
     implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.21.0")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.2') {
@@ -140,6 +140,7 @@ application {
                                  "--enable-native-access=com.fazecast.jSerialComm",
                                  "--enable-native-access=org.usb4java",
                                  "--enable-native-access=io.github.doblon8.jzbar",
+                                 "--enable-native-access=io.github.doblon8.openpnp.capture",
                                  "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                                  "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
                                  "--add-opens=javafx.controls/com.sun.javafx.scene.control.behavior=org.controlsfx.controls",
@@ -204,10 +205,8 @@ jlink {
                    'glob:/org.hid4java/darwin-*/**,' +
                    'glob:/org.hid4java/linux-*/**,' +
                    'glob:/org.hid4java/win32-*/**,' +
-                   'glob:/openpnp.capture.java/darwin-*/**,' +
-                   'glob:/openpnp.capture.java/linux-*/**,' +
-                   'glob:/openpnp.capture.java/win32-*/**,' +
-                   'glob:/io.github.doblon8.jzbar/native/**']
+                   'glob:/io.github.doblon8.jzbar/native/**' +
+                   'glob:/io.github.doblon8.openpnp.capture/native/**']
     launcher {
         name = 'sparrow'
         jvmArgs = ["--enable-native-access=com.sparrowwallet.drongo",
@@ -217,6 +216,7 @@ jlink {
                    "--enable-native-access=com.fazecast.jSerialComm",
                    "--enable-native-access=org.usb4java",
                    "--enable-native-access=io.github.doblon8.jzbar",
+                   "--enable-native-access=io.github.doblon8.openpnp.capture",
                    "--enable-native-access=com.sparrowwallet.sparrow",
                    "--add-opens=javafx.graphics/com.sun.javafx.css=org.controlsfx.controls",
                    "--add-opens=javafx.graphics/javafx.scene=org.controlsfx.controls",
@@ -396,13 +396,13 @@ def serialArch = osArch == "aarch64" ? "aarch64" : "x86_64"
 
 // Map of JAR name prefix to the include glob for platform-specific natives inside the JAR.
 def nativeLibJars = [
-        'jna-'                : "com/sun/jna/${jnaPlatform}/*",
-        'argon2-jvm-2'        : "${jnaPlatform}/*",
-        'hid4java-'           : "${jnaPlatform}/*",
-        'openpnp-capture-java': "${jnaPlatform}/*",
-        'jSerialComm-'        : "${serialOs}/${serialArch}/*",
-        'usb4java-'           : "org/usb4java/${jnaPlatform}/*",
-        'jzbar-'              : "native/${osName}/${osArch}/*",
+        'jna-'                 : "com/sun/jna/${jnaPlatform}/*",
+        'argon2-jvm-2'         : "${jnaPlatform}/*",
+        'hid4java-'            : "${jnaPlatform}/*",
+        'jSerialComm-'         : "${serialOs}/${serialArch}/*",
+        'usb4java-'            : "org/usb4java/${jnaPlatform}/*",
+        'jzbar-'               : "native/${osName}/${osArch}/*",
+        'openpnp-capture-java-': "native/${osName}/${osArch}/*",
 ]
 
 tasks.register('extractNativeLibraries') {
@@ -477,12 +477,6 @@ extraJavaModuleInfo {
         requires('com.google.common')
         requires('org.slf4j')
         requires('com.fasterxml.jackson.databind')
-    }
-    module('org.openpnp:openpnp-capture-java', 'openpnp.capture.java') {
-        exports('org.openpnp.capture')
-        exports('org.openpnp.capture.library')
-        requires('java.desktop')
-        requires('com.sun.jna')
     }
     module('net.sourceforge.javacsv:javacsv', 'net.sourceforge.javacsv') {
         exports('com.csvreader')
