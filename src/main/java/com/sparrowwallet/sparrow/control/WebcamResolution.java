@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
-import org.openpnp.capture.CaptureFormat;
+import io.github.doblon8.openpnp.capture.CaptureFormat;
 
 import java.util.Arrays;
 
@@ -61,7 +61,7 @@ public enum WebcamResolution implements Comparable<WebcamResolution> {
 
     public static WebcamResolution from(CaptureFormat captureFormat) {
         for(WebcamResolution resolution : values()) {
-            if(captureFormat.getFormatInfo().width == resolution.width && captureFormat.getFormatInfo().height == resolution.height) {
+            if(captureFormat.formatInfo().width() == resolution.width && captureFormat.formatInfo().height() == resolution.height) {
                 return resolution;
             }
         }

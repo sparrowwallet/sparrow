@@ -16,8 +16,7 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.image.Image;
-import org.openpnp.capture.*;
-import org.openpnp.capture.library.OpenpnpCaptureLibrary;
+import io.github.doblon8.openpnp.capture.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,37 +62,37 @@ public class WebcamService extends ScheduledService<Image> {
 
     static {
         if(log.isTraceEnabled()) {
-            OpenpnpCaptureLibrary.INSTANCE.Cap_setLogLevel(8);
+            OpenPnpCapture.setLogLevel(LogLevel.VERBOSE);
         } else if(log.isDebugEnabled()) {
-            OpenpnpCaptureLibrary.INSTANCE.Cap_setLogLevel(7);
+            OpenPnpCapture.setLogLevel(LogLevel.DEBUG);
         } else if(log.isInfoEnabled()) {
-            OpenpnpCaptureLibrary.INSTANCE.Cap_setLogLevel(6);
+            OpenPnpCapture.setLogLevel(LogLevel.INFO);
         }
 
-        OpenpnpCaptureLibrary.INSTANCE.Cap_installCustomLogFunction((level, ptr) -> {
+        OpenPnpCapture.installCustomLogFunction((level, message) -> {
             switch(level) {
-                case 0:
-                case 1:
-                case 2:
-                case 3:
-                    String err = ptr.getString(0).trim();
+                case LogLevel.EMERGENCY:
+                case LogLevel.ALERT:
+                case LogLevel.CRITICAL:
+                case LogLevel.ERROR:
+                    String err = message.trim();
                     if(err.equals("tjDecompressHeader2 failed: No error") || err.matches("getPropertyLimits.*failed on.*")) { //Safe to ignore
                         log.debug(err);
                     } else {
                         log.error(err);
                     }
                     break;
-                case 4:
-                case 5:
-                case 6:
-                    log.info(ptr.getString(0).trim());
+                case LogLevel.WARNING:
+                case LogLevel.NOTICE:
+                case LogLevel.INFO:
+                    log.info(message.trim());
                     break;
-                case 7:
-                    log.debug(ptr.getString(0).trim());
+                case LogLevel.DEBUG:
+                    log.debug(message.trim());
                     break;
-                case 8:
+                case LogLevel.VERBOSE:
                 default:
-                    log.trace(ptr.getString(0).trim());
+                    log.trace(message.trim());
                     break;
             }
         });
@@ -167,8 +166,8 @@ public class WebcamService extends ScheduledService<Image> {
                         //On macOS and Windows, camera pixel format is largely abstracted away
                         if(OsType.getCurrent() == OsType.UNIX) {
                             deviceFormats.sort((f1, f2) -> {
-                                WebcamPixelFormat pf1 = WebcamPixelFormat.fromFourCC(f1.getFormatInfo().fourcc);
-                                WebcamPixelFormat pf2 = WebcamPixelFormat.fromFourCC(f2.getFormatInfo().fourcc);
+                                WebcamPixelFormat pf1 = WebcamPixelFormat.fromFourCC(f1.formatInfo().fourcc());
+                                WebcamPixelFormat pf2 = WebcamPixelFormat.fromFourCC(f2.formatInfo().fourcc());
                                 return Integer.compare(WebcamPixelFormat.getPriority(pf1), WebcamPixelFormat.getPriority(pf2));
                             });
                         }
@@ -185,17 +184,17 @@ public class WebcamService extends ScheduledService<Image> {
                                 format = supportedResolutions.get(resolution);
                             } else {
                                 format = device.getFormats().getFirst();
-                                log.warn("Could not get standard capture resolution, using " + format.getFormatInfo().width + "x" + format.getFormatInfo().height);
+                                log.warn("Could not get standard capture resolution, using " + format.formatInfo().width() + "x" + format.formatInfo().height());
                             }
                         }
 
                         //On Linux, formats not defined in WebcamPixelFormat are unsupported
-                        if(OsType.getCurrent() == OsType.UNIX && WebcamPixelFormat.fromFourCC(format.getFormatInfo().fourcc) == null) {
-                            log.warn("Unsupported camera pixel format " + WebcamPixelFormat.fourCCToString(format.getFormatInfo().fourcc));
+                        if(OsType.getCurrent() == OsType.UNIX && WebcamPixelFormat.fromFourCC(format.formatInfo().fourcc()) == null) {
+                            log.warn("Unsupported camera pixel format " + WebcamPixelFormat.fourCCToString(format.formatInfo().fourcc()));
                         }
 
                         if(log.isDebugEnabled()) {
-                            log.debug("Opening capture stream on " + device + " with format " + format.getFormatInfo().width + "x" + format.getFormatInfo().height + " (" + WebcamPixelFormat.fourCCToString(format.getFormatInfo().fourcc) + ")");
+                            log.debug("Opening capture stream on " + device + " with format " + format.formatInfo().width() + "x" + format.formatInfo().height() + " (" + WebcamPixelFormat.fourCCToString(format.formatInfo().fourcc()) + ")");
                         }
 
                         opening.set(true);
@@ -203,7 +202,7 @@ public class WebcamService extends ScheduledService<Image> {
                         opening.set(false);
 
                         try {
-                            zoomLimits = stream.getPropertyLimits(CaptureProperty.Zoom);
+                            zoomLimits = stream.getPropertyLimits(CaptureProperty.ZOOM);
                         } catch(Throwable e) {
                             log.debug("Error getting zoom limits on " + device + ", assuming no zoom function");
                         }
@@ -285,7 +284,7 @@ public class WebcamService extends ScheduledService<Image> {
     public int getZoom() {
         if(stream != null && zoomLimits != null) {
             try {
-                return stream.getProperty(CaptureProperty.Zoom);
+                return stream.getProperty(CaptureProperty.ZOOM);
             } catch(Exception e) {
                 log.error("Error getting zoom property on " + device, e);
             }
@@ -297,7 +296,7 @@ public class WebcamService extends ScheduledService<Image> {
     public void setZoom(int value) {
         if(stream != null && zoomLimits != null) {
             try {
-                stream.setProperty(CaptureProperty.Zoom, value);
+                stream.setProperty(CaptureProperty.ZOOM, value);
             } catch(Exception e) {
                 log.error("Error setting zoom property on " + device, e);
             }
