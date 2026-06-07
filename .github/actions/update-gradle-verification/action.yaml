@@ -1,0 +1,95 @@
+name: Update Gradle verification metadata
+description: Restore optional previous Gradle verification files, update them, validate them, and upload the result.
+
+inputs:
+  output-artifact:
+    description: Name of the artifact to upload with the updated verification files.
+    required: true
+  previous-artifact:
+    description: Optional previous verification artifact to restore before running Gradle.
+    required: false
+    default: ''
+  clean-start:
+    description: Remove existing verification files before bootstrapping metadata.
+    required: false
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: Download previous verification files
+      if: ${{ inputs.previous-artifact != '' }}
+      uses: actions/download-artifact@v8
+      with:
+        name: ${{ inputs.previous-artifact }}
+        path: build/previous-verification
+
+    - name: Restore previous verification files
+      if: ${{ inputs.previous-artifact != '' }}
+      shell: bash
+      run: cp build/previous-verification/gradle/verification-* gradle/
+
+    - name: Bootstrap verification metadata
+      shell: bash
+      run: |
+        mkdir -p gradle
+        if [ "${{ inputs.clean-start }}" = "true" ]; then
+          rm -f gradle/verification-metadata.xml gradle/verification-keyring.keys
+        fi
+        if [ ! -f gradle/verification-metadata.xml ]; then
+          {
+            printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>'
+            printf '%s\n' '<verification-metadata xmlns="https://schema.gradle.org/dependency-verification" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.gradle.org/dependency-verification https://schema.gradle.org/dependency-verification/dependency-verification-1.3.xsd">'
+            printf '%s\n' '   <configuration>'
+            printf '%s\n' '      <verify-metadata>true</verify-metadata>'
+            printf '%s\n' '      <verify-signatures>true</verify-signatures>'
+            printf '%s\n' '      <keyring-format>armored</keyring-format>'
+            printf '%s\n' '      <key-servers>'
+            printf '%s\n' '         <key-server uri="https://keyserver.ubuntu.com"/>'
+            printf '%s\n' '         <key-server uri="https://keys.openpgp.org"/>'
+            printf '%s\n' '      </key-servers>'
+            printf '%s\n' '   </configuration>'
+            printf '%s\n' '   <components>'
+            printf '%s\n' '   </components>'
+            printf '%s\n' '</verification-metadata>'
+          } > gradle/verification-metadata.xml
+        fi
+
+    - name: Clear Java tool-cache for reproducibility
+      shell: bash
+      run: rm -rf "$RUNNER_TOOL_CACHE"/Java_*
+
+    - name: Set up JDK 25.0.2
+      uses: actions/setup-java@v5
+      with:
+        distribution: temurin
+        java-version: '25.0.2'
+
+    - name: Generate dependency verification metadata
+      shell: bash
+      run: |
+        ./gradlew --write-verification-metadata sha512 --refresh-keys \
+          dependencies :drongo:dependencies :lark:dependencies jpackageImage
+        ./gradlew --write-verification-metadata pgp,sha512 --refresh-keys \
+          dependencies :drongo:dependencies :lark:dependencies jpackageImage
+        ./gradlew --export-keys help
+
+    - name: Validate dependency verification metadata
+      shell: bash
+      run: |
+        ./gradlew help dependencies :drongo:dependencies :lark:dependencies \
+          --dependency-verification strict --refresh-keys
+
+    - name: Stage verification files
+      shell: bash
+      run: |
+        mkdir -p build/dependency-verification/gradle
+        cp gradle/verification-metadata.xml build/dependency-verification/gradle/
+        cp gradle/verification-keyring.keys build/dependency-verification/gradle/
+
+    - name: Upload verification files
+      uses: actions/upload-artifact@v7
+      with:
+        name: ${{ inputs.output-artifact }}
+        path: build/dependency-verification
+        if-no-files-found: error
