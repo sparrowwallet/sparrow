@@ -13,6 +13,10 @@ inputs:
     description: Remove existing verification files before bootstrapping metadata.
     required: false
     default: 'false'
+  cache-gradle-wrapper-distribution:
+    description: Cache only the Gradle wrapper distribution, not Gradle dependency artifacts.
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -64,6 +68,13 @@ runs:
       with:
         distribution: temurin
         java-version: '25.0.2'
+
+    - name: Cache Gradle wrapper distribution
+      if: ${{ inputs.cache-gradle-wrapper-distribution == 'true' }}
+      uses: actions/cache@v5
+      with:
+        path: ~/.gradle/wrapper/dists
+        key: gradle-wrapper-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
 
     - name: Generate dependency verification metadata
       shell: bash

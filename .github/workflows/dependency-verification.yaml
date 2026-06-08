@@ -11,6 +11,7 @@ permissions:
 env:
   ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS: 'false'
   CLEAN_STALE_VERIFICATION_METADATA: 'false'
+  CACHE_GRADLE_WRAPPER_DISTRIBUTION: 'true'
 
 concurrency:
   group: dependency-verification-${{ github.ref }}
@@ -28,6 +29,7 @@ jobs:
 
       - uses: ./.github/actions/update-gradle-verification
         with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
           clean-start: ${{ env.CLEAN_STALE_VERIFICATION_METADATA }}
           output-artifact: gradle-verification-linux-x64
 
@@ -43,6 +45,7 @@ jobs:
 
       - uses: ./.github/actions/update-gradle-verification
         with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
           previous-artifact: gradle-verification-linux-x64
           output-artifact: gradle-verification-linux-arm64
 
@@ -58,6 +61,7 @@ jobs:
 
       - uses: ./.github/actions/update-gradle-verification
         with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
           previous-artifact: gradle-verification-linux-arm64
           output-artifact: gradle-verification-windows-x64
 
@@ -73,6 +77,7 @@ jobs:
 
       - uses: ./.github/actions/update-gradle-verification
         with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
           previous-artifact: gradle-verification-windows-x64
           output-artifact: gradle-verification-macos-x64
 
@@ -88,6 +93,7 @@ jobs:
 
       - uses: ./.github/actions/update-gradle-verification
         with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
           previous-artifact: gradle-verification-macos-x64
           output-artifact: gradle-verification-final
 
