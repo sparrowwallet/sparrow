@@ -1,0 +1,172 @@
+name: Dependency Verification
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
+
+env:
+  ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS: 'false'
+  CLEAN_STALE_VERIFICATION_METADATA: 'false'
+  CACHE_GRADLE_WRAPPER_DISTRIBUTION: 'true'
+
+concurrency:
+  group: dependency-verification-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux-x64:
+    name: Generate (Linux x64)
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/update-gradle-verification
+        with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
+          clean-start: ${{ env.CLEAN_STALE_VERIFICATION_METADATA }}
+          output-artifact: gradle-verification-linux-x64
+
+  linux-arm64:
+    name: Generate (Linux arm64)
+    runs-on: ubuntu-22.04-arm
+    needs: linux-x64
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/update-gradle-verification
+        with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
+          previous-artifact: gradle-verification-linux-x64
+          output-artifact: gradle-verification-linux-arm64
+
+  windows-x64:
+    name: Generate (Windows x64)
+    runs-on: windows-2022
+    needs: linux-arm64
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/update-gradle-verification
+        with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
+          previous-artifact: gradle-verification-linux-arm64
+          output-artifact: gradle-verification-windows-x64
+
+  macos-x64:
+    name: Generate (macOS x64)
+    runs-on: macos-15-intel
+    needs: windows-x64
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/update-gradle-verification
+        with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
+          previous-artifact: gradle-verification-windows-x64
+          output-artifact: gradle-verification-macos-x64
+
+  macos-arm64:
+    name: Generate (macOS arm64)
+    runs-on: macos-14
+    needs: macos-x64
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: ./.github/actions/update-gradle-verification
+        with:
+          cache-gradle-wrapper-distribution: ${{ env.CACHE_GRADLE_WRAPPER_DISTRIBUTION }}
+          previous-artifact: gradle-verification-macos-x64
+          output-artifact: gradle-verification-final
+
+  update-pr:
+    name: Open update PR
+    runs-on: ubuntu-22.04
+    needs: macos-arm64
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download final verification files
+        uses: actions/download-artifact@v8
+        with:
+          name: gradle-verification-final
+          path: build/final-verification
+
+      - name: Create or update pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: automation/update-gradle-verification-metadata
+        run: |
+          mkdir -p /tmp/dependency-verification/gradle
+          cp build/final-verification/gradle/verification-* /tmp/dependency-verification/gradle/
+          cp /tmp/dependency-verification/gradle/verification-* gradle/
+
+          if [ -z "$(git status --porcelain -- gradle/verification-metadata.xml gradle/verification-keyring.keys)" ]; then
+            echo "No dependency verification changes detected."
+            exit 0
+          fi
+          if [ "$ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS" != "true" ] && git diff -- gradle/verification-metadata.xml | grep -q '^[+] *<also-trust '; then
+            echo "Generated verification metadata adds also-trust checksums."
+            echo "This indicates an existing artifact coordinate resolved to a checksum not currently trusted by the repository."
+            echo "Set ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS to 'true' to allow opening an automated metadata update PR for this case."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git fetch origin "$BRANCH_NAME"; then
+            git restore gradle/verification-metadata.xml gradle/verification-keyring.keys
+            git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
+            cp /tmp/dependency-verification/gradle/verification-* gradle/
+
+            if [ -z "$(git status --porcelain -- gradle/verification-metadata.xml gradle/verification-keyring.keys)" ]; then
+              echo "Existing automation branch already contains these verification changes."
+              exit 0
+            fi
+            if [ "$ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS" != "true" ] && git diff -- gradle/verification-metadata.xml | grep -q '^[+] *<also-trust '; then
+              echo "Generated verification metadata adds also-trust checksums."
+              echo "This indicates an existing artifact coordinate resolved to a checksum not currently trusted by the automation branch."
+              echo "Set ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS to 'true' to allow updating the automated metadata PR for this case."
+              exit 1
+            fi
+          else
+            git checkout -B "$BRANCH_NAME"
+          fi
+
+          git add gradle/verification-metadata.xml gradle/verification-keyring.keys
+          git commit -m "Update Gradle dependency verification metadata"
+          git push --force-with-lease origin "HEAD:$BRANCH_NAME"
+
+          if gh pr list --base master --head "${{ github.repository_owner }}:$BRANCH_NAME" --json number --jq '.[0].number' | grep -q .; then
+            echo "Existing dependency verification PR found; branch was updated."
+          else
+            gh pr create \
+              --base master \
+              --head "$BRANCH_NAME" \
+              --title "Update Gradle dependency verification metadata" \
+              --body "Regenerates Gradle dependency verification metadata across Linux, Windows, and macOS using Gradle's incremental verification metadata update flow."
+          fi
