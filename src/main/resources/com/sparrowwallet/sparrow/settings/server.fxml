@@ -62,6 +62,14 @@
                                 <ServerType fx:constant="ELECTRUM_SERVER"/>
                             </userData>
                         </ToggleButton>
+                        <ToggleButton fx:id="irohToggle" text="Iroh P2P" toggleGroup="$serverTypeToggleGroup">
+                            <graphic>
+                                <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="iroh-server" />
+                            </graphic>
+                            <userData>
+                                <ServerType fx:constant="IROH_SERVER"/>
+                            </userData>
+                        </ToggleButton>
                     </buttons>
                 </SegmentedButton>
             </Field>
@@ -173,6 +181,14 @@
             <Field text="Proxy URL:">
                 <TextField fx:id="proxyHost" promptText="e.g. 127.0.0.1" />
                 <TextField fx:id="proxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+            </Field>
+        </Fieldset>
+    </Form>
+
+    <Form fx:id="irohForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
+        <Fieldset text="Iroh P2P Server">
+            <Field text="Node ID:">
+                <ComboBoxTextField fx:id="irohNodeId" promptText="e.g. 6ba25662..." comboProperty="$recentElectrumServers" />
             </Field>
         </Fieldset>
     </Form>

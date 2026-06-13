@@ -156,6 +156,10 @@ public class ServerSettingsController extends SettingsDetailController {
     private TextField proxyPort;
 
     @FXML
+    private Form irohForm;
+    @FXML
+    private ComboBoxTextField irohNodeId;
+    @FXML
     private Button testConnection;
 
     @FXML
@@ -189,16 +193,16 @@ public class ServerSettingsController extends SettingsDetailController {
         publicElectrumForm.managedProperty().bind(publicElectrumForm.visibleProperty());
         coreForm.managedProperty().bind(coreForm.visibleProperty());
         electrumForm.managedProperty().bind(electrumForm.visibleProperty());
+        irohForm.managedProperty().bind(irohForm.visibleProperty());
         serverTypeToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if(serverTypeToggleGroup.getSelectedToggle() != null) {
                 ServerType existingType = config.getServerType();
                 ServerType serverType = (ServerType)newValue.getUserData();
                 publicElectrumForm.setVisible(serverType == ServerType.PUBLIC_ELECTRUM_SERVER);
                 coreForm.setVisible(serverType == ServerType.BITCOIN_CORE);
-                electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER || serverType == ServerType.IROH_SERVER);
-                if(existingType != ServerType.IROH_SERVER || serverType != ServerType.ELECTRUM_SERVER) {
-                    config.setServerType(serverType);
-                }
+                electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER);
+                irohForm.setVisible(serverType == ServerType.IROH_SERVER);
+                config.setServerType(serverType);
                 testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, ""));
                 testResults.clear();
                 if(existingType != serverType && !(existingType == ServerType.IROH_SERVER && serverType == ServerType.ELECTRUM_SERVER)) {
@@ -216,8 +220,7 @@ public class ServerSettingsController extends SettingsDetailController {
             serverTypeSegmentedButton.getButtons().remove(publicElectrumToggle);
             serverTypeToggleGroup.getToggles().remove(publicElectrumToggle);
         }
-        ServerType displayType = serverType == ServerType.IROH_SERVER ? ServerType.ELECTRUM_SERVER : serverType;
-        serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == displayType).findFirst().orElse(null));
+        serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == serverType).findFirst().orElse(null));
 
         List<PolicyType> policyTypes = AppServices.get().getOpenWallets().keySet().stream().map(Wallet::getPolicyType).filter(Objects::nonNull).collect(Collectors.toList());
         publicElectrumServer.setButtonCell(new PublicElectrumServerButtonCell());
@@ -501,6 +504,16 @@ public class ServerSettingsController extends SettingsDetailController {
                 electrumPort.setText(Integer.toString(hostAndPort.getPort()));
             }
         }
+
+        // Iroh server initialization
+        if(config.getServerType() == ServerType.IROH_SERVER && config.getElectrumServer() != null) {
+            irohNodeId.setText(config.getElectrumServer().getHostAndPort().getHost());
+        }
+        irohNodeId.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null && !newValue.isBlank()) {
+                config.setElectrumServer(new Server("iroh://" + newValue.trim()));
+            }
+        });
 
         File certificateFile = config.getElectrumServerCert();
         if(certificateFile != null) {
