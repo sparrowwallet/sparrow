@@ -195,11 +195,13 @@ public class ServerSettingsController extends SettingsDetailController {
                 ServerType serverType = (ServerType)newValue.getUserData();
                 publicElectrumForm.setVisible(serverType == ServerType.PUBLIC_ELECTRUM_SERVER);
                 coreForm.setVisible(serverType == ServerType.BITCOIN_CORE);
-                electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER);
-                config.setServerType(serverType);
+                electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER || serverType == ServerType.IROH_SERVER);
+                if(existingType != ServerType.IROH_SERVER || serverType != ServerType.ELECTRUM_SERVER) {
+                    config.setServerType(serverType);
+                }
                 testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, ""));
                 testResults.clear();
-                if(existingType != serverType) {
+                if(existingType != serverType && !(existingType == ServerType.IROH_SERVER && serverType == ServerType.ELECTRUM_SERVER)) {
                     EventManager.get().post(new ServerTypeChangedEvent(serverType));
                 }
             } else if(oldValue != null) {
@@ -214,7 +216,8 @@ public class ServerSettingsController extends SettingsDetailController {
             serverTypeSegmentedButton.getButtons().remove(publicElectrumToggle);
             serverTypeToggleGroup.getToggles().remove(publicElectrumToggle);
         }
-        serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == serverType).findFirst().orElse(null));
+        ServerType displayType = serverType == ServerType.IROH_SERVER ? ServerType.ELECTRUM_SERVER : serverType;
+        serverTypeToggleGroup.selectToggle(serverTypeToggleGroup.getToggles().stream().filter(toggle -> toggle.getUserData() == displayType).findFirst().orElse(null));
 
         List<PolicyType> policyTypes = AppServices.get().getOpenWallets().keySet().stream().map(Wallet::getPolicyType).filter(Objects::nonNull).collect(Collectors.toList());
         publicElectrumServer.setButtonCell(new PublicElectrumServerButtonCell());
@@ -885,6 +888,7 @@ public class ServerSettingsController extends SettingsDetailController {
     }
 
     private Protocol getProtocol() {
+        if(Config.get().getServerType() == ServerType.IROH_SERVER) return Protocol.IROH;
         return (electrumUseSsl.isSelected() ? Protocol.SSL : Protocol.TCP);
     }
 
