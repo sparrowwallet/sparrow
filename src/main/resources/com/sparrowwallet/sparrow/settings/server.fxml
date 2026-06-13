@@ -188,7 +188,10 @@
     <Form fx:id="irohForm" GridPane.columnIndex="0" GridPane.rowIndex="1">
         <Fieldset text="Iroh P2P Server">
             <Field text="Node ID:">
-                <ComboBoxTextField fx:id="irohNodeId" promptText="e.g. 6ba25662..." comboProperty="$recentElectrumServers" />
+                <StackPane>
+                    <ComboBox fx:id="recentIrohServers" />
+                    <ComboBoxTextField fx:id="irohNodeId" promptText="e.g. 6ba25662583545b9e3c4d47de6364d509..." comboProperty="$recentIrohServers" />
+                </StackPane>
             </Field>
         </Fieldset>
     </Form>
