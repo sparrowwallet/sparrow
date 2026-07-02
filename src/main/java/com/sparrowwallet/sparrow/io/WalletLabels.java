@@ -100,7 +100,7 @@ public class WalletLabels implements WalletImport, WalletExport {
             for(Map.Entry<BlockTransactionHashIndex, WalletNode> txoEntry : exportWallet.getWalletTxos().entrySet()) {
                 BlockTransactionHashIndex txo = txoEntry.getKey();
                 WalletNode addressNode = txoEntry.getValue();
-                Boolean spendable = (txo.isSpent() ? null : txo.getStatus() != Status.FROZEN);
+                Boolean spendable = (txo.isSpent() || txo.getStatus() != Status.FROZEN) ? null : Boolean.FALSE;
                 labels.add(new InputOutputLabel(Type.output, txo.toString(), txo.getLabel(), origin, spendable, addressNode.getDerivationPath().substring(1), txo.getValue(),
                         confirmingTxs.contains(txo.getHash()) ? null : txo.getHeight(), txo.getDate(), getFiatValue(txo, fiatRates)));
 
