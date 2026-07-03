@@ -451,6 +451,10 @@ public class WalletLabels implements WalletImport, WalletExport {
     }
 
     private static class Label {
+        public Label() {
+            //required for Gson deserialization
+        }
+
         public Label(Type type, String ref, String label, String origin, Boolean spendable) {
             this.type = type;
             this.ref = ref;
@@ -562,7 +566,9 @@ public class WalletLabels implements WalletImport, WalletExport {
         public static Origin fromOutputDescriptor(OutputDescriptor outputDescriptor) {
             Origin origin = new Origin();
             origin.scriptType = outputDescriptor.getScriptType();
-            origin.keyDerivations = new HashSet<>(outputDescriptor.getExtendedPublicKeysMap().values());
+            origin.keyDerivations = outputDescriptor.getExtendedPublicKeysMap().values().stream()
+                    .map(keyDerivation -> new KeyDerivation(keyDerivation.getMasterFingerprint(), KeyDerivation.writePath(keyDerivation.getDerivation())))
+                    .collect(Collectors.toCollection(HashSet::new));
             return origin;
         }
 
