@@ -4,18 +4,30 @@ import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.FileType;
 import com.sparrowwallet.drongo.IOUtils;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptedData;
+import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.policy.Miniscript;
+import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
+import com.sparrowwallet.drongo.wallet.UtxoMixData;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.WalletTable;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -340,6 +352,26 @@ public class JsonPersistence implements Persistence {
         gsonBuilder.registerTypeAdapter(Address.class, new AddressDeserializer());
         gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeSerializer());
         gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeDeserializer());
+        gsonBuilder.registerTypeAdapter(File.class, new FileSerializer());
+        gsonBuilder.registerTypeAdapter(File.class, new FileDeserializer());
+
+        //Instance creators are required for classes without no-args constructors, since Gson's fallback of sun.misc.Unsafe is unavailable on the module path (jdk.unsupported is not resolved)
+        //Unsafe is also explicitly disabled below so that classpath-based tests fail in the same way production does if a class is missed here
+        gsonBuilder.disableJdkUnsafe();
+        gsonBuilder.registerTypeAdapter(Policy.class, (InstanceCreator<Policy>) type -> new Policy(null));
+        gsonBuilder.registerTypeAdapter(Miniscript.class, (InstanceCreator<Miniscript>) type -> new Miniscript(null));
+        gsonBuilder.registerTypeAdapter(KeyDerivation.class, (InstanceCreator<KeyDerivation>) type -> new KeyDerivation(null, (String)null));
+        gsonBuilder.registerTypeAdapter(WalletNode.class, (InstanceCreator<WalletNode>) type -> new WalletNode("m/0"));
+        gsonBuilder.registerTypeAdapter(BlockTransaction.class, (InstanceCreator<BlockTransaction>) type -> new BlockTransaction(null, 0, null, null, null));
+        gsonBuilder.registerTypeAdapter(BlockTransactionHashIndex.class, (InstanceCreator<BlockTransactionHashIndex>) type -> new BlockTransactionHashIndex(null, 0, null, null, 0, 0));
+        gsonBuilder.registerTypeAdapter(DeterministicSeed.class, (InstanceCreator<DeterministicSeed>) type -> new DeterministicSeed((EncryptedData)null, false, 0, null));
+        gsonBuilder.registerTypeAdapter(MasterPrivateExtendedKey.class, (InstanceCreator<MasterPrivateExtendedKey>) type -> new MasterPrivateExtendedKey((EncryptedData)null));
+        gsonBuilder.registerTypeAdapter(EncryptedData.class, (InstanceCreator<EncryptedData>) type -> new EncryptedData(new byte[0], new byte[0], null, (EncryptionType)null));
+        gsonBuilder.registerTypeAdapter(EncryptionType.class, (InstanceCreator<EncryptionType>) type -> new EncryptionType(null, null));
+        gsonBuilder.registerTypeAdapter(PaymentCode.class, (InstanceCreator<PaymentCode>) type -> new PaymentCode(new byte[33], new byte[32]));
+        gsonBuilder.registerTypeAdapter(UtxoMixData.class, (InstanceCreator<UtxoMixData>) type -> new UtxoMixData(0, null));
+        gsonBuilder.registerTypeAdapter(WalletTable.class, (InstanceCreator<WalletTable>) type -> new WalletTable(null, null, 0, null));
+
         if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
             gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeSerializer());
@@ -400,6 +432,23 @@ public class JsonPersistence implements Persistence {
         @Override
         public Sha256Hash deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return Sha256Hash.wrap(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    //Maintains the same format as the previous reflective serialization of java.io.File, which requires java.base/java.io to be opened to Gson
+    private static class FileSerializer implements JsonSerializer<File> {
+        @Override
+        public JsonElement serialize(File src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("path", src.getPath());
+            return jsonObject;
+        }
+    }
+
+    private static class FileDeserializer implements JsonDeserializer<File> {
+        @Override
+        public File deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return new File(json.isJsonObject() ? json.getAsJsonObject().get("path").getAsString() : json.getAsJsonPrimitive().getAsString());
         }
     }
 
