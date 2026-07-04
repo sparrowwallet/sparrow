@@ -1,7 +1,7 @@
 plugins {
     id 'application'
     id 'org.openjfx.javafxplugin' version '0.1.0'
-    id 'org.beryx.jlink' version '3.2.1'
+    id 'org.beryx.jlink' version '4.0.2'
     id 'org.gradlex.extra-java-module-info' version '1.13.1'
     id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.21.0'
 }
@@ -248,13 +248,13 @@ jlink {
                    "--add-reads=org.flywaydb.core=java.desktop"]
 
         if(os.windows) {
-            jvmArgs += ["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"]
+            jvmArgs.addAll(["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"])
         }
         if(os.macOsX) {
-            jvmArgs += ["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"]
+            jvmArgs.addAll(["-Dprism.lcdtext=false", "--add-opens=javafx.graphics/com.sun.glass.ui.mac=com.sparrowwallet.merged.module"])
         }
         if(headless) {
-            jvmArgs += ["-Dglass.platform=Headless"]
+            jvmArgs.addAll(["-Dglass.platform=Headless"])
         }
     }
     addExtraDependencies("javafx")
@@ -266,8 +266,8 @@ jlink {
         imageOptions = []
         installerOptions = ['--file-associations', 'src/main/deploy/psbt.properties', '--file-associations', 'src/main/deploy/txn.properties', '--file-associations', 'src/main/deploy/asc.properties', '--license-file', 'LICENSE']
         if(os.windows) {
-            installerOptions += ['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-menu-group', 'Sparrow', '--win-shortcut', '--resource-dir', 'src/main/deploy/package/windows/']
-            imageOptions += ['--icon', 'src/main/deploy/package/windows/sparrow.ico']
+            installerOptions.addAll(['--win-per-user-install', '--win-dir-chooser', '--win-menu', '--win-menu-group', 'Sparrow', '--win-shortcut', '--resource-dir', 'src/main/deploy/package/windows/'])
+            imageOptions.addAll(['--icon', 'src/main/deploy/package/windows/sparrow.ico'])
             installerType = "msi"
         }
         if(os.linux) {
@@ -276,14 +276,14 @@ jlink {
                 installerOptions = ['--license-file', 'LICENSE']
             } else {
                 installerName = "sparrowwallet"
-                installerOptions += ['--linux-shortcut', '--linux-menu-group', 'Sparrow']
+                installerOptions.addAll(['--linux-shortcut', '--linux-menu-group', 'Sparrow'])
             }
-            installerOptions += ['--resource-dir', layout.buildDirectory.dir('deploy/package').get().asFile.toString(), '--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com']
-            imageOptions += ['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/']
+            installerOptions.addAll(['--resource-dir', layout.buildDirectory.dir('deploy/package').get().asFile.toString(), '--linux-app-category', 'utils', '--linux-app-release', '1', '--linux-rpm-license-type', 'ASL 2.0', '--linux-deb-maintainer', 'mail@sparrowwallet.com'])
+            imageOptions.addAll(['--icon', 'src/main/deploy/package/linux/Sparrow.png', '--resource-dir', 'src/main/deploy/package/linux/'])
         }
         if(os.macOsX) {
-            installerOptions += ['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)']
-            imageOptions += ['--icon', 'src/main/deploy/package/macos/sparrow.icns', '--resource-dir', 'src/main/deploy/package/macos/']
+            installerOptions.addAll(['--mac-sign', '--mac-signing-key-user-name', 'Craig Raw (UPLVMSK9D7)'])
+            imageOptions.addAll(['--icon', 'src/main/deploy/package/macos/sparrow.icns', '--resource-dir', 'src/main/deploy/package/macos/'])
             installerType = "dmg"
         }
     }
@@ -405,12 +405,13 @@ def nativeLibJars = [
 
 tasks.register('extractNativeLibraries') {
     dependsOn 'jlink'
+    def drongoNativeDir = "${project(':drongo').projectDir}/src/main/resources/native/${osName}/${osArch}"
     doLast {
         def imageLib = file("$buildDir/image/lib")
 
         // Project-owned natives
         copy {
-            from "${project(':drongo').projectDir}/src/main/resources/native/${osName}/${osArch}", "src/main/resources/native/${osName}/${osArch}"
+            from drongoNativeDir, "src/main/resources/native/${osName}/${osArch}"
             into imageLib
             eachFile { it.permissions { unix('rw-r--r--') } }
         }
