@@ -16,6 +16,8 @@ import com.sparrowwallet.drongo.crypto.EncryptedData;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.policy.Miniscript;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -354,6 +356,14 @@ public class JsonPersistence implements Persistence {
         gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeDeserializer());
         gsonBuilder.registerTypeAdapter(File.class, new FileSerializer());
         gsonBuilder.registerTypeAdapter(File.class, new FileDeserializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentAddress.class, new SilentPaymentAddressSerializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentAddress.class, new SilentPaymentAddressDeserializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentScanAddress.class, new SilentPaymentScanAddressSerializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentScanAddress.class, new SilentPaymentScanAddressDeserializer());
+
+        //Reflection on any class outside this project fails at Gson adapter construction when running on the module path, unless its module opens the package to Gson
+        //Blocking these classes here ensures classpath-based tests fail in the same way production does, ensuring custom serializers are registered above as necessary
+        gsonBuilder.addReflectionAccessFilter(rawClass -> rawClass.getName().startsWith("com.sparrowwallet.") ? ReflectionAccessFilter.FilterResult.INDECISIVE : ReflectionAccessFilter.FilterResult.BLOCK_ALL);
 
         //Instance creators are required for classes without no-args constructors, since Gson's fallback of sun.misc.Unsafe is unavailable on the module path (jdk.unsupported is not resolved)
         //Unsafe is also explicitly disabled below so that classpath-based tests fail in the same way production does if a class is missed here
@@ -449,6 +459,34 @@ public class JsonPersistence implements Persistence {
         @Override
         public File deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
             return new File(json.isJsonObject() ? json.getAsJsonObject().get("path").getAsString() : json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class SilentPaymentAddressSerializer implements JsonSerializer<SilentPaymentAddress> {
+        @Override
+        public JsonElement serialize(SilentPaymentAddress src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.getAddress());
+        }
+    }
+
+    private static class SilentPaymentAddressDeserializer implements JsonDeserializer<SilentPaymentAddress> {
+        @Override
+        public SilentPaymentAddress deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return SilentPaymentAddress.from(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class SilentPaymentScanAddressSerializer implements JsonSerializer<SilentPaymentScanAddress> {
+        @Override
+        public JsonElement serialize(SilentPaymentScanAddress src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toKeyString());
+        }
+    }
+
+    private static class SilentPaymentScanAddressDeserializer implements JsonDeserializer<SilentPaymentScanAddress> {
+        @Override
+        public SilentPaymentScanAddress deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return SilentPaymentScanAddress.fromKeyString(json.getAsJsonPrimitive().getAsString());
         }
     }
 
