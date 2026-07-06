@@ -205,7 +205,7 @@ jlink {
                    'glob:/org.hid4java/darwin-*/**,' +
                    'glob:/org.hid4java/linux-*/**,' +
                    'glob:/org.hid4java/win32-*/**,' +
-                   'glob:/io.github.doblon8.jzbar/native/**' +
+                   'glob:/io.github.doblon8.jzbar/native/**,' +
                    'glob:/io.github.doblon8.openpnp.capture/native/**']
     launcher {
         name = 'sparrow'
