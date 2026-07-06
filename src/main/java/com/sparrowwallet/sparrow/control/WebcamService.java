@@ -24,6 +24,7 @@ import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
+import java.io.File;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.Semaphore;
@@ -61,6 +62,14 @@ public class WebcamService extends ScheduledService<Image> {
     private final Bokmakierie bokmakierie;
 
     static {
+        String javaHome = System.getProperty("java.home");
+        if(javaHome != null) {
+            File libFile = new File(new File(javaHome, "lib"), System.mapLibraryName("openpnp-capture"));
+            if(libFile.exists()) {
+                System.load(libFile.getAbsolutePath());
+            }
+        }
+
         if(log.isTraceEnabled()) {
             OpenPnpCapture.setLogLevel(LogLevel.VERBOSE);
         } else if(log.isDebugEnabled()) {
