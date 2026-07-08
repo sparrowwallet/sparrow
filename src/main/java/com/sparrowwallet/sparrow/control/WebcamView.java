@@ -51,8 +51,8 @@ public class WebcamView {
                 int currentZoom = service.getZoom();
                 if(currentZoom >= 0) {
                     int newZoom = scrollEvent.getDeltaY() > 0 ? Math.round(currentZoom * 1.1f) : Math.round(currentZoom * 0.9f);
-                    newZoom = Math.max(newZoom, service.getZoomLimits().getMin());
-                    newZoom = Math.min(newZoom, service.getZoomLimits().getMax());
+                    newZoom = Math.max(newZoom, service.getZoomLimits().min());
+                    newZoom = Math.min(newZoom, service.getZoomLimits().max());
                     if(newZoom != currentZoom) {
                         service.setZoom(newZoom);
                     }

@@ -47,7 +47,7 @@ import javafx.scene.layout.*;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.controlsfx.tools.Borders;
-import org.openpnp.capture.CaptureDevice;
+import io.github.doblon8.openpnp.capture.CaptureDevice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
