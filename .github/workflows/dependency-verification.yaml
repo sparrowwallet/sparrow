@@ -121,6 +121,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BRANCH_NAME: automation/update-gradle-verification-metadata
         run: |
+          verification_metadata_diff() {
+            if git ls-files --error-unmatch gradle/verification-metadata.xml >/dev/null 2>&1; then
+              git diff -- gradle/verification-metadata.xml
+            else
+              git diff --no-index -- /dev/null gradle/verification-metadata.xml || true
+            fi
+          }
+
+          reset_verification_files() {
+            for file in gradle/verification-metadata.xml gradle/verification-keyring.keys; do
+              if git ls-files --error-unmatch "$file" >/dev/null 2>&1; then
+                git restore "$file"
+              else
+                rm -f "$file"
+              fi
+            done
+          }
+
           mkdir -p /tmp/dependency-verification/gradle
           cp build/final-verification/gradle/verification-* /tmp/dependency-verification/gradle/
           cp /tmp/dependency-verification/gradle/verification-* gradle/
@@ -129,7 +147,7 @@ jobs:
             echo "No dependency verification changes detected."
             exit 0
           fi
-          if [ "$ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS" != "true" ] && git diff -- gradle/verification-metadata.xml | grep -q '^[+] *<also-trust '; then
+          if [ "$ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS" != "true" ] && verification_metadata_diff | grep -q '^[+] *<also-trust '; then
             echo "Generated verification metadata adds also-trust checksums."
             echo "This indicates an existing artifact coordinate resolved to a checksum not currently trusted by the repository."
             echo "Set ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS to 'true' to allow opening an automated metadata update PR for this case."
@@ -138,30 +156,26 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git fetch origin "$BRANCH_NAME"; then
-            git restore gradle/verification-metadata.xml gradle/verification-keyring.keys
-            git checkout -B "$BRANCH_NAME" "origin/$BRANCH_NAME"
-            cp /tmp/dependency-verification/gradle/verification-* gradle/
-
-            if [ -z "$(git status --porcelain -- gradle/verification-metadata.xml gradle/verification-keyring.keys)" ]; then
+          if git fetch origin "+refs/heads/$BRANCH_NAME:refs/remotes/origin/$BRANCH_NAME"; then
+            mkdir -p /tmp/dependency-verification/existing/gradle
+            if git show "refs/remotes/origin/$BRANCH_NAME:gradle/verification-metadata.xml" > /tmp/dependency-verification/existing/gradle/verification-metadata.xml &&
+              git show "refs/remotes/origin/$BRANCH_NAME:gradle/verification-keyring.keys" > /tmp/dependency-verification/existing/gradle/verification-keyring.keys &&
+              cmp -s /tmp/dependency-verification/gradle/verification-metadata.xml /tmp/dependency-verification/existing/gradle/verification-metadata.xml &&
+              cmp -s /tmp/dependency-verification/gradle/verification-keyring.keys /tmp/dependency-verification/existing/gradle/verification-keyring.keys &&
+              git merge-base --is-ancestor HEAD "refs/remotes/origin/$BRANCH_NAME"; then
               echo "Existing automation branch already contains these verification changes."
               exit 0
             fi
-            if [ "$ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS" != "true" ] && git diff -- gradle/verification-metadata.xml | grep -q '^[+] *<also-trust '; then
-              echo "Generated verification metadata adds also-trust checksums."
-              echo "This indicates an existing artifact coordinate resolved to a checksum not currently trusted by the automation branch."
-              echo "Set ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS to 'true' to allow updating the automated metadata PR for this case."
-              exit 1
-            fi
-          else
-            git checkout -B "$BRANCH_NAME"
           fi
 
+          reset_verification_files
+          git checkout -B "$BRANCH_NAME"
+          cp /tmp/dependency-verification/gradle/verification-* gradle/
           git add gradle/verification-metadata.xml gradle/verification-keyring.keys
           git commit -m "Update Gradle dependency verification metadata"
           git push --force-with-lease origin "HEAD:$BRANCH_NAME"
 
-          if gh pr list --base master --head "${{ github.repository_owner }}:$BRANCH_NAME" --json number --jq '.[0].number' | grep -q .; then
+          if gh pr list --base master --head "$BRANCH_NAME" --json number --jq '.[0].number' | grep -q .; then
             echo "Existing dependency verification PR found; branch was updated."
           else
             gh pr create \
