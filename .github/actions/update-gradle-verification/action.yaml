@@ -23,7 +23,7 @@ runs:
   steps:
     - name: Download previous verification files
       if: ${{ inputs.previous-artifact != '' }}
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: ${{ inputs.previous-artifact }}
         path: build/previous-verification
@@ -64,14 +64,14 @@ runs:
       run: rm -rf "$RUNNER_TOOL_CACHE"/Java_*
 
     - name: Set up JDK 25.0.2
-      uses: actions/setup-java@v5
+      uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
       with:
         distribution: temurin
         java-version: '25.0.2'
 
     - name: Cache Gradle wrapper distribution
       if: ${{ inputs.cache-gradle-wrapper-distribution == 'true' }}
-      uses: actions/cache@v5
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ~/.gradle/wrapper/dists
         key: gradle-wrapper-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
@@ -99,7 +99,7 @@ runs:
         cp gradle/verification-keyring.keys build/dependency-verification/gradle/
 
     - name: Upload verification files
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: ${{ inputs.output-artifact }}
         path: build/dependency-verification
