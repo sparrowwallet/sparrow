@@ -27,17 +27,40 @@ jobs:
         run: ./gradlew -v
       - name: Debug opentelemetry-bom bytes seen by this runner
         shell: bash
+        continue-on-error: true
         run: |
+          set +e
+          echo "=== Runner: $RUNNER_OS $RUNNER_ARCH ==="
+          echo ""
           echo "=== Any cached copy on the runner (before build downloads anything): ==="
-          find ~ /opt -name 'opentelemetry-bom-1.55.0.module' 2>/dev/null | while read f; do
-            echo "$f  size=$(wc -c < "$f")  sha512=$(shasum -a 512 "$f" | cut -d' ' -f1)"
+          for base in "$HOME" /opt /usr/local /Users /home 'C:/Users' 'D:/a'; do
+            [ -d "$base" ] || continue
+            find "$base" -name 'opentelemetry-bom-1.55.0.module' 2>/dev/null | while read f; do
+              echo "$f"
+              echo "  size=$(wc -c < "$f" 2>/dev/null | tr -d ' ')"
+              echo "  sha512=$(shasum -a 512 "$f" 2>/dev/null | cut -d' ' -f1)"
+            done
           done
+          echo ""
           echo "=== Fresh download from Maven Central (from this runner): ==="
-          curl -sL https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-bom/1.55.0/opentelemetry-bom-1.55.0.module | shasum -a 512
+          curl -sL https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-bom/1.55.0/opentelemetry-bom-1.55.0.module -o /tmp/otel.module 2>/dev/null || echo "(curl failed)"
+          if [ -f /tmp/otel.module ]; then
+            echo "size=$(wc -c < /tmp/otel.module | tr -d ' ')"
+            echo "sha512=$(shasum -a 512 /tmp/otel.module | cut -d' ' -f1)"
+          fi
+          echo ""
           echo "=== Pinned in verification-metadata.xml: ==="
           grep -A2 'opentelemetry-bom-1.55.0.module' gradle/verification-metadata.xml | head -3
+          echo ""
           echo "=== Gradle init scripts present: ==="
-          find ~ /opt -path '*gradle*init.d*' -type f 2>/dev/null | head -20
+          for base in "$HOME/.gradle" /opt /usr/local 'C:/Users' 'D:/a'; do
+            [ -d "$base" ] || continue
+            find "$base" -path '*init.d*' -type f 2>/dev/null | head -10
+          done
+          echo ""
+          echo "=== GRADLE_* / DEVELOCITY_* env: ==="
+          env | grep -iE '^(GRADLE|DEVELOCITY|BUILD_SCAN)' || echo "(none)"
+          exit 0
       - name: Build with Gradle
         run: ./gradlew jpackage
       - name: Codesign, package and notarize macOS distribution
