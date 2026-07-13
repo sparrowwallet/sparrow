@@ -71,17 +71,17 @@ public class SparrowWallet {
             }
         }
 
-        File testnetFlag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET.getName());
+        File testnetFlag = new File(Storage.getSparrowStateHome(), "network-" + Network.TESTNET.getName());
         if(testnetFlag.exists()) {
             Network.set(Network.TESTNET);
         }
 
-        File testnet4Flag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET4.getName());
+        File testnet4Flag = new File(Storage.getSparrowStateHome(), "network-" + Network.TESTNET4.getName());
         if(testnet4Flag.exists()) {
             Network.set(Network.TESTNET4);
         }
 
-        File signetFlag = new File(Storage.getSparrowHome(), "network-" + Network.SIGNET.getName());
+        File signetFlag = new File(Storage.getSparrowStateHome(), "network-" + Network.SIGNET.getName());
         if(signetFlag.exists()) {
             Network.set(Network.SIGNET);
         }

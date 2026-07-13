@@ -164,7 +164,7 @@ public abstract class Instance {
             }
         }
 
-        return Storage.getSparrowDir().toPath().resolve(applicationId + ".lock");
+        return Storage.getSparrowStateDir().toPath().resolve(applicationId + ".lock");
     }
 
     private void createSymlink(Path lockFile) {
@@ -194,7 +194,7 @@ public abstract class Instance {
         }
 
         try {
-            File sparrowHome = Storage.getSparrowHome(true);
+            File sparrowHome = Storage.getSparrowStateHome(true);
             if(!sparrowHome.exists()) {
                 Storage.createOwnerOnlyDirectory(sparrowHome);
                 sparrowHome.deleteOnExit(); //Will only delete on exit if empty

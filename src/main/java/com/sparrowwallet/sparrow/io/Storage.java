@@ -497,7 +497,7 @@ public class Storage {
             }
         }
         if(walletsDir == null) {
-            walletsDir = new File(getSparrowDir(), WALLETS_DIR);
+            walletsDir = new File(getSparrowDataDir(), WALLETS_DIR);
         }
         if(!walletsDir.exists()) {
             createOwnerOnlyDirectory(walletsDir);
@@ -552,7 +552,7 @@ public class Storage {
     }
 
     static File getCertsDir() {
-        File certsDir = new File(getSparrowDir(), CERTS_DIR);
+        File certsDir = new File(getSparrowDataDir(), CERTS_DIR);
         if(!certsDir.exists()) {
             createOwnerOnlyDirectory(certsDir);
         }
@@ -560,7 +560,23 @@ public class Storage {
         return certsDir;
     }
 
-    public static File getSparrowDir() {
+    public static File getSparrowConfigDir() {
+        return getSparrowDir();
+    }
+
+    public static File getSparrowDataDir() {
+        return getSparrowDir();
+    }
+
+    public static File getSparrowCacheDir() {
+        return getSparrowDir();
+    }
+
+    public static File getSparrowStateDir() {
+        return getSparrowDir();
+    }
+
+    static File getSparrowDir() {
         File sparrowDir;
         Network network = Network.get();
         if(network != Network.MAINNET) {
@@ -605,11 +621,43 @@ public class Storage {
         return sparrowDir;
     }
 
-    public static File getSparrowHome() {
+    public static File getSparrowConfigHome() {
+        return getSparrowHome();
+    }
+
+    public static File getSparrowDataHome() {
+        return getSparrowHome();
+    }
+
+    public static File getSparrowStateHome() {
+        return getSparrowHome();
+    }
+
+    public static File getSparrowCacheHome() {
+        return getSparrowHome();
+    }
+
+    static File getSparrowHome() {
         return getSparrowHome(false);
     }
 
-    public static File getSparrowHome(boolean useDefault) {
+    public static File getSparrowConfigHome(boolean useDefault) {
+        return getSparrowHome(useDefault);
+    }
+
+    public static File getSparrowDataHome(boolean useDefault) {
+        return getSparrowHome(useDefault);
+    }
+
+    public static File getSparrowStateHome(boolean useDefault) {
+        return getSparrowHome(useDefault);
+    }
+
+    public static File getSparrowCacheHome(boolean useDefault) {
+        return getSparrowHome(useDefault);
+    }
+
+    static File getSparrowHome(boolean useDefault) {
         if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
             return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
         }

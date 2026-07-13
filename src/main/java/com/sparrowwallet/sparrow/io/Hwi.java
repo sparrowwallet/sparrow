@@ -269,7 +269,7 @@ public class Hwi {
     private static void deleteHwiDir() {
         try {
             if(OsType.getCurrent() == OsType.MACOS || OsType.getCurrent() == OsType.WINDOWS) {
-                File hwiHomeDir = new File(Storage.getSparrowDir(), HWI_HOME_DIR);
+                File hwiHomeDir = new File(Storage.getSparrowDataDir(), HWI_HOME_DIR);
                 if(hwiHomeDir.exists()) {
                     IOUtils.deleteDirectory(hwiHomeDir);
                 }
@@ -544,7 +544,7 @@ public class Hwi {
         private BitBoxPairingDialog pairingDialog;
 
         public BitBoxFxNoiseConfig() {
-            super(Path.of(Storage.getSparrowHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
+            super(Path.of(Storage.getSparrowDataHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
         }
 
         @Override
@@ -594,7 +594,7 @@ public class Hwi {
         private String deviceInfo;
 
         public TrezorFxNoiseConfig() {
-            super(Path.of(Storage.getSparrowHome().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
+            super(Path.of(Storage.getSparrowDataHome().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
         }
 
         @Override
