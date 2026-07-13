@@ -18,8 +18,11 @@ import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
+import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionInput;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.sparrow.control.TrayManager;
@@ -719,6 +722,22 @@ public class AppServices {
     public Window getWindowForPSBT(PSBT psbt) {
         Optional<Window> optWindow = walletWindows.entrySet().stream().filter(entry -> entry.getValue().stream().anyMatch(walletTabData -> walletTabData.getWallet().canSign(psbt))).map(Map.Entry::getKey).findFirst();
         return optWindow.orElse(null);
+    }
+
+    public static boolean psbtMatchesTransaction(PSBT psbt, Transaction transaction) {
+        //Compare against a copy with empty scriptSigs, since a signed non-segwit transaction will have a different txid to the PSBT transaction
+        Transaction unsigned = new Transaction();
+        unsigned.setVersion(transaction.getVersion());
+        unsigned.setLocktime(transaction.getLocktime());
+        for(TransactionInput txInput : transaction.getInputs()) {
+            TransactionInput unsignedInput = unsigned.addInput(txInput.getOutpoint().getHash(), txInput.getOutpoint().getIndex(), new Script(new byte[0]));
+            unsignedInput.setSequenceNumber(txInput.getSequenceNumber());
+        }
+        for(TransactionOutput txOutput : transaction.getOutputs()) {
+            unsigned.addOutput(txOutput.getValue(), txOutput.getScript());
+        }
+
+        return psbt.getTransaction().getTxId().equals(unsigned.getTxId()) || psbt.possibleUnverifiableSilentPaymentsTransaction(transaction);
     }
 
     public double getWalletWindowMaxX() {

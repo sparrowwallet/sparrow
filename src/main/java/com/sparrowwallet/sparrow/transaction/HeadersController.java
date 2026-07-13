@@ -1037,9 +1037,17 @@ public class HeadersController extends TransactionFormController implements Init
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.transaction != null) {
-                EventManager.get().post(new ViewTransactionEvent(toggleButton.getScene().getWindow(), result.transaction));
+                if(AppServices.psbtMatchesTransaction(headersForm.getPsbt(), result.transaction)) {
+                    EventManager.get().post(new ViewTransactionEvent(toggleButton.getScene().getWindow(), result.transaction));
+                } else {
+                    AppServices.showErrorDialog("Mismatched Transaction", "The scanned transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
+                }
             } else if(result.psbt != null) {
-                EventManager.get().post(new ViewPSBTEvent(toggleButton.getScene().getWindow(), null, null, result.psbt));
+                if(headersForm.getPsbt().matches(result.psbt)) {
+                    EventManager.get().post(new ViewPSBTEvent(toggleButton.getScene().getWindow(), null, null, result.psbt));
+                } else {
+                    AppServices.showErrorDialog("Mismatched Transaction", "The scanned transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
+                }
             } else if(result.seed != null) {
                 signFromSeed(result.seed);
             } else if(result.exception != null) {
@@ -1110,7 +1118,7 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
-        EventManager.get().post(new RequestTransactionOpenEvent(toggleButton.getScene().getWindow()));
+        EventManager.get().post(new RequestTransactionOpenEvent(toggleButton.getScene().getWindow(), null, headersForm.getPsbt()));
     }
 
     public void signPSBT(ActionEvent event) {
