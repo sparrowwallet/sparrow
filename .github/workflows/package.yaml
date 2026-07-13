@@ -25,6 +25,19 @@ jobs:
           java-version: '25.0.2'
       - name: Show Build Versions
         run: ./gradlew -v
+      - name: Debug opentelemetry-bom bytes seen by this runner
+        shell: bash
+        run: |
+          echo "=== Any cached copy on the runner (before build downloads anything): ==="
+          find ~ /opt -name 'opentelemetry-bom-1.55.0.module' 2>/dev/null | while read f; do
+            echo "$f  size=$(wc -c < "$f")  sha512=$(shasum -a 512 "$f" | cut -d' ' -f1)"
+          done
+          echo "=== Fresh download from Maven Central (from this runner): ==="
+          curl -sL https://repo1.maven.org/maven2/io/opentelemetry/opentelemetry-bom/1.55.0/opentelemetry-bom-1.55.0.module | shasum -a 512
+          echo "=== Pinned in verification-metadata.xml: ==="
+          grep -A2 'opentelemetry-bom-1.55.0.module' gradle/verification-metadata.xml | head -3
+          echo "=== Gradle init scripts present: ==="
+          find ~ /opt -path '*gradle*init.d*' -type f 2>/dev/null | head -20
       - name: Build with Gradle
         run: ./gradlew jpackage
       - name: Codesign, package and notarize macOS distribution
