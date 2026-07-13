@@ -1,0 +1,1746 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<verification-metadata xmlns="https://schema.gradle.org/dependency-verification" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://schema.gradle.org/dependency-verification https://schema.gradle.org/dependency-verification/dependency-verification-1.3.xsd">
+   <configuration>
+      <verify-metadata>true</verify-metadata>
+      <verify-signatures>true</verify-signatures>
+      <keyring-format>armored</keyring-format>
+      <key-servers>
+         <key-server uri="https://keyserver.ubuntu.com"/>
+         <key-server uri="https://keys.openpgp.org"/>
+      </key-servers>
+      <trusted-artifacts>
+         <trust file=".*-javadoc[.]jar" regex="true"/>
+         <trust file=".*-sources[.]jar" regex="true"/>
+      </trusted-artifacts>
+      <trusted-keys>
+         <trusted-key id="0A60B3F1FCB211175300EC206E50BB68CC1699A6" group="com.github.jai-imageio" name="jai-imageio-core" version="1.4.0"/>
+         <trusted-key id="0CFA413799E2464C7D7E26220A4B343F2A55FDAE" group="com.h2database" name="h2" version="2.1.214"/>
+         <trusted-key id="17134266B1465430333A8C1DD4D48FCA764C87A2" group="com.googlecode.lanterna" name="lanterna" version="3.1.5"/>
+         <trusted-key id="1A55F091AD28C07F831FA44D7905DE25C78AD456" group="com.google.protobuf"/>
+         <trusted-key id="1BC86444BBD2A24C3A40904A438E9634A2319637" group="co.nstant.in" name="cbor" version="0.9"/>
+         <trusted-key id="1D85469D8559C2E1DF5F925131D2D79DF7E85DD3" group="org.jcommander" name="jcommander" version="3.0"/>
+         <trusted-key id="1D9AA7F9E1E2824728B8CD1794B291AEF984A085" group="io.reactivex.rxjava2"/>
+         <trusted-key id="1DBB44E80F61493D6369B5FB95C15058A5EDA4F1" group="com.google.gradle" name="osdetector-gradle-plugin" version="1.7.3"/>
+         <trusted-key id="28118C070CB22A0175A2E8D43D12CA2AC19F3181" group="^com[.]fasterxml($|([.].*))" regex="true"/>
+         <trusted-key id="2DB4F1EF0FA761ECC4EA935C86FDC7E2A11262CB">
+            <trusting group="commons-codec"/>
+            <trusting group="commons-io"/>
+            <trusting group="org.apache.commons"/>
+         </trusted-key>
+         <trusted-key id="2E3A1AFFE42B5F53AF19F780BCF4173966770193" group="org.jetbrains" name="annotations" version="13.0"/>
+         <trusted-key id="33FD4BFD33554634053D73C0C2148900BCD3C2AF" group="org.jetbrains" name="annotations"/>
+         <trusted-key id="34D6FF19930ADF43AC127792A50569C7CA7FA1F0" group="com.jcraft" name="jzlib" version="1.1.3"/>
+         <trusted-key id="41B962CF9AA2A26FF1F234D2A6144824624A3CBA" group="io.leangen.geantyref" name="geantyref" version="2.0.1"/>
+         <trusted-key id="41CD49B4EF5876F9E9F691DABAC30622339994C4" group="org.jspecify" name="jspecify" version="1.0.0"/>
+         <trusted-key id="5989BAF76217B843D66BE55B2D0E1FB8FE4B68B4" group="org.eclipse.jetty"/>
+         <trusted-key id="5E13B520F0BCBB359C6ED54A4A23006A8E767508" group="org.reactfx" name="reactfx" version="2.0-M5"/>
+         <trusted-key id="60200AC4AE761F1614D6C46766D68DAA073BE985">
+            <trusting group="ch.qos.logback"/>
+            <trusting group="org.slf4j"/>
+         </trusted-key>
+         <trusted-key id="635EE627345F3C1DD422B2E207D3516820BCF6B1" group="com.github.ben-manes.caffeine" name="caffeine" version="3.2.3"/>
+         <trusted-key id="655980F800BEDF4F315D5427DB9F4F2943F9BBC7" group="org.controlsfx" name="controlsfx" version="11.2.3"/>
+         <trusted-key id="66D7CBFF956830FE9F5A723AFE6C7D77A1CE15A6" group="org.gradlex" name="extra-java-module-info" version="1.13.1"/>
+         <trusted-key id="698B135CC8820C57837DE099597CBBDBE4F6F054" group="org.pgpainless" name="pgpainless-core" version="1.7.7"/>
+         <trusted-key id="6F538074CCEBF35F28AF9B066A0975F8B1127B83" group="org.jetbrains.kotlin"/>
+         <trusted-key id="7616EB882DAF57A11477AAF559A252FB1199D873" group="com.google.code.findbugs" name="jsr305" version="3.0.2"/>
+         <trusted-key id="782AF7972653864E80AD3CFD20DBD25146A6FAF1" group="^org[.]kotlincrypto($|([.].*))" regex="true"/>
+         <trusted-key id="794BD400C665C604EB077BDAC64BEB3E97C774F7" group="com.github.librepdf"/>
+         <trusted-key id="7B121B76A7ED6CE6E60AD51784E913A8E3A748C0" group="org.bouncycastle"/>
+         <trusted-key id="7C34F7808409F1C59B09ACFC96C21662D0865A21" group="^io[.]matthewnelson($|([.].*))" regex="true"/>
+         <trusted-key id="81CCDC71C7D61C179B27002D6A9FBE152D4C64D1" group="org.openjfx"/>
+         <trusted-key id="84789D24DF77A32433CE1F079EB80E92EB2135B1" group="org.apache" name="apache"/>
+         <trusted-key id="8858D45BE9B276802318155B96FB9DB219F3338D" group="kr.motd.maven" name="os-maven-plugin" version="1.7.1"/>
+         <trusted-key id="8D04A49200EA4013530D645346E2F669480AC3DA" group="no.tornado" name="tornadofx-controls" version="1.0.4"/>
+         <trusted-key id="8DDFC9E0AF7677FEA52B749BF73FB6C59A64097B" group="com.fazecast" name="jSerialComm" version="2.11.4"/>
+         <trusted-key id="A33A0B49A4C1AB590B0A4DDC1364C5E2DF3E99C5" group="org.reactivestreams" name="reactive-streams" version="1.0.3"/>
+         <trusted-key id="A4FACCFE5AFA1EB5FA3F4155A41774F54142A24C" group="de.jangassen"/>
+         <trusted-key id="A5AA37CCE9E6C2D4A0C1496AF5B2A0D5457ADC48" group="org.fxmisc.wellbehaved" name="wellbehavedfx" version="0.3.3"/>
+         <trusted-key id="A5BD02B93E7A40482EB1D66A5F69AD087600B22C" group="org.ow2.asm" name="asm" version="9.8"/>
+         <trusted-key id="A6DA1D74C3DEF695BA01C1B45FF0F772F46F7699" group="com.github.arteam"/>
+         <trusted-key id="BDB5FA4FE719D787FB3D3197F6D4A1D411E9D1AE" group="com.google.guava"/>
+         <trusted-key id="C3259D20DAEC4ACE6D57CC83340B090F727518D8" group="com.google.j2objc" name="j2objc-annotations" version="3.1"/>
+         <trusted-key id="C7BE5BCC9FEC15518CFDA882B0F3710FA64900E7" group="com.google.code.gson"/>
+         <trusted-key id="CE3285F320685193D11FEA01F6CE9695C9318406" group="com.google.zxing"/>
+         <trusted-key id="DB3C14C7D59576EAB4FAFD0C0D31305E7D2ECBBA" group="io.github.doblon8"/>
+         <trusted-key id="DC9CCF59D8F02F9935A1C31EB4FABF12D1EFC080">
+            <trusting group="org.basepom"/>
+            <trusting group="^org[.]jdbi($|([.].*))" regex="true"/>
+         </trusted-key>
+         <trusted-key id="E06A36F67D8C1BD13F1F278D0CA7139CBC7026F9" group="dnsjava" name="dnsjava" version="3.6.4"/>
+         <trusted-key id="E22F7D9D0428D1C4B38DCA7BF6665E960DA9AF2A" group="^org[.]fxmisc($|([.].*))" regex="true"/>
+         <trusted-key id="E299C2D1246B316C391F563A1013BFCD8812042E" group="net.coobird" name="thumbnailator" version="0.4.21"/>
+         <trusted-key id="E7DC75FC24FB3C8DFE8086AD3D5839A2262CBBFB" group="org.jetbrains.kotlinx"/>
+         <trusted-key id="E89471A9E27504F953440B38E460DD8433123201" group="com.sparrowwallet"/>
+         <trusted-key id="EBB879C14A71C299118A57093A94A815E2883EBF" group="de.mkammerer"/>
+         <trusted-key id="EE0CA873074092F806F59B65D364ABAA39A47320" group="com.google.errorprone"/>
+         <trusted-key id="F3A90E6B10E809F851AB4FC54CC08E7F47C3EC76" group="com.zaxxer" name="HikariCP" version="7.0.2"/>
+         <trusted-key id="F4DD59C90148BDC52BEB90A4530AA5F25C25011F" group="commons-codec"/>
+         <trusted-key id="F5FEBA84EB26C56457B2CF819E31AB27445478DB" group="org.infinispan"/>
+         <trusted-key id="F79157DB93697AA32CD4C46CC485C5A843FADB15" group="org.flywaydb"/>
+         <trusted-key id="FA7929F83AD44C4590F6CC6815C71C0A4E0B8EDD" group="net.java.dev.jna" name="jna" version="5.18.1"/>
+         <trusted-key id="FF6E2C001948C5F2F38B0CC385911F425EC61B51">
+            <trusting group="org.apiguardian"/>
+            <trusting group="org.opentest4j"/>
+            <trusting group="^org[.]junit($|([.].*))" regex="true"/>
+         </trusted-key>
+      </trusted-keys>
+   </configuration>
+   <components>
+      <component group="ch.qos.logback" name="logback-classic" version="1.5.32">
+         <artifact name="logback-classic-1.5.32.jar">
+            <sha512 value="6f28dbc23ce773773fdd73801aaa9491c3300fa0888efdbc48909a60f191df4536328d2aeb6f0e91f05275bfd55b2b220ed2c30ce5ed4f31012f42eb11d79d7c" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="logback-classic-1.5.32.pom">
+            <sha512 value="7e0fc1898711bb356c96a3bcf37ebfcf9d8d8c3d7435d1b7ff8d37db2d1099712f04e6e1a4d0301932fbaa77d21b69c9abf77fe53af6882ad1c51da2edb3470c" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="ch.qos.logback" name="logback-core" version="1.5.32">
+         <artifact name="logback-core-1.5.32.jar">
+            <sha512 value="7e118f88ff9f6bdd2854a4218c4d8e2a1a031eb0cbff7eb2b181fc162d5004b6d89e7b4586616fffd922b4b7a432395892b9caa04916b114a87b518a1abd5157" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="logback-core-1.5.32.pom">
+            <sha512 value="7262f3eef789a6ded7dcfa96018cb206ba98d16c28734ec98031f06e1a140d5f350b3fa4794af4a2d3aa2f2b941d55720e977c0a9116d03c1122e5b40127fd17" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="ch.qos.logback" name="logback-parent" version="1.5.32">
+         <artifact name="logback-parent-1.5.32.pom">
+            <sha512 value="c03ab75ff959491ca37cb82ad5d7cf656d5bd592da0aeff904d9ab408e5d187d2ceba56fb0ec3933304c850383259669274b0855a18595864da805502fbe59e3" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="co.nstant.in" name="cbor" version="0.9">
+         <artifact name="cbor-0.9.jar">
+            <sha512 value="68035c10f68d8b08f71d3375234ac1b17352abf130a9a254dd823b6c66d15ba53552b5c2510035a9f50a7a2f742e515ebfeaaacf15eeb17c42d8251ff93c933b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="cbor-0.9.pom">
+            <sha512 value="df157e529bd8a17ef908afb587e2049100a4337335b51cd169fbe1dd95b3ddef2d6271ebb3c70b8e2d7e3d05b3ae9b4e42e155bc3ffccaf56a8267ccc75dafe7" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml" name="oss-parent" version="50">
+         <artifact name="oss-parent-50.pom">
+            <sha512 value="b50fb8abbc07abe3bdca3fba18303d39095da498cace7bbc601c41563ef10cd5dd464b3ae0b838fb31b8d655f4aae76065bbd32d6b4fa9bea13515619249b860" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml" name="oss-parent" version="69">
+         <artifact name="oss-parent-69.pom">
+            <sha512 value="30d1c8c01602770276c2713c4ac23e3998fdfb98a5e69b893c62e2a05cb8f09ed41bc0e80acf824c7984447788226c12bf5465ef2bd07204f896b517dc0cba19" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml" name="oss-parent" version="73">
+         <artifact name="oss-parent-73.pom">
+            <sha512 value="57be637be35a05c3fc30685a5e7680bd2188eacc3604778970aaffe169bcd39315b404a64149a1f07b67265ee696c71122e4e04ba2b7aaa50f8209443610a5d2" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml" name="oss-parent" version="75">
+         <artifact name="oss-parent-75.pom">
+            <sha512 value="ad9008fbc1c74e61dbed5ae339d095b47e8fc1e7ff038230f05ddf8a82cec486de73613c67475c4b5eb9ad32c0b2c5291ee675fffcf32cd790c0d80030100e27" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-base" version="2.15.2">
+         <artifact name="jackson-base-2.15.2.pom">
+            <sha512 value="e63e3e7e7a261e993956771eb11a7eb5db1f23d3feb484b99ef30baf4ee1594a48cc99a4bff09cc1454546b12b7499362ddb0ea62ac5ecc7db898e331d0d8edb" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-base" version="2.21.1">
+         <artifact name="jackson-base-2.21.1.pom">
+            <sha512 value="79110902120afd2a021ce32747a5767759862a9d1ea67e3251110e2580a2985365c1b0a7a313e1fa1ada3bd822de709d6a848cea80e489a87692e797edb6e6aa" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-bom" version="2.15.2">
+         <artifact name="jackson-bom-2.15.2.pom">
+            <sha512 value="5ac9959e04ee6810cf1c1b7ed509fc3d6a3c71a9a57451ec288a61511ba6383de3dfa04a564d8f8993a2821e384a28a81ec5c5581ef975195081fc6e93d5419a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-bom" version="2.18.5">
+         <artifact name="jackson-bom-2.18.5.pom">
+            <sha512 value="f2a5bd402bc6b97a6c521e93268b460e6c06574fb01e5c5e0d253323635bc08271cf96c2c1e8fd9ebff0a5d73862b4ccbbab905aa502ef620f658089f4753725" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-bom" version="2.21.1">
+         <artifact name="jackson-bom-2.21.1.pom">
+            <sha512 value="0e9385812d26fce07ab731391c50c483f929687fd649e349d0ecaada9084cf9c23d7b2cf4ec44e411773dc1e5ec526c71a837eb3a905acff37f1acf58b11b869" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-parent" version="2.15">
+         <artifact name="jackson-parent-2.15.pom">
+            <sha512 value="7edb6a94ba8b34077561744aafe9cd24e90d28268d447a9a260c0bb585125e77fdcaa8a301559ddf47b8774702cd292f9dc9c70e4e74dd45b091d09ee3494cf8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-parent" version="2.18.4">
+         <artifact name="jackson-parent-2.18.4.pom">
+            <sha512 value="138782553bac9c1fbe0c4b114f55a581dfa3734383ac381f9b10ed039a529b796e994acec9fb4ab4c30ef01a79c579baf4a8f039330df81e5c7d05f15661f9d9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson" name="jackson-parent" version="2.21">
+         <artifact name="jackson-parent-2.21.pom">
+            <sha512 value="7f09fb690e700a20962f72bc3139acaea67b670a071599282cfafacb6995e887d9e6872e875526f5e17cfbad282cde0633c157a67e05ba66e17c76e9329bf5e1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.core" name="jackson-annotations" version="2.21">
+         <artifact name="jackson-annotations-2.21.jar">
+            <sha512 value="d832a99867acc2d5afb2596da760c50e6a6b54c1bbc8e6c4186f267a16e1d55c7a916ef8b034ad6b277c41e3342b91dcdc2e3dcea8bdccfe89e7c147894591be" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jackson-annotations-2.21.module">
+            <sha512 value="c3aa4b8d600135abc68cdbaa19277861960172a9baa76f125a2ea58392787edb1ae69047ffc2ce77e8c93ecc3c24302a8b842eb745c0137f93f6be3ad3e2dc25" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.core" name="jackson-core" version="2.21.1">
+         <artifact name="jackson-core-2.21.1.jar">
+            <sha512 value="f4b153a0a7c974620dec3fcfe4a4869c2632ab97f73c2662041af7d0eb0c42ad462bfee8cdcab5542842175b96197df1d910a8841067654f6e763b370c18ccfa" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jackson-core-2.21.1.module">
+            <sha512 value="98523d66a0b01eea31e119d51371a9a1bee7efdaa311e30228cf4e38cb3db6fe61607049af2988c9d57a2e648a426f28ca3841988fe6b4b07de7417603cd36fc" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.core" name="jackson-databind" version="2.21.1">
+         <artifact name="jackson-databind-2.21.1.jar">
+            <sha512 value="837a94e20474d0ad3630663c0112e982914e5cfa3bbf397b8c31d00b68d7fc8e4514458b75dd39cf74edda7e33339504fa845864476786e94812bd36a5a428ee" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jackson-databind-2.21.1.module">
+            <sha512 value="793a651cf80edad4a565b7ea8c7b4c8190e0c93ff2248acd12c24eceaad7b22e53af0c1406476a6675e04371ca9e0b1f0f2b53f4ee8df969c8a03f6fcb169402" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformat-toml" version="2.15.2">
+         <artifact name="jackson-dataformat-toml-2.15.2.module">
+            <sha512 value="0b22f2bea711ec44430bc7e51e9b82df872ff377cb3ae8d451d9068ab3f7b4a0f2023737de8d7e17a09d04d21e009d09f2517e36a7c6b4debbe33739e10fa338" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformat-toml" version="2.21.1">
+         <artifact name="jackson-dataformat-toml-2.21.1.jar">
+            <sha512 value="0e20577113d5532e1ac355c89cd1fc00c4d1a58d8b050b0fd936f60e4583b1efb5b6a5908e3c8d0aa0273b4b0899f70d89e7fbda9cd13589d65aa727268b5532" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jackson-dataformat-toml-2.21.1.module">
+            <sha512 value="e8053020abe3299a59e47a4fdf8cbec257dc9938986307fccdb9a64676b79ada4e2d60a1aa6468bf85b846dadaab87a12543522f6c97cbb64bc7e5f25d8b664a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformats-text" version="2.15.2">
+         <artifact name="jackson-dataformats-text-2.15.2.pom">
+            <sha512 value="747c8660f5f9b376f462790c9a1b7ce5d5df734acdf2afd1e42cc70ffa491005c9eb426f872ba1b7a9c4d05408c102e5296bc488e37b762d5e7939621c84dbcc" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fasterxml.jackson.dataformat" name="jackson-dataformats-text" version="2.21.1">
+         <artifact name="jackson-dataformats-text-2.21.1.pom">
+            <sha512 value="72de569bb3c6cf5969c214eeaf3fb9e2fed0c666a4ace8c785908140784c14cba344da916747f8f882862d4b7679377c3c61dc58c97c40dd942b4989a00eed75" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.fazecast" name="jSerialComm" version="2.11.4">
+         <artifact name="jSerialComm-2.11.4.jar">
+            <sha512 value="7d42abc5a2e6cb1226eaec172df3c0923b10e62ae2fc82612ea98cd5c4f85d1c4058d800f0fcf3c33ecd6ffa987baf326dc334930b724dd6d3c8cdc864a2d89a" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jSerialComm-2.11.4.pom">
+            <sha512 value="2b5c7046bb6efce9cc1db9c6c4fb3ef31e1335be54875be7590d0e93facb4dd6e62e911fb0183d462a9e55aa4a397d43b2d2775ee74aec55f925926c61f9122d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.arteam" name="simple-json-rpc" version="1.3">
+         <artifact name="simple-json-rpc-1.3.pom">
+            <sha512 value="0989ea001209447a4b5797fd500c0c24ced1c053b1df8eb06817114863113297bd017bd1ff7c5b1051924f40dfcdaf6d7e3504345a82c46716a9874516b4bf09" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.arteam" name="simple-json-rpc-client" version="1.3">
+         <artifact name="simple-json-rpc-client-1.3.jar">
+            <sha512 value="8ccc0f20edb13457462fa37a45e26496f053a0264c4fbbf9d3b788c442258ab2d85b4493e1eb60e0e798963a2638847a2a5188ec79d9c4c8ed8ee5c9e2f5d630" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="simple-json-rpc-client-1.3.pom">
+            <sha512 value="3d4084a2e6cc8aa366657e6101c6cb648ae452bdb980031b812fba915f3e6bef9d1335bc5b84bccb7b2c599260493fc76319e849bf4398bbe7cdbd41a93f2bf1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.arteam" name="simple-json-rpc-core" version="1.3">
+         <artifact name="simple-json-rpc-core-1.3.jar">
+            <sha512 value="4f1e8bbbe1cf341e379ff3d0aacbbaa1efd3dc74daabff072eb6a60bedf6e8c5a439d91c7fa74f7edad9cf7d60251cda29d4d187abf449df6b5a686f9f1e146b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="simple-json-rpc-core-1.3.pom">
+            <sha512 value="1063082c3d9ae7e10018e953813961940264d88f5c2113def07cf4c58f5d22c343faa7299e7767042b60eb5312ed49f357e6c8e5ddb9203d5cd6d7f87cba9f82" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.arteam" name="simple-json-rpc-server" version="1.3">
+         <artifact name="simple-json-rpc-server-1.3.jar">
+            <sha512 value="108a8104aaeda2ec77919195918981b2d598720be11d1de16634be1d7a8413a7d6d0653e66b0ac11859fe16f1f040e6c142b56e46bba101b078aab15cf06d5fa" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="simple-json-rpc-server-1.3.pom">
+            <sha512 value="487368bfc6f240e322c57e47342fdefd78cf61f24e505bd95869596af7cc0fced9d7b33f2695791965a132e0306be890bd2a56036736d652bff96ea4f675be9d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.ben-manes.caffeine" name="caffeine" version="3.2.3">
+         <artifact name="caffeine-3.2.3.jar">
+            <sha512 value="7aa65de1cb087aa645d7217bd3162b3842fe40914b590238afc681b1d8b33647efb1fd948d21ed0210a40d4bbda882ed24f3e6d326f9a03131660ae9778bbb7b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="caffeine-3.2.3.module">
+            <sha512 value="a4d4b4359f2519d8cdf34037bb0b4b4a76885e884f9d4a67c455999a2fc4409cc52a414972290ebf22ff44b9392447fec40255f265a6541a626fc5997c9de1b3" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.hervegirod" name="fxsvgimage" version="1.1">
+         <artifact name="fxsvgimage-1.1.jar">
+            <sha512 value="fa6b616bfa764eaa78bd61887061cb115092587f5b4972cc295534729c7edbeee1845e0db6e45f4243a38641437fe5e898b9dc4a59b2e4f1f1ad7286fc82ab7c" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="fxsvgimage-1.1.pom">
+            <sha512 value="90c5b2b4ae905f39a8a685f3e3bf376b6f9cc4531b847e69ba5847ccc7fc03a57e5fabd5fdf2fefc76c28609eb6305ad76351a29da90cdb5b60b05be36991956" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="com.github.jai-imageio" name="jai-imageio-core" version="1.4.0">
+         <artifact name="jai-imageio-core-1.4.0.jar">
+            <sha512 value="5fb01617717fdc6db514fe6da2b253c3d925326190a8ba101941f29bff6e3c147e6216c501ca66b4d4051d213b1c05fadb3707563782bfcc5674357338786c01" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jai-imageio-core-1.4.0.pom">
+            <sha512 value="e14352ff9bc7b74d441a9f9cd20356624381cfa92a5628164df5a66838a2e07a7f4a090d5c734fa03b0c269861c9159149cda6bbd571ad9a8593ef277dafcbc6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.librepdf" name="openpdf" version="1.3.43">
+         <artifact name="openpdf-1.3.43.jar">
+            <sha512 value="47d38c95df38b028988f9c658f21930c5e671703d28e616686f050ce8c80e62dda7a85afc309ca6e10b062a300ad611b294ae0fa18b19ca0957e2bb85232a84b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="openpdf-1.3.43.pom">
+            <sha512 value="10b563f211f83d0474b1a5eb12a57cd2aeafa98f4ee1ed632621804fb1e7d5b42d9e4e7663058fe083ce9632eafd986bcb9a5115fb5fcc17b211b1d30cab0ffd" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.github.librepdf" name="openpdf-parent" version="1.3.43">
+         <artifact name="openpdf-parent-1.3.43.pom">
+            <sha512 value="11e298040304e390867dd674586d542649777d28ec60bfcc4d6ec7442f2112cd2622ab6475c6f6565e88e660519da7119bdf0bec70b5810aef2ee01d0536f412" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.code.findbugs" name="jsr305" version="3.0.2">
+         <artifact name="jsr305-3.0.2.jar">
+            <sha512 value="bb09db62919a50fa5b55906013be6ca4fc7acb2e87455fac5eaf9ede2e41ce8bbafc0e5a385a561264ea4cd71bbbd3ef5a45e02d63277a201d06a0ae1636f804" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jsr305-3.0.2.pom">
+            <sha512 value="08e1cc341a153f64b670d87831eedfe79a150b8fb7e3a4afbaef54deaa28d2767ae86d12b4f0c5404184360ab8e48a3655e610f3bf2fe6c97a06e9fc3df49b37" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.code.gson" name="gson" version="2.13.2">
+         <artifact name="gson-2.13.2.jar">
+            <sha512 value="8974a052656d2e5ec968b6bac2edf51413ffc62040fdc65f14f00597e738ab544d22487f8579ba90618b5a7f94ef33773510fac67b408fee6ed274b38f3d9947" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="gson-2.13.2.pom">
+            <sha512 value="c0d089089bf0d6bcfae008f329dcc2db2538d02654f8bc7690cb8db2ec94fe0d2aa069ac1d70a111a28cced0ffd7742ac8db29a884d64d9413ebf9b2af5dab82" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.code.gson" name="gson-parent" version="2.13.2">
+         <artifact name="gson-parent-2.13.2.pom">
+            <sha512 value="e6524dbb8aa13707fa51df7413a8b247a4de248812e212702e4e5888d0df29c6ebe39a3b1e09aefb12a1a095c42d19d074756a30918bfc4c1fe55c39b9a7c1fa" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.errorprone" name="error_prone_annotations" version="2.41.0">
+         <artifact name="error_prone_annotations-2.41.0.jar">
+            <sha512 value="e2eb4bf9f36f95a4d4c5ea344db5cd90a456e63bef8e52932b8f6f4ecfdd59cb2f6c2ce9e67b0070c82177e42885688b95afef591b16001f789b378f18afdf30" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="error_prone_annotations-2.41.0.pom">
+            <sha512 value="07bb0fc1b8659cd8c9ffb49563d4ec5f86bb30f5515eb6951e272de83e64670b0490f2e40b33ff6673f0d603719430c3378630478686d5849242028285204cdc" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.errorprone" name="error_prone_annotations" version="2.43.0">
+         <artifact name="error_prone_annotations-2.43.0.jar">
+            <sha512 value="1e9e8cc7e7eebdbb12c21ad94868c731c49533dd9ef5c6db6e93c421c57ca4e6a5a22e1830a41c65b19e4755c84d6450dccea0f8d23258a65a9d395dfd17405e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="error_prone_annotations-2.43.0.pom">
+            <sha512 value="9769e5cf246a23581de8b3014d8620134c59ff7f393d19307f3fd8fde1de0b8d37c8474d26aedf47610c43016adfe19b875747a19245fa755bf24a34f71da5d4" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.errorprone" name="error_prone_parent" version="2.41.0">
+         <artifact name="error_prone_parent-2.41.0.pom">
+            <sha512 value="ab85819cbab15554b3dbc1fd75eac6a13440178ee8c92a2b0fceeecac970f464d3aafc017842a2f7a692d15e7875389eb31ae9c0e08844990d7104f6c2f23f2a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.errorprone" name="error_prone_parent" version="2.43.0">
+         <artifact name="error_prone_parent-2.43.0.pom">
+            <sha512 value="1cd14bc6a9c9e5d4d851bf63079d5e03b299a27469bc2155af9c5839824bc09afc9b25b2590900b90dfe7a5b3daf0935ffaf606418aa946bb64ca61b338818d9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.gradle" name="osdetector-gradle-plugin" version="1.7.3">
+         <artifact name="osdetector-gradle-plugin-1.7.3.jar">
+            <sha512 value="a4e365555872d64cf9a0742aa22f8d74e0103984130596db80cbead813b7f33dd8d1fdb1f1c5fa71a876f09cc66b15abd67d88f5b1370b310658df48eb943fdf" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="osdetector-gradle-plugin-1.7.3.pom">
+            <sha512 value="bd6f18efeb22c0fa26ec23654b7ab1387f90f9218243270392a8398ec5e854dc673f55e16cc68acbf0ba48bad286c7aef66523770320e1b1ca7a7c33324f4458" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.guava" name="failureaccess" version="1.0.3">
+         <artifact name="failureaccess-1.0.3.jar">
+            <sha512 value="72be228e7805da5623e42bf024ded7d9147023c66b22f4dbd04ac6898201af46ee82e1f92ea51eb0595f1b49151c4b8ecb862653d4906c17609c42544ee97abf" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="failureaccess-1.0.3.pom">
+            <sha512 value="457683a8f293ec0a41eee3efec5dc6253d9dc7c67159e2fe7a0444dc57bdc43a76e9d1b924d0a1685d42dc55fb28b2ee13100be55565ce9c5b96273f96f74df8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.guava" name="guava" version="33.5.0-jre">
+         <artifact name="guava-33.5.0-jre.jar">
+            <sha512 value="994a4dbcbd8e528ad3b4a7acf49b631a40dcebb03d9a8f5e1d3b74351f805f77774e9a19f7233e42036cb415b7838710f207ac1e18335e4a219b7f99ea22a44f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="guava-33.5.0-jre.module">
+            <sha512 value="b3c90b24fa98c1e5858e45f8c4aa9e826bfadf6f030d277248ca5c29e1c0debfea8fa385a1af38b355a97125f6508a96b5a6dad3ae071ac054ac588125a16eaf" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.guava" name="guava-parent" version="26.0-android">
+         <artifact name="guava-parent-26.0-android.pom">
+            <pgp value="694621A7227D8D5289699830ABE9F3126BB741C1"/>
+            <sha512 value="1d786f14fbfa5c90eedcc160d1e0a71acb2141f372049b22ce62b0bd1e883c17cc24a59dc8b00e5037e959cccdb54d4d8dc8f252302d4bb7ce82dfdaff764476" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.guava" name="guava-parent" version="33.4.0-android">
+         <artifact name="guava-parent-33.4.0-android.pom">
+            <sha512 value="730dc89ab67d443d2cfe1bedbe377b792fd76f3d1eba04142a0a5b91f6c943670566551316be0e37a464efa1f61e3e9d2669777ae08dad27435b3d6398f106b8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.guava" name="guava-parent" version="33.5.0-jre">
+         <artifact name="guava-parent-33.5.0-jre.pom">
+            <sha512 value="2be50ed9ae1e9db5397a209428363905222578d573c9ae674d9607c15f17e0646b176498e30a3b62185cb78dd6c6a7b5ee09b901bd97c7752958437093883eae" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.guava" name="listenablefuture" version="9999.0-empty-to-avoid-conflict-with-guava">
+         <artifact name="listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar">
+            <sha512 value="c5987a979174cbacae2e78b319f080420cc71bcdbcf7893745731eeb93c23ed13bff8d4599441f373f3a246023d33df03e882de3015ee932a74a774afdd0782f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.pom">
+            <sha512 value="140544970539199c860d5e7e2d8096bbccd55980602773f29e8d74ab4f3e24c43aa369b0c7d06b026ba7a9db3353be285d7ffb9cd94b2bedf62820c3fdfd1d5f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.j2objc" name="j2objc-annotations" version="3.1">
+         <artifact name="j2objc-annotations-3.1.jar">
+            <sha512 value="34ee5aad57b0b507e89c897306f73043f80fa0eb02b453e54d9052feb0808a0d2ed835d888946211921d2bf733780b19ff636479ce19b9f48814ba6008733ce1" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="j2objc-annotations-3.1.pom">
+            <sha512 value="0d5dca1f36e5a17b3a42d716a778dd5f53655f653e25f2b3002260fa26018186c310c930c35d01fc8ba180e03c9aba82037ba0cfa0cefe82f542316717428371" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.protobuf" name="protobuf-bom" version="4.34.0">
+         <artifact name="protobuf-bom-4.34.0.pom">
+            <sha512 value="61b631561d3a3aef792380fc6433f0d75ba97fea7aab88e384d6ea80aceaf50b87c8b1d603900dbf7db07ae3d8545ce31988ea98853695118f0ca3c6cb519b18" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.protobuf" name="protobuf-java" version="4.34.0">
+         <artifact name="protobuf-java-4.34.0.jar">
+            <sha512 value="61d36fcc029df7490ba3c87e3528a9fbcc09d8e657fcf7aca08ecd68c4b59717427d09455d8cd3e2ae8deff7aff1a5985b07359c79f95a3476ec2b9dde8a5468" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="protobuf-java-4.34.0.pom">
+            <sha512 value="37ec86a7c9aedbfa9034a6cf22c1d8e5a46e6af912c1bb554e03096929443ae843ecc66ee82981f9c7b11be81c184dde3796e4b9e99b0abbd88b800d3072e715" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.protobuf" name="protobuf-parent" version="4.34.0">
+         <artifact name="protobuf-parent-4.34.0.pom">
+            <sha512 value="5159982cbeadf5a52de3ca4e4a3101f23375667066ff06b6348183ef8e48d87c424b6afbf2cb8ec69ab1aa4b94755f91ac52741366a47e1eac5016ced1cf67a7" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.zxing" name="core" version="3.5.4">
+         <artifact name="core-3.5.4.jar">
+            <sha512 value="967023e2aa3268cfde113b658c6dae70188d5e24e43fc8bcd414592225d66d5c2203045a32f7b185bab884990ec66dcb1ce93b7f61906f666c7ccd0646c8a764" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="core-3.5.4.pom">
+            <sha512 value="d8cfad82a0b2431f8b3e63d21f10c4b2edc02bafd247341be5e8911bc9e33b00c43a90ff4c4849bc567a575d5f04000ecb7f64b6acf6cf0d538be5c1703d68ea" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.zxing" name="javase" version="3.5.4">
+         <artifact name="javase-3.5.4.jar">
+            <sha512 value="5d6528e5c367fd5b476b01f368df40f7948b8bf0ae96deb4aba7d8eb16cfe9689481cdb5a4908074f2cf2dbe783795d4ce141c0ca4522b88533b088cb221dd33" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javase-3.5.4.pom">
+            <sha512 value="bac1d6746a8ee7b6c8d300e25d1669f5b0da1a57144211a8c3ae0ef1181862278fff07d51ba38d8dd922d835d1a3064d8db49e24677653473974fca1c5c99e56" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.google.zxing" name="zxing-parent" version="3.5.4">
+         <artifact name="zxing-parent-3.5.4.pom">
+            <sha512 value="a0da56f83ce6b52d0fc5405215d75947a5c70ecf274f4a17b0fefd24c4bdd9488ca8e8cc2a182197efe751c0eb22fb221c8663f9cc3aec3076463f733778dad6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.googlecode.lanterna" name="lanterna" version="3.1.5">
+         <artifact name="lanterna-3.1.5.jar">
+            <sha512 value="79029faeb727139a1c47a1403254a6661277501d575ed89cb678a87514af41a5ad0923bfb3076f893565705905f2206491acbab702bd476a42081401e33007bd" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="lanterna-3.1.5.pom">
+            <sha512 value="2e926e60bda896198a4846f98bd05ec87deda702caeecde1f793914a0a9dacd96e90fdf613e544f5230095e123f5fcf20426cdd96f4b14a845936888d403bfa9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.h2database" name="h2" version="2.1.214">
+         <artifact name="h2-2.1.214.jar">
+            <sha512 value="fedc464dee11077ea3e95149b3c1a1420d6e432c940ccb8c368633821b29c0e401b711d45f819d1cc3755a54ad05fdd0e8bb6b17853dd15539613f5e2765f359" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="h2-2.1.214.pom">
+            <sha512 value="21bbb75ee3831b408dbc19120ea2bc7be64aa3d4659e7dd1dd51b890e3f8d29d46c6b2534b94168a366cbdadfe6abf0dbaf23820872b552a79146fd8cce6c611" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.jcraft" name="jzlib" version="1.1.3">
+         <artifact name="jzlib-1.1.3.jar">
+            <sha512 value="339793df0001214aaadac2a5456c3cd54a0c09ba2c9e73cf13155adbfdf1c2a953f7336903e45e76a52ce6b48c5b7c78436667d7836e7354e02e85ba0908afd3" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jzlib-1.1.3.pom">
+            <sha512 value="4b0cacbe286930b3561f88522a0a5e1f756abe2a05dee9422fb12f58e9e504438cf94a0ebbbbc794792ac39ba2f5d92b738cbc52bd38e561134acb7a141929c6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.sparrowwallet" name="hid4java" version="0.8.1">
+         <artifact name="hid4java-0.8.1.jar">
+            <sha512 value="b4ad7264d754c806a11b17f1e70fc984610d25780eb217c566d4bf984fe4e6f1e8d3430d8d60e61aac8988f66283ebb542f7198793aa2f48b340a1b086240e67" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="hid4java-0.8.1.pom">
+            <sha512 value="72444b4f54266e56db961353090fd5e8abd8a929e3992b90f218ff0ab0224e8354c4d82a5ba5d41b89644f04470c020304df1c28012538a2eb5753c691e09a77" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="com.sparrowwallet" name="hummingbird" version="1.7.4">
+         <artifact name="hummingbird-1.7.4.jar">
+            <sha512 value="8e241adbee19dc5d3f9fd99b967ac5233afbbd41c0898af7c39f51a6d24d3d26ca08e5604d0edacc283dc486f83c9acba5a37541f73ed868f50033607a8b030c" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="hummingbird-1.7.4.module">
+            <sha512 value="aded580861b2c86677f84f2ad4320012862c9d9c8fe8be691616f28be15390b061b661950ff2a33b8f61274a9c2672a3d7d7622d0101c21f3dedab13a3e1e792" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.sparrowwallet" name="tern" version="1.0.6">
+         <artifact name="tern-1.0.6.jar">
+            <sha512 value="f51c19cea90cd8e80d1f2ded2c93fa9c3a13f12f05941cc2b6069572aa90b4f1263c3a11cbc295d2491b0c11077fd973e99f8fd1adb2f0afb5b381ee3168e572" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="tern-1.0.6.module">
+            <sha512 value="af9ea71741a2091b85b1942c0680e03a33ad14a50e8d8107537e50afa808f64512bd5e1908ae86a2bbd8f72740bb20305684b9994594a8d02e2a3afd975feab4" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="com.sparrowwallet" name="toucan" version="0.9.0">
+         <artifact name="toucan-0.9.0.jar">
+            <sha512 value="2d02d99f5495769de77325da9c978172b53d701bf039658f8dca1fb463c652c965c349bdb4b470664f350e9104e1b1196cadf8eeb4678e6df45d9c7b4022ba10" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="toucan-0.9.0.module">
+            <sha512 value="1771a36df9a5966b7fa547bbc8ab8aee6559d04713345316f208d6af541eea33c66f5d1ad69fd874af50c518e13fefb7cd985b3e835122984cd2f98f9b14e552" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="com.sparrowwallet" name="usb4java" version="1.3.6">
+         <artifact name="usb4java-1.3.6.jar">
+            <sha512 value="a58569ae37c2c673382ea058631074b9bd84e575d1bb8ae8007ffb64f9bd89140f51f3d7a2ef98f9066c226a7d81163ae36b309f829d263f9bb054ee97129768" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="usb4java-1.3.6.pom">
+            <sha512 value="5ab78862a406d1669500236da8fc07b2ce68bd9c508029187535aeaa931ed5136f26fd3e1f543b7094f15d2017b664397a2441d0497b408c7bdc96135e23cc4e" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="com.sparrowwallet.bokmakierie" name="bokmakierie" version="1.0">
+         <artifact name="bokmakierie-1.0.jar">
+            <sha512 value="80cf8d4bf9a29b21da15dcae566864891eb87d155e2c815d9cac1c497dc408146c5bf625fe88b7b9014356ba4e2104867ddca46b6dc5758b50ce946970ce5f03" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="bokmakierie-1.0.pom">
+            <sha512 value="af533d37c54f11f1dbe274ba7d7bdfa8fd558e5a700a3e219093b51b5636731d59455147e21a91fafba8945090e90e8da649d65db788e143e8cd9ab2c5205563" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="com.zaxxer" name="HikariCP" version="7.0.2">
+         <artifact name="HikariCP-7.0.2.jar">
+            <sha512 value="fab69440ecf96687ac9cd69d19503a824f7bec74d97329ee6f8568981200799a1503df5517b9e0322a8d139fc71d6af193314890716ff8f0fd52163dad6f0c6c" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="HikariCP-7.0.2.pom">
+            <sha512 value="d34f1f9ecc45d7149cb6777ed183be19107448aad7a615382e9399a19c658902bfee28312527ee5384f8a87a2a966f5a79126ad20172de7a6e03c58c54a1a22e" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="commons-codec" name="commons-codec" version="1.19.0">
+         <artifact name="commons-codec-1.19.0.jar">
+            <sha512 value="d98a7a1cfcc08aa9cce4f7778e3f37ecb99da7b1da01944e5fa8faf06fbf9f969f2efb0b416832f419d53085250f711c071f1dac9fa0968483c37034198367fb" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="commons-codec-1.19.0.pom">
+            <sha512 value="876e711b79565c3878ea4f0799f5209b53daa08f370e8aac286cced03ef494e2c24c89eb425d68850b5d920c98fe6f813e80c318ee4900dcc9b3271b2860f307" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="commons-codec" name="commons-codec" version="1.21.0">
+         <artifact name="commons-codec-1.21.0.jar">
+            <sha512 value="3ceb4aa588d0b918e46b1ddda9ff41b5a765985bf66542d2728458fc3f83b9dedfd972ff5d919cf6f456fbaa9f8c4e5f0c0913848ec3a471c316374e683b1f2a" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="commons-codec-1.21.0.pom">
+            <sha512 value="778948e7c592d31af6162f085d14fd854586ef7a907467208f70995e28259e701e00a2c49e6c228be6a9f83abc798dc6be569b81e3369ed71edcf064f0f8e7ed" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="commons-io" name="commons-io" version="2.20.0">
+         <artifact name="commons-io-2.20.0.jar">
+            <sha512 value="fea08e150473673b0608eaee3ae1cb4e73834039db80d3b758710d6baf3a5840a0878a4eb64739ae9bb21ccc7148c8520fe873616a3f6d5cdb4305deabdd015c" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="commons-io-2.20.0.pom">
+            <sha512 value="db6bfb4d59e6d05d89ec5cca7ceb89c7493398c8b047046066a19db01cd9b4b32873bcce1be531fea85be4be651b836ad2cb698072b5705fd3491c0743884758" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="de.jangassen" name="jfa" version="1.2.0">
+         <artifact name="jfa-1.2.0.jar">
+            <sha512 value="b7eaa51f2e926249161c2e684d3a57d6933f7f24e0f3ebf6455f3e66cb8771121dbc4ed14f0f6fce87f51284210a8d91e0f1bab4fbd69492e7a1c32fc0919bcd" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jfa-1.2.0.pom">
+            <sha512 value="06c5ed8b9055e5a173a69b16a0798e7a1231fe8b4b2a35ad7aef4c1a84d22aef0e3bba02ec8de8e460aab306ee0816f2790f59bd36b8ab0a64d28f516962892d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="de.jangassen" name="nsmenufx" version="3.1.0">
+         <artifact name="nsmenufx-3.1.0.jar">
+            <sha512 value="4c1099277301e6e9d3fd067817f449be56926578cf38d3b54f37918a93096564d94a89d5fc3e3d155a48b26e4f108d8d9413c0c22932f9d67a7d3cec00df9aa3" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="nsmenufx-3.1.0.pom">
+            <sha512 value="5f13dfeeaa46199c95fbddae6554a79d7988932dc54494d3216ffa13cf7e68671f78a324f99673b67e331f0844b41ed96b93a516ed382046f7eef0056cd58aca" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="de.mkammerer" name="argon2-jvm" version="2.12">
+         <artifact name="argon2-jvm-2.12.jar">
+            <sha512 value="caec4c6ec48442b154baba49a0bee7f37909c17337f8ed723ece8d2bb6af2b9ac5165097c95bfdb8643b98b1afe6095445603a8ff81fca78d49f92c9a646d286" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="argon2-jvm-2.12.module">
+            <sha512 value="5515d7402eabb664cdc7b4e5f2c83a8935fa22a460c60c435f5cc62f69347e2a8fa56e91da7ba07e08a1da19843ee608a40a5a5d9748c3079e17d5f680af578b" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="de.mkammerer" name="argon2-jvm-nolibs" version="2.12">
+         <artifact name="argon2-jvm-nolibs-2.12.jar">
+            <sha512 value="ee0f7240ce0c89754bcf7e4f79315554251b14932f99369b82612895ca733be665c2ef3d48d60d360acb934f265f18b71dfb804d161911b9cb5b6f506f89391d" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="argon2-jvm-nolibs-2.12.module">
+            <sha512 value="6fde1c67c02e06f2c3946c67d87cb40a9382e203e210801f23b1764396031473d83f01268578194c2681424c22e46d84933f3f793f2221c4347e21fe183a01ac" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="dev.bwt" name="bwt-jni" version="0.1.8">
+         <artifact name="bwt-jni-0.1.8.jar">
+            <sha512 value="1057926d167401e7cf0fcec9673a715f1864ecff88c03a6f1e24c90e765fc357dc1a8225770122818851f141aee29e534f9842dbf4285fd7428283d8cd197c75" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="bwt-jni-0.1.8.pom">
+            <sha512 value="eda46a9b1fe9b05e579e23c16ffb3bd8be74599c1cb21c15998729484aa0e372841d6310cef46696e85e2a5d9c540952ce667de9cc88507dd0d5f9a667b15c45" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="dnsjava" name="dnsjava" version="3.6.4">
+         <artifact name="dnsjava-3.6.4.jar">
+            <sha512 value="6a60c2dec294ba289f00afb5d919e90abea72f79067e4934bee164392f2200b292c3f004f6171ce87a7e869295c6b1a6a7e4a9880bdb1728d7661f18863f9ec8" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="dnsjava-3.6.4.pom">
+            <sha512 value="053336b8372e74d54c04c96f27bf14cb60b6ec3e3d350073817b98d1fefccab589399d879f7100c1d7f009d6cc44441d48a07cb5fd6747bb8ee0acb8042886b4" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.github.doblon8" name="jzbar" version="0.4.0">
+         <artifact name="jzbar-0.4.0.jar">
+            <sha512 value="8a1f7f16d4889df388c7d8cd54c192e6f264ae8a27573b8d7e9fff4480b634635a6de2586cb7cb80fe2fda596d23ca6a4d1dad7fa2e777bb162377392fd469e0" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jzbar-0.4.0.pom">
+            <sha512 value="ce8128b6fafc3092a8b12a1516dbc45f8d988d11dd643eabc27ee9e09aef059366c107ad2febece266632f48c8fd5f66d7c645c7a2e687680955a5aa68c9d66d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.github.doblon8" name="openpnp-capture-java" version="0.0.3">
+         <artifact name="openpnp-capture-java-0.0.3.jar">
+            <sha512 value="2f6d5a774b600bd434c5e0377053cd8d5af92ea66b86a70581f3e5a2a6423390bcf10f11f22fcfb2c8b3085e45610834b3b4bc97c6a2227db120653a4bd7c2f0" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="openpnp-capture-java-0.0.3.pom">
+            <sha512 value="28fd2b313f367bc3ede721d35b4984344fbb0a888e72619f6418e70ef6d7fe7ca5191cbe4aadd3af58cc062b3cd66e23f11b8d7fcf046e150ab49c349ccd3a65" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.leangen.geantyref" name="geantyref" version="2.0.1">
+         <artifact name="geantyref-2.0.1.jar">
+            <sha512 value="c6655ef00ede5d9bb17d4e7556200acaeb5babd67295e9f72e26e8ea48fd50978cc147156e35feada204163163292ad3a0daf0d6b1366c9e933f13a1b4a9eb2f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="geantyref-2.0.1.pom">
+            <sha512 value="491b4bd597f632f3a1490a5105da93d32c261fb613317903d4d5b56c8f9d0cb628bc8b4d6bc7dd4e477ee43035bbed2291ee87fd8d1ecec2c02781b7a63d5491" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson" name="gradle-filterjar-plugin" version="0.1.1">
+         <artifact name="gradle-filterjar-plugin-0.1.1.jar">
+            <sha512 value="60d71131513dfb90443890a18701416fa85ab740530cdb85f276b2bada64522327d18e983f4cd89cbb296eeb4d11e1425937ee2fd66dac95b47c025c1c22c489" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="gradle-filterjar-plugin-0.1.1.module">
+            <sha512 value="3ab23b467c73b10a5c669028b56c34c2baa53d6d4a1e259b116a217f9f87ae500d40f2ad53b204486cef08e7bb3ef5dd329ffae1467d732c0ace3f5638182cf8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="base16" version="2.5.0">
+         <artifact name="base16-2.5.0.module">
+            <sha512 value="c1ca575293e2be01b052a7844348bfe441c00583a95d16a303a226a212a7f0353dfc5dc02f4a84d0d314701071e8698cc6cafef63c6c5798bf5c91e7e2b3f9fd" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="base16-jvm" version="2.5.0">
+         <artifact name="base16-jvm-2.5.0.jar">
+            <sha512 value="798ad3f18c8227bfded446366858246be89961938f47269b00b9d8af8fb6122e7e7973c6102eab6e548ddac5775eaba2f7b870d2c65651e599aa88c7dc96011a" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="base16-jvm-2.5.0.module">
+            <sha512 value="0601b1feab1e48118f394d2fb16af5f10e2d0b7c4d4e9d862ed062c0a5dc432884e9aade28d50117cd6db8198b5fbd9e1d653fabcf6650a590c54a0f6472496f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="base32" version="2.5.0">
+         <artifact name="base32-2.5.0.module">
+            <sha512 value="54a967b982eb388d1f6cecf568aa623a42efe0ad5b503334bfb7f430cc1d99374155f619545f63c02515ffcc60e21ee3969d2b7538eb245c0037eff51da81987" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="base32-jvm" version="2.5.0">
+         <artifact name="base32-jvm-2.5.0.jar">
+            <sha512 value="17e863b387278223fb7ba53577f07da897ae461cb69387f04a2e3100943a8c058edfa458e6c9cc1f889cdd612d06898c2e013459df660e306fd342bbe9bb2dca" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="base32-jvm-2.5.0.module">
+            <sha512 value="7be5424caf11b25deccf431b7f6b1c76a3834217b12dd770654bbcc0d6a1829b55ad9a9916b5a4b42463df35ae6d6f69c87f21eefeda4d6038ec25516a1bd5a0" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="base64" version="2.5.0">
+         <artifact name="base64-2.5.0.module">
+            <sha512 value="22325e36ac54c29ed121080e5a9aaefae3710c62d84194c06b89ee84a1ad2b391a3a2a206c75ce113c3882bf49ec83b874e42c7bfb730d5eebab559b27209f60" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="base64-jvm" version="2.5.0">
+         <artifact name="base64-jvm-2.5.0.jar">
+            <sha512 value="3e3d74e08e9f2c35d4b2ceb337b224f1c2957868bf6ae19d3933c6d26a8da064403dcc2ce4c2fdfde9dfab1b7eb6f8c907c4d463ac1657fc76e79a5ca6aa33e2" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="base64-jvm-2.5.0.module">
+            <sha512 value="9293c38373a142fc7e5f8611534955f2ce67455ec2b6a874e39e7af0ad13c508528d0cd4d94be511ce5a0181a0fb8448afe9f21d0beca7b054db1c46cf3c48ce" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="core" version="2.5.0">
+         <artifact name="core-2.5.0.module">
+            <sha512 value="d872c34e5be0190099ea138fcf969ec4760104dd92be9f432de9abccdb6eb2f6859c5c02d64fb8a2633b1aff2f45d53214715f20487af13d24618d5fbe54e1bc" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="core" version="2.6.0">
+         <artifact name="core-2.6.0.module">
+            <sha512 value="2d5283bf9f524a5233dd6d909d4776c5ade1a25581d72f6ebaf9cd51d658b8061f1d01c040b7c60532a728781b06e72f52fcc50da5444687db4748765ae73340" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="core-jvm" version="2.5.0">
+         <artifact name="core-jvm-2.5.0.module">
+            <sha512 value="6b031217d3b90ffec22c642fb94a43973f9e9f82989b1bb1850c365ed15b88b12f92efa09f77eb1676ea5ffa14ffbed5859563faaf5e59401ae53eeb23715dfa" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="core-jvm" version="2.6.0">
+         <artifact name="core-jvm-2.6.0.jar">
+            <sha512 value="ac11be83ad55bf9c36ee04477be9f56d8a9b877c7c7dd85b749b6e4c950ff08fd69932b805d348e6b74168597690c69d92c4a73a9a83c56c1f8ed873007f0b03" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="core-jvm-2.6.0.module">
+            <sha512 value="4f9090cd7ae6a16254a20b43514cc224b7ef193589186fa23f8b976c5fd72ce227765c8ccfb8c8c711ab9e9df8f5c9eb990dec3ed169ed56f05b379e3777ac32" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="utf8" version="2.6.0">
+         <artifact name="utf8-2.6.0.module">
+            <sha512 value="a40908d2cef455c0d5cbc89eabd2b86577ccde5659fbd4db1199070930efca870fe5e333dbfcebb0347472c66fdda3eaf062557d659788eb66d2ed4cdde63dd7" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.encoding" name="utf8-jvm" version="2.6.0">
+         <artifact name="utf8-jvm-2.6.0.jar">
+            <sha512 value="5127bb71094e6f734954d9f85b364a04f09d8289fc8db46a8d7d60a0f8a9966571d72fd4bc31a4e159a069077f0c1faff691170d6987c66806d3d60059b2c7e5" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="utf8-jvm-2.6.0.module">
+            <sha512 value="822964522b4ca1a1ddef59cccaf2fd2cb7e6cd0f18f980df83ec380dcbcb6ff4813a6b0e15e56f95c83c7a455a59a749dfc8444d77a2376dbf524e5504938501" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.immutable" name="collections" version="0.3.0">
+         <artifact name="collections-0.3.0.module">
+            <sha512 value="8a9a5f5dd7172dbb24690fef051198e0f05c8590888037f0bb2c26a5c6df66e397712eaa3dad9c31e1b3f78d78106d3b86554177d4992ab32f5709b9786c71cb" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.immutable" name="collections-jvm" version="0.3.0">
+         <artifact name="collections-jvm-0.3.0.jar">
+            <sha512 value="242d76f74a27614b29863d38c780c665d02f8c9689800f3103838df86a2157b5aa2de677f35ce6350e6da824385b30c334fb38c5fccbf8abbd91a26333a77cef" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="collections-jvm-0.3.0.module">
+            <sha512 value="4173cc26a829f7a155cb4c35052404be0829024f213136419709913e04cb1f9f3880b19f03393d75bf2c76a2e572724f3179b51934ca61a99d6e534dbb1b1d68" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-file" name="file" version="0.5.0">
+         <artifact name="file-0.5.0.module">
+            <sha512 value="e536010b268394937e4574ff4d78c33e7f3b739d807aa761ae94f9aff24125cf2692db5f00fefae8bdd275209864498eb7033d9c94439293f80a2f361700ebf5" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-file" name="file" version="0.6.0">
+         <artifact name="file-0.6.0.module">
+            <sha512 value="0a1b222708567867413c2b5ecd698571f0fba4855cc86a11b0b7824534430b94035534d0ee5143950b5eeabf75b1833ae26a5b215f1e36e0463d6e7c0ba44473" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-file" name="file-jvm" version="0.6.0">
+         <artifact name="file-jvm-0.6.0.jar">
+            <sha512 value="5111d384a872e08b18dd49e3b508445ee07056318684d79851891f99997508dd3b6221eb535ab1781b39d20e51fd9805c77d5721af54d15dbb4f6d367fbc5a5c" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="file-jvm-0.6.0.module">
+            <sha512 value="4dd10951ab2dc2e93d914d4e903ca8ab4b25d0d7836620f7fb78d59aac11661882eb9b7eb2cdacfe3af76ad603f0a9dc9bb00ae1e1644f7341e79069c43c178a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-process" name="process" version="0.4.0">
+         <artifact name="process-0.4.0.module">
+            <sha512 value="241f586f936fbcc8b1e432aeed619c5fedf11ba925d2b964d08f004fcbc62fde6df846a95608057423dda396baba175f2256052f4e17a0c2726c15e47f6cf17b" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-process" name="process-jvm" version="0.4.0">
+         <artifact name="process-jvm-0.4.0.jar">
+            <sha512 value="c53c511e3b0568e7222faae7e55c16e804d8d6c54ef84aca6e46d649a76c6a24d4536442a4caa52acb152fff552ba4d16747fc93a37e0424ea1a286be9661188" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="process-jvm-0.4.0.module">
+            <sha512 value="7a6457c8ebe59dabdcd0f10129a5b3585bd45d30548fc77fa35531370ea0009b9b5b9c52ad6c472c3533a835d496359760a94a1d477ad58582a36b6cea66ae74" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="common-api" version="2.4.2">
+         <artifact name="common-api-2.4.2.module">
+            <sha512 value="4dcfc88d7d04ac00ed714ba8079a4d8eb3ca1c9f51ef35770b16776b392d76f8037135115dc9914fc47f0bbe7fe95859397751b518f60f597a6aa499e90d786c" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="common-api-jvm" version="2.4.2">
+         <artifact name="common-api-jvm-2.4.2.jar">
+            <sha512 value="5123ba5825e361e90835e7fe9fe15f01b991366686be9f934890377f64e22857fcf5ed52e117e532bcce09a0e360d394fd0114d1dd19c05da754fc44c2f6bab3" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="common-api-jvm-2.4.2.module">
+            <sha512 value="7b9ac583590190502125689ee09e28cb26ebd7974dd52ca16de40ad59286c858985f9ff8f67ca24af3af136d33e7a544f08a61a860817e4bcfe26121b04563d6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="common-core" version="2.4.0">
+         <artifact name="common-core-2.4.0.module">
+            <sha512 value="6e3d3eac82ae2af764b53df764e98725728c6809efd6fb9b62b2526d9ff910a23f754a90726dcdaf70e55b3562bd961a1455f2880a2c28ac7e6f5b387aab7428" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="common-core" version="2.4.2">
+         <artifact name="common-core-2.4.2.module">
+            <sha512 value="e3cd86ecbfd3243cf110ee829da68ef6899761a98739eaa335f3b6aece5140067647756d3fbb4778f0d1646924986679453e41fb50caa8412d28049542a7a56b" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="common-core-jvm" version="2.4.2">
+         <artifact name="common-core-jvm-2.4.2.jar">
+            <sha512 value="1d6e0bda50ab7c61515e7610737b6bf96256947c82c47a8392320216e7a943df2f9e6c14b33e356b2ec8c64725b2a72c96fdf636b311fd7da05de79cd2e6727b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="common-core-jvm-2.4.2.module">
+            <sha512 value="d73b9b27c7f3caa2c4323ff3595ed913b4fafc862ce9bd461ccd6f4fb5652024e1a4c58e347be8a9fb17afc4dadfe988c02e193e18ade5115b64e531ae7a297e" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-exec-tor-gpl" version="408.21.0">
+         <artifact name="resource-exec-tor-gpl-408.21.0.module">
+            <sha512 value="627614c66610f8138f41431f02bf7224759aeed39ebb9ba0b25b32fd201d72af730cc0e9d1d99db7ba0272a914b2a9737e27849cc8a8780133c578ebd7257e55" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-exec-tor-gpl-jvm" version="408.21.0">
+         <artifact name="resource-exec-tor-gpl-jvm-408.21.0.jar">
+            <sha512 value="921e1d2215dddd077da0435e2ffa67716a30c7cd75f0701fa1df85331baee26084fd257c4b249b9e3be2d50b4c156736426689dadf689d114973e3b42e6eaf7e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="resource-exec-tor-gpl-jvm-408.21.0.module">
+            <sha512 value="3b867ac516c34df3da38a25416f444ab0f98913f90aec9afe47ecb352c17245b6e391d1112c2cd89d3e655f9ed3263ea27dd29ee077ae38eb7bb2c0783c931ed" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-filterjar-gradle-plugin" version="408.21.0">
+         <artifact name="resource-filterjar-gradle-plugin-408.21.0.jar">
+            <sha512 value="cb2632e03cdbdd1e766e9d2b766823069cda3ba3f9cd8e74a3c4abb1701998b9b4aba551a308911dd56198ed21efc5685c199056223df478ae8819043aadd31b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="resource-filterjar-gradle-plugin-408.21.0.module">
+            <sha512 value="ed59978b9f062010f998989e253f59801841d2069ff6e866ee24d6c31b5b6490ba6160b91c61f463e9878560150794ac2a2dac9df381280b4e262a90f9e3e379" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-geoip" version="408.21.0">
+         <artifact name="resource-geoip-408.21.0.module">
+            <sha512 value="d904310da2ba67e246eccf6e41c04b9ffaa1c2688c15920e3e91e9fafda3294ad26c30c028a8d09834c8f6f4a843b8435b5f5ac79516cfd8c2428f20672530d1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-geoip-jvm" version="408.21.0">
+         <artifact name="resource-geoip-jvm-408.21.0.jar">
+            <sha512 value="25b74193d3fb884892e72c512684bfb75f9baa20550b29834e99437914b39488d300f21b0a87cf7cc49a1844e4d3c6e16e78bf3cc95de2dda040f438036d70d1" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="resource-geoip-jvm-408.21.0.module">
+            <sha512 value="1d2f25557cbe738056be6a4eb2338d838bd4e69ee1562eba8b431efee82d1713ae5debccdba2ddf35998282bb85a4468842b20fc206699f4a554f22e7d4e92db" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-lib-tor-gpl" version="408.21.0">
+         <artifact name="resource-lib-tor-gpl-408.21.0.module">
+            <sha512 value="178b22df8a8be6b1444634c576f68bc7126edf6b50206b76d86880856cd841cc897438cc93bb0eaeca78cf404349c337a9eee7d593e2be6709fd1e6d558f8040" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="resource-lib-tor-gpl-jvm" version="408.21.0">
+         <artifact name="resource-lib-tor-gpl-jvm-408.21.0.jar">
+            <sha512 value="3458bb348d55218e8383bb50bfe4043cd7c7943acb71920b5adc6271b0e82c3ef77b2a59c8ce87b3578cdfe7546e5eca49f929da15a9b41e27b1e93413c4a5b0" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="resource-lib-tor-gpl-jvm-408.21.0.module">
+            <sha512 value="4d2faf9821fb410d8d86d4e75c1e379d9f1af426294b2a2d324f9431faf6e680ebfe79648530c7dafb0c4a6b72413b3fdb0251c18cc54f08e1bf22cc9dce27c5" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="runtime" version="2.5.0">
+         <artifact name="runtime-2.5.0.module">
+            <sha512 value="380ccf2812a9858d67358cb0d5eca2763d8ee1f575f0d86facafb34f588df7227b853c6e9a9f7cadc006e2d4b1c226b78508fd4bd94393094bc367cfd30627be" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="runtime-core" version="2.5.0">
+         <artifact name="runtime-core-2.5.0.module">
+            <sha512 value="00b1225cfe0df99d221841d124ba9b21ffa2181d3569e36bc53ddf235e756f24f08af906c01fe1c83a6dcde3c589f00c2fd20f5c4e849c461e552f9127c9b230" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="runtime-core-jvm" version="2.5.0">
+         <artifact name="runtime-core-jvm-2.5.0.jar">
+            <sha512 value="a61b3e800e7db495179a7865673c51e7ea92c2d2f3730776e48c7a73bbbf84e4a865c8ca83b33b896dd5fd8f60ee27b245190a3ef5f3f1f0d2fec82da179146e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="runtime-core-jvm-2.5.0.module">
+            <sha512 value="aece947fa119515a58969b524d12449af97e0a801b05eba86986092bef5605e747a88bd57e70f818993865bd10a115fce41caaf707f9ecf67889d6fc2e2de89a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="runtime-ctrl" version="2.5.0">
+         <artifact name="runtime-ctrl-2.5.0.module">
+            <sha512 value="93e1fb8b174f8ec9de15b67e9d8dff70f24eb12f9453c1d4f52de40971f57da9da01412da60785662a24df1b21b085c92a670d0cfdfb662ca8be7d516c7b7927" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="runtime-ctrl-jvm" version="2.5.0">
+         <artifact name="runtime-ctrl-jvm-2.5.0.jar">
+            <sha512 value="dbe4cbdf94bbc15e6a698a73b8cd7bc054a8749462c2573122fa04e3c395e4d36e03bfa4f282fd05af5c691bad7a4402bc3dfc42442aca0be446cb0087665a5f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="runtime-ctrl-jvm-2.5.0.module">
+            <sha512 value="70fa028122b1692eaf7df14fea3453c52c767054c3c9edcb1620dd40138c90257a8ad969d02fe774cfe71ae2f4d70a6daebc607311b6b35a3bb69820d5c69b35" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp-tor" name="runtime-jvm" version="2.5.0">
+         <artifact name="runtime-jvm-2.5.0.jar">
+            <sha512 value="21fe2bd6d62943f1b574b6334e928a6756fc3b286169cc6e851461648b5f2fb64b84c13c37ae6e36c65dfd5566e79d939b11d00b25eb7a161277ebb9e8972744" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="runtime-jvm-2.5.0.module">
+            <sha512 value="9a6dcf2125f94ca976e26959cabe5051ab0fda4e8a5474d0052f4ad6d3ef16ff0e9ad7bf9ac33f801388de57232709b980493cbffb9e185131577b0f97b5305a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.matthewnelson.kmp.tor.resource-filterjar" name="io.matthewnelson.kmp.tor.resource-filterjar.gradle.plugin" version="408.21.0">
+         <artifact name="io.matthewnelson.kmp.tor.resource-filterjar.gradle.plugin-408.21.0.pom">
+            <sha512 value="e58797ebf898631b28a32df0724f5fc18cf41533f37d81a7564067312db688cf9d923bfbd1bab02f3054e007a3c0a641f2e863deea47e94c750b47dd93c81b20" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.opentelemetry" name="opentelemetry-bom" version="1.55.0">
+         <artifact name="opentelemetry-bom-1.55.0.module">
+            <sha512 value="60088608e69ac1abb28c765e726c5ee364f88bd016b42b24483b2f4b5eedafb6c6494155b125639a38b2cd1adf8c67d5ce9475ccde383885d1f817dcf2e1fccc" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="opentelemetry-bom-1.55.0.pom">
+            <pgp value="3F05DDA9F317301E927136D417A27CE7A60FF5F0"/>
+            <sha512 value="1b8f6769c9cb18dc5d1f48e02ac2af342ae3f95843510cd92030ecf51f68c4aecc6b2b84c114647065dcf2432d99618f340751c439b3d28b8a605750db6742a1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.reactivex.rxjava2" name="rxjava" version="2.2.21">
+         <artifact name="rxjava-2.2.21.jar">
+            <sha512 value="df3a051d3b01337c7d229b8f33a06931389d5251766e15422aaee74b3894420abbf4c93775ebda4f7068e1c7a3ac17041aafaacb30b6dc94ebf7d62a46cfdce6" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="rxjava-2.2.21.pom">
+            <sha512 value="23c35346652edf00638c2bdcee110c597b8e431fee06b0d71b3d00b40789a7a63c1560b5e798f400621b6a23c592e18121ccae58d0540ad173f5d33a2f1683df" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="io.reactivex.rxjava2" name="rxjavafx" version="2.2.2">
+         <artifact name="rxjavafx-2.2.2.jar">
+            <sha512 value="835ff623bf62d0361b5948ee08c53f0c110e4c805fcd82c4d9b65648e1c8937f138b46e4b089591d02608c23412f0b118b2ebbd82347542c907ec64939d42ebe" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="rxjavafx-2.2.2.pom">
+            <sha512 value="c67570646aacea329c4048d7a07988a717d2e24a0aec9ef9fdcd75120eb4f35e394a918e055ef7ffbf6429d23ca20a1280945b7ea060a7af315d04f50aac1e5d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="kr.motd.maven" name="os-maven-plugin" version="1.7.1">
+         <artifact name="os-maven-plugin-1.7.1.jar">
+            <sha512 value="e67fd34fb8ed011cd3983b8694820c42464b50b62129c086d7cca87b83963ea19291e0ebd1ae6ee9c409bf7a81dffa3b01fc39ba483ac03630bf5551fd83ca5c" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="os-maven-plugin-1.7.1.pom">
+            <sha512 value="129a6e859a55403365cac24a39281ca533a64525eb708fe99902670c6a54856fd47af86767e2a87cd91eec2b8301a49c433281fb3694ce46833eb5eb25a9ae60" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="net.coobird" name="thumbnailator" version="0.4.21">
+         <artifact name="thumbnailator-0.4.21.jar">
+            <sha512 value="a26a4da0f6c48d5006bfbd4f4389227d553347bc46b74ab14afeaead02a3ea73ce6847a0af4fad792366e71da5870e23c0ae103758b35ac62c8f570f3c5410d7" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="thumbnailator-0.4.21.pom">
+            <sha512 value="7b3d9c8b1f780116569c001d97e0e885356bc32fffeefadbbaf8a55430f12255126fc37bd877a4454b1f69dbcdc1cbdc856b598c7cc597c7561add5dfa468841" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="net.java.dev.jna" name="jna" version="5.18.1">
+         <artifact name="jna-5.18.1.jar">
+            <sha512 value="e859aa7bf03225dacdd043c67f939e9250e3e223ef031a0cb67717974362e9df2bd1d9d704e7b52e7408230f01d816bab7ec1a745d9cf2feb26ebd8398026c7e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jna-5.18.1.pom">
+            <sha512 value="f8d33a926703c383c3d22654080aaf074a2fa807b7432780887012d03eb4be080462bab89b79c3bbbb07ac6a7ed7f8b98ca723605f7d7413975b01418d29b9bd" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="net.sourceforge.javacsv" name="javacsv" version="2.0">
+         <artifact name="javacsv-2.0.jar">
+            <sha512 value="b848a1941fd1a61dfa793a662472f42d0587338017c25e215b9f12a529417dc2277d80ab0200b39f8a3fb27c6d2aa422cce1c5aaa497e2a7c6c8bce952520a8c" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="javacsv-2.0.pom">
+            <sha512 value="4219f4d8bfe079ef55c7cdca2a347c75a7692df8ecb739368c7316ba188a7970872669a60a87e13b41343f05359c9d087973801959b646c5e59ccf26b92cc6d9" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="no.tornado" name="tornadofx-controls" version="1.0.4">
+         <artifact name="tornadofx-controls-1.0.4.jar">
+            <sha512 value="cb17270e23e8d374e3f42d55789b13371ec9a1c2bab012290af30029c55f567c851cccdf8e922aef920e2614a473a06a309a64c6004bc76d890f0beb789e097d" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="tornadofx-controls-1.0.4.pom">
+            <sha512 value="270c24aa7f5fc25ed40fbecb5ace10c1d8aa1c9a8c4a69eec9fe4c1e23dbc7ecb8c63cc0c0be54819de4409ecc8a05d11a4150f34e9d1409f222579e7ef95dcf" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache" name="apache" version="35">
+         <artifact name="apache-35.pom">
+            <sha512 value="d599ebf085e96ab2c0fa925fec99fc046f1763743a0445e5a4bf255d8259d44aec7bd175881accf1c6562e13efc26b13a54de01c49b46032464366d41869d7e8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache" name="apache" version="37">
+         <artifact name="apache-37.pom">
+            <sha512 value="f8b4087d30b07befaf0118f4c93900e21a1c094b0238ae922e9c989b2fec9b82c2cbd0ac8fb20176682b07daf332e75e25b33315a3b195f99bb4f9cb11d6ea67" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache.commons" name="commons-compress" version="1.28.0">
+         <artifact name="commons-compress-1.28.0.jar">
+            <sha512 value="f1f140f4f40ab3cf3265919db9dbb95a631a29aa784e305f291de4e68876bb711d9217d62d7937cddddd393982decdf71a608b4b3ab7f4e6375cf28af2893d7f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="commons-compress-1.28.0.pom">
+            <sha512 value="8e146052d06e3018b7336a52fbbe979b73e2cd1d318fe9fdb37e22f5ee39e65992351ce5278dc4da34a59256f797882d16b6dee34684742a8a5bfb4f0998d82f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache.commons" name="commons-lang3" version="3.20.0">
+         <artifact name="commons-lang3-3.20.0.jar">
+            <sha512 value="1c72db334ea44f932c35e602b78907865f5bab43e30c871c9be67c8184eaa778f32d7bc3ab525d5921cd28619d3f9babfd483f17de54f007ee07db2e074b0307" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="commons-lang3-3.20.0.pom">
+            <sha512 value="25e43253bdd776fc620a45df322987f8b5f2629d195bd76cee896effdbebd34d9f3179fe0f7078f0b57ac5623924544740ddb15383997e22881689875db581ec" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache.commons" name="commons-parent" version="85">
+         <artifact name="commons-parent-85.pom">
+            <sha512 value="f32482d030a5dbad958d91f7137f9a4cd416a1f60b4701000574222f71e3403363f7863b6c32e19e1d1fc4f752128a6b745888172c188471bc096dc81cd7a337" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache.commons" name="commons-parent" version="92">
+         <artifact name="commons-parent-92.pom">
+            <sha512 value="acd1c27a46eee21bfd63633561b48cb294f41eb879c118c0e9a704c79fb8b1407aa0b88755f0dca1b7b6a7180e98b7837da2be77819b7d81a4ed1b348f289095" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apache.commons" name="commons-parent" version="96">
+         <artifact name="commons-parent-96.pom">
+            <pgp value="F4DD59C90148BDC52BEB90A4530AA5F25C25011F"/>
+            <sha512 value="232c7064beeb024d5f14aaabf06aa57c49b83f313f257b2e3a0308a3cc7fbd2c057f5212d32b93e8298192a5b765904884110c654ed75b4d58ec3e416ce667c8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.apiguardian" name="apiguardian-api" version="1.1.2">
+         <artifact name="apiguardian-api-1.1.2.jar">
+            <sha512 value="d7ccd0e7019f1a997de39d66dc0ad4efe150428fdd7f4c743c93884f1602a3e90135ad34baea96d5b6d925ad6c0c8487c8e78304f0a089a12383d4a62e2c9a61" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="apiguardian-api-1.1.2.module">
+            <sha512 value="b8f1e5623d4d146caf73a869e8ee719746831d67e0259ecff8dec276c0563b92c65ee6bf2dd40b6e80b309e5da805730a39869f8942321626f793f69b57f11ff" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.basepom" name="basepom-foundation" version="66">
+         <artifact name="basepom-foundation-66.pom">
+            <sha512 value="5987a750399f7d0868db082877c7b9c830712aa49ba7d4a803edd5322bca0f6fcd6927aecb5d5a9fc774757404bafc0fad1d0e7c1a802a9395ca038be318c2cc" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.basepom" name="basepom-minimal" version="66">
+         <artifact name="basepom-minimal-66.pom">
+            <sha512 value="448b71fb855c22f89ec41c45150634871c1dd159e80d885af8888ceeb49d3aba9b44e13b917944adfb9e13066b76f43157659cbdab19cfc819c977e6c0ad0542" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.basepom" name="basepom-oss" version="66">
+         <artifact name="basepom-oss-66.pom">
+            <sha512 value="5fdb9b43e4cb04ff86aaa504e33810d97d03c347395988df00776d6f281db0da5d82f02e31f0c9334914ac15fd377e1468fff7ee367e45fc1114391ad82bedf9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.beryx" name="badass-jlink-plugin" version="4.0.2">
+         <artifact name="badass-jlink-plugin-4.0.2.jar">
+            <sha512 value="20a7c0145862192988e7242160c44050a345b671b6b99aa7116e8a60475ae2c5585426f67cb648dd01dd63a02726ee9f3aa307e3d0ab720024639e995a09ace6" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="badass-jlink-plugin-4.0.2.module">
+            <sha512 value="d541c0b4572f13aa1c0fd376be59ef5333fb7572e3feedd97290cd0ea6a6315aa83095c53ac0fd9e2d9c9277eafaa6d7afe64179ac4102633e222cc3925dee2f" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.beryx.jlink" name="org.beryx.jlink.gradle.plugin" version="4.0.2">
+         <artifact name="org.beryx.jlink.gradle.plugin-4.0.2.pom">
+            <sha512 value="cf1194188f390109ae472dce2c1cb3a59c8cc4c1487b008361ff6f6357b7772081383ae1ab8df444683a2a017d13cd2455a1179994cbae4e2fe4baa3bfa5e800" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.bouncycastle" name="bcpg-jdk18on" version="1.82">
+         <artifact name="bcpg-jdk18on-1.82.jar">
+            <sha512 value="7ef8bb83750ce8ee55348af7d9d8b577d0b4ed2ef96b53a7690f50c6e52af93ed97dd71df93e0b3cbc2a21316d942cea55e742b4ef18623d930409973430252f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="bcpg-jdk18on-1.82.pom">
+            <sha512 value="a16ffea29422713b2a46fb5fa85a7ad82108e4ea79e18da32990dff859ddc3ce7c21d09efa4a091343ddec26b822f6f043ff36afccea0743e69be8d0ee1b7546" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.bouncycastle" name="bcprov-jdk18on" version="1.82">
+         <artifact name="bcprov-jdk18on-1.82.jar">
+            <sha512 value="acf5e383a93cb16b3ad5a531b86acda3c7fad306c655b1090bad576898707ac4516b2681fc4993ee1dbe3ecbeb05156b836e17cb0f6db811d81d1e3d762a4151" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="bcprov-jdk18on-1.82.pom">
+            <sha512 value="e563e1339e5a69d858ca548dfa9c246a656f3a4cb3171166f266faad0cbbff8896d2245dc09279fcf9226c6a30769e5fa5d3282afd71bd1e6915cabd78bfb2d9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.bouncycastle" name="bcutil-jdk18on" version="1.82">
+         <artifact name="bcutil-jdk18on-1.82.jar">
+            <sha512 value="61a4bbc07402fafe91a55170a3f04a87060c6721bc1d52865dfa9445b97dac92cd6b4c8558a7adbbf0dcb2bc62f4af72c547c366fb449e207d7436fbdead3c31" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="bcutil-jdk18on-1.82.pom">
+            <sha512 value="4de1fe47c80d4648827c65bc19775c98b4ac741473af488f6725f4ac657f46c0fd72ef55c1e2cead6c9fd29b72fb1352d68fc551791cfa4b875d64fcba4c3ca1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.controlsfx" name="controlsfx" version="11.2.3">
+         <artifact name="controlsfx-11.2.3.jar">
+            <sha512 value="ceff3dbc52d2bd70e975630e123bffc7eb9a2d87552f4b97702efd61f8109250bfe373fc14a7440daf49b045ce00a9393d781bb2396801c590b152aca1e54828" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="controlsfx-11.2.3.pom">
+            <sha512 value="283935c2ec0adba07286c09f333be41fb63e92703ba11fe8aba38325e0bfe268570063b9f409d2d142b326568f2f7aea428c4fbefa81eaec198f6baf1e8ef11a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.jetty" name="jetty-client" version="9.4.54.v20240208">
+         <artifact name="jetty-client-9.4.54.v20240208.jar">
+            <sha512 value="ccfdf2f7cf773f4f131caa2709e167a7d2dd2a926062b1df0034eceaba9d878fb792dc2874402be133dda72fc8395cc1919919b6df0e4a582c62d50522926e91" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jetty-client-9.4.54.v20240208.pom">
+            <sha512 value="2eee046bf84165d222a0d3fa06fea23a34f21010a816f40df231942fc8f34707633239ec4000bec4092f36dfc045610bca96b9e238f9b21039d84838dfb018d1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.jetty" name="jetty-http" version="9.4.54.v20240208">
+         <artifact name="jetty-http-9.4.54.v20240208.jar">
+            <sha512 value="6e1d6fdffcb2acf8daa9ce5b3ad973526a30b3556dc8e950254c68c64cd70e101b28a8acac41b3bd74de6b9c8eac10676afdc3c58ccb1f61a74323721592e0b5" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jetty-http-9.4.54.v20240208.pom">
+            <sha512 value="417d434506bf6e8e34d87d398aa60bc73a1b75f894468c92cdf8aeac697e5bcbacc091fbb85447deb01973199c9f682928b52473aaa6818d5ddcffd9de04e7db" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.jetty" name="jetty-io" version="9.4.54.v20240208">
+         <artifact name="jetty-io-9.4.54.v20240208.jar">
+            <sha512 value="72af20a535ea6cc8d55d651a661a10548036ac800d902ffbdfe8c57afbc166043c0e467a9a5b59c31c9b6d8a10f65d1ee17bf6b5c37e9b3c46b896df9ca52614" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jetty-io-9.4.54.v20240208.pom">
+            <sha512 value="a7d5bb2e0a56b4c552ad06446b1ed24ebd443126479de6422ee541be275aaf14103f0cc2197f2b8d659e631e45a9c1234e3ce397cfdffe91e95593cb88ff7aba" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.jetty" name="jetty-project" version="9.4.54.v20240208">
+         <artifact name="jetty-project-9.4.54.v20240208.pom">
+            <sha512 value="fb4345ab4fc71acb3c381d9e8155bd2966dfced6c89770abb642d8d964a43e4f8c61fc6ae6ab239b6ecca575dc28aa13b3511280d7283ae1991b0040553aeb5c" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.eclipse.jetty" name="jetty-util" version="9.4.54.v20240208">
+         <artifact name="jetty-util-9.4.54.v20240208.jar">
+            <sha512 value="fbe9cf7efeba9f29297f75de3f1c2d98f0e02816a1dc9e6eaddcabb84c3a699a9332218c532017a3707ec57f4f99066bc671708bde4ec84dd873b8403422d7e9" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jetty-util-9.4.54.v20240208.pom">
+            <sha512 value="fd3753fd4c6718365f92979b4fc771d10e8cd6b3bd98aba71df5f8b66aa60d7a4b510859e4120f1c3223df2d68751d2a4700dec69e4d8b439cb4603bcb0c306f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.flywaydb" name="flyway-core" version="9.22.3">
+         <artifact name="flyway-core-9.22.3.jar">
+            <sha512 value="6f248a7d5a0f9cc3deed78f1eb7a2513c81e8394e2e234127285a0a02e952868954a003aec79db7142cfc50ecae02dbb36df075d23558aac26507863cbeaa889" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="flyway-core-9.22.3.pom">
+            <sha512 value="00b208b2b81f2fd3acd9475af592a6bfe3c91333d114416b7399206591ff87d5a1413e6410ff20974db3ca6bdbe47ddc0e4b27cc51b16b3c7a4e624e3027d02d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.flywaydb" name="flyway-parent" version="9.22.3">
+         <artifact name="flyway-parent-9.22.3.pom">
+            <sha512 value="beb12916d42d97af347474b442cb1e4dbc5bd119036c53c030809c591ead9ed64df90a4265d2ad06a921f6692c98c962bc814414c89e2d56c87a8f97ca1b6036" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.fxmisc.flowless" name="flowless" version="0.7.4">
+         <artifact name="flowless-0.7.4.jar">
+            <sha512 value="6d2ca44a7dc4bd92ea45d66f0da821bc73f67024f02049fc96109d3e432c1153c958f35aff427a41f2d423cb9d1e1679852d57675cb9b8e7523934d965287200" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="flowless-0.7.4.module">
+            <sha512 value="9f6c187d87468df1ef713dd9b8d601c8c16c4b7550ed267d64d18a8b31cda074962a7fa21970bdb38baa6b9402ba34dc8e7a50a5d71634219b59077872fd74a6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.fxmisc.richtext" name="richtextfx" version="0.11.7">
+         <artifact name="richtextfx-0.11.7.jar">
+            <sha512 value="dc41e873be565f2fd6a2c8ca2cf3c3c239afdb67892fc14aab3c19e3931012ab56a9d0b70e3d410485abb6cd96c54f44476bfe349834299bbe478118e592b874" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="richtextfx-0.11.7.module">
+            <sha512 value="53e4f5c01c9c6bf0eef69663fe52a1f2795079e81cf1ace620e45276397e68b52863a885b2140bf2a1c796105ccef9628c0a4dcca521c303f615d45eac4df834" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.fxmisc.undo" name="undofx" version="2.1.1">
+         <artifact name="undofx-2.1.1.jar">
+            <sha512 value="891db38aa29b717d07457efd6640033b0b72524d5ed4bb113a468adf0c8214341dbc5d9b2503fddc1e729aef2b8412c1a56c60d7946f1ce12cd763a4d76aba83" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="undofx-2.1.1.pom">
+            <sha512 value="b47efba8f94888c67fbe88b0090039812b97caecd6900e8847f6f081fdddcf5888dc6d6f20201b620526bb39b91b2c932f714464ca2f341934a4bf2e3e950bcd" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.fxmisc.wellbehaved" name="wellbehavedfx" version="0.3.3">
+         <artifact name="wellbehavedfx-0.3.3.jar">
+            <sha512 value="bde3ef7bb7978e878fa1cc3669c7d22e6ac461ea4c2fb83163fc9b06c5b5784aed97188cd2a8a1841848228b6f946ac167244f452a7f3c4c72bc763716c265c7" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="wellbehavedfx-0.3.3.pom">
+            <sha512 value="6877b7919c00fde2fb1f28f4489ab12ff6787074e6c8f8fa530a54ad9953d450fa960306363d66cee0bfe37e64095711fca52bc76bc0684717a8c389d037e57f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.gradlex" name="extra-java-module-info" version="1.13.1">
+         <artifact name="extra-java-module-info-1.13.1.jar">
+            <sha512 value="9fb76c6dadd2c38cc3559bb9258126d68243de1be4ccf581b96908cc4e9d0d9ac80511142daec6a0301d7849cc6c18773a9db74f2f4ca1933e79dd4843cfcc12" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="extra-java-module-info-1.13.1.module">
+            <sha512 value="acb7f1791f47990872feaae811e1801f825a03256c9709d11cc2b83dc8bcfd9475701c7e728faadec9af83ef42ec3a27c1b2edfcf3f36ed70ce8fc342313790f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.gradlex.extra-java-module-info" name="org.gradlex.extra-java-module-info.gradle.plugin" version="1.13.1">
+         <artifact name="org.gradlex.extra-java-module-info.gradle.plugin-1.13.1.pom">
+            <sha512 value="b363990000a0f8ae4c4251ffde2e5bf51c8fed93a667d2232fd6c08a916cd42089cb8bed127a877926488fe677b9457445aad755bef6bf18f0116275d03558bd" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.infinispan" name="infinispan-bom" version="11.0.18.Final">
+         <artifact name="infinispan-bom-11.0.18.Final.pom">
+            <sha512 value="07b3f880b40e112422da5e0409517c72cc1a8d4e900a139060868235b8d462f32865aa3c3506217a4300e55571a230835fd3bcf7bf39a52ad8b871ccc2c479b1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.infinispan" name="infinispan-build-configuration-parent" version="11.0.18.Final">
+         <artifact name="infinispan-build-configuration-parent-11.0.18.Final.pom">
+            <sha512 value="d6bf398f8cdf74f45b138b8b5af5eb00b7b34ada836db4176278717ffd48f5909f6cd9f5ac5f303afdb319cc67ed6ba5a6fab4457bc6d0aaa28584b12d6141bc" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jboss" name="jboss-parent" version="36">
+         <artifact name="jboss-parent-36.pom">
+            <sha512 value="a5517aa149db4b09b8b191d3ec2175dfc89595c8604e2fd7ad86e3d6cf053099a1114a00569d2f08d7411fba45ed21c699c16863baa999abca58c92d3978c5fe" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.jcommander" name="jcommander" version="3.0">
+         <artifact name="jcommander-3.0.jar">
+            <sha512 value="11457970aadaf168ef905f098ad40c4f251633a7a52734db4e3a4f2eb00508c736dbd406fdc4e46490a0cc864b3bf7a52ac12ace9ee8c17c09bf3724a9d68519" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jcommander-3.0.module">
+            <sha512 value="a102ce1d3b3dd3f51c41664c1f2db3114fbc1b1b79ecb28dfe1a8188a3b277b65563a6f80d8bf28d488a46b23c0a2aab97b8bd2293f98b3f38ba811fe323a3d2" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jdbi" name="jdbi3-bom" version="3.51.0">
+         <artifact name="jdbi3-bom-3.51.0.pom">
+            <sha512 value="4018efa9c94e12ad01b6b5262d43193dead10559995e015fd08d23d66ace1a7c6f6485deaa7f015dca23553d6c066816b28555bd51cee9edf3a987133994d4c8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jdbi" name="jdbi3-build-parent" version="3.51.0">
+         <artifact name="jdbi3-build-parent-3.51.0.pom">
+            <sha512 value="9b8995663fad01a618d262bc3b3c903924311a351d8ec08b61494f0b2a00ff17a49b16ff0a033a8c3dc28efa65c82ee2286272d320fa9710253ccf50e37351a0" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jdbi" name="jdbi3-core" version="3.51.0">
+         <artifact name="jdbi3-core-3.51.0.jar">
+            <sha512 value="093ec25ee33b3c4b2dd9b0c855ad31c24e880c97094bd08fd76c6ef5272cf1dab3c509eccf0ad7c25d7002147203f6a1f9438f1cf6f77d7d2d36417e7cc0312e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jdbi3-core-3.51.0.pom">
+            <sha512 value="388a12cb07afd19cab6274ee8c9e7cae25d8b2520b9f54f9b1f0636c2fb32bd1dda1035f1c2a67a50c74c9233257542c08915da03b0f411ec1f0a26a18e1ba7d" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jdbi" name="jdbi3-sqlobject" version="3.51.0">
+         <artifact name="jdbi3-sqlobject-3.51.0.jar">
+            <sha512 value="3b2167281721bf25a7c74f3983bf555b397374601cf96965d0edbb896b32cbfb854c81125717ace875a850b54d63d72dd32c2d5b5ecdf2c76f6d9b448cee5dca" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jdbi3-sqlobject-3.51.0.pom">
+            <sha512 value="daaed0ee757d63f3e9324488c0f1415ac03134f3f14248f1da1b8bee24bb626119600cccc14cae5914e78b2a1fc3eec18040f3bf2366d55205a3854b475a4e21" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jdbi.internal" name="jdbi3-parent" version="3.51.0">
+         <artifact name="jdbi3-parent-3.51.0.pom">
+            <sha512 value="9030c18c676dd3f8955357e588bab9086eb6b3ece10d59fa6b0b148e6505323c11d68b2fbb6a582a6e4c6448eadce567ebf39579b6b7f4eedb6ac6c34de9a448" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jdbi.internal" name="jdbi3-root" version="3.51.0">
+         <artifact name="jdbi3-root-3.51.0.pom">
+            <sha512 value="a188184960fef4dfe119a01d91c749f614430d26efeb7ba6d0380710fdf488661d7ac5af1069a76a4b7b2215ee539093705aaafeb09a6b9256b43a98575624f8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains" name="annotations" version="13.0">
+         <artifact name="annotations-13.0.jar">
+            <sha512 value="5622d0ffe410e7272e2bb9fae1006caedeb86d0c62d2d9f3929a3b3cdcdef1963218fcf0cede82e95ef9f4da3ed4a173fa055ee6e4038886376181e0423e02ff" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="annotations-13.0.pom">
+            <sha512 value="63ef480f698215d4cd4501b06e86df1a741ac2b86216fd3ff6eee146da746caa390df27351e25598971edb368aeae41055ff1ed77e4bf5d7edb6abc832d150ce" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains" name="annotations" version="23.0.0">
+         <artifact name="annotations-23.0.0.jar">
+            <sha512 value="cb82eb0aaae88e3283b299929173296e30c7b078105e0fc5ecfbcd4eb230026f9a7cc46680832d036e6c1ff036ad99d4c50dc296d4919d223879081ac1616944" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="annotations-23.0.0.pom">
+            <sha512 value="ae58d75b40e44cb0d8e3bb701c7afefa8cbf96066ae52fc3d57c69b7a7e819fd9b3b01971376da6ea94ee010b9ee59ba05a331b93a65e94c047b095131efd6c0" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains" name="annotations" version="26.0.2">
+         <artifact name="annotations-26.0.2.jar">
+            <sha512 value="c7be38957318874b837d029dc7b2a1f8b009feaa5362a56cba4f4c8a7d502993b3c900ee338eb9c9ee9494d7fd946bd280403eee28b244d213edb0b145a9ebfd" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="annotations-26.0.2.module">
+            <sha512 value="85a40b937bbdfdf56ff08a3d1819f4f1a132715ef914be703acc08c897217dee575afa87623d0e9e7899f4b737794833afb2f64e02a7fef4835a0b64c56035ac" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib" version="1.8.10">
+         <artifact name="kotlin-stdlib-1.8.10.jar">
+            <sha512 value="cecf2b06c46b244e94371cea879515f7e10e7cfff53e521ea846e0aaf81a8e8b59f9fa91b5e11985072d350c41283772db4586f30da6c895587e0aed6a23118b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="kotlin-stdlib-1.8.10.pom">
+            <sha512 value="a556de13b5d151084b9fcad9ca6290c225a77b4ed0c34f8577e165ab48258232287b042b934aeabcf00fd847a224451ba128433365a9a3645f7b3b570731ffce" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib" version="2.1.0">
+         <artifact name="kotlin-stdlib-2.1.0.module">
+            <sha512 value="162a60f714256b734cdf8a6a0cd586fa5d8523160a1e1bff7adc7e4baf89facd4d766a4831a0dc92324f2db8c321fc88d52c3e96ec613ea6e4d5c354a5b8d260" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib" version="2.2.20">
+         <artifact name="kotlin-stdlib-2.2.20.module">
+            <sha512 value="559e5cb85a6b54840acd2b8941abc3653252f8df44e276e3339d6a3a7e9185128eb68900cbad6d65cf5d33acfdfe83a8df83ca2400c6f64e39628ddf97d0735f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib" version="2.2.21">
+         <artifact name="kotlin-stdlib-2.2.21.jar">
+            <sha512 value="cb7f62e2eb4c13f7a9873876f19d9dcb69c33d5e963c7cd87178f3789d65f29d2b6cf697573c04758428d2da6e26f2fdd3f0af46dedd8d04ad81d331e95859d7" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="kotlin-stdlib-2.2.21.module">
+            <sha512 value="4c44e2226dc8baf91685545d49db558de088241c87ac54d0f4a83af9b641d7d8c1f3ece654e41f3953690b81274e75fd57baffc51f74cd6da4787219ecfeaa99" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib-jdk7" version="1.8.10">
+         <artifact name="kotlin-stdlib-jdk7-1.8.10.jar">
+            <sha512 value="a22e46e4270da29dcd45fc6a252a071ba16b913baff12e8813987e8d54bd4fd54021259f7130e0db6b86d894616da7a192fea8ac0f9e2093d614ca55965bb7d3" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="kotlin-stdlib-jdk7-1.8.10.pom">
+            <sha512 value="f262638681c026d31234869d071c7d5171ee7851d2493052ac62da564e7eb1ccc5b63784f7ed40a876f1fbef6fdfbb67137e01a83bd20ac365289585fab8feea" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlin" name="kotlin-stdlib-jdk8" version="1.8.10">
+         <artifact name="kotlin-stdlib-jdk8-1.8.10.jar">
+            <sha512 value="237c0c80bc4a9bb11683fd0048d118f6af58c083bac467e7e9578ae97b611ff2d7658974a17102466002c3672b06866dd65f18982223b70fa1700c5f60dc8f15" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="kotlin-stdlib-jdk8-1.8.10.pom">
+            <sha512 value="e71e17cf87425bfb7280f46d0d019c5503c4a743f21c228ce5c25d26177f450717d4a3324fd86b56da6ca74913193006a862653b2bcd4bef1b45f931949f8dc6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlinx" name="kotlinx-coroutines-bom" version="1.10.2">
+         <artifact name="kotlinx-coroutines-bom-1.10.2.pom">
+            <sha512 value="019fd13ac4ed6829a32489afe003762936937d6894f16ac36f611beb2ef7e9fbb282e56479863da8daa156aa77f834c30420604e431b6e2e56311e3e0240b606" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlinx" name="kotlinx-coroutines-core" version="1.10.2">
+         <artifact name="kotlinx-coroutines-core-1.10.2.module">
+            <sha512 value="a88eb8e578850c3ca9e12f9067d761287a3e70c99657f41df959085bd47a9fe7982f835ab37880ca55fe5ebf62e02dbc947794194aee9b03330bc1fb24ed9404" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlinx" name="kotlinx-coroutines-core-jvm" version="1.10.2">
+         <artifact name="kotlinx-coroutines-core-jvm-1.10.2.jar">
+            <sha512 value="238fd451f80e222480c880dd8bcfd76e9203b6833a0306a55483b3f9eb0b25651242a3e7beaf7510d5e39922f1d3d987fca79468d945eb35b0f07156a7887ba0" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="kotlinx-coroutines-core-jvm-1.10.2.module">
+            <sha512 value="d105252b959981bf5a1accd86ff176d032eeed22d0e5647eb2d5c811e43019408743ba91a59a21250bcc2bdb0b135c545b57eeba345679ae749d241bec16df7b" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jetbrains.kotlinx" name="kotlinx-coroutines-javafx" version="1.10.2">
+         <artifact name="kotlinx-coroutines-javafx-1.10.2.jar">
+            <sha512 value="b020731cb0bf5f139d52c55924fa626f8eb0fb6e49a0bf734b66b18beccc2d0e4fb789872cebf8f19324d1637c42f1e577c1138f082e64fb3ac6f11436274312" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="kotlinx-coroutines-javafx-1.10.2.module">
+            <sha512 value="80fdc3c1a911b30c9652db560378c0bc9fd725422e46bf2af5c64008cc39a9c566270af92f0d510c430e06820550b95cdd5ee042c2ea0dce6c90111580b054aa" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.jspecify" name="jspecify" version="1.0.0">
+         <artifact name="jspecify-1.0.0.jar">
+            <sha512 value="efded31ef5b342f09422935076e599789076431e93a746685c0607e7de5592719ba6aacde0be670b3f064d1e85630d58d5bce6b34aed2a288fdb34f745efb7bc" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jspecify-1.0.0.module">
+            <sha512 value="02669b1c62e0c6988dd812b89201acbe6dad796f3573d6e626d2f56d2194896e198bf3998f0618019b722c7b0c93f013528bff1118f835154f2bd61c17e67b77" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit" name="junit-bom" version="5.10.1">
+         <artifact name="junit-bom-5.10.1.module">
+            <sha512 value="1abb687162cd54ff654dfe16d7f6b777e7dd09866ef124e6ddec0e7dbec81f52dba4b7467f6567b688cdbe9745dd1d8198cae4ead0636eb485cc2f0511d2f0fd" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-bom-5.10.1.pom">
+            <sha512 value="1b9c3bcea64f5d98f5e39c88adab6d7a9bfcf0ee4e6639a8c146b4b7cb29a4a280b567c6e42a537c215590c557e86b9446a2c9dcf76191d0ecac1ad9bf16f7c8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit" name="junit-bom" version="5.13.1">
+         <artifact name="junit-bom-5.13.1.module">
+            <sha512 value="b3e821345032cb9182822539189ed51eb9cdddc52c90e0806d00befaf3dbe9d704c081c1a3db03776c2b622575a5d9abe68d778852ad94707429698611bbb6a2" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-bom-5.13.1.pom">
+            <sha512 value="e1c4acc68f7114cd501754d07e51a9345bc1106623ea9e38cd6d40b1886cea7f8f6fa227da9d71da608b6691ef1f9d75d11253567350fbb4a949770a1cb7023e" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit" name="junit-bom" version="5.13.4">
+         <artifact name="junit-bom-5.13.4.module">
+            <sha512 value="4dde9f4f39229bd3fc692016cb1ba53e506d6816db304700c58cf6b850559801c7ad56634c97e4abc125baf7874c402a4d4281dd12cbfe7f389ac4e19da4c3c7" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-bom-5.13.4.pom">
+            <sha512 value="ec795b2f32982c1af8dccef57553aa9d959c13ee829aebd6459ba22b4ef434aeb4184aa89f63ad2f0d8c45d59cd020a15cd976ddb4bf20f1044b492a406e029e" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit" name="junit-bom" version="5.14.1">
+         <artifact name="junit-bom-5.14.1.module">
+            <sha512 value="916c9c492ebc45afdb136c73a5fe5f1a751268d9121e8249cfa0ca2762b5e06e0d023fffec528b82180896278a0cdaa3245cc26af9c8fccf23e44fe803e3e337" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-bom-5.14.1.pom">
+            <sha512 value="adeca632b5d26607b30e792431646f7e6b28cb701a54e5dd9c3b2f4523f5e8bc4b2d114981846f2dc9d57e4ff4331da5ed5d1226ebc30b1267f885368295eae0" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit" name="junit-bom" version="5.14.2">
+         <artifact name="junit-bom-5.14.2.module">
+            <sha512 value="7ae493a46b924d3ac601b97867cb24044aa74e0c6d35de23a06a9b0ba5439de9ed23ea69c67038bc797d9131c744e39e67e4d715c62bfc533df716e15130393e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-bom-5.14.2.pom">
+            <sha512 value="b4ac40bd983d3928df403dcf64a9253bc922825f9f191c4c8140c34188d631918831290ef2b396cc2ba30968c77a061ec7fbf593008f79650543856a6c314506" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit.jupiter" name="junit-jupiter-api" version="5.14.1">
+         <artifact name="junit-jupiter-api-5.14.1.jar">
+            <sha512 value="1347a3d7015cf06a9a38c37b6f35d54face4968a3a50ef390a7d3407fd5a7f32b134d876b8674c27a7f45b087bff0c825ff47db21db69421a6cfc70531a4da19" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-jupiter-api-5.14.1.module">
+            <sha512 value="7bb26fa174e477f2e893b68b8080258f3a30a0f60aec3cb0c693cf2c2bc03c5052ff4ca6475926f2fb8491189fdf222db2a842abb425a7bd0c08919ef7a5015b" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit.jupiter" name="junit-jupiter-engine" version="5.14.1">
+         <artifact name="junit-jupiter-engine-5.14.1.jar">
+            <sha512 value="0e891c3fc3b9750a389048dc7c96759e28bd57ed5b0c10a92af90fac041387acc5d9bf6fdbcb09440a815a597d909ff108f0f7567c7b00379314213ba51013b4" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-jupiter-engine-5.14.1.module">
+            <sha512 value="c52c1841f9873182384190f70cda7b4f1ab3aa869498418e521149d10e681594f7b630ad3c8e7e4fa41ee7ce5363f53e53364a2ff458149f7cf445a333e67846" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit.platform" name="junit-platform-commons" version="1.14.1">
+         <artifact name="junit-platform-commons-1.14.1.jar">
+            <sha512 value="528fa274d3b023cc71af4b1f7885226507c31215967793ff1a7f31a968a49e7bd4186ecda956df9f27c26763e134a309bfad6f573574bf32a2b0bbba11c128ed" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-platform-commons-1.14.1.module">
+            <sha512 value="c72ceb41e35da1f45a07ea174c8a74598f56b0188e4ce0db54f73f32de39dcde34776700c614eb9bbf6f0cbf0db9cead5cff4bdbdf12e505229790f5b45b6da6" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit.platform" name="junit-platform-engine" version="1.14.1">
+         <artifact name="junit-platform-engine-1.14.1.jar">
+            <sha512 value="8b0e627fb887a5f97b276689ddcbcc1ee7cae232a17a9b14ee9ede516b3488b4ef95168078808113ccf3737947709b295565d5de738491b181cbca717bd0af5f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-platform-engine-1.14.1.module">
+            <sha512 value="ffbb935093cf4fb4a49804dff3f56b8d2aedd851eba7967ae52937bc172968e7c4c32043eab8da171078d1109080e97e3640ecb3a9dcd1f13f114ea3f79037d3" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.junit.platform" name="junit-platform-launcher" version="1.14.1">
+         <artifact name="junit-platform-launcher-1.14.1.jar">
+            <sha512 value="51cc825a9e2207fd3d9a33b412d3cce19e0b56dd530cc9306766d09903860aa62018c55ad8068ab2ee710ad4daa080ae5663a575cbae5598e1b9321a092c9ee6" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="junit-platform-launcher-1.14.1.module">
+            <sha512 value="d2456d5ce247f8c223327bf95cd626ac872ea751cd5573f0e41b6b299d3c7613a1244645ae69469ac28010310b69e5e2c74f00b42ce9b54278d17b277fbc325f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto" name="error" version="0.4.0">
+         <artifact name="error-0.4.0.module">
+            <sha512 value="1562aea2e5f6889938f5285dbe02be909cf81269fa25fa15d1a0a7426edd746888e1e3f8774356b8b9ddb4ea16d79960afc2ecac1ec7bffce4980860c3ec796f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto" name="error-jvm" version="0.4.0">
+         <artifact name="error-jvm-0.4.0.jar">
+            <sha512 value="8f3297a4508726d3ed0c1109d231c00793a48becce8ee65b63568fd90e31f606a4f82394560f66783f10fd0567ea687ba821a18b6858f2893cdeab9c146c202a" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="error-jvm-0.4.0.module">
+            <sha512 value="fd17aeefcfecd0c73d120b33231066260b7f98d5c517cbe00c2ff0d45ed92afc5818f17a179d2acf011a8557014926fcff80dce35e098df90b474434729ddf90" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.bitops" name="bits" version="0.3.0">
+         <artifact name="bits-0.3.0.module">
+            <sha512 value="23bc11b189adde8fd42207977c165ea329cd905cf4ab6866f6860d80346e5d41ec83932793cacbb5cdac27fa0bbb57574e9d24f672b0ae3c903bee523c2369c9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.bitops" name="bits-jvm" version="0.3.0">
+         <artifact name="bits-jvm-0.3.0.jar">
+            <sha512 value="b6ba5f2dc8aef17b212a72b30b348aef754f680b42b21fc849e98a5787c1af5cf67f035c6d1bbf3b25ce58c5b9b4fe3cf4534b49d21f1ef36db30355a65dd53b" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="bits-jvm-0.3.0.module">
+            <sha512 value="042c63f05dcbbbac9e61a054d875c975c3886e509a471cc7fc24b18b71aff501ccd87e43b3bb489a7a2450a5f1ec4258bc33aa09d83a35fd2bdbece8da206d83" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.bitops" name="endian" version="0.3.0">
+         <artifact name="endian-0.3.0.module">
+            <sha512 value="19791edc7b48b2a0dd91d54864cc8ffd55ce12783fb4921e711976ebad9f57e95c91a473b9c9d5249489553d724389cde8bdd887b4e4b6e868ac33f69dd5c2f1" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.bitops" name="endian-jvm" version="0.3.0">
+         <artifact name="endian-jvm-0.3.0.jar">
+            <sha512 value="59b7ddf273b7616018c492163e480736f9a8bb38cf1752277cba433a04bf58f7f2bb2e61da4db5910b3cfb7aeb983f2c59647164bf4b919bad0d6741840bcbab" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="endian-jvm-0.3.0.module">
+            <sha512 value="bf8b56e832b619605a2ce7b3b2527a7dcd55fcce7aa878443d4dea3615824f4df17ed0270f8a83206ab24012559a7f9c6bfb47537898f9b20ef25fa7533d18a8" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.core" name="core" version="0.8.0">
+         <artifact name="core-0.8.0.module">
+            <sha512 value="0026bde53f67e9e1f9ad6bf088549f40aa83368a0af8e246cdb478e3eced4889f9a0aeef6fef764836920fb7ea927a6115b19b330ac8aa2f77f915fa05726a72" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.core" name="core-jvm" version="0.8.0">
+         <artifact name="core-jvm-0.8.0.jar">
+            <sha512 value="5dffb80ed869af55810fe012b786d01559303be4b74290675e99578d5e9d59220d1141757dfee257155a168fe1b0a4b10f91e9ad2651aa90a52f3c222ffd7d86" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="core-jvm-0.8.0.module">
+            <sha512 value="490ef39734956e723f2195b6072c6e46a1e56818bcf86d5532154b1847792113c7a4edf9a931874369e7587cb192f6717fb50e117ee08f22aecc317d566aef89" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.core" name="digest" version="0.8.0">
+         <artifact name="digest-0.8.0.module">
+            <sha512 value="1ccef0cc47815580a9e487478aa0b6babea8328353f967856d0c6625d2f7afa4d549478f29fec6aa80913b1e6b6bc951f476c720a0e901180d3ae511e4c0033c" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.core" name="digest-jvm" version="0.8.0">
+         <artifact name="digest-jvm-0.8.0.jar">
+            <sha512 value="d02148027a49bbf8ec7fc629760b37bacbf8c9a140f0636b57e18b792439a6cc1066ab55898c754020e42cb1ede7a17bb7ff01c5bf15c13e0fb5365e78e43856" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="digest-jvm-0.8.0.module">
+            <sha512 value="aaa7c468a923b911f16dfcec7eb11d2fbb777de1de5ac4b1b6e80dae163c641f171cba9ab703b9e3503c591471fb15ce2d67947f1f44b82b041cad63753f36b2" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.core" name="xof" version="0.8.0">
+         <artifact name="xof-0.8.0.module">
+            <sha512 value="2cc60dfb785ebe7cb7806825f60e06e63d74db0d2c4a4c208e2293088dae556ec8a37bafaff3d5ccd0ebd0624c11aac1b7678d0fc819a17e2e3c80a8d1e70fa9" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.core" name="xof-jvm" version="0.8.0">
+         <artifact name="xof-jvm-0.8.0.jar">
+            <sha512 value="a2f4f8b996d58fa342baf28eafd5ff21d552608b849c323210bbf873113e4bad9b230db861cf3a5350855d0458c0aa1cc6ca1d75c4bae208a694547cf49ce3c1" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="xof-jvm-0.8.0.module">
+            <sha512 value="e32f12525e1a4bf6167c4a119183888e7e2c5ffc0e69322100c5ff10f9c0d015844a9ca778ddbe6124be8d16e11a0ecafa91a39796f3338da7d4f81d5cfffc87" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.hash" name="sha2" version="0.8.0">
+         <artifact name="sha2-0.8.0.module">
+            <sha512 value="cc37dde67e258a32738644d78955ed4cb48a3dbb6a29c08bfbeac082a1698dbec9ed5a3e0c8331b842d927d73f4d4b31894a387bf519aa45d7aca9fbb2f81b32" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.hash" name="sha2-jvm" version="0.8.0">
+         <artifact name="sha2-jvm-0.8.0.jar">
+            <sha512 value="056cf147856c150f58968d4fbc0490f160a6a4cf181ce7af0af6603fd588d69f2fa941a8d55de5f28de717edc60c4fc158df6e5276cffe287abf5d4a649e60eb" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="sha2-jvm-0.8.0.module">
+            <sha512 value="20dd0970abfae94646ec49f984de3d48ce5a2302c8b7f563fc087c5b6ddcd98e1b724dbe0d1e55e935b4bbe8506fddee39d134b90f8fc4d791ac54515c6f5f95" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.hash" name="sha3" version="0.8.0">
+         <artifact name="sha3-0.8.0.module">
+            <sha512 value="f3abeb91bdddb5e9efbf159c0a5a73d2efddb8b56ea0ca7c0c18aa9577501edb15a334b93c3c5c1cb0fe200374bc673872d73c23917c3052e0c2de54e3267020" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.hash" name="sha3-jvm" version="0.8.0">
+         <artifact name="sha3-jvm-0.8.0.jar">
+            <sha512 value="3f549807a4ed34ccf1e4aac11a066295ecb1300f43e5a40f3ce3d840d849ca0a0b65f838dae037c688fba70011fdc7e690ff2b42a05a1eb92a2fd79ec4262196" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="sha3-jvm-0.8.0.module">
+            <sha512 value="0d7fe189688f445528f2c36e07aa1e216128a84bbdc20fce2c56b4e65ad778a0230af1cf5836fa3f343b123435b74295999d7eeb9741fa4d45d6d0765eb8a87e" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.random" name="crypto-rand" version="0.6.0">
+         <artifact name="crypto-rand-0.6.0.module">
+            <sha512 value="f2afdf4c4a3a2b1135c5f8b05ae90bbaf5514c0d815e3f69024385ad2136c91f6829bea3f805569d7e065e2629b2f90e48ddc10a1bf2dd3b920f6ce8d12d1edf" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.random" name="crypto-rand-jvm" version="0.6.0">
+         <artifact name="crypto-rand-jvm-0.6.0.jar">
+            <sha512 value="bd75b3d13fc3dd7d7c190074928dcb8241184931d2e174ad81c9fd25441f8aa17ae513184a257053239f3275b272c6d3ef0374cd29cd411bbdd10b6afeb7f210" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="crypto-rand-jvm-0.6.0.module">
+            <sha512 value="e981f845433e1c4bc2c5cf4bd2086111202b477a59535bc61bd938d7d8039d63f17cf39189c27bbafe231758d8536bb8fbbcd5d5e4f9689ff7bbfe31de6b5465" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.sponges" name="keccak" version="0.5.0">
+         <artifact name="keccak-0.5.0.module">
+            <sha512 value="0037a66d717cb08eba19c3c24b7ef82c32e90cfc0870c070823ef1b12b656f0c68b8d98bfe787fbf441a2065dadcaef5298b06b732cf6ce958952a387bf1268b" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.kotlincrypto.sponges" name="keccak-jvm" version="0.5.0">
+         <artifact name="keccak-jvm-0.5.0.jar">
+            <sha512 value="8b13f4f5b62f993f1609e456faa84a8ce19ee05ddc4fc5dac50c3c33064bca827334c1f73c5433e6476aa0f0d48aff580018e57498a4a3a5f603bb7efbd8a5e2" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="keccak-jvm-0.5.0.module">
+            <sha512 value="e2ee6e4c754cac6e0cba92f566faa540ec233ce417b9b80a4fd5511436597bdb21e35a6dafe20bf15f7ff8f83ec1ff143af6fa77f1861a786b632b4f00515944" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx" version="26">
+         <artifact name="javafx-26.pom">
+            <sha512 value="a18b2912b8af30e061ec0b9588a4dde75c417855b6c2a83c0f9781fb006e155ae7cca225a1b3b7d3594403b0d18cfc99bbd7d45642906112e5ab0e6ee9a2afcb" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx-base" version="26">
+         <artifact name="javafx-base-26-linux-aarch64.jar">
+            <sha512 value="48ce21f9e2f89f8629cbfb7a591651595b60aa0088f99c9a3aa4e2454a44a83ab1e5d9324c4f0a610571fbc36f5546144d66240bff0dbf08a67c8ff67fec7194" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-base-26-linux.jar">
+            <sha512 value="8cb0b65e0198594b3a540417f192f50a0bafa7ba3a4f3c7e33a9cdf3501936826422690bc2d7d6744c5fd11c77b61b13544791126b51b6425446fe90bc18a706" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-base-26-mac-aarch64.jar">
+            <sha512 value="4ff2f3f614a9206e2a25e554700366aaa99777389d5c4367ffe7e7cca64635e857dc26dbcd4c6d4d3cbb6a533432eaa3f2bd1414c74e02aebaed8b511481a10d" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-base-26-mac.jar">
+            <sha512 value="e1b96c8fb03b4048b27515714f4a7b2719a0133d8ef80cb80a2f5476cdfed07c0784acb5e3aea0b4165e463fcfd7528ff8dc281688320e85facb1bfd0c418db4" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-base-26-win.jar">
+            <sha512 value="f5d49d697ab0c17f0a64f50fb0f67ec37debdd34c52386fa500cc44ff20baf49022d2d99f1fd06a870717c6c4d477dc687b5a028d88320b1fb173e65c5b441a7" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-base-26.jar">
+            <sha512 value="aece9d48a436145b4be582ed1d41de8fa7537d262b070e83b31d978e0a0dc28856c0a2dc2c698ffef9acd5a099b3417ca15336f80d3f93ef67ed56fda5204d67" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-base-26.pom">
+            <sha512 value="bc61c6480cdb193ed8fc729c2c0433f17264d823031884af00db582a55bd2552b0b17220856f78dce452da3438882d994d5e66022281bcbf19d40e55666ac874" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx-controls" version="26">
+         <artifact name="javafx-controls-26-linux-aarch64.jar">
+            <sha512 value="1179fd653f7d9a2134a7b823340badff2f56db8b3571096d5154da29dca06fd389b3a2e7e9aa17ea18b30e5e3e6addef263900c68da75b3db83b59f9c62afcf1" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-controls-26-linux.jar">
+            <sha512 value="31d4d8f7114b5405a095763c69f934c9fb6f89c82d3f3b84893bbcac1df92dd316a79c9fcc4ab8f291d4bf332a6ed4073e502b82cbac4c5503e0ba030fc5ed09" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-controls-26-mac-aarch64.jar">
+            <sha512 value="d803ca3b447f29b2b6a7cbff89bdae2cd7bd2b889cd69de2a170d2ae582b96c41483453ea146899573ef950841a7a1be1fe549f1a931eaa5e26959523ffb251d" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-controls-26-mac.jar">
+            <sha512 value="da4cbe607f41453f16e8620875e85091676d89dcc027aa7199ab0d025ffdba20c3eb8932ce68e4bf6ddf807e003338c4021a2ffac4ef802005e14b8e56792923" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-controls-26-win.jar">
+            <sha512 value="f77e2061a4c8ea73aa530fc88491e5ac1b10a5fe5b8ea1b8db87d85fef4a16a547a0a6c94c1d20ee17155dc126bbd62971ffbd27a5d311fb96ba0a8c8fdac658" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-controls-26.jar">
+            <sha512 value="6e6fcaf676a08dc3d281c4ebf373bbd7d854e2a89e7521a72d8b785c3c390efdf492a90ff3c673814bccb5e317c87f902fccceb9f41c070b3dedf107c3a34d7d" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-controls-26.pom">
+            <sha512 value="55337cc2d247c7c3b176ad8ccedc9eb85e8bc93315a0dacf5fabe9c6836712e70b79ece655feca863376afc181379f1933a035e9908807a78ab16ef270bfc759" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx-fxml" version="26">
+         <artifact name="javafx-fxml-26-linux-aarch64.jar">
+            <sha512 value="24e47bb10d3f7d2db4e50ed133cb9e411661ac3914534f0aaad179be66d9ece7ddd502408041960bc30d497ceff1f2ed826965dbe84cda04636c44fd34869b9f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-fxml-26-linux.jar">
+            <sha512 value="a3633f646ed038b547402b0d5e827ac6fdc55397755e159ee90211f5d6a2d9fb11429162c6c10e6e99fa664814a0c266bf8f7f8c4fc49c7f282fd951c31194c0" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-fxml-26-mac-aarch64.jar">
+            <sha512 value="a7f2df72993880ae9fa87a3569827414f410210baeeb69cf540c115ed6fc910e80feddf09c996c06fb69af39541b81320f846db214a2bff4c686d0018168cf17" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-fxml-26-mac.jar">
+            <sha512 value="5bb152630ed09fab09bb6e68aa66801ccadb9d10b259c2836199d019f575a0b8c189a86b2a005471ffac4874460ba0713c21984b2594ba06199eaea53d5d4b24" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-fxml-26-win.jar">
+            <sha512 value="093dcc72b39ff7e51d8418c62ef167274c74f510fe3fd842bd0bb84c6ed60b047b4d5b991c808725f77c4609311d3d800664b239c76a6c71a7cd7494b334ea97" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-fxml-26.jar">
+            <sha512 value="55a045a5e7bafb7b6406363e6b81edc92ccdbaac3d9bb11467c9033902111d7cc66252367cedc8a07ee8cb50f17ce1ea638c3c20497067094879a481920f8ba3" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-fxml-26.pom">
+            <sha512 value="de7422bb792c2bb02f4c26983f89baf6bd33780a31862778d53172dd42be476b333ebe6fabea505dd1b9a91cede299b5df378b47335614e3a6f4797ead0c2053" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx-graphics" version="26">
+         <artifact name="javafx-graphics-26-linux-aarch64.jar">
+            <sha512 value="87fcde7ae3c989531a0dd859f558eb0be156b157ebc296655016b4b9f6c750e94d4421aaecd4b1755293448d642119dd24c593c368d19cca9d00ef3aaf8b86ac" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-graphics-26-linux.jar">
+            <sha512 value="fd3f9812ab8b1f5d7fac4f85e49f2d0a14f8cad56f03bd4a9223dc2a4880a83ec473b009c15ad52d65206b319941ec29abd045a68d0e493a712c941dbfe14688" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-graphics-26-mac-aarch64.jar">
+            <sha512 value="ff32f528d5e222b442875aa9b4b39a97f98376bba4e8627040de355f09379984adb19191ace5b3f6c800b6bf9467a4381f1533828f33a0279eb98fbeabdf8c08" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-graphics-26-mac.jar">
+            <sha512 value="409f054f72c4932aee189c942df9adc8d183d156f1fe2285e7921de4921198b0aa4eda76c7eea721ad1d6977c90d37a6db58ea9d9848fe4c1d389ded0882491d" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-graphics-26-win.jar">
+            <sha512 value="709938a978d6c6c1b7297ece9255768868a7b901ccffc41913fd47ea3d77d4781765d0c568249305d41b53642461e8ced27d64dd1d5d5fc4aab43ab6ff3fa904" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-graphics-26.jar">
+            <sha512 value="3cb285fa5d73e70a14201cf649552f98750da53460d27c6562e68cf96a51012e7c743cf92b3e1e2c898985ebfd96ea6202cd2738b380b2b8d7d909cd03e66171" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-graphics-26.pom">
+            <sha512 value="f25fe0c9439a7b88d37ef2b8a672d372675741750352764b65ace7c35f98727e4e2c879192fad4a74969c6e1ddfe58b8bf280b538965d2989a2b4666526e0657" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx-plugin" version="0.1.0">
+         <artifact name="javafx-plugin-0.1.0.jar">
+            <sha512 value="bcc4d23867a305f9aebc85a2c35d98e291e700d53278e1bd07ee713de5c83d4c2de4cdf87c798065b3ddbe5eb12fb8c194ed901232e08013e39dbc553d6f69a0" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+         <artifact name="javafx-plugin-0.1.0.module">
+            <sha512 value="2dbb611bdff787e7a183c14f2bfdbd53f6e437c991eecab0cb4bfc7603fa4a3558aa0275b9a4108192e8ce600708c685b4d1dec59f91a915cfb1f89ae95251f3" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx" name="javafx-swing" version="26">
+         <artifact name="javafx-swing-26-linux-aarch64.jar">
+            <sha512 value="34da83b261b0f5f8995e369cbf777096454cab4537e24fa5109c5fcc12d63d97f97cb2a3fd74988e2074c5c6cea10f7a7fc94cf00674fa3eed3d8d64bf921809" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-swing-26-linux.jar">
+            <sha512 value="737e9448db3e28a7b24a903fb19225e34a1ab3a71ec09ef94f57861da97c5aaf8c69a123490d28c79a9619af7db4d87bff70808297acdc8bdb2f90bff4897bc5" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-swing-26-mac-aarch64.jar">
+            <sha512 value="9b38689ead2ff139d7efffa3a77807621e1e02c5d155a0264e1b8c67a69ff7e3c73ecdf7d01fa13435341c0618504370d1e0c172310f7c2d85ef9ce7d68c711f" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-swing-26-mac.jar">
+            <sha512 value="6ccaf9cdb8adcd25630c7128208d7e8f2d0e9d8d31b7309c3ebc2e2b963da9191dd1d53c5604cf6f655d7fe1e1f13292d85244a7aa4a925c0dd50a9b7e133cce" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-swing-26-win.jar">
+            <sha512 value="6e5099e9ec820f9cc09b04c52969a68da158692b4e742d8dd28a9f39fd9bd5263597fedc82154e16dfc6d77f4979349915eeb224a1e672d6c26a1347f442a711" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-swing-26.jar">
+            <sha512 value="9d3e6d82cb4b4387fa0b15e96ad033666c458127a3345b64618e3873db4609cc776eed1ccde0368ef7e0c523ce815d893c50188249701b3e09cd507ef2dbb389" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="javafx-swing-26.pom">
+            <sha512 value="cd9e6c9b926ed88a417cba148a48723706e213be86fdeb916191fbcc52857238295464fa9c94036bf7e63badb2d20cab3cc26384b755df86f51c6e2779493593" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.openjfx.javafxplugin" name="org.openjfx.javafxplugin.gradle.plugin" version="0.1.0">
+         <artifact name="org.openjfx.javafxplugin.gradle.plugin-0.1.0.pom">
+            <sha512 value="87a895341d4fcd85342389df72c457b11b345f4277f6c8336cb6c705e1620de857b3868df40d4f5cb8f8dd4064748032f1a66d7ecd8d60359dc84b8485705057" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.opentest4j" name="opentest4j" version="1.3.0">
+         <artifact name="opentest4j-1.3.0.jar">
+            <sha512 value="78fc698a7871bb50305e3657893c10500595f043348d875f57bc39ca4a6a51eda3967b7c8c8a7ec3e8f85f2171bca4aa98823e912e416e87e81c6ba5b70a37c3" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="opentest4j-1.3.0.module">
+            <sha512 value="a24e55ab4d77156b5cc60c4605357f8507758790e9d01c7198719070271ea43d887de97ab5e8eeeb929c2a4d4b54d2f16faf88623d1ad4fe3bcd179a3b7982e2" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.ow2" name="ow2" version="1.5.1">
+         <artifact name="ow2-1.5.1.pom">
+            <pgp value="10F3C7A02ECA55E502BADCF3991EFB94DB91127D"/>
+            <sha512 value="5dbdf60bace26f9dbe2610d3de178e729fae77d65f57cb8238a828d020aaf1b4cc3d3d804bbdcf4a385c141b14fbf92ff689d9caa1f9e86542b5c47b0b1e9288" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.ow2.asm" name="asm" version="9.8">
+         <artifact name="asm-9.8.jar">
+            <sha512 value="cbd250b9c698a48a835e655f5f5262952cc6dd1a434ec0bc3429a9de41f2ce08fcd3c4f569daa7d50321ca6ad1d32e131e4199aa4fe54bce9e9691b37e45060e" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="asm-9.8.pom">
+            <sha512 value="a34a1cc4ac50724e0798f4d8ee677207ba68e4f311d9d5cc200dd9351ea63f556589aa42c7a0df90b53634ae41bae3646d5115eb029aab11077a20f7b144bf3f" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.pgpainless" name="pgpainless-core" version="1.7.7">
+         <artifact name="pgpainless-core-1.7.7.jar">
+            <sha512 value="4127bfdfd8292ca340c919ec35c5efe4997fa11f9942bbd90da71ef5ad08303f9b98c09c80e9c7d33706be4379c6adf44f9f9b79e49fc51ede5a12ebb67b8f72" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="pgpainless-core-1.7.7.module">
+            <sha512 value="70a7d7203e89548eafd2e3a9dc25002d0cf5d220aa0beb14f5d5f37a04acce451819d1b897f95d024e7b564d5b5c44b7f4f8fe5ff4c5ffa727488280e4fb5739" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.reactfx" name="reactfx" version="2.0-M5">
+         <artifact name="reactfx-2.0-M5.jar">
+            <sha512 value="c813a2815069b798f5dddcb3478e96b245e38f456fcd6a305f2d8b8019348d73b8d4ea6bdc5e4c6b03ce7feb714b9dea5070bbebb8c8a74be2fabd9bfa3f7937" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="reactfx-2.0-M5.pom">
+            <sha512 value="3c6135fc7c6402c1f393d2800698350f5ac89423c7d4b1a90b8d6e86dd3a8959ebd1f1605006b614a35b41145eeae5b52031de924a0d485f7ca043bd8ac5510c" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.reactivestreams" name="reactive-streams" version="1.0.3">
+         <artifact name="reactive-streams-1.0.3.jar">
+            <sha512 value="aafc86186d82b4f3bd44ef7f955978481172eab267d208aa80b24f8ca218bd902d69b587fcae2fe44a888b7a9f81fc5a209e837958307fdc0ee815248f7065f9" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="reactive-streams-1.0.3.pom">
+            <sha512 value="7e1e70ecea77701e994e2d3a9294cfc7206b81d77adb9b7b404589abeaf98ff86a17c3c07e3089e84e94c20922ab57e7686742c06fec763c3eb3ffb1aee40990" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="jul-to-slf4j" version="2.0.17">
+         <artifact name="jul-to-slf4j-2.0.17.jar">
+            <sha512 value="623426fb3a0a34c88b1fce686cbfaa8d17bf013f3583886dc94273bf2f767492044b48db6557988d764f0450129c9d496dd3c10ad548099879d80e3945f2f636" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="jul-to-slf4j-2.0.17.pom">
+            <sha512 value="7d8632cb19e60aaac7ba03556b961da62a0c2269e35f9a2b860add627db42575b1e111dc2d1cc7f7280bef2009125ed24f89e7f143b46f9654e433ab138a18fb" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="slf4j-api" version="2.0.17">
+         <artifact name="slf4j-api-2.0.17.jar">
+            <sha512 value="9a3e79db6666a6096a3021bb2e1d918f30f589d8de51d6b600f8ebd92515a510ae2d8f87919cc2dfa8365d64f10194cac8dfa0fb950160eef0e9da06f6caaeb9" origin="Generated by Gradle"/>
+         </artifact>
+         <artifact name="slf4j-api-2.0.17.pom">
+            <sha512 value="462872ccda241179a77ebc89c3f7be93870fffae344e09d3cccc33d6448336dc77affc9572f420d7da788b3f0eb072b7facc9b7e609b33742ed48f4bb467cb70" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="slf4j-bom" version="2.0.17">
+         <artifact name="slf4j-bom-2.0.17.pom">
+            <sha512 value="cb2db4597b98b9981959413e3ffcd5882f8e267d3d51f989c396807c36893296065cbe443a173029e8d3a0851eced25f5149dc2dafa0dd2c29fca737180a7029" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.slf4j" name="slf4j-parent" version="2.0.17">
+         <artifact name="slf4j-parent-2.0.17.pom">
+            <sha512 value="5b16a209843c18a478a0a16dff83ae1c75eedbdeadc15a958d536a36631d4d39a9998e085c165a79ced8ad187f021e2f3cd4068856ca174db35657ef5a473c5a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.sonatype.oss" name="oss-parent" version="6">
+         <artifact name="oss-parent-6.pom">
+            <sha512 value="33e5110a816ecf0a9ac73f41243b6481aa85ace660f00d6d3c22738d72d9c1a426aab9bc6bab156dec04491d4805471f00e960d033dff266b4354fcb33f3f57e" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.sonatype.oss" name="oss-parent" version="7">
+         <artifact name="oss-parent-7.pom">
+            <sha512 value="63b0951f793ee9d25239ee44760e4d51de3b8503e438e567862306f2d175019d8617eb854bc4ee2374c39f385e0a1094c3c7097f899b2074e4acda14fe6030fb" origin="Generated by Gradle" reason="Artifact is not signed"/>
+         </artifact>
+      </component>
+      <component group="org.sonatype.oss" name="oss-parent" version="9">
+         <artifact name="oss-parent-9.pom">
+            <pgp value="44FBDBBC1A00FE414F1C1873586654072EAD6677"/>
+            <sha512 value="1c4f18cacd3a9f99a168bd20845d12d94824e66b5caebe57c164b6ac3dc89803508f60e35c4d1da81d3f3866c89ed407826f0d108f1e624c2d8a258e01e1064a" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.testcontainers" name="testcontainers-bom" version="1.16.1">
+         <artifact name="testcontainers-bom-1.16.1.pom">
+            <pgp value="D022218DCC08AAD6EF3AF876B3DE72E647D35161"/>
+            <sha512 value="007b4b5ed78892bda85bd6116df45b023a4996a1c4954d76d6f50158582dce5fc3241c99112f85e78923922d854f1572e64abd37a2e3e3e77828ce0487d947ad" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="org.testcontainers" name="testcontainers-bom" version="1.21.3">
+         <artifact name="testcontainers-bom-1.21.3.pom">
+            <pgp value="2655176F748FD83725B4805FF2A01147D830C125"/>
+            <sha512 value="011934b4af3997113dab331c923fa168761a97cf21f408a9d857d9f78a4a81443a37141f8a030c2937b487fb6130e0eee09e8be00e5266e0513ae10dc1d60f3c" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+      <component group="tools.jackson" name="jackson-bom" version="3.0.3">
+         <artifact name="jackson-bom-3.0.3.pom">
+            <pgp value="28118C070CB22A0175A2E8D43D12CA2AC19F3181"/>
+            <sha512 value="165ef61fdee71cf00c50e45e19cb9e6fcb352cd07e13de7b00742c4b6e35d1d0b66fedd0a52e08655fd6961dd684e4fa828d6197e25f0036ee3640328283d3c7" origin="Generated by Gradle"/>
+         </artifact>
+      </component>
+   </components>
+</verification-metadata>
