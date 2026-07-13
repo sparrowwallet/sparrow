@@ -12,6 +12,7 @@ env:
   ALLOW_ADDITIONAL_ARTIFACT_CHECKSUMS: 'false'
   CLEAN_STALE_VERIFICATION_METADATA: 'false'
   CACHE_GRADLE_WRAPPER_DISTRIBUTION: 'true'
+  JDK_JAVAC_OPTIONS: '-Xlint:-module'
 
 concurrency:
   group: dependency-verification-${{ github.ref }}

@@ -5,6 +5,9 @@ on: workflow_dispatch
 permissions:
   contents: read
 
+env:
+  JDK_JAVAC_OPTIONS: '-Xlint:-module'
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
