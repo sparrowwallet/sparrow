@@ -1,5 +1,5 @@
 package com.sparrowwallet.sparrow;
 
 public enum Theme {
-    LIGHT, DARK
+    SYSTEM_DEFAULT, LIGHT, DARK
 }
