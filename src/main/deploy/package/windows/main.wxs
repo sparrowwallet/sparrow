@@ -2,8 +2,8 @@
 
 <!--
   This file is a copy of the jpackage WiX template (src/jdk.jpackage/windows/classes/jdk/jpackage/internal/resources/main.wxs in the JDK sources),
-  customized only to add the RegistryEntries component registering the auth47, bitcoin and lightning URI schemes, and its ComponentRef in the Feature.
-  When upgrading the build JDK, re-diff this file against that JDK's template and re-apply the RegistryEntries block, keeping the component GUID unchanged.
+  customized only to add the RegistryEntries and CapabilitiesEntries components registering the auth47, bitcoin and lightning URI schemes, and their ComponentRefs in the Feature.
+  When upgrading the build JDK, re-diff this file against that JDK's template and re-apply those blocks, keeping the component GUIDs unchanged.
 -->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
@@ -84,7 +84,7 @@
                 <RegistryValue Type="string" Name="URL Protocol" Value=""/>
                 <RegistryValue Type="string" Value="URL:Auth47 Authentication URI"/>
                 <RegistryKey Key="DefaultIcon">
-                    <RegistryValue Type="string" Value="$(var.JpAppName).exe" />
+                    <RegistryValue Type="string" Value="[INSTALLDIR]$(var.JpAppName).exe" />
                 </RegistryKey>
                 <RegistryKey Key="shell\open\command">
                     <RegistryValue Type="string" Value="&quot;[INSTALLDIR]$(var.JpAppName).exe&quot; &quot;%1&quot;" />
@@ -94,7 +94,7 @@
                 <RegistryValue Type="string" Name="URL Protocol" Value=""/>
                 <RegistryValue Type="string" Value="URL:Bitcoin Payment URL"/>
                 <RegistryKey Key="DefaultIcon">
-                    <RegistryValue Type="string" Value="$(var.JpAppName).exe" />
+                    <RegistryValue Type="string" Value="[INSTALLDIR]$(var.JpAppName).exe" />
                 </RegistryKey>
                 <RegistryKey Key="shell\open\command">
                     <RegistryValue Type="string" Value="&quot;[INSTALLDIR]$(var.JpAppName).exe&quot; &quot;%1&quot;" />
@@ -104,12 +104,24 @@
                 <RegistryValue Type="string" Name="URL Protocol" Value=""/>
                 <RegistryValue Type="string" Value="URL:LNURL URI"/>
                 <RegistryKey Key="DefaultIcon">
-                    <RegistryValue Type="string" Value="$(var.JpAppName).exe" />
+                    <RegistryValue Type="string" Value="[INSTALLDIR]$(var.JpAppName).exe" />
                 </RegistryKey>
                 <RegistryKey Key="shell\open\command">
                     <RegistryValue Type="string" Value="&quot;[INSTALLDIR]$(var.JpAppName).exe&quot; &quot;%1&quot;" />
                 </RegistryKey>
             </RegistryKey>
+        </Component>
+        <Component Id="CapabilitiesEntries" Guid="{BE92DD88-F799-47CC-A256-4165F9183A46}">
+            <RegistryKey Root="HKMU" Key="Software\$(var.JpAppName)\Capabilities" Action="createAndRemoveOnUninstall">
+                <RegistryValue Type="string" Name="ApplicationName" Value="$(var.JpAppName)"/>
+                <RegistryValue Type="string" Name="ApplicationDescription" Value="$(var.JpAppDescription)"/>
+                <RegistryKey Key="URLAssociations">
+                    <RegistryValue Type="string" Name="auth47" Value="auth47"/>
+                    <RegistryValue Type="string" Name="bitcoin" Value="bitcoin"/>
+                    <RegistryValue Type="string" Name="lightning" Value="lightning"/>
+                </RegistryKey>
+            </RegistryKey>
+            <RegistryValue Root="HKMU" Key="Software\RegisteredApplications" Name="$(var.JpAppName)" Type="string" Value="Software\$(var.JpAppName)\Capabilities"/>
         </Component>
     </DirectoryRef>
 
@@ -119,6 +131,7 @@
       <ComponentGroupRef Id="FileAssociations"/>
       <ComponentGroupRef Id="FragmentOsCondition"/>
       <ComponentRef Id="RegistryEntries"/>
+      <ComponentRef Id="CapabilitiesEntries"/>
     </Feature>
 
     <CustomAction Id="JpSetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
