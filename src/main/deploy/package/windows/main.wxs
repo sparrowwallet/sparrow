@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  This file is a copy of the jpackage WiX template (src/jdk.jpackage/windows/classes/jdk/jpackage/internal/resources/main.wxs in the JDK sources),
+  customized only to add the RegistryEntries component registering the auth47, bitcoin and lightning URI schemes, and its ComponentRef in the Feature.
+  When upgrading the build JDK, re-diff this file against that JDK's template and re-apply the RegistryEntries block, keeping the component GUID unchanged.
+-->
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi"
      xmlns:util="http://schemas.microsoft.com/wix/UtilExtension">
 
@@ -13,6 +19,17 @@
   <?define JpCompressedMsi=yes ?>
 
   <?include $(var.JpConfigDir)/overrides.wxi ?>
+
+  <?ifdef JpAllowUpgrades ?>
+    <?define JpUpgradeVersionOnlyDetectUpgrade="no"?>
+  <?else?>
+    <?define JpUpgradeVersionOnlyDetectUpgrade="yes"?>
+  <?endif?>
+  <?ifdef JpAllowDowngrades ?>
+    <?define JpUpgradeVersionOnlyDetectDowngrade="no"?>
+  <?else?>
+    <?define JpUpgradeVersionOnlyDetectDowngrade="yes"?>
+  <?endif?>
 
   <Product
     Id="$(var.JpProductCode)"
@@ -32,45 +49,31 @@
 
     <Media Id="1" Cabinet="Data.cab" EmbedCab="yes" />
 
-    <?ifdef JpAllowDowngrades ?>
-    <?ifdef JpAllowUpgrades ?>
-    <MajorUpgrade
-      AllowDowngrades="yes"
-      Disallow="no"
-    />
-    <?endif?>
-    <?endif?>
+    <Upgrade Id="$(var.JpProductUpgradeCode)">
+      <UpgradeVersion
+        OnlyDetect="$(var.JpUpgradeVersionOnlyDetectUpgrade)"
+        Property="JP_UPGRADABLE_FOUND"
+        Maximum="$(var.JpAppVersion)"
+        MigrateFeatures="yes"
+        IncludeMaximum="$(var.JpUpgradeVersionOnlyDetectUpgrade)" />
+      <UpgradeVersion
+        OnlyDetect="$(var.JpUpgradeVersionOnlyDetectDowngrade)"
+        Property="JP_DOWNGRADABLE_FOUND"
+        Minimum="$(var.JpAppVersion)"
+        MigrateFeatures="yes"
+        IncludeMinimum="$(var.JpUpgradeVersionOnlyDetectDowngrade)" />
+    </Upgrade>
 
-    <?ifdef JpAllowDowngrades ?>
     <?ifndef JpAllowUpgrades ?>
-    <MajorUpgrade
-      AllowDowngrades="yes"
-      Disallow="yes"
-      DisallowUpgradeErrorMessage="!(loc.DisallowUpgradeErrorMessage)"
-    />
+    <CustomAction Id="JpDisallowUpgrade" Error="!(loc.DisallowUpgradeErrorMessage)" />
     <?endif?>
+    <?ifndef JpAllowDowngrades ?>
+    <CustomAction Id="JpDisallowDowngrade" Error="!(loc.DowngradeErrorMessage)" />
     <?endif?>
 
-    <?ifndef JpAllowDowngrades ?>
-    <?ifdef JpAllowUpgrades ?>
-    <MajorUpgrade
-      AllowDowngrades="no"
-      Disallow="no"
-      DowngradeErrorMessage="!(loc.DowngradeErrorMessage)"
-    />
-    <?endif?>
-    <?endif?>
+    <Binary Id="JpCaDll" SourceFile="wixhelper.dll"/>
 
-    <?ifndef JpAllowDowngrades ?>
-    <?ifndef JpAllowUpgrades ?>
-    <MajorUpgrade
-      AllowDowngrades="no"
-      Disallow="yes"
-      DowngradeErrorMessage="!(loc.DowngradeErrorMessage)"
-      DisallowUpgradeErrorMessage="!(loc.DisallowUpgradeErrorMessage)"
-    />
-    <?endif?>
-    <?endif?>
+    <CustomAction Id="JpFindRelatedProducts" BinaryKey="JpCaDll" DllEntry="FindRelatedProductsEx" />
 
     <!-- Standard required root -->
     <Directory Id="TARGETDIR" Name="SourceDir"/>
@@ -114,60 +117,63 @@
       <ComponentGroupRef Id="Shortcuts"/>
       <ComponentGroupRef Id="Files"/>
       <ComponentGroupRef Id="FileAssociations"/>
+      <ComponentGroupRef Id="FragmentOsCondition"/>
       <ComponentRef Id="RegistryEntries"/>
     </Feature>
 
-    <?ifdef JpInstallDirChooser ?>
-    <Binary Id="JpCaDll" SourceFile="wixhelper.dll"/>
-    <CustomAction Id="JpCheckInstallDir" BinaryKey="JpCaDll" DllEntry="CheckInstallDir" />
+    <CustomAction Id="JpSetARPINSTALLLOCATION" Property="ARPINSTALLLOCATION" Value="[INSTALLDIR]" />
+    <CustomAction Id="JpSetARPCOMMENTS" Property="ARPCOMMENTS" Value="$(var.JpAppDescription)" />
+    <CustomAction Id="JpSetARPCONTACT" Property="ARPCONTACT" Value="$(var.JpAppVendor)" />
+    <CustomAction Id="JpSetARPSIZE" Property="ARPSIZE" Value="$(var.JpAppSizeKb)" />
+
+    <?ifdef JpHelpURL ?>
+      <CustomAction Id="JpSetARPHELPLINK" Property="ARPHELPLINK" Value="$(var.JpHelpURL)" />
     <?endif?>
 
-    <UI>
-      <?ifdef JpInstallDirChooser ?>
-      <Dialog Id="JpInvalidInstallDir" Width="300" Height="85" Title="[ProductName] Setup" NoMinimize="yes">
-        <Control Id="JpInvalidInstallDirYes" Type="PushButton" X="100" Y="55" Width="50" Height="15" Default="no" Cancel="no" Text="Yes">
-          <Publish Event="NewDialog" Value="VerifyReadyDlg">1</Publish>
-        </Control>
-        <Control Id="JpInvalidInstallDirNo" Type="PushButton" X="150" Y="55" Width="50" Height="15" Default="yes" Cancel="yes" Text="No">
-          <Publish Event="NewDialog" Value="InstallDirDlg">1</Publish>
-        </Control>
-        <Control Id="Text" Type="Text" X="25" Y="15" Width="250" Height="30" TabSkip="no">
-          <Text>!(loc.message.install.dir.exist)</Text>
-        </Control>
-      </Dialog>
-
-      <!--
-        Run WixUI_InstallDir dialog in the default install directory.
-      -->
-      <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR"/>
-      <UIRef Id="WixUI_InstallDir" />
-
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="DoAction" Value="JpCheckInstallDir" Order="3">1</Publish>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="JpInvalidInstallDir" Order="5">INSTALLDIR_VALID="0"</Publish>
-      <Publish Dialog="InstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="5">INSTALLDIR_VALID="1"</Publish>
-
-      <?ifndef JpLicenseRtf ?>
-      <!--
-        No license file provided.
-        Override the dialog sequence in built-in dialog set "WixUI_InstallDir"
-        to exclude license dialog.
-      -->
-      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Order="2">1</Publish>
-      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2">1</Publish>
-      <?endif?>
-
-      <?else?>
-
-      <?ifdef JpLicenseRtf ?>
-      <UIRef Id="WixUI_Minimal" />
-      <?endif?>
-
-      <?endif?>
-    </UI>
-
-    <?ifdef JpLicenseRtf ?>
-    <WixVariable Id="WixUILicenseRtf" Value="$(var.JpLicenseRtf)"/>
+    <?ifdef JpAboutURL ?>
+      <CustomAction Id="JpSetARPURLINFOABOUT" Property="ARPURLINFOABOUT" Value="$(var.JpAboutURL)" />
     <?endif?>
+
+    <?ifdef JpUpdateURL ?>
+      <CustomAction Id="JpSetARPURLUPDATEINFO" Property="ARPURLUPDATEINFO" Value="$(var.JpUpdateURL)" />
+    <?endif?>
+
+    <?ifdef JpIcon ?>
+    <Property Id="ARPPRODUCTICON" Value="JpARPPRODUCTICON"/>
+    <Icon Id="JpARPPRODUCTICON" SourceFile="$(var.JpIcon)"/>
+    <?endif?>
+
+    <UIRef Id="JpUI"/>
+
+    <InstallExecuteSequence>
+      <Custom Action="JpSetARPINSTALLLOCATION" After="CostFinalize">Not Installed</Custom>
+      <Custom Action="JpSetARPCOMMENTS" After="CostFinalize">Not Installed</Custom>
+      <Custom Action="JpSetARPCONTACT" After="CostFinalize">Not Installed</Custom>
+      <Custom Action="JpSetARPSIZE" After="CostFinalize">Not Installed</Custom>
+      <?ifdef JpHelpURL ?>
+        <Custom Action="JpSetARPHELPLINK" After="CostFinalize">Not Installed</Custom>
+      <?endif?>
+      <?ifdef JpAboutURL ?>
+        <Custom Action="JpSetARPURLINFOABOUT" After="CostFinalize">Not Installed</Custom>
+      <?endif?>
+      <?ifdef JpUpdateURL ?>
+        <Custom Action="JpSetARPURLUPDATEINFO" After="CostFinalize">Not Installed</Custom>
+      <?endif?>
+
+      <?ifndef JpAllowUpgrades ?>
+      <Custom Action="JpDisallowUpgrade" After="JpFindRelatedProducts">JP_UPGRADABLE_FOUND</Custom>
+      <?endif?>
+      <?ifndef JpAllowDowngrades ?>
+      <Custom Action="JpDisallowDowngrade" After="JpFindRelatedProducts">JP_DOWNGRADABLE_FOUND</Custom>
+      <?endif?>
+      <LaunchConditions Before="AppSearch"/>
+      <RemoveExistingProducts Before="CostInitialize"/>
+      <Custom Action="JpFindRelatedProducts" After="FindRelatedProducts"/>
+    </InstallExecuteSequence>
+
+    <InstallUISequence>
+      <Custom Action="JpFindRelatedProducts" After="FindRelatedProducts"/>
+    </InstallUISequence>
 
   </Product>
 </Wix>
