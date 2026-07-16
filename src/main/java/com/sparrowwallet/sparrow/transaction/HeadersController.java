@@ -1037,19 +1037,9 @@ public class HeadersController extends TransactionFormController implements Init
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.transaction != null) {
-                if(headersForm.getPsbt().matches(result.transaction)) {
-                    EventManager.get().post(new ViewTransactionEvent(toggleButton.getScene().getWindow(), result.transaction));
-                } else if(headersForm.getPsbt().possibleUnverifiableSilentPaymentsTransaction(result.transaction)) {
-                    AppServices.showErrorDialog("Silent Payments Transaction", "This transaction pays a silent payment address.\n\nThe signing device must return the PSBT rather than the final transaction, so the silent payment outputs can be verified.");
-                } else {
-                    AppServices.showErrorDialog("Mismatched Transaction", "The scanned transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
-                }
+                EventManager.get().post(new ViewTransactionEvent(toggleButton.getScene().getWindow(), result.transaction, headersForm.getPsbt()));
             } else if(result.psbt != null) {
-                if(headersForm.getPsbt().matches(result.psbt)) {
-                    EventManager.get().post(new ViewPSBTEvent(toggleButton.getScene().getWindow(), null, null, result.psbt));
-                } else {
-                    AppServices.showErrorDialog("Mismatched Transaction", "The scanned transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
-                }
+                EventManager.get().post(new ViewPSBTEvent(toggleButton.getScene().getWindow(), null, null, result.psbt, headersForm.getPsbt()));
             } else if(result.seed != null) {
                 signFromSeed(result.seed);
             } else if(result.exception != null) {

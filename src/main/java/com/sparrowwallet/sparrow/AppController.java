@@ -1951,20 +1951,14 @@ public class AppController implements Initializable {
         if(PSBT.isPSBT(bytes)) {
             //Don't verify signatures here - provided PSBT may omit UTXO data that can be found when combining with an existing PSBT
             PSBT psbt = new PSBT(bytes, false);
-            if(contextPsbt == null || contextPsbt.matches(psbt)) {
+            if(verifyTransactionContext(contextPsbt, null, psbt, "loaded")) {
                 addTransactionTab(name, file, psbt);
-            } else {
-                AppServices.showErrorDialog("Mismatched Transaction", "The loaded transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
             }
         } else if(Transaction.isTransaction(bytes)) {
             try {
                 Transaction transaction = new Transaction(bytes);
-                if(contextPsbt == null || contextPsbt.matches(transaction)) {
+                if(verifyTransactionContext(contextPsbt, transaction, null, "loaded")) {
                     addTransactionTab(name, file, transaction);
-                } else if(contextPsbt.possibleUnverifiableSilentPaymentsTransaction(transaction)) {
-                    AppServices.showErrorDialog("Silent Payments Transaction", "This transaction pays a silent payment address.\n\nThe signing device must return the PSBT rather than the final transaction, so the silent payment outputs can be verified.");
-                } else {
-                    AppServices.showErrorDialog("Mismatched Transaction", "The loaded transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
                 }
             } catch(Exception e) {
                 throw new TransactionParseException(e.getMessage());
@@ -2196,6 +2190,37 @@ public class AppController implements Initializable {
         }
 
         tabs.getSelectionModel().select(tab);
+    }
+
+    private boolean verifyTransactionContext(PSBT contextPsbt, Transaction transaction, PSBT psbt, String source) {
+        if(contextPsbt == null || matchesOpenTransactionTab(transaction, psbt)) {
+            return true;
+        }
+
+        if(psbt == null && contextPsbt.possibleUnverifiableSilentPaymentsTransaction(transaction)) {
+            AppServices.showErrorDialog("Silent Payments Transaction", "This transaction pays a silent payment address.\n\nThe signing device must return the PSBT rather than the final transaction, so the silent payment outputs can be verified.");
+        } else {
+            AppServices.showErrorDialog("Mismatched Transaction", "The " + source + " transaction does not match the transaction in this or any other open tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
+        }
+
+        return false;
+    }
+
+    private boolean matchesOpenTransactionTab(Transaction transaction, PSBT psbt) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData instanceof TransactionTabData transactionTabData) {
+                if(transactionTabData.getPsbt() != null) {
+                    if(psbt != null ? transactionTabData.getPsbt().matches(psbt) : transactionTabData.getPsbt().matches(transaction)) {
+                        return true;
+                    }
+                } else if(transactionTabData.getTransaction().calculateTxId(false).equals(psbt != null ? psbt.getTransaction().getTxId() : transaction.getTxId())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private boolean openUnverifiableTransaction(String tabName) {
@@ -3236,7 +3261,7 @@ public class AppController implements Initializable {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             if(event.getBlockTransaction() != null) {
                 addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
-            } else {
+            } else if(verifyTransactionContext(event.getContextPsbt(), event.getTransaction(), null, "scanned")) {
                 addTransactionTab(event.getTransaction(), event.getInitialView(), event.getInitialIndex());
             }
         }
@@ -3245,7 +3270,9 @@ public class AppController implements Initializable {
     @Subscribe
     public void viewPSBT(ViewPSBTEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            addTransactionTab(event.getLabel(), event.getFile(), event.getPsbt());
+            if(verifyTransactionContext(event.getContextPsbt(), null, event.getPsbt(), "scanned")) {
+                addTransactionTab(event.getLabel(), event.getFile(), event.getPsbt());
+            }
         }
     }
 
