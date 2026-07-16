@@ -30,6 +30,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,6 +48,11 @@ public class Storage {
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
     public static final List<String> RESERVED_WALLET_NAMES = List.of("temp");
+
+    static final String ENV_APPDATA = "APPDATA";
+
+    static Supplier<OsType> osTypeSupplier = OsType::getCurrent;
+    static Function<String, String> envRetriever = System::getenv;
 
     private Persistence persistence;
     private File walletFile;
@@ -671,7 +678,7 @@ public class Storage {
 
     static File getHomeDir() {
         if(isWindows()) {
-            return new File(System.getenv("APPDATA"));
+            return new File(Storage.envRetriever.apply(ENV_APPDATA));
         }
 
         return new File(System.getProperty("user.home"));
@@ -729,7 +736,7 @@ public class Storage {
     }
 
     private static boolean isWindows() {
-        return OsType.getCurrent() == OsType.WINDOWS;
+        return osTypeSupplier.get() == OsType.WINDOWS;
     }
 
     public static class LoadWalletService extends Service<WalletAndKey> {
