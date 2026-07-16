@@ -614,6 +614,10 @@ public class AppController implements Initializable {
     }
 
     public void openTransactionFromFile(ActionEvent event) {
+        openTransactionFromFile(event, null);
+    }
+
+    private void openTransactionFromFile(ActionEvent event, PSBT contextPsbt) {
         Stage window = new Stage();
 
         FileChooser fileChooser = new FileChooser();
@@ -628,19 +632,21 @@ public class AppController implements Initializable {
         List<File> files = fileChooser.showOpenMultipleDialog(window);
         if(files != null) {
             for(File file : files) {
-                openTransactionFile(file);
+                openTransactionFile(file, contextPsbt);
             }
         }
     }
 
-    private void openTransactionFile(File file) {
-        for(Tab tab : tabs.getTabs()) {
-            TabData tabData = (TabData)tab.getUserData();
-            if(tabData instanceof TransactionTabData) {
-                TransactionTabData transactionTabData = (TransactionTabData)tabData;
-                if(file.equals(transactionTabData.getFile())) {
-                    tabs.getSelectionModel().select(tab);
-                    return;
+    private void openTransactionFile(File file, PSBT contextPsbt) {
+        if(contextPsbt == null) {
+            for(Tab tab : tabs.getTabs()) {
+                TabData tabData = (TabData)tab.getUserData();
+                if(tabData instanceof TransactionTabData) {
+                    TransactionTabData transactionTabData = (TransactionTabData)tabData;
+                    if(file.equals(transactionTabData.getFile())) {
+                        tabs.getSelectionModel().select(tab);
+                        return;
+                    }
                 }
             }
         }
@@ -651,9 +657,9 @@ public class AppController implements Initializable {
                 String name = file.getName();
 
                 if(Utils.isHex(bytes) || Utils.isBase64(bytes)) {
-                    addTransactionTab(name, file, new String(bytes, StandardCharsets.UTF_8).trim());
+                    addTransactionTab(name, file, new String(bytes, StandardCharsets.UTF_8).trim(), contextPsbt);
                 } else {
-                    addTransactionTab(name, file, bytes);
+                    addTransactionTab(name, file, bytes, contextPsbt);
                 }
             } catch(IOException e) {
                 showErrorDialog("Error opening file", e.getMessage());
@@ -675,7 +681,7 @@ public class AppController implements Initializable {
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty()) {
             try {
-                addTransactionTab(null, null, text.get().trim());
+                addTransactionTab(null, null, text.get().trim(), null);
             } catch(PSBTParseException e) {
                 showErrorDialog("Invalid PSBT", e.getMessage());
             } catch(TransactionParseException e) {
@@ -1091,7 +1097,7 @@ public class AppController implements Initializable {
                     verifyOpened = true;
                 }
             } else {
-                openTransactionFile(file);
+                openTransactionFile(file, null);
             }
         }
     }
@@ -1931,25 +1937,35 @@ public class AppController implements Initializable {
         return Collections.emptyList();
     }
 
-    private void addTransactionTab(String name, File file, String string) throws ParseException, PSBTParseException, TransactionParseException {
+    private void addTransactionTab(String name, File file, String string, PSBT contextPsbt) throws ParseException, PSBTParseException, TransactionParseException {
         if(Utils.isBase64(string) && !Utils.isHex(string)) {
-            addTransactionTab(name, file, Base64.getDecoder().decode(string));
+            addTransactionTab(name, file, Base64.getDecoder().decode(string), contextPsbt);
         } else if(Utils.isHex(string)) {
-            addTransactionTab(name, file, Utils.hexToBytes(string));
+            addTransactionTab(name, file, Utils.hexToBytes(string), contextPsbt);
         } else {
             throw new ParseException("Input is not base64 or hex", 0);
         }
     }
 
-    private void addTransactionTab(String name, File file, byte[] bytes) throws PSBTParseException, ParseException, TransactionParseException {
+    private void addTransactionTab(String name, File file, byte[] bytes, PSBT contextPsbt) throws PSBTParseException, ParseException, TransactionParseException {
         if(PSBT.isPSBT(bytes)) {
             //Don't verify signatures here - provided PSBT may omit UTXO data that can be found when combining with an existing PSBT
             PSBT psbt = new PSBT(bytes, false);
-            addTransactionTab(name, file, psbt);
+            if(contextPsbt == null || contextPsbt.matches(psbt)) {
+                addTransactionTab(name, file, psbt);
+            } else {
+                AppServices.showErrorDialog("Mismatched Transaction", "The loaded transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
+            }
         } else if(Transaction.isTransaction(bytes)) {
             try {
                 Transaction transaction = new Transaction(bytes);
-                addTransactionTab(name, file, transaction);
+                if(contextPsbt == null || contextPsbt.matches(transaction)) {
+                    addTransactionTab(name, file, transaction);
+                } else if(contextPsbt.possibleUnverifiableSilentPaymentsTransaction(transaction)) {
+                    AppServices.showErrorDialog("Silent Payments Transaction", "This transaction pays a silent payment address.\n\nThe signing device must return the PSBT rather than the final transaction, so the silent payment outputs can be verified.");
+                } else {
+                    AppServices.showErrorDialog("Mismatched Transaction", "The loaded transaction does not match the transaction in this tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
+                }
             } catch(Exception e) {
                 throw new TransactionParseException(e.getMessage());
             }
@@ -3290,9 +3306,9 @@ public class AppController implements Initializable {
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             if(event.getFile() != null) {
-                openTransactionFile(event.getFile());
+                openTransactionFile(event.getFile(), event.getContextPsbt());
             } else {
-                openTransactionFromFile(null);
+                openTransactionFromFile(null, event.getContextPsbt());
             }
         }
     }
