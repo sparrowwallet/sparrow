@@ -1,17 +1,26 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.SparrowWallet;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.*;
+import java.util.stream.Stream;
 
 public class StorageTest extends IoTest {
     @Test
@@ -82,6 +91,146 @@ public class StorageTest extends IoTest {
         Storage temp2Storage = new Storage(tempWallet);
         wallet = temp2Storage.loadEncryptedWallet("pass").getWallet();
         Assertions.assertTrue(wallet.isValid());
+    }
+
+    @Nested
+    @Execution(ExecutionMode.SAME_THREAD)
+    class SparrowDirectoriesTests {
+        abstract class SharedTests {
+            String originalAppHome;
+
+            @BeforeEach
+            void setupShared() {
+                originalAppHome = System.getProperty(SparrowWallet.APP_HOME_PROPERTY);
+            }
+
+            private void assertPathIsInDefaultLocation(File actual) {
+                String msg = Storage.osTypeSupplier.get() == OsType.WINDOWS
+                    ? "Path should be in APPHOME"
+                    : "Path should be in user.home";
+
+                String path = actual.getAbsolutePath();
+                String expectedPathPart = Storage.getHomeDir().getAbsolutePath();
+
+                Assertions.assertTrue(path.contains(expectedPathPart), msg);
+
+            }
+
+            @Test
+            void respectsAppHomeProperty(@TempDir File tempAppHome) {
+                System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempAppHome.getAbsolutePath());
+
+                File sparrowHome = Storage.getSparrowHome(false);
+                Assertions.assertEquals(tempAppHome, sparrowHome);
+            }
+
+            @Test
+            void respectsDefaultOverride(@TempDir File tempAppHome) {
+                System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempAppHome.getAbsolutePath());
+
+                File sparrowHome = Storage.getSparrowHome(true);
+                Assertions.assertNotEquals(tempAppHome, sparrowHome);
+
+                assertPathIsInDefaultLocation(sparrowHome);
+            }
+
+            @Test
+            void useDefaultIfNoAppHomeProp() {
+                System.clearProperty(SparrowWallet.APP_HOME_PROPERTY);
+
+                File sparrowHome = Storage.getSparrowHome(false);
+                assertPathIsInDefaultLocation(sparrowHome);
+            }
+
+            @AfterEach
+            void tearDownShared() {
+               if (originalAppHome != null) {
+                   System.setProperty(SparrowWallet.APP_HOME_PROPERTY, originalAppHome);
+               } else {
+                   System.clearProperty(SparrowWallet.APP_HOME_PROPERTY);
+               }
+            }
+        }
+
+        abstract class SharedUnixAndMacOsTests extends SharedTests {
+            @Test
+            void sparrowDirectoriesAreOne() {
+                File configHome = Storage.getSparrowConfigHome();
+                File dataHome = Storage.getSparrowDataHome();
+                File stateHome = Storage.getSparrowStateHome();
+                File cacheHome = Storage.getSparrowConfigHome();
+
+                Assertions.assertTrue(Stream.of(dataHome, stateHome, cacheHome).allMatch(configHome::equals), "All files should have same path");
+            }
+
+            @Test
+            void sparrowDirectoryLocation() {
+                // precondition: user.home must be set
+                String userHome = System.getProperty("user.home");
+                Assertions.assertNotNull(userHome);
+
+                File configHome = Storage.getSparrowConfigHome();
+
+                String path = configHome.getAbsolutePath();
+                Assertions.assertTrue(path.contains(userHome), "Path should contain user.home");
+                Assertions.assertTrue(path.contains(Storage.SPARROW_DIR), "Path should contain SPARROW_DIR");
+            }
+        }
+
+        @Nested
+        class OsTypeWindows extends SharedTests {
+            @BeforeEach
+            void setup(@TempDir File tempDir) {
+                Storage.osTypeSupplier = () -> OsType.WINDOWS;
+                Storage.envRetriever = (String envVar) -> Storage.ENV_APPDATA.equals(envVar) ? tempDir.getAbsolutePath() : System.getenv(envVar);
+            }
+
+            @Test
+            void sparrowDirectoriesAreOne() {
+                File configHome = Storage.getSparrowConfigHome();
+                File dataHome = Storage.getSparrowDataHome();
+                File stateHome = Storage.getSparrowStateHome();
+                File cacheHome = Storage.getSparrowConfigHome();
+
+                Assertions.assertTrue(Stream.of(dataHome, stateHome, cacheHome).allMatch(configHome::equals), "All files should have same path");
+            }
+
+            @Test
+            void sparrowDirectoryLocation() {
+                File configHome = Storage.getSparrowConfigHome();
+
+                String path = configHome.getAbsolutePath();
+                String appDataPath = Storage.envRetriever.apply(Storage.ENV_APPDATA);
+                Assertions.assertTrue(path.contains(appDataPath), "Path should contain APPDATA in path");
+                Assertions.assertTrue(path.contains(Storage.WINDOWS_SPARROW_DIR), "Path should contain WINDOWS_SPARROW_DIR");
+            }
+
+            @AfterEach
+            void tearDown() {
+                Storage.envRetriever = System::getenv;
+            }
+        }
+
+        @Nested
+        class OsTypeUnix extends SharedUnixAndMacOsTests {
+            @BeforeEach
+            void setup() {
+                Storage.osTypeSupplier = () -> OsType.UNIX;
+            }
+        }
+
+        @Nested
+        class OsTypeMacOs extends SharedUnixAndMacOsTests {
+            @BeforeEach
+            void setup() {
+                Storage.osTypeSupplier = () -> OsType.MACOS;
+            }
+        }
+
+        @AfterEach
+        void tearDown() {
+            Storage.osTypeSupplier = OsType::getCurrent;
+        }
     }
 
     @AfterEach
