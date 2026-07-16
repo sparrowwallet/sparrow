@@ -568,112 +568,119 @@ public class Storage {
     }
 
     public static File getSparrowConfigDir() {
-        return getSparrowDir();
+        return getSparrowDirs().config();
     }
 
     public static File getSparrowDataDir() {
-        return getSparrowDir();
+        return getSparrowDirs().data();
     }
 
     public static File getSparrowCacheDir() {
-        return getSparrowDir();
+        return getSparrowDirs().cache();
     }
 
     public static File getSparrowStateDir() {
-        return getSparrowDir();
+        return getSparrowDirs().state();
     }
 
-    static File getSparrowDir() {
-        File sparrowDir;
+    static SparrowDirectories getSparrowDirs() {
+        SparrowDirectories sparrowHomeDirs = getSparrowHome();
+        Map<String, File> sparrowHomeMap = sparrowHomeDirs.asMap();
+        SparrowDirectories sparrowFinalDirs;
         Network network = Network.get();
+
         if(network != Network.MAINNET) {
-            sparrowDir = new File(getSparrowHome(), network.getHome());
-            if(!network.getName().equals(network.getHome()) && !sparrowDir.exists()) {
-                File networkNameDir = new File(getSparrowHome(), network.getName());
-                if(networkNameDir.exists() && networkNameDir.isDirectory() && !Files.isSymbolicLink(networkNameDir.toPath())) {
-                    try {
-                        if(networkNameDir.renameTo(sparrowDir) && !isWindows()) {
-                            Files.createSymbolicLink(networkNameDir.toPath(), Path.of(sparrowDir.getName()));
+            sparrowFinalDirs = SparrowDirectories.append(sparrowHomeDirs, network.getHome());
+            if(!network.getName().equals(network.getHome())) {
+                for(Map.Entry<String, File> entry : sparrowFinalDirs.asMap().entrySet()) {
+                    String dirTypeKey = entry.getKey();
+                    File sparrowDir = entry.getValue();
+                    if(!sparrowDir.exists()) {
+                        File networkNameDir = new File(sparrowHomeMap.get(dirTypeKey), network.getName());
+                        if(networkNameDir.exists() && networkNameDir.isDirectory() && !Files.isSymbolicLink(networkNameDir.toPath())) {
+                            try {
+                                if(networkNameDir.renameTo(sparrowDir) && !isWindows()) {
+                                    Files.createSymbolicLink(networkNameDir.toPath(), Path.of(sparrowDir.getName()));
+                                }
+                            } catch(Exception e) {
+                                log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + sparrowDir.getName(), e);
+                             }
                         }
-                    } catch(Exception e) {
-                        log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + sparrowDir.getName(), e);
                     }
                 }
             }
         } else {
-            sparrowDir = getSparrowHome();
+            sparrowFinalDirs = sparrowHomeDirs;
         }
 
-        if(!sparrowDir.exists()) {
-            createOwnerOnlyDirectory(sparrowDir);
-        }
-
-        if(!network.getName().equals(network.getHome()) && !isWindows()) {
-            try {
-                Path networkNamePath = getSparrowHome().toPath().resolve(network.getName());
-                if(Files.isSymbolicLink(networkNamePath)) {
-                    Path symlinkTarget = getSparrowHome().toPath().resolve(Files.readSymbolicLink(networkNamePath));
-                    if(!Files.isSameFile(sparrowDir.toPath(), symlinkTarget)) {
-                        Files.delete(networkNamePath);
-                        Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
-                    }
-                } else if(!Files.exists(networkNamePath)) {
-                    Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
-                }
-            } catch(Exception e) {
-                log.debug("Error updating symlink from " + network.getName() + " to " + sparrowDir.getName(), e);
+        for(File sparrowDir : sparrowFinalDirs.asMap().values()) {
+            if(!sparrowDir.exists()) {
+                createOwnerOnlyDirectory(sparrowDir);
             }
         }
 
-        return sparrowDir;
+        if(!network.getName().equals(network.getHome()) && !isWindows()) {
+            for(Map.Entry<String, File> entry : sparrowFinalDirs.asMap().entrySet()) {
+                String dirTypeKey = entry.getKey();
+                File sparrowDir = entry.getValue();
+                try {
+                    Path networkNamePath = sparrowHomeMap.get(dirTypeKey).toPath().resolve(network.getName());
+                    if(Files.isSymbolicLink(networkNamePath)) {
+                        Path symlinkTarget = sparrowHomeMap.get(dirTypeKey).toPath().resolve(Files.readSymbolicLink(networkNamePath));
+                        if(!Files.isSameFile(sparrowDir.toPath(), symlinkTarget)) {
+                            Files.delete(networkNamePath);
+                            Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                        }
+                    } else if(!Files.exists(networkNamePath)) {
+                        Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                    }
+                } catch(Exception e) {
+                    log.debug("Error updating symlink from " + network.getName() + " to " + sparrowDir.getName(), e);
+                }
+            }
+        }
+
+        return sparrowFinalDirs;
     }
 
     public static File getSparrowConfigHome() {
-        return getSparrowHome();
+        return getSparrowHome().config();
     }
 
     public static File getSparrowDataHome() {
-        return getSparrowHome();
+        return getSparrowHome().data();
     }
 
     public static File getSparrowStateHome() {
-        return getSparrowHome();
+        return getSparrowHome().state();
     }
 
     public static File getSparrowCacheHome() {
-        return getSparrowHome();
+        return getSparrowHome().cache();
     }
 
-    static File getSparrowHome() {
-        return getSparrowHome(false);
+    static SparrowDirectories getSparrowHome() {
+        return SparrowDirectories.getSparrowDirs(false);
     }
 
     public static File getSparrowConfigHome(boolean useDefault) {
-        return getSparrowHome(useDefault);
+        return SparrowDirectories.getSparrowDirs(useDefault).config();
     }
 
     public static File getSparrowDataHome(boolean useDefault) {
-        return getSparrowHome(useDefault);
+        return SparrowDirectories.getSparrowDirs(useDefault).data();
     }
 
     public static File getSparrowStateHome(boolean useDefault) {
-        return getSparrowHome(useDefault);
+        return SparrowDirectories.getSparrowDirs(useDefault).state();
     }
 
     public static File getSparrowCacheHome(boolean useDefault) {
-        return getSparrowHome(useDefault);
+        return SparrowDirectories.getSparrowDirs(useDefault).cache();
     }
 
-    static File getSparrowHome(boolean useDefault) {
-        if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
-            return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
-        }
-
-        if(isWindows()) {
-            return new File(getHomeDir(), WINDOWS_SPARROW_DIR);
-        }
-
-        return new File(getHomeDir(), SPARROW_DIR);
+    static SparrowDirectories getSparrowHome(boolean useDefault) {
+        return SparrowDirectories.getSparrowDirs(useDefault);
     }
 
     static File getHomeDir() {
@@ -895,6 +902,54 @@ public class Storage {
                     return storage.delete(deleteBackups);
                 }
             };
+        }
+    }
+
+    // TODO: flesh out. Currently just a shell of the intended structure doing nothing new.
+    public record SparrowDirectories(File config, File data, File cache, File state) {
+        static final String XDG_CONFIG_HOME = "XDG_CONFIG_HOME";
+        static final String XDG_DATA_HOME = "XDG_DATA_HOME";
+        static final String XDG_CACHE_HOME = "XDG_CACHE_HOME";
+        static final String XDG_STATE_HOME = "XDG_STATE_HOME";
+
+        static SparrowDirectories fromSingleDir(File directory) {
+            return new SparrowDirectories(directory, directory, directory, directory);
+        }
+
+        Map<String, File> asMap() {
+            return Map.of(
+                "config", config,
+                "data", data,
+                "cache", cache,
+                "state", state
+            );
+        }
+
+        static SparrowDirectories append(SparrowDirectories base, String extension) {
+            return new SparrowDirectories(
+                new File(base.config, extension),
+                new File(base.data, extension),
+                new File(base.cache, extension),
+                new File(base.state, extension)
+            );
+        }
+
+        static boolean shouldUseXdgDirs() {
+            return false;
+        }
+
+        public static SparrowDirectories getSparrowDirs(boolean useDefault) {
+            if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
+                File appHomePropertyDir = new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
+                return fromSingleDir(appHomePropertyDir);
+            }
+
+            File homeDir = getHomeDir();
+            if(isWindows()) {
+                return fromSingleDir(new File(homeDir, WINDOWS_SPARROW_DIR));
+            }
+
+            return fromSingleDir(new File(homeDir, SPARROW_DIR));
         }
     }
 }

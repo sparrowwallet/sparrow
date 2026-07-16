@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.SparrowWallet;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -20,6 +21,9 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.io.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public class StorageTest extends IoTest {
@@ -96,6 +100,10 @@ public class StorageTest extends IoTest {
     @Nested
     @Execution(ExecutionMode.SAME_THREAD)
     class SparrowDirectoriesTests {
+        private void assertFilesAreSame(Collection<File> files) {
+            Assertions.assertEquals(1, Set.copyOf(files).size(), "All files should be the same");
+        }
+
         abstract class SharedTests {
             String originalAppHome;
 
@@ -120,26 +128,31 @@ public class StorageTest extends IoTest {
             void respectsAppHomeProperty(@TempDir File tempAppHome) {
                 System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempAppHome.getAbsolutePath());
 
-                File sparrowHome = Storage.getSparrowHome(false);
-                Assertions.assertEquals(tempAppHome, sparrowHome);
+                SparrowDirectories sparrowHomeDirs = Storage.getSparrowHome(false);
+
+                Assertions.assertEquals(tempAppHome, sparrowHomeDirs.config());
+                assertFilesAreSame(sparrowHomeDirs.asMap().values());
             }
 
             @Test
             void respectsDefaultOverride(@TempDir File tempAppHome) {
                 System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempAppHome.getAbsolutePath());
 
-                File sparrowHome = Storage.getSparrowHome(true);
-                Assertions.assertNotEquals(tempAppHome, sparrowHome);
+                SparrowDirectories sparrowHomeDirs = Storage.getSparrowHome(true);
 
-                assertPathIsInDefaultLocation(sparrowHome);
+                Assertions.assertNotEquals(tempAppHome, sparrowHomeDirs.config());
+                assertPathIsInDefaultLocation(sparrowHomeDirs.config());
+                assertFilesAreSame(sparrowHomeDirs.asMap().values());
             }
 
             @Test
             void useDefaultIfNoAppHomeProp() {
                 System.clearProperty(SparrowWallet.APP_HOME_PROPERTY);
 
-                File sparrowHome = Storage.getSparrowHome(false);
-                assertPathIsInDefaultLocation(sparrowHome);
+                SparrowDirectories sparrowHomeDirs = Storage.getSparrowHome(false);
+
+                assertPathIsInDefaultLocation(sparrowHomeDirs.config());
+                assertFilesAreSame(sparrowHomeDirs.asMap().values());
             }
 
             @AfterEach
@@ -160,7 +173,7 @@ public class StorageTest extends IoTest {
                 File stateHome = Storage.getSparrowStateHome();
                 File cacheHome = Storage.getSparrowConfigHome();
 
-                Assertions.assertTrue(Stream.of(dataHome, stateHome, cacheHome).allMatch(configHome::equals), "All files should have same path");
+                assertFilesAreSame(List.of(configHome, dataHome, stateHome, cacheHome));
             }
 
             @Test
