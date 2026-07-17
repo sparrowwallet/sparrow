@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow.instance;
 
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,7 +166,7 @@ public abstract class Instance {
             }
         }
 
-        return Storage.getSparrowStateDir().toPath().resolve(applicationId + ".lock");
+        return SparrowDirectories.getSparrowHomeDirs().state().toPath().resolve(applicationId + ".lock");
     }
 
     private void createSymlink(Path lockFile) {
@@ -194,7 +196,7 @@ public abstract class Instance {
         }
 
         try {
-            File sparrowHome = Storage.getSparrowStateHome(true);
+            File sparrowHome = SparrowDirectories.getSparrowHomeDirs(true).state();
             if(!sparrowHome.exists()) {
                 Storage.createOwnerOnlyDirectory(sparrowHome);
                 sparrowHome.deleteOnExit(); //Will only delete on exit if empty

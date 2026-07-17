@@ -18,6 +18,7 @@ import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.*;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
 import com.sparrowwallet.sparrow.io.bbqr.BBQR;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -524,7 +525,7 @@ public class AppController implements Initializable {
     }
 
     public void showLogFile(ActionEvent event) throws IOException {
-        File logFile = new File(Storage.getSparrowStateHome(), "sparrow.log");
+        File logFile = new File(SparrowDirectories.getSparrowHomeDirs().state(), "sparrow.log");
         if(logFile.exists()) {
             AppServices.get().getApplication().getHostServices().showDocument(logFile.toPath().toUri().toString());
         } else {
@@ -1040,7 +1041,9 @@ public class AppController implements Initializable {
         Stage window = new Stage();
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Choose Sparrow Home Folder");
-        directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists() ? Storage.getSparrowConfigHome() : initialDir);
+        directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists()
+                ? SparrowDirectories.getSparrowHomeDirs().config()
+                : initialDir);
         File newHome = directoryChooser.showDialog(window);
 
         if(newHome != null) {

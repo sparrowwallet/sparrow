@@ -17,6 +17,8 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.control.BitBoxPairingDialog;
 import com.sparrowwallet.sparrow.control.TextfieldDialog;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
+
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.MapChangeListener;
@@ -269,7 +271,7 @@ public class Hwi {
     private static void deleteHwiDir() {
         try {
             if(OsType.getCurrent() == OsType.MACOS || OsType.getCurrent() == OsType.WINDOWS) {
-                File hwiHomeDir = new File(Storage.getSparrowDataDir(), HWI_HOME_DIR);
+                File hwiHomeDir = new File(SparrowDirectories.getSparrowDirs().data(), HWI_HOME_DIR);
                 if(hwiHomeDir.exists()) {
                     IOUtils.deleteDirectory(hwiHomeDir);
                 }
@@ -544,7 +546,7 @@ public class Hwi {
         private BitBoxPairingDialog pairingDialog;
 
         public BitBoxFxNoiseConfig() {
-            super(Path.of(Storage.getSparrowDataHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
+            super(Path.of(SparrowDirectories.getSparrowHomeDirs().data().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
         }
 
         @Override
@@ -594,7 +596,7 @@ public class Hwi {
         private String deviceInfo;
 
         public TrezorFxNoiseConfig() {
-            super(Path.of(Storage.getSparrowDataHome().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
+            super(Path.of(SparrowDirectories.getSparrowHomeDirs().data().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
         }
 
         @Override

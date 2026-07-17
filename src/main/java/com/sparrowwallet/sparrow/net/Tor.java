@@ -4,7 +4,7 @@ import com.google.common.net.HostAndPort;
 import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.TorStatusEvent;
-import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
 import io.matthewnelson.kmp.tor.resource.exec.tor.ResourceLoaderTorExec;
 import io.matthewnelson.kmp.tor.runtime.Action;
 import io.matthewnelson.kmp.tor.runtime.RuntimeEvent;
@@ -40,7 +40,7 @@ public class Tor implements Closeable {
     private IPSocketAddress socksAddress;
 
     public Tor(OnEvent<TorListeners> listener) {
-        Path path = Path.of(Storage.getSparrowDataHome().getAbsolutePath()).resolve(TOR_DIR);
+        Path path = Path.of(SparrowDirectories.getSparrowHomeDirs().data().getAbsolutePath()).resolve(TOR_DIR);
         File oldInstallDir = path.resolve(WORK_DIR).resolve(OLD_INSTALL_DIR).toFile();
         if(oldInstallDir.exists()) {
             IOUtils.deleteDirectory(oldInstallDir);
