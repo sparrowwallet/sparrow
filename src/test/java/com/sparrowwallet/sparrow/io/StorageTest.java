@@ -118,7 +118,7 @@ public class StorageTest extends IoTest {
                     : "Path should be in user.home";
 
                 String path = actual.getAbsolutePath();
-                String expectedPathPart = Storage.getHomeDir().getAbsolutePath();
+                String expectedPathPart = Storage.getUserHomeDir().getAbsolutePath();
 
                 Assertions.assertTrue(path.contains(expectedPathPart), msg);
 
@@ -128,7 +128,7 @@ public class StorageTest extends IoTest {
             void respectsAppHomeProperty(@TempDir File tempAppHome) {
                 System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempAppHome.getAbsolutePath());
 
-                SparrowDirectories sparrowHomeDirs = SparrowDirectories.getSparrowHomeDirs(false);
+                SparrowDirectories sparrowHomeDirs = SparrowDirectories.getHomeDirs(false);
 
                 Assertions.assertEquals(tempAppHome, sparrowHomeDirs.config());
                 assertFilesAreSame(sparrowHomeDirs.asMap().values());
@@ -138,7 +138,7 @@ public class StorageTest extends IoTest {
             void respectsDefaultOverride(@TempDir File tempAppHome) {
                 System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempAppHome.getAbsolutePath());
 
-                SparrowDirectories sparrowHomeDirs = SparrowDirectories.getSparrowHomeDirs(true);
+                SparrowDirectories sparrowHomeDirs = SparrowDirectories.getHomeDirs(true);
 
                 Assertions.assertNotEquals(tempAppHome, sparrowHomeDirs.config());
                 assertPathIsInDefaultLocation(sparrowHomeDirs.config());
@@ -149,7 +149,7 @@ public class StorageTest extends IoTest {
             void useDefaultIfNoAppHomeProp() {
                 System.clearProperty(SparrowWallet.APP_HOME_PROPERTY);
 
-                SparrowDirectories sparrowHomeDirs = SparrowDirectories.getSparrowHomeDirs(false);
+                SparrowDirectories sparrowHomeDirs = SparrowDirectories.getHomeDirs(false);
 
                 assertPathIsInDefaultLocation(sparrowHomeDirs.config());
                 assertFilesAreSame(sparrowHomeDirs.asMap().values());
@@ -168,10 +168,10 @@ public class StorageTest extends IoTest {
         abstract class SharedUnixAndMacOsTests extends SharedTests {
             @Test
             void sparrowDirectoriesAreOne() {
-                File configHome = SparrowDirectories.getSparrowHomeDirs().config();
-                File dataHome = SparrowDirectories.getSparrowHomeDirs().data();
-                File stateHome = SparrowDirectories.getSparrowHomeDirs().state();
-                File cacheHome = SparrowDirectories.getSparrowHomeDirs().cache();
+                File configHome = SparrowDirectories.getHomeDirs().config();
+                File dataHome = SparrowDirectories.getHomeDirs().data();
+                File stateHome = SparrowDirectories.getHomeDirs().state();
+                File cacheHome = SparrowDirectories.getHomeDirs().cache();
 
                 assertFilesAreSame(List.of(configHome, dataHome, stateHome, cacheHome));
             }
@@ -182,7 +182,7 @@ public class StorageTest extends IoTest {
                 String userHome = System.getProperty("user.home");
                 Assertions.assertNotNull(userHome);
 
-                File configHome = SparrowDirectories.getSparrowHomeDirs().config();
+                File configHome = SparrowDirectories.getHomeDirs().config();
 
                 String path = configHome.getAbsolutePath();
                 Assertions.assertTrue(path.contains(userHome), "Path should contain user.home");
@@ -200,17 +200,17 @@ public class StorageTest extends IoTest {
 
             @Test
             void sparrowDirectoriesAreOne() {
-                File configHome = SparrowDirectories.getSparrowHomeDirs().config();
-                File dataHome = SparrowDirectories.getSparrowHomeDirs().data();
-                File stateHome = SparrowDirectories.getSparrowHomeDirs().state();
-                File cacheHome = SparrowDirectories.getSparrowHomeDirs().cache();
+                File configHome = SparrowDirectories.getHomeDirs().config();
+                File dataHome = SparrowDirectories.getHomeDirs().data();
+                File stateHome = SparrowDirectories.getHomeDirs().state();
+                File cacheHome = SparrowDirectories.getHomeDirs().cache();
 
                 Assertions.assertTrue(Stream.of(dataHome, stateHome, cacheHome).allMatch(configHome::equals), "All files should have same path");
             }
 
             @Test
             void sparrowDirectoryLocation() {
-                File configHome = SparrowDirectories.getSparrowHomeDirs().config();
+                File configHome = SparrowDirectories.getHomeDirs().config();
 
                 String path = configHome.getAbsolutePath();
                 String appDataPath = Storage.envRetriever.apply(Storage.ENV_APPDATA);

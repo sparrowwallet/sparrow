@@ -525,7 +525,7 @@ public class AppController implements Initializable {
     }
 
     public void showLogFile(ActionEvent event) throws IOException {
-        File logFile = new File(SparrowDirectories.getSparrowHomeDirs().state(), "sparrow.log");
+        File logFile = new File(SparrowDirectories.getHomeDirs().state(), "sparrow.log");
         if(logFile.exists()) {
             AppServices.get().getApplication().getHostServices().showDocument(logFile.toPath().toUri().toString());
         } else {
@@ -1042,7 +1042,7 @@ public class AppController implements Initializable {
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Choose Sparrow Home Folder");
         directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists()
-                ? SparrowDirectories.getSparrowHomeDirs().config()
+                ? SparrowDirectories.getHomeDirs().config()
                 : initialDir);
         File newHome = directoryChooser.showDialog(window);
 

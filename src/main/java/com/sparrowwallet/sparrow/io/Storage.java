@@ -504,7 +504,7 @@ public class Storage {
             }
         }
         if(walletsDir == null) {
-            walletsDir = new File(SparrowDirectories.getSparrowDirs().data(), WALLETS_DIR);
+            walletsDir = new File(SparrowDirectories.getDirectories().data(), WALLETS_DIR);
         }
         if(!walletsDir.exists()) {
             createOwnerOnlyDirectory(walletsDir);
@@ -559,7 +559,7 @@ public class Storage {
     }
 
     static File getCertsDir() {
-        File certsDir = new File(SparrowDirectories.getSparrowDirs().data(), CERTS_DIR);
+        File certsDir = new File(SparrowDirectories.getDirectories().data(), CERTS_DIR);
         if(!certsDir.exists()) {
             createOwnerOnlyDirectory(certsDir);
         }
@@ -567,7 +567,7 @@ public class Storage {
         return certsDir;
     }
 
-    static File getHomeDir() {
+    static File getUserHomeDir() {
         if(isWindows()) {
             return new File(Storage.envRetriever.apply(ENV_APPDATA));
         }
@@ -822,17 +822,17 @@ public class Storage {
             return false;
         }
 
-        public static SparrowDirectories getSparrowHomeDirs() {
-            return SparrowDirectories.getSparrowHomeDirs(false);
+        public static SparrowDirectories getHomeDirs() {
+            return SparrowDirectories.getHomeDirs(false);
         }
 
-        public static SparrowDirectories getSparrowHomeDirs(boolean useDefault) {
+        public static SparrowDirectories getHomeDirs(boolean useDefault) {
             if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
                 File appHomePropertyDir = new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
                 return fromSingleDir(appHomePropertyDir);
             }
 
-            File homeDir = getHomeDir();
+            File homeDir = getUserHomeDir();
             if(isWindows()) {
                 return fromSingleDir(new File(homeDir, WINDOWS_SPARROW_DIR));
             }
@@ -840,8 +840,8 @@ public class Storage {
             return fromSingleDir(new File(homeDir, SPARROW_DIR));
         }
 
-        static SparrowDirectories getSparrowDirs() {
-            SparrowDirectories sparrowHomeDirs = SparrowDirectories.getSparrowHomeDirs(false);
+        static SparrowDirectories getDirectories() {
+            SparrowDirectories sparrowHomeDirs = SparrowDirectories.getHomeDirs(false);
             Map<String, File> sparrowHomeMap = sparrowHomeDirs.asMap();
             SparrowDirectories sparrowFinalDirs;
             Network network = Network.get();

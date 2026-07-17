@@ -40,7 +40,7 @@ public class Tor implements Closeable {
     private IPSocketAddress socksAddress;
 
     public Tor(OnEvent<TorListeners> listener) {
-        Path path = Path.of(SparrowDirectories.getSparrowHomeDirs().data().getAbsolutePath()).resolve(TOR_DIR);
+        Path path = Path.of(SparrowDirectories.getHomeDirs().data().getAbsolutePath()).resolve(TOR_DIR);
         File oldInstallDir = path.resolve(WORK_DIR).resolve(OLD_INSTALL_DIR).toFile();
         if(oldInstallDir.exists()) {
             IOUtils.deleteDirectory(oldInstallDir);

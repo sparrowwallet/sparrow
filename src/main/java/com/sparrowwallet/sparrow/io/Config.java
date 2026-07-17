@@ -109,7 +109,7 @@ public class Config {
     }
 
     private static File getConfigFile() {
-        File sparrowDir = SparrowDirectories.getSparrowDirs().config();
+        File sparrowDir = SparrowDirectories.getDirectories().config();
         return new File(sparrowDir, CONFIG_FILENAME);
     }
 
