@@ -796,6 +796,11 @@ public class Storage {
         static final String XDG_CACHE_HOME = "XDG_CACHE_HOME";
         static final String XDG_STATE_HOME = "XDG_STATE_HOME";
 
+        // Very defensive, but rather check for than assume a period in '.sparrow'
+        static final String XDG_SPARROW_DIR = SPARROW_DIR.startsWith(".")
+            ? SPARROW_DIR.substring(1)
+            : SPARROW_DIR;
+
         static SparrowDirectories fromSingleDir(File directory) {
             return new SparrowDirectories(directory, directory, directory, directory);
         }
