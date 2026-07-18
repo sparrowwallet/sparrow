@@ -156,6 +156,12 @@ public class ServerSettingsController extends SettingsDetailController {
     private TextField proxyPort;
 
     @FXML
+    private Form irohForm;
+    @FXML
+    private ComboBoxTextField irohNodeId;
+    @FXML
+    private ComboBox<Server> recentIrohServers;
+    @FXML
     private Button testConnection;
 
     @FXML
@@ -189,6 +195,7 @@ public class ServerSettingsController extends SettingsDetailController {
         publicElectrumForm.managedProperty().bind(publicElectrumForm.visibleProperty());
         coreForm.managedProperty().bind(coreForm.visibleProperty());
         electrumForm.managedProperty().bind(electrumForm.visibleProperty());
+        irohForm.managedProperty().bind(irohForm.visibleProperty());
         serverTypeToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
             if(serverTypeToggleGroup.getSelectedToggle() != null) {
                 ServerType existingType = config.getServerType();
@@ -196,10 +203,11 @@ public class ServerSettingsController extends SettingsDetailController {
                 publicElectrumForm.setVisible(serverType == ServerType.PUBLIC_ELECTRUM_SERVER);
                 coreForm.setVisible(serverType == ServerType.BITCOIN_CORE);
                 electrumForm.setVisible(serverType == ServerType.ELECTRUM_SERVER);
+                irohForm.setVisible(serverType == ServerType.IROH_SERVER);
                 config.setServerType(serverType);
                 testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.QUESTION_CIRCLE, ""));
                 testResults.clear();
-                if(existingType != serverType) {
+                if(existingType != serverType && !(existingType == ServerType.IROH_SERVER && serverType == ServerType.ELECTRUM_SERVER)) {
                     EventManager.get().post(new ServerTypeChangedEvent(serverType));
                 }
             } else if(oldValue != null) {
@@ -499,6 +507,31 @@ public class ServerSettingsController extends SettingsDetailController {
             }
         }
 
+        // Iroh server initialization
+        recentIrohServers.setCellFactory(value -> new ServerCell());
+        recentIrohServers.setItems(getObservableIrohServerList(Config.get().getRecentIrohServers()));
+        recentIrohServers.prefWidthProperty().bind(irohNodeId.widthProperty());
+        recentIrohServers.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null && newValue != MANAGE_ALIASES_SERVER) {
+                irohNodeId.setText(newValue.getHostAndPort().getHost());
+                Platform.runLater(() -> recentIrohServers.getSelectionModel().clearSelection());
+            }
+        });
+        if(config.getServerType() == ServerType.IROH_SERVER && config.getElectrumServer() != null) {
+            irohNodeId.setText(config.getElectrumServer().getHostAndPort().getHost());
+        }
+        irohNodeId.textProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue != null && !newValue.isBlank()) {
+                try {
+                    config.setElectrumServer(new Server("iroh://" + newValue.trim()));
+                } catch(Exception e) {
+                    log.warn("Invalid Iroh Node ID: " + e.getMessage());
+                }
+            } else {
+                config.setElectrumServer(null);
+            }
+        });
+
         File certificateFile = config.getElectrumServerCert();
         if(certificateFile != null) {
             electrumCertificate.setText(certificateFile.getAbsolutePath());
@@ -571,6 +604,8 @@ public class ServerSettingsController extends SettingsDetailController {
                     recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
                 } else if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
                     recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
+                } else if(Config.get().getServerType() == ServerType.IROH_SERVER) {
+                    recentIrohServers.setItems(getObservableIrohServerList(Config.get().getRecentIrohServers()));
                 }
             }
         });
@@ -850,6 +885,7 @@ public class ServerSettingsController extends SettingsDetailController {
     }
 
     private void setElectrumServerInConfig(Config config) {
+        if(Config.get().getServerType() == ServerType.IROH_SERVER) return;
         Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
         if(existingServer != null) {
             config.setElectrumServer(existingServer);
@@ -885,6 +921,7 @@ public class ServerSettingsController extends SettingsDetailController {
     }
 
     private Protocol getProtocol() {
+        if(Config.get().getServerType() == ServerType.IROH_SERVER) return Protocol.IROH;
         return (electrumUseSsl.isSelected() ? Protocol.SSL : Protocol.TCP);
     }
 
@@ -973,6 +1010,10 @@ public class ServerSettingsController extends SettingsDetailController {
         serverObservableList.add(MANAGE_ALIASES_SERVER);
         serverObservableList.add(SCAN_QR_SERVER);
         return serverObservableList;
+    }
+
+    private ObservableList<Server> getObservableIrohServerList(List<Server> servers) {
+        return FXCollections.observableList(new ArrayList<>(servers));
     }
 
     @Subscribe

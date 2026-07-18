@@ -127,6 +127,8 @@ public class ElectrumServer {
                     electrumServer = Config.get().getElectrumServer();
                     electrumServerCert = Config.get().getElectrumServerCert();
                     proxyServer = Config.get().getProxyServer();
+                } else if(Config.get().getServerType() == ServerType.IROH_SERVER) {
+                    electrumServer = Config.get().getElectrumServer();
                 }
 
                 if(electrumServer == null) {
@@ -149,7 +151,8 @@ public class ElectrumServer {
                 previousServer = electrumServer;
 
                 HostAndPort hostAndPort = electrumServer.getHostAndPort();
-                boolean localNetworkAddress = !Protocol.isOnionAddress(hostAndPort) && !PublicElectrumServer.isPublicServer(hostAndPort)
+                boolean localNetworkAddress = Config.get().getServerType() != ServerType.IROH_SERVER
+                        && !Protocol.isOnionAddress(hostAndPort) && !PublicElectrumServer.isPublicServer(hostAndPort)
                         && IpAddressMatcher.isLocalNetworkAddress(hostAndPort.getHost());
 
                 if(!localNetworkAddress && Config.get().isUseProxy() && proxyServer != null && !proxyServer.isBlank()) {

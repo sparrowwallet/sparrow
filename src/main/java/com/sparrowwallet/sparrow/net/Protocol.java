@@ -38,7 +38,28 @@ public enum Protocol {
             return getTransport(server, proxy);
         }
     },
-    SSL(50002) {
+    IROH(0) {
+        @Override
+        public CloseableTransport getTransport(HostAndPort server) {
+            return new IrohTransport(server);
+        }
+
+        @Override
+        public CloseableTransport getTransport(HostAndPort server, File serverCert) {
+            return new IrohTransport(server);
+        }
+
+        @Override
+        public CloseableTransport getTransport(HostAndPort server, HostAndPort proxy) {
+            return new IrohTransport(server);
+        }
+
+        @Override
+        public CloseableTransport getTransport(HostAndPort server, File serverCert, HostAndPort proxy) {
+            return new IrohTransport(server);
+        }
+    },
+        SSL(50002) {
         @Override
         public CloseableTransport getTransport(HostAndPort server) throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
             if(isOnionAddress(server)) {
@@ -178,6 +199,9 @@ public enum Protocol {
     }
 
     public static Protocol getProtocol(String url) {
+        if(url.startsWith("iroh://") || url.endsWith(":i")) {
+            return IROH;
+        }
         if(url.startsWith("tcp://") || url.endsWith(":t")) {
             return TCP;
         }
