@@ -823,7 +823,7 @@ public class Storage {
             );
         }
 
-        static boolean shouldUseXdgDirs() {
+        static boolean canUseXdgDirs() {
             return false;
         }
 
