@@ -140,6 +140,10 @@ public class Storage {
         closePersistenceService.start();
     }
 
+    public void closeAndWait() {
+        persistence.close();
+    }
+
     public void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
         checkWalletNetwork(wallet);
 

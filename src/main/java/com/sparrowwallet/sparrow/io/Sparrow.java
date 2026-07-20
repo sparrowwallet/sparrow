@@ -1,6 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.common.io.Files;
+import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
 
@@ -29,13 +30,14 @@ public class Sparrow implements WalletImport, WalletExport {
 
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
+        File tempDir = null;
         try {
             Wallet exportedWallet = !wallet.isMasterWallet() ? wallet.getMasterWallet() : wallet;
             PersistenceType persistenceType = PersistenceType.DB;
             Persistence persistence = persistenceType.getInstance();
             Storage storage = AppServices.get().getOpenWallets().get(exportedWallet);
-            File tempFile = File.createTempFile(exportedWallet.getName() + "tmp", "." + persistenceType.getExtension());
-            tempFile.delete();
+            tempDir = Files.createTempDirectory("sparrow").toFile();
+            File tempFile = new File(tempDir, exportedWallet.getName() + "." + persistenceType.getExtension());
             Storage tempStorage = new Storage(persistence, tempFile);
             tempStorage.setKeyDeriver(storage.getKeyDeriver());
             tempStorage.setEncryptionPubKey(storage.getEncryptionPubKey());
@@ -46,12 +48,13 @@ public class Sparrow implements WalletImport, WalletExport {
                 tempStorage.saveWallet(childWallet);
             }
             persistence.close();
-            Files.copy(tempStorage.getWalletFile(), outputStream);
+            Files.copy(tempStorage.getWalletFile().toPath(), outputStream);
             outputStream.flush();
-            tempStorage.getWalletFile().delete();
         } catch(Exception e) {
             log.error("Error exporting Sparrow wallet file", e);
             throw new ExportException("Error exporting Sparrow wallet file", e);
+        } finally {
+            deleteTempDirectory(tempDir);
         }
     }
 
@@ -88,11 +91,11 @@ public class Sparrow implements WalletImport, WalletExport {
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         Storage storage = null;
-        Wallet wallet = null;
-        File tempFile = null;
+        File tempDir = null;
         try {
-            tempFile = File.createTempFile("sparrow", null);
-            java.nio.file.Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            tempDir = Files.createTempDirectory("sparrow").toFile();
+            File tempFile = new File(tempDir, "sparrow");
+            Files.copy(inputStream, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             PersistenceType persistenceType = Storage.detectPersistenceType(tempFile);
             persistenceType = (persistenceType == null ? PersistenceType.JSON : persistenceType);
             if(persistenceType != PersistenceType.JSON || !isEncrypted(tempFile)) {
@@ -102,6 +105,7 @@ public class Sparrow implements WalletImport, WalletExport {
             }
 
             storage = new Storage(persistenceType, tempFile);
+            Wallet wallet;
             if(!isEncrypted(tempFile)) {
                 wallet = storage.loadUnencryptedWallet().getWallet();
             } else {
@@ -118,19 +122,23 @@ public class Sparrow implements WalletImport, WalletExport {
             throw new ImportException("Error importing Sparrow wallet", e);
         } finally {
             if(storage != null) {
-                storage.close();
+                storage.closeAndWait();
             }
 
-            if(tempFile != null) {
-                if(wallet != null) {
-                    File migratedWalletFile = Storage.getExistingWallet(tempFile.getParentFile(), wallet.getName());
-                    if(migratedWalletFile != null) {
-                        migratedWalletFile.delete();
-                    }
+            deleteTempDirectory(tempDir);
+        }
+    }
+
+    private void deleteTempDirectory(File tempDir) {
+        if(tempDir != null) {
+            File[] tempFiles = tempDir.listFiles();
+            if(tempFiles != null) {
+                for(File file : tempFiles) {
+                    IOUtils.secureDelete(file);
                 }
-
-                tempFile.delete();
             }
+
+            tempDir.delete();
         }
     }
 
