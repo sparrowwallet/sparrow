@@ -166,6 +166,11 @@ application {
     }
 }
 
+run {
+    //Add jdk.unsupported for IDE agents requiring sun.misc
+    jvmArgs += ["--add-modules=jdk.unsupported"]
+}
+
 jlink {
     mergedModule {
         requires 'javafx.graphics'
