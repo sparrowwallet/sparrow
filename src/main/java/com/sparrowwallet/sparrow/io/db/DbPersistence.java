@@ -20,6 +20,13 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.exception.FlywayValidateException;
+import org.h2.mvstore.Cursor;
+import org.h2.mvstore.MVMap;
+import org.h2.mvstore.MVStore;
+import org.h2.mvstore.MVStoreException;
+import org.h2.mvstore.WriteBuffer;
+import org.h2.mvstore.type.DataType;
+import org.h2.mvstore.type.LongDataType;
 import org.h2.tools.ChangeFileEncryption;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.h2.H2DatabasePlugin;
@@ -56,6 +63,9 @@ public class DbPersistence implements Persistence {
     private static final String H2_PASSWORD = "";
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
     private static final Pattern JDBC_URL_INJECTION_PATTERN = Pattern.compile(";\\w+=");
+    private static final String H2_META_TABLE_MAP = "table.0";
+    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("CREATE\\s+FORCE\\s+(?:LINKED\\s+TABLE|TRIGGER|ALIAS)", Pattern.CASE_INSENSITIVE);
+    private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
@@ -82,6 +92,8 @@ public class DbPersistence implements Persistence {
     public WalletAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
         ECKey encryptionKey = getEncryptionKey(password, storage.getWalletFile(), alreadyDerivedKey);
 
+        validateStore(storage, encryptionKey);
+        validateSchema(storage, MASTER_SCHEMA, encryptionKey);
         migrate(storage, MASTER_SCHEMA, encryptionKey);
         validateSchema(storage, MASTER_SCHEMA, encryptionKey);
 
@@ -112,6 +124,7 @@ public class DbPersistence implements Persistence {
         List<String> childSchemas = schemas.stream().filter(schema -> schema.startsWith(WALLET_SCHEMA_PREFIX) && !schema.equals(MASTER_SCHEMA)).collect(Collectors.toList());
         Map<WalletAndKey, Storage> childWallets = new TreeMap<>();
         for(String schema : childSchemas) {
+            validateSchema(storage, schema, encryptionKey);
             migrate(storage, schema, encryptionKey);
             validateSchema(storage, schema, encryptionKey);
 
@@ -409,6 +422,48 @@ public class DbPersistence implements Persistence {
         }
     }
 
+    private void validateStore(Storage storage, ECKey encryptionKey) throws StorageException {
+        File walletFile = storage.getWalletFile();
+        if(!walletFile.exists()) {
+            return;
+        }
+
+        String filePassword = getFilePassword(encryptionKey);
+        MVStore.Builder builder = new MVStore.Builder().fileName(walletFile.getAbsolutePath()).readOnly();
+        if(filePassword != null) {
+            builder.encryptionKey(filePassword.toCharArray());
+        }
+
+        byte[] metaPayload = null;
+        try(MVStore store = builder.open()) {
+            if(store.getMapNames().contains(H2_META_TABLE_MAP)) {
+                ByteArrayOutputStream payload = new ByteArrayOutputStream();
+                PageCapture capture = new PageCapture(payload);
+                MVMap<Long, Object> metaTable = store.openMap(H2_META_TABLE_MAP, new MVMap.Builder<Long, Object>().keyType(LongDataType.INSTANCE).valueType(capture));
+                Cursor<Long, Object> cursor = metaTable.cursor(null);
+                while(cursor.hasNext()) {
+                    cursor.next();
+                }
+
+                metaPayload = payload.toByteArray();
+            }
+        } catch(MVStoreException e) {
+            if(metaPayload == null) {
+                log.debug("Could not read wallet file store for validation, deferring to standard open", e);
+                return;
+            }
+            log.warn("Error closing wallet file store after validation", e);
+        }
+
+        if(metaPayload == null) {
+            return;
+        }
+
+        if(INVALID_SCHEMA_DDL_PATTERN.matcher(new String(metaPayload, StandardCharsets.ISO_8859_1)).find()) {
+            throw new StorageException("This is not a valid wallet file.\n\nWallet file contains unexpected database objects.");
+        }
+    }
+
     private void migrate(Storage storage, String schema, ECKey encryptionKey) throws StorageException {
         File migrationDir = getMigrationDir();
         try {
@@ -445,17 +500,43 @@ public class DbPersistence implements Persistence {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected check constraints: " + String.join(", ", checkConstraints) + "."));
                 }
 
-                List<Map<String, Object>> nonBaseTables = handle.createQuery("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) "
-                        + "AND TABLE_TYPE <> 'BASE TABLE' AND UPPER(TABLE_NAME) <> 'FLYWAY_SCHEMA_HISTORY'").bind("schema", schema).mapToMap().list();
+                List<String> nonBaseTables = handle.createQuery("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) "
+                        + "AND TABLE_TYPE <> 'BASE TABLE'").bind("schema", schema)
+                        .map((rs, ctx) -> rs.getString("TABLE_NAME") + " (" + rs.getString("TABLE_TYPE") + ")").list();
                 if(!nonBaseTables.isEmpty()) {
-                    String detail = nonBaseTables.stream().map(m -> m.get("TABLE_NAME") + " (" + m.get("TABLE_TYPE") + ")").collect(Collectors.joining(", "));
-                    throw new RuntimeException(new StorageException("Wallet file contains unexpected database object types: " + detail + "."));
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected database object types: " + String.join(", ", nonBaseTables) + "."));
+                }
+
+                List<String> linkedTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND STORAGE_TYPE = 'TABLE LINK'")
+                        .bind("schema", schema).mapTo(String.class).list();
+                if(!linkedTables.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected linked tables: " + String.join(", ", linkedTables) + "."));
+                }
+
+                List<String> synonyms = handle.createQuery("SELECT SYNONYM_NAME FROM INFORMATION_SCHEMA.SYNONYMS WHERE UPPER(SYNONYM_SCHEMA) = UPPER(:schema)")
+                        .bind("schema", schema).mapTo(String.class).list();
+                if(!synonyms.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected synonyms: " + String.join(", ", synonyms) + "."));
                 }
 
                 List<String> generatedColumns = handle.createQuery("SELECT TABLE_NAME || '.' || COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND GENERATION_EXPRESSION IS NOT NULL")
                         .bind("schema", schema).mapTo(String.class).list();
                 if(!generatedColumns.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected generated columns: " + String.join(", ", generatedColumns) + "."));
+                }
+
+                List<String[]> defaultColumns = handle.createQuery("SELECT TABLE_NAME, COLUMN_NAME, COLUMN_DEFAULT, COLUMN_ON_UPDATE FROM INFORMATION_SCHEMA.COLUMNS "
+                        + "WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND (COLUMN_DEFAULT IS NOT NULL OR COLUMN_ON_UPDATE IS NOT NULL)").bind("schema", schema)
+                        .map((rs, ctx) -> new String[] {rs.getString("TABLE_NAME"), rs.getString("COLUMN_NAME"), rs.getString("COLUMN_DEFAULT"), rs.getString("COLUMN_ON_UPDATE")}).list();
+                List<String> unexpectedDefaults = new ArrayList<>();
+                for(String[] column : defaultColumns) {
+                    String qualifiedName = column[0] + "." + column[1];
+                    if(column[3] != null || !Objects.equals(VALID_COLUMN_DEFAULTS.get(qualifiedName.toUpperCase(Locale.ROOT)), column[2])) {
+                        unexpectedDefaults.add(qualifiedName);
+                    }
+                }
+                if(!unexpectedDefaults.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected column default or update expressions: " + String.join(", ", unexpectedDefaults) + "."));
                 }
 
                 List<String> domains = handle.createQuery("SELECT DOMAIN_NAME FROM INFORMATION_SCHEMA.DOMAINS WHERE DOMAIN_SCHEMA <> 'INFORMATION_SCHEMA'").mapTo(String.class).list();
@@ -942,6 +1023,67 @@ public class DbPersistence implements Persistence {
                     "\nKeystore encryptions:" + encryptionKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
                     "\nKeystore registrations:" + registrationKeystores.stream().map(Keystore::getDeviceRegistration).collect(Collectors.toList()) +
                     "\nSilent payment addresses:" + silentPaymentAddresses;
+        }
+    }
+
+    private static class PageCapture implements DataType<Object> {
+        private final ByteArrayOutputStream payload;
+
+        public PageCapture(ByteArrayOutputStream payload) {
+            this.payload = payload;
+        }
+
+        private void capture(ByteBuffer buffer) {
+            int remaining = buffer.remaining();
+            if(remaining > 0) {
+                byte[] bytes = new byte[remaining];
+                buffer.get(bytes);
+                payload.write(bytes, 0, bytes.length);
+            }
+        }
+
+        @Override
+        public Object read(ByteBuffer buffer) {
+            capture(buffer);
+            return null;
+        }
+
+        @Override
+        public void read(ByteBuffer buffer, Object storage, int len) {
+            capture(buffer);
+        }
+
+        @Override
+        public void write(WriteBuffer buffer, Object obj) {
+        }
+
+        @Override
+        public void write(WriteBuffer buffer, Object storage, int len) {
+        }
+
+        @Override
+        public int compare(Object a, Object b) {
+            return 0;
+        }
+
+        @Override
+        public int binarySearch(Object key, Object storage, int size, int initialGuess) {
+            return 0;
+        }
+
+        @Override
+        public int getMemory(Object obj) {
+            return 0;
+        }
+
+        @Override
+        public boolean isMemoryEstimationAllowed() {
+            return false;
+        }
+
+        @Override
+        public Object[] createStorage(int size) {
+            return new Object[size];
         }
     }
 }
