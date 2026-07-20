@@ -790,7 +790,6 @@ public class Storage {
         }
     }
 
-    // TODO: flesh out. Currently just a shell of the intended structure doing nothing new.
     public record SparrowDirectories(File config, File data, File cache, File state) {
         static final String XDG_CONFIG_HOME = "XDG_CONFIG_HOME";
         static final String XDG_DATA_HOME = "XDG_DATA_HOME";
@@ -801,21 +800,43 @@ public class Storage {
             return new SparrowDirectories(directory, directory, directory, directory);
         }
 
-        Map<String, File> asMap() {
-            return Map.of(
-                "config", config,
-                "data", data,
-                "cache", cache,
-                "state", state
-            );
-        }
-
         static SparrowDirectories append(SparrowDirectories base, String extension) {
             return new SparrowDirectories(
                 new File(base.config, extension),
                 new File(base.data, extension),
                 new File(base.cache, extension),
                 new File(base.state, extension)
+            );
+        }
+
+        private static File fromEnvOrDefault(String envVarKey, File defaultValue) {
+            String envVarValue = envRetriever.apply(envVarKey);
+            return envVarValue == null || envVarValue.isEmpty() ? defaultValue : new File(envVarValue);
+        }
+
+        static SparrowDirectories fromXdgDirs() {
+            File userHome = getUserHomeDir();
+            File xdgConfig = fromEnvOrDefault(XDG_CONFIG_HOME, new File(userHome, ".config"));
+            File xdgData = fromEnvOrDefault(XDG_DATA_HOME, new File(new File(userHome, ".local"), "share"));
+            File xdgCache = fromEnvOrDefault(XDG_CACHE_HOME, new File(userHome, ".cache"));
+            File xdgState = fromEnvOrDefault(XDG_STATE_HOME, new File(new File(userHome, ".local"), "state"));
+
+            SparrowDirectories baseDirs = new SparrowDirectories(
+                xdgConfig,
+                xdgData,
+                xdgCache,
+                xdgState
+            );
+
+            return SparrowDirectories.append(baseDirs, XDG_SPARROW_DIR);
+        }
+
+        Map<String, File> asMap() {
+            return Map.of(
+                "config", config,
+                "data", data,
+                "cache", cache,
+                "state", state
             );
         }
 
@@ -829,8 +850,8 @@ public class Storage {
                 ? new File(xdgConfigHomeVar)
                 : new File(getUserHomeDir(), ".config");
 
-            File sparrowXdgConfigDir = new File(xdgConfigDir, XDG_SPARROW_DIR);
-            return sparrowXdgConfigDir.exists() && sparrowXdgConfigDir.isDirectory();
+            File xdgConfigSparrowDir = new File(xdgConfigDir, XDG_SPARROW_DIR);
+            return xdgConfigSparrowDir.exists() && xdgConfigSparrowDir.isDirectory();
         }
 
         public static SparrowDirectories getHomeDirs() {
@@ -838,17 +859,19 @@ public class Storage {
         }
 
         public static SparrowDirectories getHomeDirs(boolean useDefault) {
-            if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
-                File appHomePropertyDir = new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
-                return fromSingleDir(appHomePropertyDir);
+            if(!useDefault) {
+                String appHomeProperty = System.getProperty(SparrowWallet.APP_HOME_PROPERTY);
+                if(appHomeProperty != null) {
+                    return fromSingleDir(new File(appHomeProperty));
+                }
+
+                if(canUseXdgDirs()) {
+                    return fromXdgDirs();
+                }
             }
 
-            File homeDir = getUserHomeDir();
-            if(isWindows()) {
-                return fromSingleDir(new File(homeDir, WINDOWS_SPARROW_DIR));
-            }
-
-            return fromSingleDir(new File(homeDir, SPARROW_DIR));
+            String sparrowDir = isWindows() ? WINDOWS_SPARROW_DIR : SPARROW_DIR;
+            return fromSingleDir(new File(getUserHomeDir(), sparrowDir));
         }
 
         static SparrowDirectories getDirectories() {
