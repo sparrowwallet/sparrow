@@ -44,6 +44,7 @@ public class Storage {
 
     public static final String SPARROW_DIR = ".sparrow";
     public static final String WINDOWS_SPARROW_DIR = "Sparrow";
+    public static final String XDG_SPARROW_DIR = "sparrow";
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
@@ -796,11 +797,6 @@ public class Storage {
         static final String XDG_CACHE_HOME = "XDG_CACHE_HOME";
         static final String XDG_STATE_HOME = "XDG_STATE_HOME";
 
-        // Very defensive, but rather check for than assume a period in '.sparrow'
-        static final String XDG_SPARROW_DIR = SPARROW_DIR.startsWith(".")
-            ? SPARROW_DIR.substring(1)
-            : SPARROW_DIR;
-
         static SparrowDirectories fromSingleDir(File directory) {
             return new SparrowDirectories(directory, directory, directory, directory);
         }
@@ -824,7 +820,17 @@ public class Storage {
         }
 
         static boolean canUseXdgDirs() {
-            return false;
+            if(isWindows()) {
+                return false;
+            }
+
+            String xdgConfigHomeVar = envRetriever.apply(XDG_CONFIG_HOME);
+            File xdgConfigDir = xdgConfigHomeVar != null && !xdgConfigHomeVar.isEmpty()
+                ? new File(xdgConfigHomeVar)
+                : new File(getUserHomeDir(), ".config");
+
+            File sparrowXdgConfigDir = new File(xdgConfigDir, XDG_SPARROW_DIR);
+            return sparrowXdgConfigDir.exists() && sparrowXdgConfigDir.isDirectory();
         }
 
         public static SparrowDirectories getHomeDirs() {

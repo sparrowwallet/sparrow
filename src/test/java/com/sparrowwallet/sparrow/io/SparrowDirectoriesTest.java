@@ -143,7 +143,7 @@ class SparrowDirectoriesTests {
             props.put(SparrowWallet.APP_HOME_PROPERTY, null);
             props.putAll(getValidXdgEnvVarMap());
 
-            File xdgSparrowConfig = new File(xdgConfig, SparrowDirectories.XDG_SPARROW_DIR);
+            File xdgSparrowConfig = new File(xdgConfig, Storage.XDG_SPARROW_DIR);
             xdgSparrowConfig.mkdirs();
 
             prepareMocks(osType, envVars, props);
@@ -151,36 +151,36 @@ class SparrowDirectoriesTests {
 
         @Test
         void shouldUseAppDataDir() {
+            testCanUseXdgDirs(false);
+
             boolean defaultFlag = false;
 
             File expectedLocation = new File(appData, Storage.WINDOWS_SPARROW_DIR);
             SparrowDirectories expected = SparrowDirectories.fromSingleDir(expectedLocation);
             testDirectories(defaultFlag, expected);
-
-            testCanUseXdgDirs(false);
         }
 
         @Test
         void shouldUseAppHomeIfSet() {
             preparePropsMock(getValidAppHomePropsMap());
-            boolean defaultFlag = false;
-
-            SparrowDirectories expected = SparrowDirectories.fromSingleDir(appHome);
-            testDirectories(defaultFlag, expected);
 
             testCanUseXdgDirs(false);
+
+            boolean defaultFlag = false;
+            SparrowDirectories expected = SparrowDirectories.fromSingleDir(appHome);
+            testDirectories(defaultFlag, expected);
         }
 
         @Test
         void defaultFlagHasPrioOverAppHome() {
             preparePropsMock(getValidAppHomePropsMap());
-            boolean defaultFlag = true;
 
+            testCanUseXdgDirs(false);
+
+            boolean defaultFlag = true;
             File expectedLocation = new File(appData, Storage.WINDOWS_SPARROW_DIR);
             SparrowDirectories expected = SparrowDirectories.fromSingleDir(expectedLocation);
             testDirectories(defaultFlag, expected);
-
-            testCanUseXdgDirs(false);
         }
     }
 
@@ -198,11 +198,11 @@ class SparrowDirectoriesTests {
         private void createSparrowXdgConfigFolder(XdgBaseLocation location) {
             File sparrowXdgConfig;
             if (location == XdgBaseLocation.ENV_VAR) {
-                sparrowXdgConfig = new File(xdgConfig, SparrowDirectories.XDG_SPARROW_DIR);
+                sparrowXdgConfig = new File(xdgConfig, Storage.XDG_SPARROW_DIR);
             } else {
                 sparrowXdgConfig = userHome.toPath()
                     .resolve(".config")
-                    .resolve(SparrowDirectories.XDG_SPARROW_DIR)
+                    .resolve(Storage.XDG_SPARROW_DIR)
                     .toFile();
             }
 
@@ -220,52 +220,45 @@ class SparrowDirectoriesTests {
 
         @Test
         void shouldUseUserHomeIfNoXdgFolderExists() {
-            boolean defaultFlag = false;
+            testCanUseXdgDirs(false);
 
+            boolean defaultFlag = false;
             File expectedLocation = new File(userHome, Storage.SPARROW_DIR);
             SparrowDirectories expected = SparrowDirectories.fromSingleDir(expectedLocation);
             testDirectories(defaultFlag, expected);
-
-            testCanUseXdgDirs(false);
         }
 
         @Test
         void shouldUseXdgIfFolderExists() {
             createSparrowXdgConfigFolder(XdgBaseLocation.ENV_VAR);
+            testCanUseXdgDirs(true);
 
             boolean defaultFlag = false;
-
             SparrowDirectories baseDirs = new SparrowDirectories(
                 xdgConfig,
                 xdgData,
                 xdgCache,
                 xdgState
             );
-            SparrowDirectories expected = SparrowDirectories.append(baseDirs, SparrowDirectories.XDG_SPARROW_DIR);
-
+            SparrowDirectories expected = SparrowDirectories.append(baseDirs, Storage.XDG_SPARROW_DIR);
             testDirectories(defaultFlag, expected);
-
-            testCanUseXdgDirs(true);
         }
 
         @Test
         void shouldUseXdgWithoutEnvVarsIfDefaultLocationExists() {
             prepareEnvVarMock(getClearedXdgEnvVarMap());
             createSparrowXdgConfigFolder(XdgBaseLocation.DEFAULT);
-
+            testCanUseXdgDirs(true);
 
             boolean defaultFlag = false;
-
             SparrowDirectories baseDirs = new SparrowDirectories(
                 userHome.toPath().resolve(".config").toFile(),
                 userHome.toPath().resolve(".local/share").toFile(),
                 userHome.toPath().resolve(".cache").toFile(),
                 userHome.toPath().resolve(".local/state").toFile()
             );
-            SparrowDirectories expected = SparrowDirectories.append(baseDirs, SparrowDirectories.XDG_SPARROW_DIR);
+            SparrowDirectories expected = SparrowDirectories.append(baseDirs, Storage.XDG_SPARROW_DIR);
             testDirectories(defaultFlag, expected);
-
-            testCanUseXdgDirs(true);
         }
 
         @Test
@@ -273,12 +266,11 @@ class SparrowDirectoriesTests {
             preparePropsMock(getValidAppHomePropsMap());
             createSparrowXdgConfigFolder(XdgBaseLocation.ENV_VAR);
 
-            boolean defaultFlag = false;
+            testCanUseXdgDirs(true);
 
+            boolean defaultFlag = false;
             SparrowDirectories expected = SparrowDirectories.fromSingleDir(appHome);
             testDirectories(defaultFlag, expected);
-
-            testCanUseXdgDirs(true);
         }
 
         @Test
@@ -286,13 +278,20 @@ class SparrowDirectoriesTests {
             preparePropsMock(getValidAppHomePropsMap());
             createSparrowXdgConfigFolder(XdgBaseLocation.ENV_VAR);
 
-            boolean defaultFlag = true;
+            testCanUseXdgDirs(true);
 
+            boolean defaultFlag = true;
             File expectedLocation = new File(userHome, Storage.SPARROW_DIR);
             SparrowDirectories expected = SparrowDirectories.fromSingleDir(expectedLocation);
             testDirectories(defaultFlag, expected);
+        }
+    }
 
-            testCanUseXdgDirs(true);
+    @Nested
+    class MacOsTests extends UnixTests {
+        @Override
+        OsType getOsType() {
+            return OsType.MACOS;
         }
     }
 }
