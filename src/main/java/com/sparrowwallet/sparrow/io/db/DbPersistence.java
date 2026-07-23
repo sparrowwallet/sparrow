@@ -67,6 +67,12 @@ public class DbPersistence implements Persistence {
     private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("LINKED\\s+TABLE|CREATE\\s+(?:FORCE\\s+)?(?:TRIGGER|ALIAS)", Pattern.CASE_INSENSITIVE);
     private static final Pattern WALLET_SCHEMA_IDENTIFIER_PATTERN = Pattern.compile("\"wallet_[^\"\\x00-\\x1f]*\"");
     private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
+    private static final String H2_ALLOWED_CLASSES_PROPERTY = "h2.allowedClasses";
+    private static final String H2_NO_ALLOWED_CLASSES = "com.sparrowwallet.sparrow.NONE";
+
+    static {
+        System.setProperty(H2_ALLOWED_CLASSES_PROPERTY, H2_NO_ALLOWED_CLASSES);
+    }
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
