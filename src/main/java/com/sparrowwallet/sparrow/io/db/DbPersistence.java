@@ -72,6 +72,7 @@ public class DbPersistence implements Persistence {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern WALLET_SCHEMA_IDENTIFIER_PATTERN = Pattern.compile("\"wallet_[^\"\\x00-\\x1f]*\"");
     private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
+    private static final String H2_BASE_TABLE_CLASS = "org.h2.mvstore.db.MVTable";
     private static final String H2_ALLOWED_CLASSES_PROPERTY = "h2.allowedClasses";
     private static final String H2_NO_ALLOWED_CLASSES = "com.sparrowwallet.sparrow.NONE";
 
@@ -532,6 +533,12 @@ public class DbPersistence implements Persistence {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected linked tables: " + String.join(", ", linkedTables) + "."));
                 }
 
+                List<String> engineTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) "
+                        + "AND TABLE_TYPE = 'BASE TABLE' AND (TABLE_CLASS IS NULL OR TABLE_CLASS <> :tableClass)").bind("schema", schema).bind("tableClass", H2_BASE_TABLE_CLASS).mapTo(String.class).list();
+                if(!engineTables.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected table storage engines: " + String.join(", ", engineTables) + "."));
+                }
+
                 List<String> synonyms = handle.createQuery("SELECT SYNONYM_NAME FROM INFORMATION_SCHEMA.SYNONYMS WHERE UPPER(SYNONYM_SCHEMA) = UPPER(:schema)")
                         .bind("schema", schema).mapTo(String.class).list();
                 if(!synonyms.isEmpty()) {
@@ -561,6 +568,11 @@ public class DbPersistence implements Persistence {
                 List<String> domains = handle.createQuery("SELECT DOMAIN_NAME FROM INFORMATION_SCHEMA.DOMAINS WHERE DOMAIN_SCHEMA <> 'INFORMATION_SCHEMA'").mapTo(String.class).list();
                 if(!domains.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected database domains: " + String.join(", ", domains) + "."));
+                }
+
+                List<String> constants = handle.createQuery("SELECT CONSTANT_NAME FROM INFORMATION_SCHEMA.CONSTANTS WHERE CONSTANT_SCHEMA <> 'INFORMATION_SCHEMA'").mapTo(String.class).list();
+                if(!constants.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected database constants: " + String.join(", ", constants) + "."));
                 }
             });
         } catch(RuntimeException e) {
