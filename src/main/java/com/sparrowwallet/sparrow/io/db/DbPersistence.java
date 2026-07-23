@@ -73,6 +73,7 @@ public class DbPersistence implements Persistence {
     private static final Pattern WALLET_SCHEMA_IDENTIFIER_PATTERN = Pattern.compile("\"wallet_[^\"\\x00-\\x1f]*\"");
     private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
     private static final String H2_BASE_TABLE_CLASS = "org.h2.mvstore.db.MVTable";
+    private static final Set<String> VALID_COLUMN_TYPES = Set.of("ARRAY", "BIGINT", "BINARY", "BINARY VARYING", "BOOLEAN", "CHARACTER VARYING", "INTEGER", "TIMESTAMP");
     private static final String H2_ALLOWED_CLASSES_PROPERTY = "h2.allowedClasses";
     private static final String H2_NO_ALLOWED_CLASSES = "com.sparrowwallet.sparrow.NONE";
 
@@ -573,6 +574,18 @@ public class DbPersistence implements Persistence {
                 List<String> constants = handle.createQuery("SELECT CONSTANT_NAME FROM INFORMATION_SCHEMA.CONSTANTS WHERE CONSTANT_SCHEMA <> 'INFORMATION_SCHEMA'").mapTo(String.class).list();
                 if(!constants.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected database constants: " + String.join(", ", constants) + "."));
+                }
+
+                List<String[]> columnTypes = handle.createQuery("SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema)")
+                        .bind("schema", schema).map((rs, ctx) -> new String[] {rs.getString("TABLE_NAME"), rs.getString("COLUMN_NAME"), rs.getString("DATA_TYPE")}).list();
+                List<String> unexpectedTypes = new ArrayList<>();
+                for(String[] column : columnTypes) {
+                    if(!VALID_COLUMN_TYPES.contains(column[2])) {
+                        unexpectedTypes.add(column[0] + "." + column[1] + " (" + column[2] + ")");
+                    }
+                }
+                if(!unexpectedTypes.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected column data types: " + String.join(", ", unexpectedTypes) + "."));
                 }
             });
         } catch(RuntimeException e) {
