@@ -64,7 +64,12 @@ public class DbPersistence implements Persistence {
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
     private static final Pattern JDBC_URL_INJECTION_PATTERN = Pattern.compile(";\\w+=");
     private static final String H2_META_TABLE_MAP = "table.0";
-    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("LINKED\\s+TABLE|CREATE\\s+(?:FORCE\\s+)?(?:TRIGGER|ALIAS)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile(
+            "LINKED\\s+TABLE"
+            + "|CREATE\\s+(?:FORCE\\s+)?(?:TRIGGER|ALIAS|AGGREGATE)"
+            + "|\\bENGINE\\s+[\"'\\w]"
+            + "|\\b(?:FILE_READ|FILE_WRITE|CSVWRITE|CSVREAD|RUNSCRIPT|LINK_SCHEMA)\\b",
+            Pattern.CASE_INSENSITIVE);
     private static final Pattern WALLET_SCHEMA_IDENTIFIER_PATTERN = Pattern.compile("\"wallet_[^\"\\x00-\\x1f]*\"");
     private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
     private static final String H2_ALLOWED_CLASSES_PROPERTY = "h2.allowedClasses";
@@ -441,8 +446,10 @@ public class DbPersistence implements Persistence {
             builder.encryptionKey(filePassword.toCharArray());
         }
 
+        boolean storeOpened = false;
         byte[] metaPayload = null;
         try(MVStore store = builder.open()) {
+            storeOpened = true;
             if(store.getMapNames().contains(H2_META_TABLE_MAP)) {
                 ByteArrayOutputStream payload = new ByteArrayOutputStream();
                 PageCapture capture = new PageCapture(payload);
@@ -455,15 +462,18 @@ public class DbPersistence implements Persistence {
                 metaPayload = payload.toByteArray();
             }
         } catch(MVStoreException e) {
-            if(metaPayload == null) {
-                log.debug("Could not read wallet file store for validation, deferring to standard open", e);
+            if(metaPayload != null) {
+                log.warn("Error closing wallet file store after validation", e);
+            } else if(!storeOpened) {
+                log.debug("Could not open wallet file store for validation, deferring to standard open", e);
                 return;
+            } else {
+                throw new StorageException("This is not a valid wallet file.\n\nWallet file could not be validated.");
             }
-            log.warn("Error closing wallet file store after validation", e);
         }
 
         if(metaPayload == null) {
-            return;
+            throw new StorageException("This is not a valid wallet file.\n\nWallet file could not be validated.");
         }
 
         String rawDdl = new String(metaPayload, StandardCharsets.ISO_8859_1);
