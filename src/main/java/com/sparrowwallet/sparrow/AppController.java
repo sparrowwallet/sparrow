@@ -1491,6 +1491,9 @@ public class AppController implements Initializable {
         if(messageSignDialog == null) {
             //Can verify only
             messageSignDialog = new MessageSignDialog();
+            if(selectedWalletForm != null && selectedWalletForm.getWallet().getPolicyType() == PolicyType.MULTI_HD) {
+                messageSignDialog.setNoticeText("Multisig wallets cannot sign messages — only single-signature wallets are supported. Signatures from other sources can still be verified here.");
+            }
         }
 
         messageSignDialog.initOwner(rootStack.getScene().getWindow());
