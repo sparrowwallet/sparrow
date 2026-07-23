@@ -3,7 +3,7 @@ package com.sparrowwallet.sparrow;
 import com.beust.jcommander.JCommander;
 import com.sparrowwallet.drongo.Drongo;
 import com.sparrowwallet.drongo.Network;
-import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
 import com.sparrowwallet.sparrow.instance.InstanceException;
 import com.sparrowwallet.sparrow.instance.InstanceList;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
@@ -71,17 +71,17 @@ public class SparrowWallet {
             }
         }
 
-        File testnetFlag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET.getName());
+        File testnetFlag = new File(SparrowDirectories.getHomeDirs().state(), "network-" + Network.TESTNET.getName());
         if(testnetFlag.exists()) {
             Network.set(Network.TESTNET);
         }
 
-        File testnet4Flag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET4.getName());
+        File testnet4Flag = new File(SparrowDirectories.getHomeDirs().state(), "network-" + Network.TESTNET4.getName());
         if(testnet4Flag.exists()) {
             Network.set(Network.TESTNET4);
         }
 
-        File signetFlag = new File(Storage.getSparrowHome(), "network-" + Network.SIGNET.getName());
+        File signetFlag = new File(SparrowDirectories.getHomeDirs().state(), "network-" + Network.SIGNET.getName());
         if(signetFlag.exists()) {
             Network.set(Network.SIGNET);
         }

@@ -9,6 +9,7 @@ import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.control.QRDensity;
 import com.sparrowwallet.sparrow.control.QREncoding;
 import com.sparrowwallet.sparrow.control.WebcamResolution;
+import com.sparrowwallet.sparrow.io.Storage.SparrowDirectories;
 import com.sparrowwallet.sparrow.net.*;
 import com.sparrowwallet.sparrow.wallet.FeeRatesSelection;
 import com.sparrowwallet.sparrow.wallet.OptimizationStrategy;
@@ -108,7 +109,7 @@ public class Config {
     }
 
     private static File getConfigFile() {
-        File sparrowDir = Storage.getSparrowDir();
+        File sparrowDir = SparrowDirectories.getDirectories().config();
         return new File(sparrowDir, CONFIG_FILENAME);
     }
 
