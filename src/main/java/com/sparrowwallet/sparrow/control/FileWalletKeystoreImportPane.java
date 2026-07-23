@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletImportEvent;
@@ -67,9 +68,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
 
             if(types.size() == 1) {
                 Wallet wallet = wallets.stream().filter(w -> w.getPolicyType() == types.getFirst().policyType() && w.getScriptType() == types.getFirst().scriptType()).findFirst().orElseThrow(ImportException::new);
-                wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), null));
-                wallet.setName(importer.getName());
-                EventManager.get().post(new WalletImportEvent(wallet));
+                importScannedWallet(wallet);
                 return;
             }
         } else {
@@ -91,9 +90,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
 
         if(wallets != null && !wallets.isEmpty()) {
             Wallet wallet = wallets.stream().filter(w -> w.getPolicyType() == policyType && w.getScriptType() == scriptType).findFirst().orElseThrow(ImportException::new);
-            wallet.setName(importer.getName());
-            wallet.setDefaultPolicy(Policy.getPolicy(policyType, scriptType, wallet.getKeystores(), null));
-            EventManager.get().post(new WalletImportEvent(wallet));
+            importScannedWallet(wallet);
         } else {
             ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes);
             Keystore keystore = importer.getKeystore(policyType, scriptType, bais, password);
@@ -107,6 +104,22 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
 
             EventManager.get().post(new WalletImportEvent(wallet));
         }
+    }
+
+    private void importScannedWallet(Wallet wallet) {
+        wallet.setName(importer.getName());
+        wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), null));
+
+        Keystore keystore = wallet.getKeystores().getFirst();
+        if(keystore.getSource() == KeystoreSource.SW_WATCH) {
+            if(Keystore.DEFAULT_LABEL.equals(keystore.getLabel())) {
+                keystore.setLabel(importer.getName());
+            }
+            keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+            keystore.setWalletModel(importer.getWalletModel());
+        }
+
+        EventManager.get().post(new WalletImportEvent(wallet));
     }
 
     private Node getScriptTypeEntry(List<PolicyAndScriptType> types) {

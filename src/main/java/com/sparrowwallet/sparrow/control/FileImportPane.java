@@ -203,7 +203,9 @@ public abstract class FileImportPane extends TitledDescriptionPane {
             for(Wallet wallet : wallets) {
                 if(scriptType.equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
                     Keystore keystore = wallet.getKeystores().get(0);
-                    keystore.setLabel(importer.getName().replace(" Multisig", ""));
+                    if(Keystore.DEFAULT_LABEL.equals(keystore.getLabel())) {
+                        keystore.setLabel(importer.getName().replace(" Multisig", ""));
+                    }
                     keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                     keystore.setWalletModel(importer.getWalletModel());
                     return keystore;
