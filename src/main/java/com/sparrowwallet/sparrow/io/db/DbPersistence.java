@@ -64,7 +64,8 @@ public class DbPersistence implements Persistence {
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
     private static final Pattern JDBC_URL_INJECTION_PATTERN = Pattern.compile(";\\w+=");
     private static final String H2_META_TABLE_MAP = "table.0";
-    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("CREATE\\s+FORCE\\s+(?:LINKED\\s+TABLE|TRIGGER|ALIAS)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("LINKED\\s+TABLE|CREATE\\s+(?:FORCE\\s+)?(?:TRIGGER|ALIAS)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern WALLET_SCHEMA_IDENTIFIER_PATTERN = Pattern.compile("\"wallet_[^\"\\x00-\\x1f]*\"");
     private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
 
     private HikariDataSource dataSource;
@@ -459,7 +460,9 @@ public class DbPersistence implements Persistence {
             return;
         }
 
-        if(INVALID_SCHEMA_DDL_PATTERN.matcher(new String(metaPayload, StandardCharsets.ISO_8859_1)).find()) {
+        String rawDdl = new String(metaPayload, StandardCharsets.ISO_8859_1);
+        String schemaDdl = WALLET_SCHEMA_IDENTIFIER_PATTERN.matcher(rawDdl).replaceAll(" ").replaceAll("[^A-Za-z0-9_]", " ");
+        if(INVALID_SCHEMA_DDL_PATTERN.matcher(schemaDdl).find()) {
             throw new StorageException("This is not a valid wallet file.\n\nWallet file contains unexpected database objects.");
         }
     }
