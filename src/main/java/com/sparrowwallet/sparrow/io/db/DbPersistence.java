@@ -20,6 +20,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.FlywayException;
 import org.flywaydb.core.api.exception.FlywayValidateException;
+import org.h2.api.JavaObjectSerializer;
 import org.h2.mvstore.Cursor;
 import org.h2.mvstore.MVMap;
 import org.h2.mvstore.MVStore;
@@ -28,6 +29,7 @@ import org.h2.mvstore.WriteBuffer;
 import org.h2.mvstore.type.DataType;
 import org.h2.mvstore.type.LongDataType;
 import org.h2.tools.ChangeFileEncryption;
+import org.h2.util.JdbcUtils;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.h2.H2DatabasePlugin;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
@@ -64,9 +66,18 @@ public class DbPersistence implements Persistence {
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
     private static final Pattern JDBC_URL_INJECTION_PATTERN = Pattern.compile(";\\w+=");
     private static final String H2_META_TABLE_MAP = "table.0";
-    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("LINKED\\s+TABLE|CREATE\\s+(?:FORCE\\s+)?(?:TRIGGER|ALIAS)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern INVALID_SCHEMA_DDL_PATTERN = Pattern.compile("LINKED\\s+TABLE|CREATE\\s+(?:FORCE\\s+|OR\\s+REPLACE\\s+)*(?:TRIGGER|ALIAS|AGGREGATE)"
+            + "|\\bENGINE\\s+[\"'\\w]|\\b(?:FILE_READ|FILE_WRITE|CSVWRITE|CSVREAD|RUNSCRIPT|LINK_SCHEMA)\\b", Pattern.CASE_INSENSITIVE);
     private static final Pattern WALLET_SCHEMA_IDENTIFIER_PATTERN = Pattern.compile("\"wallet_[^\"\\x00-\\x1f]*\"");
     private static final Map<String, String> VALID_COLUMN_DEFAULTS = Map.of("UTXOMIXDATA.MIXESDONE", "0", "FLYWAY_SCHEMA_HISTORY.INSTALLED_ON", "CURRENT_TIMESTAMP");
+    private static final String H2_BASE_TABLE_CLASS = "org.h2.mvstore.db.MVTable";
+    private static final String H2_ALLOWED_CLASSES_PROPERTY = "h2.allowedClasses";
+    private static final String H2_NO_ALLOWED_CLASSES = "com.sparrowwallet.sparrow.NONE";
+
+    static {
+        System.setProperty(H2_ALLOWED_CLASSES_PROPERTY, H2_NO_ALLOWED_CLASSES);
+        JdbcUtils.serializer = new NoDeserializationSerializer();
+    }
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
@@ -93,27 +104,32 @@ public class DbPersistence implements Persistence {
     public WalletAndKey loadWallet(Storage storage, CharSequence password, ECKey alreadyDerivedKey) throws IOException, StorageException {
         ECKey encryptionKey = getEncryptionKey(password, storage.getWalletFile(), alreadyDerivedKey);
 
-        validateStore(storage, encryptionKey);
-        validateSchema(storage, MASTER_SCHEMA, encryptionKey);
-        migrate(storage, MASTER_SCHEMA, encryptionKey);
-        validateSchema(storage, MASTER_SCHEMA, encryptionKey);
+        try {
+            validateStore(storage, encryptionKey);
+            validateSchema(storage, MASTER_SCHEMA, encryptionKey);
+            migrate(storage, MASTER_SCHEMA, encryptionKey);
+            validateSchema(storage, MASTER_SCHEMA, encryptionKey);
 
-        Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
-        masterWallet = jdbi.withHandle(handle -> {
-            WalletDao walletDao = handle.attach(WalletDao.class);
-            return walletDao.getMainWallet(MASTER_SCHEMA, getWalletName(storage.getWalletFile(), null));
-        });
+            Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
+            masterWallet = jdbi.withHandle(handle -> {
+                WalletDao walletDao = handle.attach(WalletDao.class);
+                return walletDao.getMainWallet(MASTER_SCHEMA, getWalletName(storage.getWalletFile(), null));
+            });
 
-        if(masterWallet == null) {
-            throw new StorageException("The wallet file was corrupted. Check the backups folder for previous copies.");
+            if(masterWallet == null) {
+                throw new StorageException("The wallet file was corrupted. Check the backups folder for previous copies.");
+            }
+
+            Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, encryptionKey);
+            masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
+
+            createUpdateExecutor(masterWallet);
+
+            return new WalletAndKey(masterWallet, encryptionKey, keyDeriver, childWallets);
+        } catch(StorageException | RuntimeException e) {
+            closeDataSource();
+            throw e;
         }
-
-        Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, encryptionKey);
-        masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
-
-        createUpdateExecutor(masterWallet);
-
-        return new WalletAndKey(masterWallet, encryptionKey, keyDeriver, childWallets);
     }
 
     private Map<WalletAndKey, Storage> loadChildWallets(Storage storage, Wallet masterWallet, ECKey encryptionKey) throws StorageException {
@@ -435,8 +451,10 @@ public class DbPersistence implements Persistence {
             builder.encryptionKey(filePassword.toCharArray());
         }
 
+        boolean storeOpened = false;
         byte[] metaPayload = null;
         try(MVStore store = builder.open()) {
+            storeOpened = true;
             if(store.getMapNames().contains(H2_META_TABLE_MAP)) {
                 ByteArrayOutputStream payload = new ByteArrayOutputStream();
                 PageCapture capture = new PageCapture(payload);
@@ -449,15 +467,18 @@ public class DbPersistence implements Persistence {
                 metaPayload = payload.toByteArray();
             }
         } catch(MVStoreException e) {
-            if(metaPayload == null) {
-                log.debug("Could not read wallet file store for validation, deferring to standard open", e);
+            if(metaPayload != null) {
+                log.warn("Error closing wallet file store after validation", e);
+            } else if(!storeOpened) {
+                log.debug("Could not open wallet file store for validation, deferring to standard open", e);
                 return;
+            } else {
+                throw new StorageException("This is not a valid wallet file.\n\nWallet file could not be validated.");
             }
-            log.warn("Error closing wallet file store after validation", e);
         }
 
         if(metaPayload == null) {
-            return;
+            throw new StorageException("This is not a valid wallet file.\n\nWallet file could not be validated.");
         }
 
         String rawDdl = new String(metaPayload, StandardCharsets.ISO_8859_1);
@@ -516,6 +537,12 @@ public class DbPersistence implements Persistence {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected linked tables: " + String.join(", ", linkedTables) + "."));
                 }
 
+                List<String> engineTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) "
+                        + "AND TABLE_TYPE = 'BASE TABLE' AND (TABLE_CLASS IS NULL OR TABLE_CLASS <> :tableClass)").bind("schema", schema).bind("tableClass", H2_BASE_TABLE_CLASS).mapTo(String.class).list();
+                if(!engineTables.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected table storage engines: " + String.join(", ", engineTables) + "."));
+                }
+
                 List<String> synonyms = handle.createQuery("SELECT SYNONYM_NAME FROM INFORMATION_SCHEMA.SYNONYMS WHERE UPPER(SYNONYM_SCHEMA) = UPPER(:schema)")
                         .bind("schema", schema).mapTo(String.class).list();
                 if(!synonyms.isEmpty()) {
@@ -545,6 +572,18 @@ public class DbPersistence implements Persistence {
                 List<String> domains = handle.createQuery("SELECT DOMAIN_NAME FROM INFORMATION_SCHEMA.DOMAINS WHERE DOMAIN_SCHEMA <> 'INFORMATION_SCHEMA'").mapTo(String.class).list();
                 if(!domains.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected database domains: " + String.join(", ", domains) + "."));
+                }
+
+                List<String> constants = handle.createQuery("SELECT CONSTANT_NAME FROM INFORMATION_SCHEMA.CONSTANTS WHERE CONSTANT_SCHEMA <> 'INFORMATION_SCHEMA'").mapTo(String.class).list();
+                if(!constants.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected database constants: " + String.join(", ", constants) + "."));
+                }
+
+                List<String> serializedColumns = handle.createQuery("SELECT TABLE_NAME || '.' || COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND DATA_TYPE = 'JAVA_OBJECT' "
+                        + "UNION SELECT OBJECT_NAME FROM INFORMATION_SCHEMA.ELEMENT_TYPES WHERE UPPER(OBJECT_SCHEMA) = UPPER(:schema) AND OBJECT_TYPE = 'TABLE' AND DATA_TYPE = 'JAVA_OBJECT'")
+                        .bind("schema", schema).mapTo(String.class).list();
+                if(!serializedColumns.isEmpty()) {
+                    throw new RuntimeException(new StorageException("Wallet file contains unexpected serialized object columns: " + String.join(", ", serializedColumns) + "."));
                 }
             });
         } catch(RuntimeException e) {
@@ -1026,6 +1065,18 @@ public class DbPersistence implements Persistence {
                     "\nKeystore encryptions:" + encryptionKeystores.stream().map(Keystore::getLabel).collect(Collectors.toList()) +
                     "\nKeystore registrations:" + registrationKeystores.stream().map(Keystore::getDeviceRegistration).collect(Collectors.toList()) +
                     "\nSilent payment addresses:" + silentPaymentAddresses;
+        }
+    }
+
+    private static class NoDeserializationSerializer implements JavaObjectSerializer {
+        @Override
+        public byte[] serialize(Object obj) {
+            throw new UnsupportedOperationException("Serialization of Java objects is not supported in wallet files.");
+        }
+
+        @Override
+        public Object deserialize(byte[] bytes) {
+            throw new UnsupportedOperationException("Deserialization of Java objects is not supported in wallet files.");
         }
     }
 
