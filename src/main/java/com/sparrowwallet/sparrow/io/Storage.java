@@ -25,8 +25,9 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -37,7 +38,7 @@ public class Storage {
     private static final Logger log = LoggerFactory.getLogger(Storage.class);
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
 
-    private static final DateFormat BACKUP_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
+    private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final Pattern DATE_PATTERN = Pattern.compile(".+-([0-9]{14}?).*");
 
     public static final String SPARROW_DIR = ".sparrow";
@@ -238,9 +239,8 @@ public class Storage {
     private void backupWallet(String prefix) throws IOException {
         File backupDir = getWalletsBackupDir();
 
-        Date backupDate = new Date();
         String walletName = persistence.getWalletName(walletFile, null);
-        String dateSuffix = "-" + BACKUP_DATE_FORMAT.format(backupDate);
+        String dateSuffix = "-" + BACKUP_DATE_FORMAT.format(LocalDateTime.now());
         String backupName = walletName + dateSuffix + walletFile.getName().substring(walletName.length());
 
         if(prefix != null) {
@@ -275,9 +275,9 @@ public class Storage {
 
     private boolean hasStartedSince(File lastBackup) {
         try {
-            Date date = BACKUP_DATE_FORMAT.parse(getBackupDate(lastBackup.getName()));
+            LocalDateTime date = LocalDateTime.parse(getBackupDate(lastBackup.getName()), BACKUP_DATE_FORMAT);
             ProcessHandle.Info processInfo = ProcessHandle.current().info();
-            return (processInfo.startInstant().isPresent() && processInfo.startInstant().get().isAfter(date.toInstant()));
+            return (processInfo.startInstant().isPresent() && processInfo.startInstant().get().isAfter(date.atZone(ZoneId.systemDefault()).toInstant()));
         } catch(Exception e) {
             log.error("Error parsing date for backup file " + lastBackup.getName(), e);
             return false;
