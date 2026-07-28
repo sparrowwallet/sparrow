@@ -40,15 +40,16 @@ public class Tor implements Closeable {
     private IPSocketAddress socksAddress;
 
     public Tor(OnEvent<TorListeners> listener) {
-        Path path = Path.of(Storage.getSparrowHome().getAbsolutePath()).resolve(TOR_DIR);
-        File oldInstallDir = path.resolve(WORK_DIR).resolve(OLD_INSTALL_DIR).toFile();
+        Path workPath = Path.of(Storage.getStateHome().getAbsolutePath()).resolve(TOR_DIR).resolve(WORK_DIR);
+        Path cachePath = Path.of(Storage.getCacheHome().getAbsolutePath()).resolve(TOR_DIR).resolve(CACHE_DIR);
+        File oldInstallDir = workPath.resolve(OLD_INSTALL_DIR).toFile();
         if(oldInstallDir.exists()) {
             IOUtils.deleteDirectory(oldInstallDir);
         }
 
         TorRuntime.Environment env = TorRuntime.Environment.Builder(
-                path.resolve(WORK_DIR).toFile(),
-                path.resolve(CACHE_DIR).toFile(),
+                workPath.toFile(),
+                cachePath.toFile(),
                 ResourceLoaderTorExec::getOrCreate
         );
 

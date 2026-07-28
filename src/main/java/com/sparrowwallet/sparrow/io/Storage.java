@@ -33,6 +33,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Storage {
     private static final Logger log = LoggerFactory.getLogger(Storage.class);
@@ -41,8 +42,6 @@ public class Storage {
     private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final Pattern DATE_PATTERN = Pattern.compile(".+-([0-9]{14}?).*");
 
-    public static final String SPARROW_DIR = ".sparrow";
-    public static final String WINDOWS_SPARROW_DIR = "Sparrow";
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
@@ -501,7 +500,7 @@ public class Storage {
             }
         }
         if(walletsDir == null) {
-            walletsDir = new File(getSparrowDir(), WALLETS_DIR);
+            walletsDir = new File(getDataDir(), WALLETS_DIR);
         }
         if(!walletsDir.exists()) {
             createOwnerOnlyDirectory(walletsDir);
@@ -556,7 +555,7 @@ public class Storage {
     }
 
     static File getCertsDir() {
-        File certsDir = new File(getSparrowDir(), CERTS_DIR);
+        File certsDir = new File(getDataDir(), CERTS_DIR);
         if(!certsDir.exists()) {
             createOwnerOnlyDirectory(certsDir);
         }
@@ -564,73 +563,123 @@ public class Storage {
         return certsDir;
     }
 
-    public static File getSparrowDir() {
-        File sparrowDir;
+    /**
+     * Returns the network specific directory containing the configuration file.
+     */
+    public static File getConfigDir() {
+        return getNetworkDir(getConfigHome());
+    }
+
+    /**
+     * Returns the network specific directory containing wallets and certificates.
+     */
+    public static File getDataDir() {
+        return getNetworkDir(getDataHome());
+    }
+
+    /**
+     * Returns the network specific directory containing regenerable files.
+     */
+    public static File getCacheDir() {
+        return getNetworkDir(getCacheHome());
+    }
+
+    /**
+     * Returns the network specific directory containing logs and runtime state.
+     */
+    public static File getStateDir() {
+        return getNetworkDir(getStateHome());
+    }
+
+    public static File getConfigHome() {
+        return ApplicationDir.CONFIG.get(SparrowWallet.APP_NAME);
+    }
+
+    public static File getDataHome() {
+        return ApplicationDir.DATA.get(SparrowWallet.APP_NAME);
+    }
+
+    public static File getCacheHome() {
+        return ApplicationDir.CACHE.get(SparrowWallet.APP_NAME);
+    }
+
+    public static File getStateHome() {
+        return getStateHome(false);
+    }
+
+    public static File getStateHome(boolean useDefault) {
+        return ApplicationDir.STATE.get(SparrowWallet.APP_NAME, useDefault);
+    }
+
+    /**
+     * Returns the single directory used when the XDG Base Directory Specification is not followed, ignoring any configured home.
+     *
+     * Provides a fixed location that does not move as categories are migrated, and is where earlier versions wrote all of their files.
+     */
+    public static File getDefaultHome() {
+        return ApplicationDir.getDefaultDir(SparrowWallet.APP_NAME);
+    }
+
+    /**
+     * Resolves the network specific directory within the given application directory, creating it if necessary.
+     *
+     * Where a network has been renamed, any existing directory under the previous name is moved and replaced with a symlink,
+     * and a symlink under the previous name is otherwise maintained for convenience.
+     */
+    private static File getNetworkDir(File applicationDir) {
+        File networkDir;
         Network network = Network.get();
         if(network != Network.MAINNET) {
-            sparrowDir = new File(getSparrowHome(), network.getHome());
-            if(!network.getName().equals(network.getHome()) && !sparrowDir.exists()) {
-                File networkNameDir = new File(getSparrowHome(), network.getName());
+            networkDir = new File(applicationDir, network.getHome());
+            if(!network.getName().equals(network.getHome()) && !networkDir.exists()) {
+                File networkNameDir = new File(applicationDir, network.getName());
                 if(networkNameDir.exists() && networkNameDir.isDirectory() && !Files.isSymbolicLink(networkNameDir.toPath())) {
                     try {
-                        if(networkNameDir.renameTo(sparrowDir) && !isWindows()) {
-                            Files.createSymbolicLink(networkNameDir.toPath(), Path.of(sparrowDir.getName()));
+                        if(networkNameDir.renameTo(networkDir) && !isWindows()) {
+                            Files.createSymbolicLink(networkNameDir.toPath(), Path.of(networkDir.getName()));
                         }
                     } catch(Exception e) {
-                        log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + sparrowDir.getName(), e);
+                        log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + networkDir.getName(), e);
                     }
                 }
             }
         } else {
-            sparrowDir = getSparrowHome();
+            networkDir = applicationDir;
         }
 
-        if(!sparrowDir.exists()) {
-            createOwnerOnlyDirectory(sparrowDir);
+        if(!networkDir.exists()) {
+            createOwnerOnlyDirectory(networkDir);
         }
 
         if(!network.getName().equals(network.getHome()) && !isWindows()) {
             try {
-                Path networkNamePath = getSparrowHome().toPath().resolve(network.getName());
+                Path networkNamePath = applicationDir.toPath().resolve(network.getName());
                 if(Files.isSymbolicLink(networkNamePath)) {
-                    Path symlinkTarget = getSparrowHome().toPath().resolve(Files.readSymbolicLink(networkNamePath));
-                    if(!Files.isSameFile(sparrowDir.toPath(), symlinkTarget)) {
+                    Path symlinkTarget = applicationDir.toPath().resolve(Files.readSymbolicLink(networkNamePath));
+                    if(!Files.isSameFile(networkDir.toPath(), symlinkTarget)) {
                         Files.delete(networkNamePath);
-                        Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                        Files.createSymbolicLink(networkNamePath, Path.of(networkDir.getName()));
                     }
                 } else if(!Files.exists(networkNamePath)) {
-                    Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                    Files.createSymbolicLink(networkNamePath, Path.of(networkDir.getName()));
                 }
             } catch(Exception e) {
-                log.debug("Error updating symlink from " + network.getName() + " to " + sparrowDir.getName(), e);
+                log.debug("Error updating symlink from " + network.getName() + " to " + networkDir.getName(), e);
             }
         }
 
-        return sparrowDir;
+        return networkDir;
     }
 
-    public static File getSparrowHome() {
-        return getSparrowHome(false);
-    }
-
-    public static File getSparrowHome(boolean useDefault) {
-        if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
-            return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
+    /**
+     * Logs the application directories in use where they do not all resolve to the default application directory.
+     */
+    public static void logApplicationDirs() {
+        List<ApplicationDir> xdgDirs = Arrays.stream(ApplicationDir.values()).filter(applicationDir -> applicationDir.isXdg(SparrowWallet.APP_NAME)).toList();
+        if(!xdgDirs.isEmpty() && log.isInfoEnabled()) {
+            log.info("Using XDG base directories for " + xdgDirs.stream().map(applicationDir -> applicationDir.toString().toLowerCase(Locale.ROOT)).collect(Collectors.joining(", ")) +
+                    " (config: " + getConfigHome() + ", data: " + getDataHome() + ", cache: " + getCacheHome() + ", state: " + getStateHome() + ")");
         }
-
-        if(isWindows()) {
-            return new File(getHomeDir(), WINDOWS_SPARROW_DIR);
-        }
-
-        return new File(getHomeDir(), SPARROW_DIR);
-    }
-
-    static File getHomeDir() {
-        if(isWindows()) {
-            return new File(System.getenv("APPDATA"));
-        }
-
-        return new File(System.getProperty("user.home"));
     }
 
     public static boolean createOwnerOnlyDirectory(File directory) {

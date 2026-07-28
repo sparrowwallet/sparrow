@@ -108,8 +108,8 @@ public class Config {
     }
 
     private static File getConfigFile() {
-        File sparrowDir = Storage.getSparrowDir();
-        return new File(sparrowDir, CONFIG_FILENAME);
+        File configDir = Storage.getConfigDir();
+        return new File(configDir, CONFIG_FILENAME);
     }
 
     private static Config load() {
