@@ -71,8 +71,6 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
     private UnlabeledToggleSwitch useDustLimit;
-    private final FeeRangeSlider dustLimit;
-    private final CopyableLabel dust;
     private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
@@ -179,29 +177,9 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         useDustLimitField.setText("Ignore dust:");
         useDustLimit = new UnlabeledToggleSwitch();
         useDustLimitField.getInputs().add(useDustLimit);
-        useDustLimit.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            updateUseDustLimit();
-        });
         useDustLimit.setSelected(false);
 
-        Field dustRangeField = new Field();
-        dustRangeField.setText("Dust Range:");
-        Field dustLimitField = new Field();
-        dustLimitField.setText("Dust limit:");
-
-        dustLimit = new FeeRangeSlider();
-        dustLimit.setMaxWidth(320);
-        dustRangeField.getInputs().add(dustLimit);
-        dust = new CopyableLabel();
-        dustLimitField.getInputs().add(dust);
-        dustLimit.valueProperty().addListener((observable, oldValue, newValue) -> {
-            updateDustLimit();
-        });
-        dustLimit.setFeeRate(0);
-        updateDustLimit();
-        updateUseDustLimit();
-
-        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, useDustLimitField, dustRangeField, dustLimitField);
+        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, useDustLimitField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -439,8 +417,9 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     // remove any utxos below the dust limit
     private List<TransactionOutput> removeDust(List<TransactionOutput> txOutputs) {
         int removed=0,size=txOutputs.size();
-        long dust = (long)Math.ceil(dustLimit.getFeeRate());
+        long dust = Config.get().getDustAttackThreshold();
         List<TransactionOutput> utxos = new ArrayList<>();
+
         for(TransactionOutput utxo : txOutputs) {
             if(utxo.getValue() >= dust) {
                 // if utxo value >= dust, add it
@@ -578,17 +557,6 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private void updateFeeRate() {
         UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
         feeRate.setText(format.getCurrencyFormat().format(feeRange.getFeeRate()) + " sats/vB");
-    }
-
-    private void updateDustLimit() {
-        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-        dust.setText(format.getCurrencyFormat().format(dustLimit.getFeeRate()) + " sats");
-    }
-
-    private void updateUseDustLimit() {
-        boolean udl = !useDustLimit.isSelected();
-        dust.setDisable(udl);
-        dustLimit.setDisable(udl);
     }
 
     @Subscribe
