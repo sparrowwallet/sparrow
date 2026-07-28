@@ -27,6 +27,7 @@ import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
+import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -68,6 +69,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final ComboBox<Wallet> toWallet;
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
+    private UnlabeledToggleSwitch useDustLimit;
     private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
@@ -170,7 +172,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         feeRange.setFeeRate(AppServices.getDefaultFeeRate());
         updateFeeRate();
 
-        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField);
+        Field useDustLimitField = new Field();
+        useDustLimitField.setText("Ignore dust:");
+        useDustLimit = new UnlabeledToggleSwitch();
+        useDustLimitField.getInputs().add(useDustLimit);
+        useDustLimit.setSelected(false);
+
+        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, useDustLimitField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -403,9 +411,25 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         }
     }
 
+    private List<TransactionOutput> removeDust(List<TransactionOutput> txOutputs) {
+        long dust = Config.get().getDustAttackThreshold();
+        List<TransactionOutput> utxos = new ArrayList<>();
+
+        for(TransactionOutput utxo : txOutputs) {
+            if(utxo.getValue() >= dust) {
+                utxos.add(utxo);
+            }
+        }
+        return utxos;
+    }
+
     private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Payment payment) {
         Address destAddress = payment instanceof SilentPayment silentPayment ? computeSilentPaymentAddress(privKey, scriptType, txOutputs, silentPayment) : payment.getAddress();
         ECKey pubKey = ECKey.fromPublicOnly(privKey);
+
+        if(useDustLimit.isSelected()) {
+            txOutputs = removeDust(txOutputs);
+        }
 
         Transaction noFeeTransaction = new Transaction();
         long total = 0;
