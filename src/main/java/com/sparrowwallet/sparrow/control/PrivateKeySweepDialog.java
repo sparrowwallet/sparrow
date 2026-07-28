@@ -27,7 +27,6 @@ import com.sparrowwallet.sparrow.io.CardApi;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
-import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -69,7 +68,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final ComboBox<Wallet> toWallet;
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
-    private UnlabeledToggleSwitch useDustLimit;
+    private final UnlabeledToggleSwitch ignoreDust;
     private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
@@ -174,9 +173,8 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
         Field useDustLimitField = new Field();
         useDustLimitField.setText("Ignore dust:");
-        useDustLimit = new UnlabeledToggleSwitch();
-        useDustLimitField.getInputs().add(useDustLimit);
-        useDustLimit.setSelected(false);
+        ignoreDust = new UnlabeledToggleSwitch();
+        useDustLimitField.getInputs().add(ignoreDust);
 
         fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, useDustLimitField);
         form.getChildren().add(fieldset);
@@ -391,7 +389,15 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
             ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress, since);
             addressUtxosService.setOnSucceeded(successEvent -> {
-                createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), payment);
+                List<TransactionOutput> utxos = addressUtxosService.getValue();
+                if(ignoreDust.isSelected()) {
+                    utxos = removeDust(utxos);
+                    if(utxos.isEmpty()) {
+                        AppServices.showErrorDialog("No outputs to sweep", "All of the unspent outputs for this private key have been ignored as dust.");
+                        return;
+                    }
+                }
+                createTransaction(privateKey.getKey(), scriptType, utxos, payment);
             });
             addressUtxosService.setOnFailed(failedEvent -> {
                 Throwable rootCause = Throwables.getRootCause(failedEvent.getSource().getException());
@@ -412,24 +418,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     }
 
     private List<TransactionOutput> removeDust(List<TransactionOutput> txOutputs) {
-        long dust = Config.get().getDustAttackThreshold();
-        List<TransactionOutput> utxos = new ArrayList<>();
-
-        for(TransactionOutput utxo : txOutputs) {
-            if(utxo.getValue() >= dust) {
-                utxos.add(utxo);
-            }
-        }
-        return utxos;
+        long dustAttackThreshold = Config.get().getDustAttackThreshold();
+        return txOutputs.stream().filter(txOutput -> txOutput.getValue() > dustAttackThreshold).collect(Collectors.toList());
     }
 
     private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Payment payment) {
         Address destAddress = payment instanceof SilentPayment silentPayment ? computeSilentPaymentAddress(privKey, scriptType, txOutputs, silentPayment) : payment.getAddress();
         ECKey pubKey = ECKey.fromPublicOnly(privKey);
-
-        if(useDustLimit.isSelected()) {
-            txOutputs = removeDust(txOutputs);
-        }
 
         Transaction noFeeTransaction = new Transaction();
         long total = 0;
