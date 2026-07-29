@@ -68,6 +68,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final ComboBox<Wallet> toWallet;
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
+    private final UnlabeledToggleSwitch ignoreDust;
     private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
@@ -170,7 +171,12 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         feeRange.setFeeRate(AppServices.getDefaultFeeRate());
         updateFeeRate();
 
-        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField);
+        Field useDustLimitField = new Field();
+        useDustLimitField.setText("Ignore dust:");
+        ignoreDust = new UnlabeledToggleSwitch();
+        useDustLimitField.getInputs().add(ignoreDust);
+
+        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, useDustLimitField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -383,7 +389,15 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
             ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress, since);
             addressUtxosService.setOnSucceeded(successEvent -> {
-                createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), payment);
+                List<TransactionOutput> utxos = addressUtxosService.getValue();
+                if(ignoreDust.isSelected()) {
+                    utxos = removeDust(utxos);
+                    if(utxos.isEmpty()) {
+                        AppServices.showErrorDialog("No outputs to sweep", "All of the unspent outputs for this private key have been ignored as dust.");
+                        return;
+                    }
+                }
+                createTransaction(privateKey.getKey(), scriptType, utxos, payment);
             });
             addressUtxosService.setOnFailed(failedEvent -> {
                 Throwable rootCause = Throwables.getRootCause(failedEvent.getSource().getException());
@@ -401,6 +415,11 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         } catch(Exception e) {
             log.error("Error creating sweep transaction", e);
         }
+    }
+
+    private List<TransactionOutput> removeDust(List<TransactionOutput> txOutputs) {
+        long dustAttackThreshold = Config.get().getDustAttackThreshold();
+        return txOutputs.stream().filter(txOutput -> txOutput.getValue() > dustAttackThreshold).collect(Collectors.toList());
     }
 
     private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Payment payment) {
