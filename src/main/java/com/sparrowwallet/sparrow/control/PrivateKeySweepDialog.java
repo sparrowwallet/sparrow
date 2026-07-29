@@ -171,12 +171,12 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         feeRange.setFeeRate(AppServices.getDefaultFeeRate());
         updateFeeRate();
 
-        Field useDustLimitField = new Field();
-        useDustLimitField.setText("Ignore dust:");
+        Field ignoreDustField = new Field();
+        ignoreDustField.setText("Ignore dust:");
         ignoreDust = new UnlabeledToggleSwitch();
-        useDustLimitField.getInputs().add(ignoreDust);
+        ignoreDustField.getInputs().add(ignoreDust);
 
-        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, useDustLimitField);
+        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, ignoreDustField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -397,6 +397,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                         return;
                     }
                 }
+
                 createTransaction(privateKey.getKey(), scriptType, utxos, payment);
             });
             addressUtxosService.setOnFailed(failedEvent -> {

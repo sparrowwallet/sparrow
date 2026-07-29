@@ -68,7 +68,7 @@ public class WalletLabels implements WalletImport, WalletExport {
             String origin = outputDescriptor.toString(true, false, false);
 
             for(Keystore keystore : exportWallet.getKeystores()) {
-                if(keystore.getLabel() != null && !keystore.getLabel().isEmpty()) {
+                if(keystore.getLabel() != null && !keystore.getLabel().isBlank()) {
                     if(exportWallet.getPolicyType() == PolicyType.SINGLE_SP && keystore.getSilentPaymentScanAddress() != null) {
                         labels.add(new Label(Type.spscan, keystore.getSilentPaymentScanAddress().toKeyString(), keystore.getLabel(), null, null));
                     } else if(keystore.getExtendedPublicKey() != null) {
@@ -186,10 +186,10 @@ public class WalletLabels implements WalletImport, WalletExport {
                 }
 
                 if(label.type == Type.output) {
-                    if((label.label == null || label.label.isEmpty()) && label.spendable == null) {
+                    if((label.label == null || label.label.isBlank()) && label.spendable == null) {
                         continue;
                     }
-                } else if(label.label == null || label.label.isEmpty()) {
+                } else if(label.label == null || label.label.isBlank()) {
                     continue;
                 }
 
@@ -276,7 +276,7 @@ public class WalletLabels implements WalletImport, WalletExport {
                                 BlockTransactionHashIndex reference = txioEntry.getHashIndex();
                                 if((label.type == Type.output && txioEntry.getType() == HashIndexEntry.Type.OUTPUT && reference.toString().equals(label.ref))
                                         || (label.type == Type.input && txioEntry.getType() == HashIndexEntry.Type.INPUT && reference.toString().equals(label.ref))) {
-                                    if(label.label != null && !label.label.isEmpty()) {
+                                    if(label.label != null && !label.label.isBlank()) {
                                         reference.setLabel(label.label);
                                         txioEntry.labelProperty().set(label.label);
                                         addChangedEntry(changedWalletEntries, txioEntry);
@@ -332,7 +332,7 @@ public class WalletLabels implements WalletImport, WalletExport {
             BlockTransactionHashIndex reference = hashIndexEntry.getHashIndex();
             if((label.type == Type.output && hashIndexEntry.getType() == HashIndexEntry.Type.OUTPUT && reference.toString().equals(label.ref))
                     || (label.type == Type.input && hashIndexEntry.getType() == HashIndexEntry.Type.INPUT && reference.toString().equals(label.ref))) {
-                if(label.label != null && !label.label.isEmpty()) {
+                if(label.label != null && !label.label.isBlank()) {
                     hashIndexEntry.labelProperty().set(label.label);
                 }
             }
