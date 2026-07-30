@@ -69,6 +69,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
     private final UnlabeledToggleSwitch ignoreDust;
+    private final UnlabeledToggleSwitch includeToxicTxns;
     private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
@@ -177,6 +178,15 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         ignoreDustField.getInputs().add(ignoreDust);
 
         fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, ignoreDustField);
+
+        includeToxicTxns = Config.get().getExpertMode() ? new UnlabeledToggleSwitch() : null;
+        if(includeToxicTxns != null) {
+            Field includeToxicField = new Field();
+            includeToxicField.setText("Toxic UTXOs:");
+            includeToxicField.getInputs().add(includeToxicTxns);
+            fieldset.getChildren().add(includeToxicField);
+        }
+
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -390,6 +400,20 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress, since);
             addressUtxosService.setOnSucceeded(successEvent -> {
                 List<TransactionOutput> utxos = addressUtxosService.getValue();
+
+                if(includeToxicTxns != null && !includeToxicTxns.isSelected()) {
+                    int size = utxos.size();
+                    utxos = removeToxicTransactions(utxos);
+                    if(utxos.isEmpty()) {
+                        AppServices.showErrorDialog("No outputs to sweep", "All of the unspent outputs for this private key have been removed as toxic.");
+                        return;
+                    }
+                    if(size != utxos.size()) {
+                        size -= utxos.size();
+                        AppServices.showWarningDialog("Toxic UTXOs Removed", "Removed " + size + " toxic transactions.");
+                    }
+                }
+
                 if(ignoreDust.isSelected()) {
                     utxos = removeDust(utxos);
                     if(utxos.isEmpty()) {
@@ -421,6 +445,11 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private List<TransactionOutput> removeDust(List<TransactionOutput> txOutputs) {
         long dustAttackThreshold = Config.get().getDustAttackThreshold();
         return txOutputs.stream().filter(txOutput -> txOutput.getValue() > dustAttackThreshold).collect(Collectors.toList());
+    }
+
+    private List<TransactionOutput> removeToxicTransactions(List<TransactionOutput> txOutputs) {
+        List<String> toxicTransactions=Config.get().getToxicTransactions();
+        return txOutputs.stream().filter(txOutput -> !toxicTransactions.contains(txOutput.getHash().toString())).collect(Collectors.toList());
     }
 
     private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Payment payment) {
