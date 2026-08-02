@@ -865,6 +865,11 @@ public class ElectrumServer {
                         continue;
                     }
 
+                    if(!transaction.getTxId().equals(hash)) {
+                        log.error("Server returned transaction " + transaction.getTxId() + " for requested txid " + hash);
+                        throw new IllegalStateException("Server returned a transaction that does not match the requested txid " + hash);
+                    }
+
                     Optional<BlockTransactionHash> optionalReference = references.keySet().stream().filter(reference -> reference.getHash().equals(hash)).findFirst();
                     if(optionalReference.isEmpty()) {
                         throw new IllegalStateException("Returned transaction " + hash.toString() + " that was not requested");
@@ -913,7 +918,7 @@ public class ElectrumServer {
 
             return transactionMap;
         } catch (IllegalStateException e) {
-            throw new ServerException(e.getCause());
+            throw new ServerException(e.getMessage(), e);
         } catch (ElectrumServerRpcException e) {
             throw new ServerException(e.getMessage(), e.getCause());
         } catch (Exception e) {
@@ -1041,14 +1046,24 @@ public class ElectrumServer {
 
         Map<String, VerboseTransaction> result = electrumServerRpc.getVerboseTransactions(getTransport(), txids, scriptHash);
 
-        Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
-        for(String txid : result.keySet()) {
-            Sha256Hash hash = Sha256Hash.wrap(txid);
-            BlockTransaction blockTransaction = result.get(txid).getBlockTransaction();
-            transactionMap.put(hash, blockTransaction);
-        }
+        try {
+            Map<Sha256Hash, BlockTransaction> transactionMap = new HashMap<>();
+            for(String txid : result.keySet()) {
+                Sha256Hash hash = Sha256Hash.wrap(txid);
+                VerboseTransaction verboseTransaction = result.get(txid);
+                if(!hash.equals(Sha256Hash.wrap(verboseTransaction.txid))) {
+                    log.error("Server returned transaction " + verboseTransaction.txid + " for requested txid " + hash);
+                    throw new ServerException("Server returned a transaction that does not match the requested txid " + hash);
+                }
 
-        return transactionMap;
+                transactionMap.put(hash, verboseTransaction.getBlockTransaction());
+            }
+
+            return transactionMap;
+        } catch(RuntimeException e) {
+            log.error("Could not retrieve referenced transactions", e);
+            throw new ServerException("Could not retrieve referenced transactions", e);
+        }
     }
 
     public Map<Integer, Double> getFeeEstimates(List<Integer> targetBlocks, boolean useCached) throws ServerException {
@@ -1307,17 +1322,26 @@ public class ElectrumServer {
                 continue;
             }
 
+            Transaction transaction;
+
             try {
-                Transaction transaction = new Transaction(Utils.hexToBytes(strRawTx));
-                for(TransactionOutput txOutput : transaction.getOutputs()) {
-                    if(txOutput.getScript().equals(outputScript)) {
-                        transactionOutputs.add(txOutput);
-                    }
-                }
-                transactions.add(transaction);
+                transaction = new Transaction(Utils.hexToBytes(strRawTx));
             } catch(ProtocolException e) {
                 log.error("Could not parse tx: " + strRawTx);
+                continue;
             }
+
+            if(!transaction.getTxId().toString().equalsIgnoreCase(txid)) {
+                log.error("Server returned transaction " + transaction.getTxId() + " for requested txid " + txid);
+                throw new ServerException("Server returned a transaction that does not match the requested txid " + txid);
+            }
+
+            for(TransactionOutput txOutput : transaction.getOutputs()) {
+                if(txOutput.getScript().equals(outputScript)) {
+                    transactionOutputs.add(txOutput);
+                }
+            }
+            transactions.add(transaction);
         }
 
         for(Transaction transaction : transactions) {
