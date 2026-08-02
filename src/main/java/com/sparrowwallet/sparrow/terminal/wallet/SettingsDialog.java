@@ -148,7 +148,6 @@ public class SettingsDialog extends WalletDialog {
                             copy.decrypt(key);
                             showSuccessDialog("Wallet Seed", copy.getKeystores().get(0).getSeed().getMnemonicString().asString());
                         } finally {
-                            encryptionFullKey.clear();
                             if(key != null) {
                                 key.clear();
                             }
@@ -247,7 +246,6 @@ public class SettingsDialog extends WalletDialog {
                             log.error("Error saving wallet", e);
                             AppServices.showErrorDialog("Error saving wallet", e.getMessage());
                         } finally {
-                            encryptionFullKey.clear();
                             if(key != null) {
                                 key.clear();
                             }

@@ -35,9 +35,6 @@ public class WalletAndKey implements Comparable<WalletAndKey> {
     }
 
     public void clear() {
-        if(encryptionKey != null) {
-            encryptionKey.clear();
-        }
         if(key != null) {
             key.clear();
         }

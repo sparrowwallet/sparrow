@@ -1431,7 +1431,6 @@ public class AppController implements Initializable {
                     } catch(IOException | StorageException | MnemonicException e) {
                         log.error("Error saving imported wallet", e);
                     } finally {
-                        encryptionFullKey.clear();
                         if(key != null) {
                             key.clear();
                         }
@@ -2423,13 +2422,11 @@ public class AppController implements Initializable {
                     keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
-                        ECKey encryptionFullKey = keyDerivationService.getValue();
 
                         try {
                             tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
                             deleteStorage(storage, true);
                         } finally {
-                            encryptionFullKey.clear();
                             keyDerivationService = null;
                         }
                     });

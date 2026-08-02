@@ -1146,7 +1146,6 @@ public class AppServices {
                                 showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
                             } finally {
                                 key.clear();
-                                encryptionFullKey.clear();
                                 password.get().clear();
                             }
                         });

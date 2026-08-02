@@ -392,7 +392,6 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             if(decryptedWallet.getPolicyType() == PolicyType.SINGLE_SP) {
                 ECKey spendPrivKey = keystore.getSpendPrivateKey(Collections.emptyMap());
                 signatureText = Bip322.signMessageBip322Sp(walletNode.getAddress(), message.getText().trim(), spendPrivKey, walletNode.getSilentPaymentTweak());
-                spendPrivKey.clear();
             } else {
                 ECKey privKey = keystore.getKey(walletNode);
                 if(isBip322()) {
@@ -402,7 +401,6 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                     ScriptType scriptType = isElectrumSignatureFormat() ? ScriptType.P2PKH : decryptedWallet.getScriptType();
                     signatureText = privKey.signMessage(message.getText().trim(), scriptType);
                 }
-                privKey.clear();
             }
             signature.clear();
             signature.appendText(signatureText);

@@ -108,7 +108,6 @@ public class MasterActionListBox extends ActionListBox {
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, new SecureString(password), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                        keyDerivationService.getValue().clear();
                         SparrowTerminal.get().unlockWallet(storage);
                         SparrowTerminal.get().getGuiThread().invokeLater(() -> LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui()));
                     });

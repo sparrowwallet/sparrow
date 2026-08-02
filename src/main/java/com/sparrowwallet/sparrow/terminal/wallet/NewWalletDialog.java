@@ -172,7 +172,6 @@ public abstract class NewWalletDialog extends DialogWindow {
                         } catch(IOException | StorageException | MnemonicException e) {
                             log.error("Error saving imported wallet", e);
                         } finally {
-                            encryptionFullKey.clear();
                             if(key != null) {
                                 key.clear();
                             }

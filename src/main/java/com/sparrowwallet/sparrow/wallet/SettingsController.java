@@ -573,7 +573,6 @@ public class SettingsController extends WalletFormController implements Initiali
                     log.error("Error restoring public keys from seed", e);
                 } finally {
                     key.clear();
-                    encryptionFullKey.clear();
                     password.get().clear();
                 }
             });
@@ -680,7 +679,6 @@ public class SettingsController extends WalletFormController implements Initiali
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                         ECKey encryptionFullKey = keyDerivationService.getValue();
                         Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                        encryptionFullKey.clear();
                         masterWallet.decrypt(key);
 
                         if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() != KeystoreSource.SW_SEED)) {
@@ -1047,7 +1045,6 @@ public class SettingsController extends WalletFormController implements Initiali
                         revert.setDisable(false);
                         apply.setDisable(false);
                     } finally {
-                        encryptionFullKey.clear();
                         if(key != null) {
                             key.clear();
                         }

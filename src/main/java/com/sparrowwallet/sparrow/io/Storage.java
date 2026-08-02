@@ -201,7 +201,7 @@ public class Storage {
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
                     keystore.setSilentPaymentScanAddress(derivedKeystore.getSilentPaymentScanAddress());
-                    copyKeystore.getMasterPrivateKey().clear();
+                    copyKeystore.getMasterPrivateExtendedKey().clear();
                 }
             }
         }
