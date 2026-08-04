@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
@@ -18,10 +21,32 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.Certificate;
 import java.util.Base64;
+import java.util.Set;
 
 public class BitcoindTransport implements Transport {
     private static final Logger log = LoggerFactory.getLogger(BitcoindTransport.class);
     public static final String COOKIE_FILENAME = ".cookie";
+
+    //HttpURLConnection defaults both connect and read timeout to 0 (infinite) and neither
+    //was ever set here, so an unreachable/black-holed bitcoind (getOutputStream, which
+    //triggers the connect) or one that accepts the connection but never responds
+    //(getResponseCode) hung the caller - and whatever thread called pass() - forever.
+    //Bitcoin Core RPC is expected to be reachable quickly, so a connect timeout is always
+    //safe to enforce.
+    private static final int CONNECT_TIMEOUT_MILLIS = 15_000;
+    //Onion circuit/rendezvous builds routinely take much longer than a direct LAN/WAN
+    //connect. TcpTransport already encodes this lesson for BITCOIN_CORE + onion via
+    //SLOW_READ_TIMEOUT_SECS (up to 208s) - match that precedent here rather than false-fail
+    //the exact privacy-conscious setup this transport's proxy support exists for.
+    private static final int ONION_CONNECT_TIMEOUT_MILLIS = 60_000;
+    //Most RPC calls made here complete in well under this, but a read timeout must not be
+    //applied indiscriminately: importdescriptors with a rescan is a synchronous Bitcoin Core
+    //RPC call that legitimately blocks until the rescan finishes, which can take anywhere
+    //from seconds to hours depending on the wallet's birthday and the node's hardware. Only
+    //calls not known to run long get this bound; see isUnboundedReadTimeoutMethod below.
+    private static final int DEFAULT_READ_TIMEOUT_MILLIS = 60_000;
+    private static final Set<String> UNBOUNDED_READ_TIMEOUT_METHODS = Set.of("importdescriptors");
+    private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
     private final Server bitcoindServer;
     private URL bitcoindUrl;
@@ -75,6 +100,8 @@ public class BitcoindTransport implements Transport {
         }
 
         connection.setDoOutput(true);
+        connection.setConnectTimeout(getConnectTimeoutMillis());
+        connection.setReadTimeout(getReadTimeoutMillis(request));
 
         log.debug("> " + request);
 
@@ -118,6 +145,49 @@ public class BitcoindTransport implements Transport {
         log.debug("< " + response);
 
         return response;
+    }
+
+    /**
+     * Overridable for tests, which need a far shorter bound than the real production
+     * default to stay fast and deterministic.
+     */
+    protected int getConnectTimeoutMillis() {
+        return AppServices.getProxy() != null && Protocol.isOnionAddress(bitcoindServer) ? ONION_CONNECT_TIMEOUT_MILLIS : CONNECT_TIMEOUT_MILLIS;
+    }
+
+    /**
+     * Overridable for tests; see getConnectTimeoutMillis.
+     */
+    protected int getReadTimeoutMillis(String request) {
+        return isUnboundedReadTimeoutMethod(request) ? 0 : DEFAULT_READ_TIMEOUT_MILLIS;
+    }
+
+    /**
+     * A small, explicit allowlist of RPC methods known to legitimately run long on the
+     * Bitcoin Core side (currently just importdescriptors when it triggers a rescan), so
+     * that a read timeout can safely be applied to every other call without breaking them.
+     * Parses the method out of the raw request JSON the same way TcpTransport parses
+     * notifications, rather than a naive substring match, so it can't be fooled by a
+     * parameter value that happens to contain "importdescriptors".
+     */
+    static boolean isUnboundedReadTimeoutMethod(String request) {
+        try(JsonParser parser = JSON_FACTORY.createParser(request)) {
+            if(parser.nextToken() != JsonToken.START_OBJECT) {
+                return false;
+            }
+            while(parser.nextToken() == JsonToken.FIELD_NAME) {
+                String field = parser.currentName();
+                JsonToken value = parser.nextToken();
+                if("method".equals(field)) {
+                    return value == JsonToken.VALUE_STRING && UNBOUNDED_READ_TIMEOUT_METHODS.contains(parser.getText());
+                }
+                parser.skipChildren();
+            }
+            return false;
+        } catch(Exception e) {
+            log.warn("Could not parse JSON-RPC request method, applying default read timeout", e);
+            return false;
+        }
     }
 
     private String getBitcoindAuthEncoded() throws IOException {
