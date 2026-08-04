@@ -93,23 +93,26 @@ public class WatchOnlyDialog extends NewWalletDialog {
 
     @Override
     protected List<Wallet> getWallets() throws ImportException {
-        try {
-            return getWalletFromXpub();
-        } catch(Exception e1) {
-            try {
-                return getWalletFromOutputDescriptor();
-            } catch(Exception e2) {
-                log.error("Could not determine wallet from descriptor: " + descriptor.getText(), e2);
+        String text = descriptor.getText().replaceAll("\\s+", "");
+
+        if(ExtendedKey.isValid(text)) {
+            ExtendedKey extendedKey = ExtendedKey.fromDescriptor(text);
+            if(!extendedKey.getKey().isPubKeyOnly()) {
+                throw new ImportException("An extended private key cannot be used to create a watch only wallet. Enter an extended public key, or an output descriptor if the private key is intended to be imported.");
             }
+
+            return getWalletFromXpub(extendedKey, ExtendedKey.Header.fromExtendedKey(text));
         }
 
-        return Collections.emptyList();
+        try {
+            return getWalletFromOutputDescriptor(text);
+        } catch(Exception e) {
+            log.error("Could not determine wallet from descriptor: " + text, e);
+            throw new ImportException("Could not determine wallet from descriptor: " + e.getMessage(), e);
+        }
     }
 
-    private List<Wallet> getWalletFromXpub() {
-        ExtendedKey xpub = ExtendedKey.fromDescriptor(descriptor.getText().replaceAll("\\s+", ""));
-        ExtendedKey.Header header = ExtendedKey.Header.fromExtendedKey(descriptor.getText());
-
+    private List<Wallet> getWalletFromXpub(ExtendedKey xpub, ExtendedKey.Header header) {
         Set<ScriptType> scriptTypes = new LinkedHashSet<>();
         scriptTypes.add(ScriptType.P2WPKH);
         scriptTypes.add(header.getDefaultScriptType());
@@ -136,8 +139,8 @@ public class WatchOnlyDialog extends NewWalletDialog {
         return wallets;
     }
 
-    private List<Wallet> getWalletFromOutputDescriptor() {
-        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(descriptor.getText().replaceAll("\\s+", ""));
+    private List<Wallet> getWalletFromOutputDescriptor(String text) {
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(text);
         Wallet wallet = outputDescriptor.toWallet();
         wallet.setName(walletName);
         return List.of(wallet);

@@ -47,8 +47,9 @@ public abstract class NewWalletDialog extends DialogWindow {
 
         try {
             discoverAndSaveWallet(getWallets());
-        } catch(ImportException e) {
+        } catch(Exception e) {
             log.error("Cannot import wallet", e);
+            showErrorDialog("Error Creating Wallet", e.getMessage());
         }
     }
 
