@@ -31,6 +31,19 @@ public class CaravanMultisigTest extends IoTest {
     }
 
     @Test
+    public void importWallet2() {
+        CaravanMultisig ccMultisig = new CaravanMultisig();
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.importWallet(getInputStream("caravan-multisig-export-2.json"), null));
+    }
+
+    //A declared quorum larger than the keys provided would import as a smaller wallet deriving different addresses
+    @Test
+    public void importWallet3() {
+        CaravanMultisig ccMultisig = new CaravanMultisig();
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.importWallet(getInputStream("caravan-multisig-export-3.json"), null));
+    }
+
+    @Test
     public void exportWallet1() throws ImportException, ExportException, IOException {
         CaravanMultisig ccMultisig = new CaravanMultisig();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("caravan-multisig-export-1.json"));

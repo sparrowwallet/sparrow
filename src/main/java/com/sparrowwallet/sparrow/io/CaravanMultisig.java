@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -79,8 +80,18 @@ public class CaravanMultisig implements WalletImport, WalletExport {
                 wallet.getKeystores().add(keystore);
             }
 
+            if(cf.quorum.totalSigners != wallet.getKeystores().size()) {
+                throw new IllegalStateException("This file declares a quorum of " + cf.quorum.totalSigners + " signers but provides " + wallet.getKeystores().size() + " extended public keys.");
+            }
+
             wallet.setScriptType(scriptType);
             wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.MULTI_HD, scriptType, wallet.getKeystores(), cf.quorum.requiredSigners));
+
+            try {
+                wallet.checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("This file does not describe a valid wallet: " + e.getMessage());
+            }
 
             return wallet;
         } catch(Exception e) {

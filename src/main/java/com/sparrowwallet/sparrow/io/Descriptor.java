@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
@@ -112,7 +113,7 @@ public class Descriptor implements WalletImport, WalletExport {
             InputStream secondClone = new ByteArrayInputStream(baos.toByteArray());
 
             try {
-                return ensureKeyDerivations(PdfUtils.getOutputDescriptor(firstClone).toWallet());
+                return checkWallet(ensureKeyDerivations(PdfUtils.getOutputDescriptor(firstClone).toWallet()));
             } catch(Exception e) {
                 //ignore
             }
@@ -120,7 +121,7 @@ public class Descriptor implements WalletImport, WalletExport {
             List<String> paragraphs = getParagraphs(secondClone);
             for(String paragraph : paragraphs) {
                 OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(paragraph);
-                return ensureKeyDerivations(descriptor.toWallet());
+                return checkWallet(ensureKeyDerivations(descriptor.toWallet()));
             }
 
             throw new ImportException("Could not find an output descriptor in the file");
@@ -147,6 +148,16 @@ public class Descriptor implements WalletImport, WalletExport {
             if(keystore.getKeyDerivation().getMasterFingerprint() == null || keystore.getKeyDerivation().getDerivationPath() == null) {
                 keystore.setKeyDerivation(new KeyDerivation(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT, wallet.getScriptType().getDefaultDerivationPath()));
             }
+        }
+
+        return wallet;
+    }
+
+    private static Wallet checkWallet(Wallet wallet) {
+        try {
+            wallet.checkWallet();
+        } catch(InvalidWalletException e) {
+            throw new IllegalStateException("This file does not describe a valid wallet: " + e.getMessage());
         }
 
         return wallet;

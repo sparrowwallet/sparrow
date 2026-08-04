@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.Key;
+import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -72,6 +73,15 @@ public abstract class NewWalletDialog extends DialogWindow {
     protected void discoverAndSaveWallet(List<Wallet> wallets) {
         if(wallets.isEmpty()) {
             return;
+        }
+
+        for(Wallet wallet : wallets) {
+            try {
+                wallet.checkWallet();
+            } catch(InvalidWalletException e) {
+                showErrorDialog("Error Creating Wallet", "The wallet is not valid: " + e.getMessage());
+                return;
+            }
         }
 
         if(AppServices.onlineProperty().get()) {

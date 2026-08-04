@@ -1,14 +1,20 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.Pbkdf2KeyDeriver;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.*;
 import javax.crypto.spec.IvParameterSpec;
@@ -17,10 +23,16 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExport, WalletImport {
+    private static final Logger log = LoggerFactory.getLogger(Bip129.class);
+
+    private static final String NO_PATH_RESTRICTIONS = "No path restrictions";
+
     @Override
     public String getName() {
         return "BSMS";
@@ -174,6 +186,8 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
             } catch(SignatureException e) {
                 throw new ImportException("Signature did not match provided public key", e);
             }
+        } else {
+            log.info("BSMS record for keystore " + label + " is not signed, the provided public key cannot be verified as originating from the signer");
         }
 
         return keystore;
@@ -245,10 +259,100 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
             String address = reader.readLine();
 
             OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(descriptor);
-            return outputDescriptor.toWallet();
+            Wallet wallet = outputDescriptor.toWallet();
+
+            try {
+                wallet.checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("This file does not describe a valid wallet: " + e.getMessage());
+            }
+
+            List<KeyPurpose> keyPurposes = getPathKeyPurposes(paths);
+            checkFirstAddress(wallet, outputDescriptor, descriptor, keyPurposes, address);
+
+            return wallet;
         } catch(Exception e) {
             throw new ImportException("Error importing BSMS format", e);
         }
+    }
+
+    //Returns the key purposes of the provided path restrictions in the order given, or an empty list if the record does not restrict derivation paths
+    //Sparrow derives the standard receive and change chains only, so a record restricted to any other derivation cannot be honoured whether or not it supplies a first address
+    private List<KeyPurpose> getPathKeyPurposes(String paths) {
+        if(paths == null || paths.isBlank() || paths.trim().equalsIgnoreCase(NO_PATH_RESTRICTIONS)) {
+            return Collections.emptyList();
+        }
+
+        List<KeyPurpose> keyPurposes = new ArrayList<>();
+        for(String path : paths.split(",")) {
+            KeyPurpose keyPurpose = getPathKeyPurpose(path.trim());
+            if(keyPurpose == null) {
+                throw new IllegalStateException("This file restricts derivation to " + paths.trim() + ", which is not the standard receive and change derivation. " +
+                        "Addresses derived from it would not match those of the other signers in the quorum.");
+            }
+
+            keyPurposes.add(keyPurpose);
+        }
+
+        return keyPurposes;
+    }
+
+    private KeyPurpose getPathKeyPurpose(String path) {
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+            if(path.equals("/" + keyPurpose.getPathIndex().num() + "/*")) {
+                return keyPurpose;
+            }
+        }
+
+        return null;
+    }
+
+    private void checkFirstAddress(Wallet wallet, OutputDescriptor outputDescriptor, String descriptor, List<KeyPurpose> keyPurposes, String address) {
+        //BIP129 requires the first address, and it is the only means of detecting a coordinator serving a different set of keys to each signer
+        if(address == null || address.isBlank()) {
+            throw new IllegalStateException("This file does not provide a first address, so the descriptor cannot be verified against the other signers in the quorum.");
+        }
+
+        Address recordAddress;
+        try {
+            recordAddress = Address.fromString(address.trim());
+        } catch(InvalidAddressException e) {
+            throw new IllegalStateException("The first address in this file (" + address.trim() + ") is not a valid address: " + e.getMessage());
+        }
+
+        Address firstAddress = getFirstAddress(wallet, outputDescriptor, keyPurposes);
+        if(firstAddress.equals(recordAddress)) {
+            return;
+        }
+
+        if(descriptor.contains("multi(") && !descriptor.contains("sortedmulti(")) {
+            throw new IllegalStateException("The first address in this BSMS record (" + recordAddress + ") does not match the first address of " + firstAddress + " derived by sorting the provided keys");
+        } else {
+            throw new IllegalStateException("The first address in this file (" + recordAddress + ") does not match the first address of the provided descriptor (" + firstAddress + "). " +
+                    "The coordinator may be providing a different set of keys to each signer in the quorum.");
+        }
+    }
+
+    //BIP129 defines the first address as the first address of the first path restriction, or where derivation is not restricted, the descriptor's only address
+    private Address getFirstAddress(Wallet wallet, OutputDescriptor outputDescriptor, List<KeyPurpose> keyPurposes) {
+        if(!keyPurposes.isEmpty()) {
+            return wallet.getNode(keyPurposes.getFirst()).getChildren().iterator().next().getAddress();
+        }
+
+        //Only the receive and change chains are derived here whatever chain the descriptor names, so a descriptor of multiple addresses starts at the first receive address
+        if(outputDescriptor.describesMultipleAddresses()) {
+            return wallet.getNode(KeyPurpose.RECEIVE).getChildren().iterator().next().getAddress();
+        }
+
+        //A record without path restrictions provides a descriptor fixed at one address, which is only present in this wallet if it is at an index on the receive or change chain
+        List<ChildNumber> childDerivation = outputDescriptor.getChildDerivation();
+        List<ChildNumber> fixedDerivation = childDerivation.subList(1, childDerivation.size());
+        if(fixedDerivation.size() != 2 || KeyPurpose.fromChildNumber(fixedDerivation.getFirst()) == null) {
+            throw new IllegalStateException("This file restricts derivation to " + KeyDerivation.writePath(fixedDerivation) + ", which is not the standard receive and change derivation. " +
+                    "Addresses derived from it would not match those of the other signers in the quorum.");
+        }
+
+        return outputDescriptor.getAddress(childDerivation);
     }
 
     @Override

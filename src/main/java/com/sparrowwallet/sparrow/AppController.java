@@ -1334,6 +1334,13 @@ public class AppController implements Initializable {
             return;
         }
 
+        try {
+            wallet.checkWallet();
+        } catch(InvalidWalletException e) {
+            showErrorDialog("Error Importing Wallet", "The imported wallet is not valid: " + e.getMessage());
+            return;
+        }
+
         WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getPolicyType(), wallet.getBirthDate(), false);
         nameDlg.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
