@@ -75,7 +75,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
     private QRScanDialog.Result result;
 
-    private static final Pattern PART_PATTERN = Pattern.compile("p(\\d+)of(\\d+) (.+)");
+    private static final Pattern PART_PATTERN = Pattern.compile("p(\\d{1,4})of(\\d{1,4}) (.+)");
 
     private static final int SCAN_PERIOD_MILLIS = 100;
     private final ObjectProperty<CaptureDevice> webcamDeviceProperty = new SimpleObjectProperty<>();
@@ -275,15 +275,19 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 int n = Integer.parseInt(partMatcher.group(2));
                 String payload = partMatcher.group(3);
 
-                if(parts == null) {
+                if(n < 1 || m < 1 || m > n) {
+                    log.warn("Ignoring invalid QR part " + m + " of " + n);
+                    return;
+                }
+
+                //A different number of parts indicates a different sequence, so start over
+                if(parts == null || parts.size() != n) {
                     parts = new ArrayList<>(n);
                     IntStream.range(0, n).forEach(i -> parts.add(null));
                 }
                 parts.set(m - 1, payload);
 
-                if(n > 0) {
-                    Platform.runLater(() -> percentComplete.setValue((double)parts.stream().filter(Objects::nonNull).count() / n));
-                }
+                Platform.runLater(() -> percentComplete.setValue((double)parts.stream().filter(Objects::nonNull).count() / n));
 
                 if(parts.stream().filter(Objects::nonNull).count() == n) {
                     String complete = String.join("", parts);
