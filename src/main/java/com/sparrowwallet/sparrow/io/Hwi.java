@@ -541,10 +541,25 @@ public class Hwi {
     }
 
     private static final class BitBoxFxNoiseConfig extends BitBoxFileNoiseConfig {
+        private static final AtomicBoolean attestationWarningShown = new AtomicBoolean(false);
+
         private BitBoxPairingDialog pairingDialog;
 
         public BitBoxFxNoiseConfig() {
             super(Path.of(Storage.getDataHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
+        }
+
+        @Override
+        public void attestationCheck(boolean result) {
+            if(!result) {
+                log.warn("BitBox02 attestation check failed, device may not be genuine");
+                //Devices are opened repeatedly while enumerating, so warn only once per session
+                if(attestationWarningShown.compareAndSet(false, true)) {
+                    Platform.runLater(() -> AppServices.showWarningDialog("BitBox02 Attestation Failed",
+                            "This BitBox02 did not pass the attestation check, which means it may not be a genuine device.\n\n" +
+                                    "Do not use it to store funds until you have verified it externally."));
+                }
+            }
         }
 
         @Override
