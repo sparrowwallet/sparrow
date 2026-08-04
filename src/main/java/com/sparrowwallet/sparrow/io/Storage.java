@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -41,6 +42,7 @@ public class Storage {
 
     private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
     private static final Pattern DATE_PATTERN = Pattern.compile(".+-([0-9]{14}?).*");
+    private static final Set<String> warnedDirectories = ConcurrentHashMap.newKeySet();
 
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
@@ -486,12 +488,16 @@ public class Storage {
         File walletsBackupDir = new File(getWalletsDir(), WALLETS_BACKUP_DIR);
         if(!walletsBackupDir.exists()) {
             createOwnerOnlyDirectory(walletsBackupDir);
+        } else {
+            //Unlike the wallets directory below, this directory is always created by Sparrow, so restricting it restores the permissions it was created with
+            setOwnerOnlyDirectory(walletsBackupDir);
         }
 
         return walletsBackupDir;
     }
 
     public static File getWalletsDir() {
+        boolean defaultWalletsDir = false;
         File walletsDir = Config.get().getWalletsDir();
         if(walletsDir != null) {
             if(!walletsDir.exists() && (walletsDir.getParentFile() == null || !walletsDir.getParentFile().exists() || !walletsDir.getParentFile().canWrite())) {
@@ -501,9 +507,12 @@ public class Storage {
         }
         if(walletsDir == null) {
             walletsDir = new File(getDataDir(), WALLETS_DIR);
+            defaultWalletsDir = true;
         }
         if(!walletsDir.exists()) {
             createOwnerOnlyDirectory(walletsDir);
+        } else if(defaultWalletsDir) {
+            setOwnerOnlyDirectory(walletsDir);
         }
 
         return walletsDir;
@@ -698,6 +707,32 @@ public class Storage {
         }
 
         return false;
+    }
+
+    public static void setOwnerOnlyDirectory(File directory) {
+        //A symlinked directory has a target outside the application directories that may be deliberately shared, so leave it alone
+        if(isWindows() || Files.isSymbolicLink(directory.toPath())) {
+            return;
+        }
+
+        Set<PosixFilePermission> ownerOnly = getDirectoryOwnerOnlyPosixFilePermissions();
+        Set<PosixFilePermission> currentPermissions;
+        try {
+            currentPermissions = Files.getPosixFilePermissions(directory.toPath());
+        } catch(UnsupportedOperationException | IOException e) {
+            log.debug("Could not read permissions on directory " + directory.getAbsolutePath(), e);
+            return;
+        }
+
+        if(!ownerOnly.equals(currentPermissions)) {
+            try {
+                Files.setPosixFilePermissions(directory.toPath(), ownerOnly);
+            } catch(IOException e) {
+                if(warnedDirectories.add(directory.getAbsolutePath())) {
+                    log.warn("Could not restrict permissions on directory " + directory.getAbsolutePath() + ", it remains readable by other users", e);
+                }
+            }
+        }
     }
 
     public static boolean createOwnerOnlyFile(File file) {
