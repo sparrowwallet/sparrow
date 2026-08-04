@@ -226,9 +226,7 @@ public class WalletLabels implements WalletImport, WalletExport {
                 if(label.type == Type.xpub) {
                     for(Keystore keystore : wallet.getKeystores()) {
                         if(keystore.getExtendedPublicKey() != null && keystore.getExtendedPublicKey().toString().equals(label.ref)) {
-                            keystore.setLabel(label.label);
-                            List<Keystore> changedKeystores = changedWalletKeystores.computeIfAbsent(wallet, w -> new ArrayList<>());
-                            changedKeystores.add(keystore);
+                            updateKeystoreLabel(wallet, keystore, label.label, changedWalletKeystores);
                         }
                     }
                 }
@@ -236,9 +234,7 @@ public class WalletLabels implements WalletImport, WalletExport {
                 if(label.type == Type.spscan) {
                     for(Keystore keystore : wallet.getKeystores()) {
                         if(keystore.getSilentPaymentScanAddress() != null && keystore.getSilentPaymentScanAddress().toKeyString().equals(label.ref)) {
-                            keystore.setLabel(label.label);
-                            List<Keystore> changedKeystores = changedWalletKeystores.computeIfAbsent(wallet, w -> new ArrayList<>());
-                            changedKeystores.add(keystore);
+                            updateKeystoreLabel(wallet, keystore, label.label, changedWalletKeystores);
                         }
                     }
                 }
@@ -325,6 +321,21 @@ public class WalletLabels implements WalletImport, WalletExport {
         }
 
         return walletForms.get(0).getWallet();
+    }
+
+    private static void updateKeystoreLabel(Wallet wallet, Keystore keystore, String label, Map<Wallet, List<Keystore>> changedWalletKeystores) {
+        //Keystore labels are length constrained and must be unique, and an invalid label renders the wallet file unopenable
+        String previousLabel = keystore.getLabel();
+        keystore.setLabel(label.length() > Keystore.MAX_LABEL_LENGTH ? label.substring(0, Keystore.MAX_LABEL_LENGTH) : label);
+
+        if(wallet.containsDuplicateKeystoreLabels()) {
+            log.warn("Not importing keystore label of " + label + " for " + previousLabel + " as it duplicates another keystore label");
+            keystore.setLabel(previousLabel);
+            return;
+        }
+
+        List<Keystore> changedKeystores = changedWalletKeystores.computeIfAbsent(wallet, w -> new ArrayList<>());
+        changedKeystores.add(keystore);
     }
 
     private static void updateHashIndexEntryLabel(Label label, Entry entry) {
