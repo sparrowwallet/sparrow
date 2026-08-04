@@ -144,29 +144,48 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             }
         }
 
+        //This budget must bound the ENTIRE wait for a response - not just acquiring
+        //readLock below, but also the subsequent wait for the reader thread to deliver
+        //data. Previously only lock acquisition was time-bounded here; the
+        //readingCondition.await() further down was unbounded. readLock is free whenever
+        //the reader thread is blocked on the socket (it releases the lock while
+        //awaiting/reading), so tryLock below returned almost immediately regardless of
+        //the requested timeout, and a server that accepted a request and never replied
+        //hung the caller on that unbounded await forever - never timing out, never
+        //failing the connection, and never triggering a reconnect. Every subsequent RPC
+        //then queued forever behind clientRequestLock too.
+        long remainingNanos = TimeUnit.SECONDS.toNanos(readTimeouts[readTimeoutIndex])
+                + TimeUnit.MILLISECONDS.toNanos(requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS);
+
+        boolean locked;
         try {
-            if(!readLock.tryLock((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
-                readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
-                log.warn("No response from server, setting read timeout to " + readTimeouts[readTimeoutIndex] + " secs");
-                throw new IOException("No response from server");
-            }
+            locked = readLock.tryLock(remainingNanos, TimeUnit.NANOSECONDS);
         } catch(InterruptedException e) {
             throw new IOException("Read thread interrupted");
         }
 
-        if(readTimeoutIndex == readTimeouts.length - 1) {
-            readTimeoutIndex--;
+        if(!locked) {
+            failReadTimeout();
+            throw new IOException("No response from server");
         }
 
         try {
+            if(readTimeoutIndex == readTimeouts.length - 1) {
+                readTimeoutIndex--;
+            }
+
             if(firstRead) {
                 readingCondition.signal();
                 firstRead = false;
             }
 
             while(reading && running) {
+                if(remainingNanos <= 0) {
+                    failReadTimeout();
+                    throw new IOException("No response from server");
+                }
                 try {
-                    readingCondition.await();
+                    remainingNanos = readingCondition.awaitNanos(remainingNanos);
                 } catch(InterruptedException e) {
                     //Restore interrupt status and break
                     Thread.currentThread().interrupt();
@@ -188,6 +207,33 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             return response;
         } finally {
             readLock.unlock();
+        }
+    }
+
+    /**
+     * No response was received from the server within the current read timeout. This
+     * escalates the timeout for future reads (as before this fix), but - unlike before -
+     * also actually fails this connection: stop the reader loop and close the socket, so
+     * a server that stops replying doesn't leave a dead connection sitting open forever
+     * with every future request queuing behind clientRequestLock. Closing the socket here
+     * unblocks readInputLoop's reader thread out of its readLine() retry loop (which
+     * otherwise only retries on SocketTimeoutException and never gives up on its own),
+     * which then signals the failure and lets Sparrow's existing reconnect handling take
+     * over on the next request.
+     */
+    private void failReadTimeout() {
+        readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
+        log.warn("No response from server, setting read timeout to " + readTimeouts[readTimeoutIndex] + " secs");
+
+        if(running) {
+            running = false;
+            try {
+                if(socket != null) {
+                    socket.close();
+                }
+            } catch(IOException e) {
+                log.debug("Error closing socket after read timeout", e);
+            }
         }
     }
 
