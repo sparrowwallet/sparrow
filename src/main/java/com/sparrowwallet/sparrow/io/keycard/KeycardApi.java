@@ -370,6 +370,7 @@ public class KeycardApi extends CardApi {
             this.fullPath = fullPath;
         }
 
+        //Signatures returned here are verified against the wallet keys by PSBT.verifyCombinedSignatures() when the signed PSBT is combined
         @Override
         public TransactionSignature sign(Sha256Hash hash, SigHash sigHash, TransactionSignature.Type signatureType) {
             try {
@@ -383,10 +384,8 @@ public class KeycardApi extends CardApi {
                     pubkey = ECKey.fromPublicOnly(compressedPub(sig.getPublicKey()));
 
                     ECDSASignature ecdsaSig = new ECDSASignature(new BigInteger(1, sig.getR()), new BigInteger(1, sig.getS())).toCanonicalised();
-                    TransactionSignature txSig = new TransactionSignature(ecdsaSig, sigHash);
 
-                    boolean isCorrect = pubkey.verify(hash, txSig);
-                    return txSig;
+                    return new TransactionSignature(ecdsaSig, sigHash);
                 } else {
                     throw new CardException(WalletModel.KEYCARD.toDisplayString() + " cannot sign Taproot transactions");
                 }

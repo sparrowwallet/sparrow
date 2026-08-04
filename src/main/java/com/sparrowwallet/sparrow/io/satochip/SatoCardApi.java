@@ -301,6 +301,7 @@ public class SatoCardApi extends CardApi {
             this.fullPath = fullPath;
         }
 
+        //Signatures returned here are verified against the wallet keys by PSBT.verifyCombinedSignatures() when the signed PSBT is combined
         @Override
         public TransactionSignature sign(Sha256Hash hash, SigHash sigHash, TransactionSignature.Type signatureType) {
             try {
@@ -328,11 +329,7 @@ public class SatoCardApi extends CardApi {
                     APDUResponse rapdu2 = cardProtocol.cardSignTransactionHash(keynbr, hash.getBytes(), chalresponse);
                     byte[] sigBytes = rapdu2.getData();
                     ECDSASignature ecdsaSig = ECDSASignature.decodeFromDER(sigBytes).toCanonicalised();
-                    TransactionSignature txSig = new TransactionSignature(ecdsaSig, sigHash);
-
-                    // verify
-                    boolean isCorrect = pubkey.verify(hash, txSig);
-                    return txSig;
+                    return new TransactionSignature(ecdsaSig, sigHash);
                 } else {
                     // Satochip supports schnorr signature only for version >= 0.14 !
                     byte[] versionBytes = cardStatus.getCardVersion();
@@ -353,12 +350,8 @@ public class SatoCardApi extends CardApi {
                     APDUResponse rapdu2 = cardProtocol.cardSignSchnorrHash(keynbr, hash.getBytes(), chalresponse);
                     byte[] sigBytes = rapdu2.getData();
                     SchnorrSignature schnorrSig = SchnorrSignature.decode(sigBytes);
-                    TransactionSignature txSig = new TransactionSignature(schnorrSig, sigHash);
 
-                    // verify sig with outputPubkey...
-                    boolean isCorrect2 = pubkey.verify(hash, txSig);
-
-                    return txSig; //new TransactionSignature(schnorrSig, sigHash);
+                    return new TransactionSignature(schnorrSig, sigHash);
                 }
             } catch(Exception e) {
                 throw new RuntimeException(e);
