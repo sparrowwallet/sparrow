@@ -15,16 +15,39 @@ public class TinyBERTLV {
     private byte[] buffer;
     private int pos;
 
+    /**
+     * Reads the length at the given offset, on one to four bytes. The returned length is guaranteed to be present in
+     * the given buffer.
+     *
+     * @param buf the buffer to read from
+     * @param off the offset of the length
+     * @return the length, and the offset of the body following it
+     * @throws IllegalArgumentException if the length is malformed, or declares more bytes than the buffer holds
+     */
     public static int[] readNum(byte[] buf, int off) {
+        if(off >= buf.length) {
+            throw new IllegalArgumentException("Truncated TLV: no length byte at offset " + off);
+        }
+
         int len = buf[off++] & 0xff;
         int lenlen = 0;
 
         if((len & 0x80) == 0x80) {
             lenlen = len & 0x7f;
+            if(lenlen < 1 || lenlen > 4 || (off + lenlen) > buf.length) {
+                throw new IllegalArgumentException("Truncated TLV: length header of " + lenlen + " bytes is unsupported or exceeds the " + (buf.length - off) + " bytes remaining");
+            }
+
             len = readVal(buf, off, lenlen);
         }
 
-        return new int[]{len, off + lenlen};
+        off += lenlen;
+
+        if(len < 0 || len > (buf.length - off)) {
+            throw new IllegalArgumentException("Truncated TLV: declared length of " + Integer.toUnsignedString(len) + " exceeds the " + (buf.length - off) + " bytes remaining");
+        }
+
+        return new int[]{len, off};
     }
 
     public static int readVal(byte[] val, int off, int len) {
@@ -76,7 +99,7 @@ public class TinyBERTLV {
      *
      * @param tag the tag to enter
      * @return the length of the TLV
-     * @throws IllegalArgumentException if the next tag does not match the given one
+     * @throws IllegalArgumentException if the next tag does not match the given one, or the TLV extends past the end of the buffer
      */
     public int enterConstructed(int tag) throws IllegalArgumentException {
         checkTag(tag, readTag());
@@ -88,7 +111,7 @@ public class TinyBERTLV {
      *
      * @param tag the tag to read
      * @return the body of the TLV
-     * @throws IllegalArgumentException if the next tag does not match the given one
+     * @throws IllegalArgumentException if the next tag does not match the given one, or the TLV extends past the end of the buffer
      */
     public byte[] readPrimitive(int tag) throws IllegalArgumentException {
         checkTag(tag, readTag());
@@ -148,9 +171,10 @@ public class TinyBERTLV {
     }
 
     /**
-     * Reads the next tag. The current implementation only reads length on one and two bytes. Can be extended if needed.
+     * Reads the next length. The current implementation reads lengths on one to four bytes. Can be extended if needed.
      *
-     * @return the tag
+     * @return the length
+     * @throws IllegalArgumentException if the length is malformed, or declares more bytes than the buffer holds
      */
     public int readLength() {
         int[] len = TinyBERTLV.readNum(buffer, pos);
