@@ -1,5 +1,17 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
+import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,5 +102,86 @@ public class DbPersistenceTest {
     @Test
     public void domainRejected() throws Exception {
         assertRejected(buildWalletFile("create domain wallet_master.dm as int default 0"));
+    }
+
+    private static final String TEST_XPUB = "xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy";
+
+    private Wallet createWallet(String walletName) {
+        Wallet wallet = new Wallet(walletName);
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
+        wallet.setScriptType(ScriptType.P2WPKH);
+
+        Keystore keystore = new Keystore("Keystore 1");
+        keystore.setSource(KeystoreSource.SW_WATCH);
+        keystore.setWalletModel(WalletModel.SPARROW);
+        keystore.setKeyDerivation(new KeyDerivation("60bcd3a7", "m/84'/0'/3'"));
+        keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(TEST_XPUB));
+        wallet.getKeystores().add(keystore);
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, ScriptType.P2WPKH, wallet.getKeystores(), null));
+
+        return wallet;
+    }
+
+    private Storage createUnencryptedWallet(String walletName) throws Exception {
+        Storage storage = new Storage(PersistenceType.DB, tempDir.resolve(walletName + "." + PersistenceType.DB.getExtension()).toFile());
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+        storage.saveWallet(createWallet(walletName));
+
+        return storage;
+    }
+
+    private void setPassword(Storage storage, CharSequence password) throws Exception {
+        ECKey encryptionPubKey = password == null ? Storage.NO_PASSWORD_KEY : ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey(password));
+        storage.setEncryptionPubKey(encryptionPubKey);
+        storage.saveWallet(createWallet(storage.getWalletName(null)));
+    }
+
+    private Sha256Hash getFileHash(File file) throws Exception {
+        return Sha256Hash.of(Files.readAllBytes(file.toPath()));
+    }
+
+    @Test
+    public void passwordChangeLeavesSiblingWalletUntouched() throws Exception {
+        Storage siblingStorage = createUnencryptedWallet("Savings.old");
+        siblingStorage.closeAndWait();
+        File siblingFile = siblingStorage.getWalletFile();
+        Sha256Hash siblingHash = getFileHash(siblingFile);
+
+        Storage storage = createUnencryptedWallet("Savings");
+        setPassword(storage, "pass");
+        storage.closeAndWait();
+
+        Assertions.assertEquals(siblingHash, getFileHash(siblingFile), "sibling wallet file was rewritten by the password change");
+        Assertions.assertTrue(new Storage(PersistenceType.DB, siblingFile).loadUnencryptedWallet().getWallet().isValid());
+        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadEncryptedWallet("pass").getWallet().isValid());
+
+        //The conversion must not leave the wallet copy or H2's temp.db behind in the wallets directory
+        String[] tempFiles = tempDir.toFile().list((dir, name) -> name.equals("temp.db") || name.startsWith("sparrowenc"));
+        Assertions.assertEquals(0, tempFiles == null ? -1 : tempFiles.length, "temporary files were left in the wallets directory");
+    }
+
+    @Test
+    public void passwordChangeAppliesToWalletNameContainingDot() throws Exception {
+        Storage siblingStorage = createUnencryptedWallet("Savings");
+        siblingStorage.closeAndWait();
+        Sha256Hash siblingHash = getFileHash(siblingStorage.getWalletFile());
+
+        Storage storage = createUnencryptedWallet("Savings.old");
+        setPassword(storage, "pass");
+        storage.closeAndWait();
+
+        Assertions.assertEquals(siblingHash, getFileHash(siblingStorage.getWalletFile()));
+        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadEncryptedWallet("pass").getWallet().isValid());
+    }
+
+    @Test
+    public void passwordRemovalDecryptsWalletFile() throws Exception {
+        Storage storage = createUnencryptedWallet("Savings");
+        setPassword(storage, "pass");
+        setPassword(storage, null);
+        storage.closeAndWait();
+
+        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadUnencryptedWallet().getWallet().isValid());
     }
 }

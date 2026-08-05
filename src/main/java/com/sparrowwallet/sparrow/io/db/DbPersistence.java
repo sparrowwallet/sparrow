@@ -40,9 +40,12 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
@@ -636,7 +639,7 @@ public class DbPersistence implements Persistence {
         }
     }
 
-    private void updatePassword(Storage storage, ECKey encryptionPubKey) {
+    private void updatePassword(Storage storage, ECKey encryptionPubKey) throws StorageException {
         String newPassword = getFilePassword(encryptionPubKey);
         String currentPassword = getDatasourcePassword();
 
@@ -647,20 +650,63 @@ public class DbPersistence implements Persistence {
             }
 
             try {
-                File walletFile = storage.getWalletFile();
-                ChangeFileEncryption.execute(walletFile.getParent(), getWalletName(walletFile, null), "AES",
-                        currentPassword == null ? null : currentPassword.toCharArray(),
-                        newPassword == null ? null : newPassword.toCharArray(), true);
-
-                if(newPassword != null) {
-                    writeBinaryHeader(walletFile);
-                }
+                changeFileEncryption(storage.getWalletFile(), currentPassword, newPassword);
 
                 //This sets the new password on the datasource for the next updatePassword check
                 getDataSource(storage, newPassword);
             } catch(Exception e) {
+                //The wallet file is either unchanged or fully converted, so do not go on to write to it with a password it may not have
                 log.error("Error changing database password", e);
+                throw new StorageException("Failed to change the password of the wallet file.\n" + e.getMessage(), e);
             }
+        }
+    }
+
+    //H2's ChangeFileEncryption converts every file in the given directory whose name starts with the database name followed by a dot, which also
+    //matches sibling wallet files where the wallet name itself contains a dot. Convert a copy of this wallet file in a temporary directory of its
+    //own so that no other file can be touched, and only replace the original once the conversion has been verified. The temporary directory is
+    //created alongside the wallet file so that the replacement is an atomic move, and so that the copy is not written to a shared temp location.
+    private void changeFileEncryption(File walletFile, String currentPassword, String newPassword) throws IOException, SQLException {
+        File dbFile = walletFile.getAbsoluteFile();
+        Path encryptionDir = Files.createTempDirectory(dbFile.getParentFile().toPath(), "sparrowenc");
+
+        try {
+            Path encryptionFile = encryptionDir.resolve(dbFile.getName());
+            Files.copy(dbFile.toPath(), encryptionFile);
+            ChangeFileEncryption.execute(encryptionDir.toString(), getWalletName(dbFile, null), "AES",
+                    currentPassword == null ? null : currentPassword.toCharArray(),
+                    newPassword == null ? null : newPassword.toCharArray(), true);
+
+            //Verify the conversion happened before replacing the original
+            if(hasEncryptHeader(encryptionFile.toFile()) == (newPassword == null)) {
+                throw new IOException("The encryption of the wallet file was not changed");
+            }
+
+            //H2 writes a new file header on every conversion, discarding the salt written there previously
+            if(newPassword != null) {
+                writeBinaryHeader(encryptionFile.toFile());
+            }
+
+            try {
+                Files.setPosixFilePermissions(encryptionFile, Files.getPosixFilePermissions(dbFile.toPath()));
+            } catch(UnsupportedOperationException | IOException e) {
+                log.debug("Could not copy permissions to " + encryptionFile, e);
+            }
+
+            try {
+                Files.move(encryptionFile, dbFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch(AtomicMoveNotSupportedException e) {
+                Files.move(encryptionFile, dbFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            File[] remainingFiles = encryptionDir.toFile().listFiles();
+            if(remainingFiles != null) {
+                for(File remainingFile : remainingFiles) {
+                    IOUtils.secureDelete(remainingFile);
+                }
+            }
+
+            IOUtils.deleteDirectory(encryptionDir.toFile());
         }
     }
 
@@ -744,6 +790,10 @@ public class DbPersistence implements Persistence {
             return getDatasourcePassword() != null;
         }
 
+        return hasEncryptHeader(walletFile);
+    }
+
+    private boolean hasEncryptHeader(File walletFile) throws IOException {
         byte[] header = new byte[H2_ENCRYPT_HEADER.length];
         try(InputStream inputStream = new FileInputStream(walletFile)) {
             inputStream.read(header, 0, H2_ENCRYPT_HEADER.length);
