@@ -26,13 +26,11 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -41,7 +39,6 @@ public class Storage {
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
 
     private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-    private static final Pattern DATE_PATTERN = Pattern.compile(".+-([0-9]{14}?).*");
     private static final Set<String> warnedDirectories = ConcurrentHashMap.newKeySet();
 
     public static final String WALLETS_DIR = "wallets";
@@ -274,17 +271,6 @@ public class Storage {
         deleteBackups(null);
     }
 
-    private boolean hasStartedSince(File lastBackup) {
-        try {
-            LocalDateTime date = LocalDateTime.parse(getBackupDate(lastBackup.getName()), BACKUP_DATE_FORMAT);
-            ProcessHandle.Info processInfo = ProcessHandle.current().info();
-            return (processInfo.startInstant().isPresent() && processInfo.startInstant().get().isAfter(date.atZone(ZoneId.systemDefault()).toInstant()));
-        } catch(Exception e) {
-            log.error("Error parsing date for backup file " + lastBackup.getName(), e);
-            return false;
-        }
-    }
-
     private void deleteBackups(String prefix) {
         File[] backups = getBackups(prefix);
         for(File backup : backups) {
@@ -293,28 +279,19 @@ public class Storage {
     }
 
     File[] getBackups(String prefix) {
-        File backupDir = getWalletsBackupDir();
-        String walletName = persistence.getWalletName(walletFile, null);
-        String extension = walletFile.getName().substring(walletName.length());
-        File[] backups = backupDir.listFiles((dir, name) -> {
-            return name.startsWith((prefix == null ? "" : prefix + "_") + walletName + "-") &&
-                    getBackupDate(name) != null &&
-                    (extension.isEmpty() || name.endsWith(extension));
-        });
-
-        backups = backups == null ? new File[0] : backups;
-        Arrays.sort(backups, Comparator.comparing(o -> getBackupDate(((File)o).getName())).reversed());
-
-        return backups;
+        return getBackups(getWalletsBackupDir(), prefix);
     }
 
-    private String getBackupDate(String backupFileName) {
-        Matcher matcher = DATE_PATTERN.matcher(backupFileName);
-        if(matcher.matches()) {
-            return matcher.group(1);
-        }
+    File[] getBackups(File backupDir, String prefix) {
+        String walletName = persistence.getWalletName(walletFile, null);
+        String extension = walletFile.getName().substring(walletName.length());
+        Pattern backupPattern = Pattern.compile(Pattern.quote((prefix == null ? "" : prefix + "_") + walletName + "-") + "[0-9]{14}" + Pattern.quote(extension));
+        File[] backups = backupDir.listFiles((dir, name) -> backupPattern.matcher(name).matches());
 
-        return null;
+        backups = backups == null ? new File[0] : backups;
+        Arrays.sort(backups, Comparator.comparing(File::getName).reversed());
+
+        return backups;
     }
 
     private WalletAndKey migrateToDb(WalletAndKey masterWalletAndKey) throws IOException, StorageException {
