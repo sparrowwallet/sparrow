@@ -8,12 +8,17 @@ public class BlockHeaderTip {
     public int height;
     public String hex;
 
+    private volatile BlockHeader blockHeader;
+
     public BlockHeader getBlockHeader() {
-        if(hex == null) {
-            return new BlockHeader(0, Sha256Hash.ZERO_HASH, Sha256Hash.ZERO_HASH, Sha256Hash.ZERO_HASH, 0, 0, 0);
+        if(blockHeader == null) {
+            if(hex == null) {
+                blockHeader = new BlockHeader(0, Sha256Hash.ZERO_HASH, Sha256Hash.ZERO_HASH, Sha256Hash.ZERO_HASH, 0, 0, 0);
+            } else {
+                blockHeader = new BlockHeader(Utils.hexToBytes(hex));
+            }
         }
 
-        byte[] blockHeaderBytes = Utils.hexToBytes(hex);
-        return new BlockHeader(blockHeaderBytes);
+        return blockHeader;
     }
 }

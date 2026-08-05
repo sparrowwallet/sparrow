@@ -91,6 +91,22 @@ public class ElectrumServer {
 
     private static final int TAPROOT_ACTIVATION_HEIGHT = 709632;
 
+    //Consensus rejects blocks timestamped more than 2 hours in the future, extended here to allow for local clock skew
+    private static final long MAXIMUM_FUTURE_TIP_TIME_SECS = 4 * 60 * 60;
+
+    //A gap of over 2 hours between mainnet blocks occurs naturally roughly once every 3 years
+    private static final long STALE_TIP_WARNING_AGE_MILLIS = 2 * 60 * 60 * 1000;
+
+    private static final long TIP_WARNING_INTERVAL_MILLIS = 60 * 1000;
+
+    private static volatile long lastTipReceivedAt;
+
+    private static volatile boolean staleTipWarned;
+
+    private static volatile boolean invalidTipWarned;
+
+    private static volatile long lastTipWarningLoggedAt;
+
     private final static Map<String, Integer> subscribedRecent = new ConcurrentHashMap<>();
 
     private final static Map<String, String> broadcastRecent = new ConcurrentHashMap<>();
@@ -1777,6 +1793,67 @@ public class ElectrumServer {
         retrievedBlockHeaders.put(blockHeight, blockHeader);
     }
 
+    /**
+     * Sanity checks a server announced chain tip, returning the reason it is invalid, or null if it is valid.
+     * The header must parse, must not be timestamped in the future, and must meet its own claimed proof of work target.
+     */
+    static String getTipValidationError(BlockHeaderTip tip) {
+        return getTipValidationError(tip, System.currentTimeMillis());
+    }
+
+    static String getTipValidationError(BlockHeaderTip tip, long now) {
+        try {
+            if(tip.height < 0 || tip.hex == null) {
+                return "Announced block header tip at height " + tip.height + " is missing or malformed";
+            }
+
+            BlockHeader blockHeader = tip.getBlockHeader();
+            if(!blockHeader.verifyProofOfWork()) {
+                return "Announced block header at height " + tip.height + " does not meet its claimed proof of work target";
+            }
+
+            long nowSecs = now / 1000;
+            if(blockHeader.getTime() > nowSecs + MAXIMUM_FUTURE_TIP_TIME_SECS) {
+                return "Announced block header at height " + tip.height + " is timestamped " + ((blockHeader.getTime() - nowSecs) / 3600) + " hours in the future, indicating either an invalid header or a slow system clock";
+            }
+
+            return null;
+        } catch(Exception e) {
+            return "Error parsing announced block header at height " + tip.height + ": " + e;
+        }
+    }
+
+    /**
+     * Logs and shows a status warning for an invalid tip. A hostile server can send invalid tips at any rate, so warnings are rate limited,
+     * and the status warning is shown at most once per episode of invalid tips (reset on any valid tip).
+     */
+    static void warnInvalidTip(String message) {
+        long now = System.currentTimeMillis();
+        if(now - lastTipWarningLoggedAt > TIP_WARNING_INTERVAL_MILLIS) {
+            lastTipWarningLoggedAt = now;
+            log.warn(message);
+
+            if(!invalidTipWarned) {
+                invalidTipWarned = true;
+                Platform.runLater(() -> EventManager.get().post(new StatusEvent("Warning: Ignoring invalid block header announced by the server", 120)));
+            }
+        }
+    }
+
+    private static void initializeTip(BlockHeaderTip tip) {
+        updateTipReceived();
+        //Public servers are never mid-sync, so seed the staleness clock from the tip timestamp to warn promptly on an already stale server
+        if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
+            lastTipReceivedAt = Math.min(lastTipReceivedAt, tip.getBlockHeader().getTime() * 1000);
+        }
+    }
+
+    static void updateTipReceived() {
+        lastTipReceivedAt = System.currentTimeMillis();
+        staleTipWarned = false;
+        invalidTipWarned = false;
+    }
+
     public static ServerCapability getServerCapability(List<String> serverVersion) {
         if(!serverVersion.isEmpty()) {
             String server = serverVersion.getFirst().toLowerCase(Locale.ROOT);
@@ -2004,6 +2081,11 @@ public class ElectrumServer {
                         BlockHeaderTip tip;
                         if(subscribe) {
                             tip = electrumServer.subscribeBlockHeaders();
+                            String tipError = getTipValidationError(tip);
+                            if(tipError != null) {
+                                throw new ServerException(tipError);
+                            }
+                            initializeTip(tip);
                             subscribedScriptHashes.clear();
                         } else {
                             tip = new BlockHeaderTip();
@@ -2024,6 +2106,7 @@ public class ElectrumServer {
                     } else {
                         if(reader.isAlive()) {
                             electrumServer.ping();
+                            checkTipStaleness();
 
                             long elapsed = System.currentTimeMillis() - feeRatesRetrievedAt;
                             if(elapsed > FEE_RATES_PERIOD) {
@@ -2041,6 +2124,16 @@ public class ElectrumServer {
                     return null;
                 }
             };
+        }
+
+        private void checkTipStaleness() {
+            if(subscribe && Network.get() == Network.MAINNET && lastTipReceivedAt > 0 && !staleTipWarned && System.currentTimeMillis() - lastTipReceivedAt > STALE_TIP_WARNING_AGE_MILLIS) {
+                staleTipWarned = true;
+                long hours = (System.currentTimeMillis() - lastTipReceivedAt) / (60 * 60 * 1000);
+                String warning = "Warning: The connected server has not announced a new block for over " + hours + " hours, so its chain view may be stale";
+                log.warn(warning);
+                Platform.runLater(() -> EventManager.get().post(new StatusEvent(warning, 120)));
+            }
         }
 
         public void closeConnection() {
