@@ -16,12 +16,14 @@ package com.sparrowwallet.sparrow.net;
  * limitations under the License.
  */
 
+import com.google.common.net.InetAddresses;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Locale;
 
 /**
  * Matches a request based on IP Address or subnet mask matching against the remote
@@ -109,7 +111,18 @@ public final class IpAddressMatcher {
 
     public static boolean isLocalNetworkAddress(String address) {
         try {
-            return "localhost".equals(address) || "127.0.0.1".equals(address) || LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address) || LOCAL_RANGE_4.matches(address);
+            if("localhost".equals(address) || "127.0.0.1".equals(address)) {
+                return true;
+            }
+
+            //Matching a hostname against the local ranges requires resolving it, which leaks the name to (and trusts the answer of) the local DNS resolver even when a proxy is configured
+            //Only IP literals and mDNS names (which RFC 6762 requires to be resolved via link-local multicast, not upstream DNS) are considered potentially local when using a proxy
+            if(AppServices.isUsingProxy() && !InetAddresses.isInetAddress(address) && !address.toLowerCase(Locale.ROOT).endsWith(".local")) {
+                log.info("Avoiding local DNS resolution of " + address + ", assuming it is a non-local address to be resolved by the configured proxy");
+                return false;
+            }
+
+            return LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address) || LOCAL_RANGE_4.matches(address);
         } catch(IllegalArgumentException e) {
             if(AppServices.isUsingProxy()) {
                 log.info(e.getMessage() + ", assuming it is a non-local address to be resolved by the configured proxy");
