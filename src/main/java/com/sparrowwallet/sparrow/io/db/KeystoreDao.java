@@ -23,17 +23,17 @@ public interface KeystoreDao {
 
     @SqlUpdate("insert into masterPrivateExtendedKey (privateKey, chainCode, initialisationVector, encryptedBytes, keySalt, deriver, crypter, creationTimeSeconds) values (?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insertMasterPrivateExtendedKey(byte[] privateKey, byte[] chainCode, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, long creationTimeSeconds);
+    long insertMasterPrivateExtendedKey(byte[] privateKey, byte[] chainCode, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, long creationTimeMillis);
 
     @SqlUpdate("update masterPrivateExtendedKey set privateKey = ?, chainCode = ?, initialisationVector = ?, encryptedBytes = ?, keySalt = ?, deriver = ?, crypter = ?, creationTimeSeconds = ? where id = ?")
-    void updateMasterPrivateExtendedKey(byte[] privateKey, byte[] chainCode, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, long creationTimeSeconds, long id);
+    void updateMasterPrivateExtendedKey(byte[] privateKey, byte[] chainCode, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, long creationTimeMillis, long id);
 
     @SqlUpdate("insert into seed (type, mnemonicString, initialisationVector, encryptedBytes, keySalt, deriver, crypter, needsPassphrase, creationTimeSeconds) values (?, ?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insertSeed(int type, String mnemonicString, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, boolean needsPassphrase, long creationTimeSeconds);
+    long insertSeed(int type, String mnemonicString, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, boolean needsPassphrase, long creationTimeMillis);
 
     @SqlUpdate("update seed set type = ?, mnemonicString = ?, initialisationVector = ?, encryptedBytes = ?, keySalt = ?, deriver = ?, crypter = ?, needsPassphrase = ?, creationTimeSeconds = ? where id = ?")
-    void updateSeed(int type, String mnemonicString, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, boolean needsPassphrase, long creationTimeSeconds, long id);
+    void updateSeed(int type, String mnemonicString, byte[] initialisationVector, byte[] encryptedBytes, byte[] keySalt, Integer deriver, Integer crypter, boolean needsPassphrase, long creationTimeMillis, long id);
 
     @SqlUpdate("update keystore set label = ? where id = ?")
     void updateLabel(String label, long id);
@@ -48,10 +48,10 @@ public interface KeystoreDao {
                 MasterPrivateExtendedKey mpek = keystore.getMasterPrivateExtendedKey();
                 if(mpek.isEncrypted()) {
                     EncryptedData data = mpek.getEncryptedData();
-                    long id = insertMasterPrivateExtendedKey(null, null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), mpek.getCreationTimeSeconds());
+                    long id = insertMasterPrivateExtendedKey(null, null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), mpek.getCreationTimeMillis());
                     mpek.setId(id);
                 } else {
-                    long id = insertMasterPrivateExtendedKey(mpek.getPrivateKey().getPrivKeyBytes(), mpek.getPrivateKey().getChainCode(), null, null, null, null, null, mpek.getCreationTimeSeconds());
+                    long id = insertMasterPrivateExtendedKey(mpek.getPrivateKey().getPrivKeyBytes(), mpek.getPrivateKey().getChainCode(), null, null, null, null, null, mpek.getCreationTimeMillis());
                     mpek.setId(id);
                 }
             }
@@ -60,10 +60,10 @@ public interface KeystoreDao {
                 DeterministicSeed seed = keystore.getSeed();
                 if(seed.isEncrypted()) {
                     EncryptedData data = seed.getEncryptedData();
-                    long id = insertSeed(seed.getType().ordinal(), null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), seed.needsPassphrase(), seed.getCreationTimeSeconds());
+                    long id = insertSeed(seed.getType().ordinal(), null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), seed.needsPassphrase(), seed.getCreationTimeMillis());
                     seed.setId(id);
                 } else {
-                    long id = insertSeed(seed.getType().ordinal(), seed.getMnemonicString(true).asString(), null, null, null, null, null, seed.needsPassphrase(), seed.getCreationTimeSeconds());
+                    long id = insertSeed(seed.getType().ordinal(), seed.getMnemonicString(true).asString(), null, null, null, null, null, seed.needsPassphrase(), seed.getCreationTimeMillis());
                     seed.setId(id);
                 }
             }
@@ -86,9 +86,9 @@ public interface KeystoreDao {
             MasterPrivateExtendedKey mpek = keystore.getMasterPrivateExtendedKey();
             if(mpek.isEncrypted()) {
                 EncryptedData data = mpek.getEncryptedData();
-                updateMasterPrivateExtendedKey(null, null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), mpek.getCreationTimeSeconds(), mpek.getId());
+                updateMasterPrivateExtendedKey(null, null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), mpek.getCreationTimeMillis(), mpek.getId());
             } else {
-                updateMasterPrivateExtendedKey(mpek.getPrivateKey().getPrivKeyBytes(), mpek.getPrivateKey().getChainCode(), null, null, null, null, null, mpek.getCreationTimeSeconds(), mpek.getId());
+                updateMasterPrivateExtendedKey(mpek.getPrivateKey().getPrivKeyBytes(), mpek.getPrivateKey().getChainCode(), null, null, null, null, null, mpek.getCreationTimeMillis(), mpek.getId());
             }
         }
 
@@ -96,9 +96,9 @@ public interface KeystoreDao {
             DeterministicSeed seed = keystore.getSeed();
             if(seed.isEncrypted()) {
                 EncryptedData data = seed.getEncryptedData();
-                updateSeed(seed.getType().ordinal(), null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), seed.needsPassphrase(), seed.getCreationTimeSeconds(), seed.getId());
+                updateSeed(seed.getType().ordinal(), null, data.getInitialisationVector(), data.getEncryptedBytes(), data.getKeySalt(), data.getEncryptionType().getDeriver().ordinal(), data.getEncryptionType().getCrypter().ordinal(), seed.needsPassphrase(), seed.getCreationTimeMillis(), seed.getId());
             } else {
-                updateSeed(seed.getType().ordinal(), seed.getMnemonicString(true).asString(), null, null, null, null, null, seed.needsPassphrase(), seed.getCreationTimeSeconds(), seed.getId());
+                updateSeed(seed.getType().ordinal(), seed.getMnemonicString(true).asString(), null, null, null, null, null, seed.needsPassphrase(), seed.getCreationTimeMillis(), seed.getId());
             }
         }
     }

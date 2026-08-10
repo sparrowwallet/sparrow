@@ -961,7 +961,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 @Override
                 protected Optional<DnsPayment> call() throws Exception {
                     DnsPaymentResolver resolver = new DnsPaymentResolver(hrn);
-                    return resolver.resolve();
+                    return resolver.resolve(AppServices.getProxy());
                 }
             };
         }

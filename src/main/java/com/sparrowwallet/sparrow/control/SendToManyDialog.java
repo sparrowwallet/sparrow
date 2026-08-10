@@ -562,7 +562,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                 DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(hrn);
                 if(dnsPayment == null) {
                     DnsPaymentResolver resolver = new DnsPaymentResolver(hrn);
-                    Optional<DnsPayment> optDnsPayment = resolver.resolve();
+                    Optional<DnsPayment> optDnsPayment = resolver.resolve(AppServices.getProxy());
                     if(optDnsPayment.isPresent()) {
                         dnsPayment = optDnsPayment.get();
                         if(dnsPayment.hasAddress()) {
