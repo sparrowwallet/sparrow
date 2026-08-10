@@ -177,6 +177,14 @@ public class SettingsController extends WalletFormController implements Initiali
                 }
 
                 walletForm.getWallet().setScriptType(newValue);
+
+                if(oldValue != null && !replacing && !reverting) {
+                    if(multisigControl.getMax() > newValue.getMaxCosigners()) {
+                        multisigControl.setMax(newValue.getMaxCosigners());
+                    } else if(multisigControl.getMax() == multisigControl.getHighValue() && multisigControl.getMax() < newValue.getMaxCosigners()) {
+                        multisigControl.setMax(multisigControl.getMax() + 1.0);
+                    }
+                }
             }
 
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.SCRIPT_TYPE));
@@ -189,7 +197,9 @@ public class SettingsController extends WalletFormController implements Initiali
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.MUTLISIG_THRESHOLD));
         });
         multisigControl.highValueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue.doubleValue() == multisigControl.getMax() && newValue.doubleValue() <= 19.0) {
+            ScriptType walletScriptType = walletForm.getWallet().getScriptType();
+            int maxCosigners = walletScriptType == null ? PolicyType.MULTI_HD.getDefaultScriptType().getMaxCosigners() : walletScriptType.getMaxCosigners();
+            if(newValue.doubleValue() == multisigControl.getMax() && newValue.doubleValue() < maxCosigners) {
                 multisigControl.setMax(newValue.doubleValue() + 1.0);
             }
         });
@@ -296,7 +306,8 @@ public class SettingsController extends WalletFormController implements Initiali
         if(wallet.getPolicyType().equals(PolicyType.SINGLE_HD) || wallet.getPolicyType().equals(PolicyType.SINGLE_SP)) {
             totalKeystores.setValue(1);
         } else if(wallet.getPolicyType().equals(PolicyType.MULTI_HD)) {
-            multisigControl.setMax(Math.max(multisigControl.getMax(), wallet.getKeystores().size()));
+            int maxCosigners = wallet.getScriptType() == null ? PolicyType.MULTI_HD.getDefaultScriptType().getMaxCosigners() : wallet.getScriptType().getMaxCosigners();
+            multisigControl.setMax(Math.max(Math.min(maxCosigners, multisigControl.getMax()), wallet.getKeystores().size()));
             multisigControl.highValueProperty().set(wallet.getKeystores().size());
             multisigControl.lowValueProperty().set(wallet.getDefaultPolicy().getNumSignaturesRequired());
             totalKeystores.bind(multisigControl.highValueProperty());
@@ -517,6 +528,12 @@ public class SettingsController extends WalletFormController implements Initiali
     private void rederiveAndReplaceWallet(Wallet editedWallet) {
         if(!walletForm.getWallet().isMasterWallet() && (editedWallet.getPolicyType() != walletForm.getMasterWallet().getPolicyType() || editedWallet.getScriptType() != walletForm.getMasterWallet().getScriptType())) {
             AppServices.showErrorDialog("Policy or Script Type Mismatch", "The provided output descriptor does not match the policy or script type of this wallet.");
+            return;
+        }
+
+        if(editedWallet.getScriptType() != null && editedWallet.getKeystores().size() > editedWallet.getScriptType().getMaxCosigners()) {
+            AppServices.showErrorDialog("Too Many Cosigners", "The provided output descriptor has " + editedWallet.getKeystores().size() + " cosigners, but " +
+                    editedWallet.getScriptType().getName() + " supports a maximum of " + editedWallet.getScriptType().getMaxCosigners() + ".");
             return;
         }
 

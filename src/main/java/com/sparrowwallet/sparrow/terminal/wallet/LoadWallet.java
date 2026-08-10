@@ -1,10 +1,10 @@
 package com.sparrowwallet.sparrow.terminal.wallet;
 
-import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.*;
 import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
@@ -106,8 +106,10 @@ public class LoadWallet implements Runnable {
     private void openWallet(Storage storage, WalletAndKey walletAndKey) {
         try {
             storage.restorePublicKeysFromSeed(walletAndKey.getWallet(), walletAndKey.getKey());
-            if(!walletAndKey.getWallet().isValid()) {
-                throw new IllegalStateException("Wallet file is not valid.");
+            try {
+                walletAndKey.getWallet().checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("Wallet file is not valid: " + e.getMessage());
             }
             SparrowTerminal.addWallet(storage, walletAndKey.getWallet());
             for(Map.Entry<WalletAndKey, Storage> entry : walletAndKey.getChildWallets().entrySet()) {

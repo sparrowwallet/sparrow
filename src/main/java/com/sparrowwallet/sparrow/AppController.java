@@ -1246,8 +1246,10 @@ public class AppController implements Initializable {
     private void openWallet(Storage storage, WalletAndKey walletAndKey, AppController appController, boolean forceSameWindow) {
         try {
             storage.restorePublicKeysFromSeed(walletAndKey.getWallet(), walletAndKey.getKey());
-            if(!walletAndKey.getWallet().isValid()) {
-                throw new IllegalStateException("Wallet file is not valid.");
+            try {
+                walletAndKey.getWallet().checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("Wallet file is not valid: " + e.getMessage());
             }
             AppController walletAppController = appController.addWalletTabOrWindow(storage, walletAndKey.getWallet(), forceSameWindow);
             for(Map.Entry<WalletAndKey, Storage> entry : walletAndKey.getChildWallets().entrySet()) {
