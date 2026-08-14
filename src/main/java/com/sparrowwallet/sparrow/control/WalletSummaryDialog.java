@@ -17,6 +17,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
 import java.util.ArrayList;
@@ -43,14 +44,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
 
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText("Wallet Summary for " + (allOpenWallets ? "All Open Wallets" : masterWallets.get(0).getName()));
-
-        Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-        if(!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setSmooth(false);
-            imageView.setImage(image);
-            dialogPane.setGraphic(imageView);
-        }
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         HBox hBox = new HBox(40);
 
@@ -110,6 +104,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         vBox.getChildren().add(table);
 
         hBox.getChildren().add(vBox);
+        HBox.setHgrow(vBox, Priority.ALWAYS);
 
         Wallet balanceWallet;
         if(allOpenWallets) {

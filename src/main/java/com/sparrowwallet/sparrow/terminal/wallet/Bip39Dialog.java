@@ -20,6 +20,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 public class Bip39Dialog extends NewWalletDialog {
@@ -28,7 +29,7 @@ public class Bip39Dialog extends NewWalletDialog {
 
     private final Bip39 importer = new Bip39();
 
-    private final ComboBox<DisplayScriptType> scriptType;
+    private final ComboBox<PolicyAndScriptType> scriptType;
     private final TextBox seedWords;
     private final TextBox passphrase;
     private final Button createWallet;
@@ -68,13 +69,17 @@ public class Bip39Dialog extends NewWalletDialog {
         buttonPanel.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.END, GridLayout.Alignment.CENTER,false,false)).addTo(mainPanel);
         setComponent(mainPanel);
 
-        ScriptType.getAddressableScriptTypes(PolicyType.SINGLE).stream().map(DisplayScriptType::new).forEach(scriptType::addItem);
-        scriptType.setSelectedItem(new DisplayScriptType(ScriptType.P2WPKH));
+        for(PolicyType policyType : List.of(PolicyType.SINGLE_HD, PolicyType.SINGLE_SP)) {
+            for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(policyType)) {
+                this.scriptType.addItem(new PolicyAndScriptType(policyType, scriptType));
+            }
+        }
+        scriptType.setSelectedItem(new PolicyAndScriptType(PolicyType.SINGLE_HD, ScriptType.P2WPKH));
 
         seedWords.setTextChangeListener((newText, changedByUserInteraction) -> {
             try {
                 String[] words = newText.split("[ \n]");
-                importer.getKeystore(scriptType.getSelectedItem().scriptType.getDefaultDerivation(), Arrays.asList(words), passphrase.getText());
+                importer.getKeystore(PolicyType.SINGLE_HD, scriptType.getSelectedItem().scriptType().getDefaultDerivation(), Arrays.asList(words), passphrase.getText());
                 createWallet.setEnabled(true);
             } catch(ImportException e) {
                 createWallet.setEnabled(false);
@@ -149,44 +154,23 @@ public class Bip39Dialog extends NewWalletDialog {
 
     @Override
     protected List<Wallet> getWallets() throws ImportException {
+        PolicyAndScriptType type = scriptType.getSelectedItem();
         Wallet wallet = new Wallet(walletName);
-        wallet.setPolicyType(PolicyType.SINGLE);
-        wallet.setScriptType(scriptType.getSelectedItem().scriptType);
-        Keystore keystore = importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
+        wallet.setPolicyType(type.policyType());
+        wallet.setScriptType(type.scriptType());
+        Keystore keystore = importer.getKeystore(type.policyType(), wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), 1));
+        wallet.setDefaultPolicy(Policy.getPolicy(type.policyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
+        if(type.policyType() == PolicyType.SINGLE_SP) {
+            wallet.setBirthDate(new Date());
+        }
         return List.of(wallet);
     }
 
-    private static final class DisplayScriptType {
-        private final ScriptType scriptType;
-
-        public DisplayScriptType(ScriptType scriptType) {
-            this.scriptType = scriptType;
-        }
-
+    private record PolicyAndScriptType(PolicyType policyType, ScriptType scriptType) {
         @Override
         public String toString() {
-            return scriptType.getDescription();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if(this == o) {
-                return true;
-            }
-            if(o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            DisplayScriptType that = (DisplayScriptType) o;
-
-            return scriptType == that.scriptType;
-        }
-
-        @Override
-        public int hashCode() {
-            return scriptType.hashCode();
+            return scriptType.getDescription() + (policyType == PolicyType.SINGLE_SP ? " SP" : " HD");
         }
     }
 

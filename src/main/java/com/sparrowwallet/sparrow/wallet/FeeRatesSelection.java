@@ -1,7 +1,7 @@
 package com.sparrowwallet.sparrow.wallet;
 
 public enum FeeRatesSelection {
-    BLOCK_TARGET("Block Target"), MEMPOOL_SIZE("Mempool Size");
+    BLOCK_TARGET("Block Target"), MEMPOOL_SIZE("Mempool Size"), RECENT_BLOCKS("Recent Blocks");
 
     private final String name;
 

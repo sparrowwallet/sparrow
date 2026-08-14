@@ -38,7 +38,7 @@
     -fx-base: -fx-default-button;
 }
 
-.split-menu-button.default-button > .label {
+.split-menu-button > .label, .menu-item.default-button > .label {
     -fx-text-fill: white;
 }
 
@@ -220,6 +220,7 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 .root .script-pubkey { -fx-fill: #c678dd }
 .root .script-redeem, .root .script-controlblock { -fx-fill: derive(#e06c75, 20%) }
 .root .script-other { -fx-fill: #c8ccd4 }
+.root .hide-amounts .output-value { -fx-fill: derive(-fx-control-inner-background, -50%) }
 
 .root #txhex {
     -fx-background-color: derive(-fx-control-inner-background, -50%);
@@ -329,6 +330,10 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-stroke: #696c77;
 }
 
+#blockchainForm #blockStatus {
+    -fx-text-fill: white;
+}
+
 .root .progress-indicator.progress-timer.warn > .determinate-indicator > .indicator {
     -fx-background-color: -fx-box-border, radial-gradient(center 50% 50%, radius 50%, #e06c75 70%, derive(-fx-control-inner-background, -9%) 100%);
 }
@@ -343,4 +348,52 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
 
 #grid .spreadsheet-cell.selection {
     -fx-text-fill: -fx-base;
+}
+
+.root .block-height {
+    -fx-fill: derive(lightgray, -20%);
+}
+
+.root .blocks-separator {
+    -fx-stroke: derive(lightgray, -20%);
+}
+
+.root .block-confirmed .block-unused {
+    -fx-fill: #5a5a65;
+}
+
+.root .block-confirmed .block-top {
+    -fx-fill: #474c5e;
+}
+
+.root .block-confirmed .block-left {
+    -fx-fill: #3c4055;
+}
+
+.root .block-unconfirmed .block-top {
+    -fx-fill: #635b57;
+}
+
+.root .block-unconfirmed .block-left {
+    -fx-fill: #4e4846;
+}
+
+.root .label .address-chunk {
+    -fx-fill: lightgray;
+}
+
+.root .tree-table-view .address-chunk,
+.root .text-field .address-chunk,
+.root .tooltip .address-chunk {
+    -fx-fill: white;
+}
+
+.root.chunk-addresses .text-field .address-chunk.alternate,
+.root.chunk-addresses .label .address-chunk.alternate,
+.root.chunk-addresses .tree-table-view:focused .address-chunk.alternate {
+    -fx-fill: derive(-fx-text-inner-color, -30%);
+}
+
+.root.chunk-addresses .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
+    -fx-fill: derive(-fx-selection-bar-text, -20%);
 }

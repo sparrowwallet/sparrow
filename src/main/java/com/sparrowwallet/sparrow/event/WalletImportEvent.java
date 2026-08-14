@@ -2,14 +2,20 @@ package com.sparrowwallet.sparrow.event;
 
 import com.sparrowwallet.drongo.wallet.Wallet;
 
+import java.util.List;
+
 public class WalletImportEvent {
-    private Wallet wallet;
+    private List<Wallet> wallets;
 
     public WalletImportEvent(Wallet wallet) {
-        this.wallet = wallet;
+        this.wallets = List.of(wallet);
     }
 
-    public Wallet getWallet() {
-        return wallet;
+    public WalletImportEvent(List<Wallet> wallets) {
+        this.wallets = wallets;
+    }
+
+    public List<Wallet> getWallets() {
+        return wallets;
     }
 }

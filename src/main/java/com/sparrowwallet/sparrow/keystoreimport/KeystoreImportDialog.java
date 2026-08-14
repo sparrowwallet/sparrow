@@ -25,14 +25,6 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     private final ScriptType scriptType;
     private final String existingLabel;
 
-    public KeystoreImportDialog(Wallet wallet) {
-        this(wallet, KeystoreSource.HW_USB);
-    }
-
-    public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource) {
-        this(wallet, initialSource, null, null, Keystore.DEFAULT_LABEL, false);
-    }
-
     public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource, KeyDerivation currentDerivation, WalletModel currentModel, String currentLabel, boolean restrictImport) {
         EventManager.get().register(this);
         setOnCloseRequest(event -> {
@@ -82,7 +74,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
         keystore.setLabel(existingLabel);
         keystore.setSource(KeystoreSource.SW_WATCH);
         keystore.setWalletModel(WalletModel.SPARROW);
-        keystore.setKeyDerivation(new KeyDerivation(KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath()));
+        keystore.setKeyDerivation(new KeyDerivation(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath()));
         return keystore;
     }
 

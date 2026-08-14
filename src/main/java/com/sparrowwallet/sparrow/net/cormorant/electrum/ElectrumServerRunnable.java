@@ -1,10 +1,12 @@
 package com.sparrowwallet.sparrow.net.cormorant.electrum;
 
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.cormorant.bitcoind.BitcoindClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -47,7 +49,7 @@ public class ElectrumServerRunnable implements Runnable {
                 }
                 throw new RuntimeException("Error accepting client connection", e);
             }
-            RequestHandler requestHandler = new RequestHandler(clientSocket, bitcoindClient);
+            RequestHandler requestHandler = new RequestHandler(clientSocket, bitcoindClient, getPort());
             this.threadPool.execute(requestHandler);
         }
 
@@ -69,7 +71,7 @@ public class ElectrumServerRunnable implements Runnable {
 
     private void openServerSocket() {
         try {
-            serverSocket = new ServerSocket(0);
+            serverSocket = new ServerSocket(0, 50, InetAddress.getByName(ElectrumServer.CORE_ELECTRUM_HOST));
         } catch(IOException e) {
             throw new RuntimeException("Cannot open electrum server port", e);
         }

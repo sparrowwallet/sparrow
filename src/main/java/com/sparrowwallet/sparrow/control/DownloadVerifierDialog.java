@@ -56,13 +56,15 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private static final List<String> MANIFEST_EXTENSIONS = List.of("txt");
     private static final List<String> PUBLIC_KEY_EXTENSIONS = List.of("asc");
     private static final List<String> MACOS_RELEASE_EXTENSIONS = List.of("dmg");
-    private static final List<String> WINDOWS_RELEASE_EXTENSIONS = List.of("exe", "zip");
+    private static final List<String> WINDOWS_RELEASE_EXTENSIONS = List.of("exe", "msi", "zip");
     private static final List<String> LINUX_RELEASE_EXTENSIONS = List.of("deb", "rpm", "tar.gz");
     private static final List<String> DISK_IMAGE_EXTENSIONS = List.of("img", "bin", "dfu");
     private static final List<String> ARCHIVE_EXTENSIONS = List.of("zip", "tar.gz", "tar.bz2", "tar.xz", "rar", "7z");
 
     private static final String SPARROW_RELEASE_PREFIX = "sparrow-";
-    private static final String SPARROW_SIGNATURE_SUFFIX = "-manifest.txt.asc";
+    private static final String[] SPARROW_RELEASE_ALT_PREFIXES = { "sparrowwallet-", "sparrowwallet_", "sparrowserver-", "sparrowserver_" };
+    private static final String SPARROW_MANIFEST_SUFFIX = "-manifest.txt";
+    private static final String SPARROW_SIGNATURE_SUFFIX = SPARROW_MANIFEST_SUFFIX + ".asc";
     private static final Pattern SPARROW_RELEASE_VERSION = Pattern.compile("[0-9]+(\\.[0-9]+)*");
     private static final long MIN_VALID_SPARROW_RELEASE_SIZE = 10 * 1024 * 1024;
 
@@ -70,6 +72,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private final ObjectProperty<File> manifest = new SimpleObjectProperty<>();
     private final ObjectProperty<File> publicKey = new SimpleObjectProperty<>();
     private final ObjectProperty<File> release = new SimpleObjectProperty<>();
+    private final ObjectProperty<File> initial = new SimpleObjectProperty<>();
 
     private final BooleanProperty manifestDisabled = new SimpleBooleanProperty();
     private final BooleanProperty publicKeyDisabled = new SimpleBooleanProperty();
@@ -81,7 +84,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
     private static File lastFileParent;
 
-    public DownloadVerifierDialog(File initialSignatureFile) {
+    public DownloadVerifierDialog(File initialFile) {
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
@@ -223,11 +226,17 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         });
 
         release.addListener((observable, oldValue, releaseFile) -> {
+            if(releaseFile != null) {
+                initial.set(null);
+            }
             verify();
         });
 
-        if(initialSignatureFile != null) {
-            javafx.application.Platform.runLater(() -> signature.set(initialSignatureFile));
+        if(initialFile != null) {
+            javafx.application.Platform.runLater(() -> {
+                initial.set(initialFile);
+                signature.set(initialFile);
+            });
         }
     }
 
@@ -292,7 +301,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 publicKeyDisabled.set(true);
             }
 
-            if(manifest.get().equals(release.get())) {
+            if(manifest.get().equals(release.get()) && !isSparrowManifest(manifest.get())) {
                 manifestDisabled.set(true);
                 releaseHash.setText("No hash required, signature signs release file directly");
                 releaseHash.setGraphic(GlyphUtils.getSuccessGlyph());
@@ -455,7 +464,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             }
         }
 
-        if(providedFile.getName().toLowerCase(Locale.ROOT).startsWith(SPARROW_RELEASE_PREFIX)) {
+        String providedName = providedFile.getName().toLowerCase(Locale.ROOT);
+        if(providedName.startsWith(SPARROW_RELEASE_PREFIX) || Arrays.stream(SPARROW_RELEASE_ALT_PREFIXES).anyMatch(providedName::startsWith)) {
             Matcher matcher = SPARROW_RELEASE_VERSION.matcher(providedFile.getName());
             if(matcher.find()) {
                 String version = matcher.group();
@@ -482,6 +492,22 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private File findReleaseFile(File manifestFile, Map<File, String> manifestMap) {
+        File initialFile = initial.get();
+        if(initialFile != null && initialFile.exists()) {
+            for(File file : manifestMap.keySet()) {
+                if(initialFile.getName().equals(file.getName())) {
+                    return initialFile;
+                }
+            }
+
+            List<List<String>> allExtensionLists = List.of(MACOS_RELEASE_EXTENSIONS, WINDOWS_RELEASE_EXTENSIONS, LINUX_RELEASE_EXTENSIONS, DISK_IMAGE_EXTENSIONS, ARCHIVE_EXTENSIONS);
+            for(List<String> extensions : allExtensionLists) {
+                if(extensions.stream().anyMatch(ext -> initialFile.getName().toLowerCase(Locale.ROOT).endsWith(ext))) {
+                    return initialFile;
+                }
+            }
+        }
+
         List<String> releaseExtensions = getReleaseFileExtensions();
         List<List<String>> extensionLists = List.of(releaseExtensions, DISK_IMAGE_EXTENSIONS, ARCHIVE_EXTENSIONS, List.of(""));
 
@@ -565,7 +591,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 }
             }
 
-            if(name.startsWith(SPARROW_RELEASE_PREFIX) && file.length() >= MIN_VALID_SPARROW_RELEASE_SIZE) {
+            if((name.startsWith(SPARROW_RELEASE_PREFIX) || Arrays.stream(SPARROW_RELEASE_ALT_PREFIXES).anyMatch(name::startsWith))
+                    && file.length() >= MIN_VALID_SPARROW_RELEASE_SIZE) {
                 Matcher matcher = SPARROW_RELEASE_VERSION.matcher(name);
                 return matcher.find();
             }
@@ -574,8 +601,16 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         return false;
     }
 
+    public static boolean isSparrowManifest(File manifestFile) {
+        return manifestFile.getName().startsWith(SPARROW_RELEASE_PREFIX) && manifestFile.getName().endsWith(SPARROW_MANIFEST_SUFFIX);
+    }
+
     public void setSignatureFile(File signatureFile) {
         signature.set(signatureFile);
+    }
+
+    public void setInitialFile(File initialFile) {
+        initial.set(initialFile);
     }
 
     private static class Header extends GridPane {
@@ -598,15 +633,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             vBox.getChildren().addAll(headerLabel, descriptionLabel);
             add(vBox, 0, 0);
 
-            StackPane graphicContainer = new StackPane();
+            StackPane graphicContainer = new DialogImage(DialogImage.Type.SPARROW);
             graphicContainer.getStyleClass().add("graphic-container");
-            Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-            if (!image.isError()) {
-                ImageView imageView = new ImageView();
-                imageView.setSmooth(false);
-                imageView.setImage(image);
-                graphicContainer.getChildren().add(imageView);
-            }
             add(graphicContainer, 1, 0);
 
             ColumnConstraints textColumn = new ColumnConstraints();

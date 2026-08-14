@@ -33,7 +33,7 @@ public class ProxyTcpOverTlsTransport extends TcpOverTlsTransport {
         InetSocketAddress proxyAddr = new InetSocketAddress(proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT));
         socket = new Socket(new Proxy(Proxy.Type.SOCKS, proxyAddr));
         socket.connect(InetSocketAddress.createUnresolved(server.getHost(), server.getPortOrDefault(getDefaultPort())));
-        socket = sslSocketFactory.createSocket(socket, proxy.getHost(), proxy.getPortOrDefault(DEFAULT_PROXY_PORT), true);
+        socket = sslSocketFactory.createSocket(socket, server.getHost(), server.getPortOrDefault(getDefaultPort()), true);
         startHandshake((SSLSocket)socket);
     }
 }

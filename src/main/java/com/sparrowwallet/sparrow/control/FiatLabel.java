@@ -90,6 +90,13 @@ public class FiatLabel extends CopyableLabel {
 
     private void setValueAsText(long balance, UnitFormat unitFormat) {
         if(getCurrency() != null && getBtcRate() > 0.0) {
+            if(Config.get().isHideAmounts()) {
+                setText(CoinLabel.HIDDEN_AMOUNT_TEXT);
+                setTooltip(null);
+                setContextMenu(null);
+                return;
+            }
+
             BigDecimal satsBalance = BigDecimal.valueOf(balance);
             BigDecimal btcBalance = satsBalance.divide(BigDecimal.valueOf(Transaction.SATOSHIS_PER_BITCOIN));
             BigDecimal fiatBalance = btcBalance.multiply(BigDecimal.valueOf(getBtcRate()));

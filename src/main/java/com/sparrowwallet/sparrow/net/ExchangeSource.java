@@ -3,15 +3,19 @@ package com.sparrowwallet.sparrow.net;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.ExchangeRatesUpdatedEvent;
 import com.sparrowwallet.tern.http.client.HttpResponseException;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.apache.commons.lang3.time.DateUtils;
+import org.girod.javafx.svgimage.SVGImage;
+import org.girod.javafx.svgimage.SVGLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -100,7 +104,7 @@ public enum ExchangeSource {
 
                 HttpClientService httpClientService = AppServices.getHttpClientService();
                 try {
-                    Number[][] coinbaseData = httpClientService.requestJson(url, Number[][].class, Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*"));
+                    Number[][] coinbaseData = httpClientService.requestJson(url, Number[][].class, HTTP_HEADERS);
                     for(Number[] price : coinbaseData) {
                         Date date = new Date(price[0].longValue() * 1000);
                         historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), price[4].doubleValue());
@@ -121,7 +125,7 @@ public enum ExchangeSource {
             return historicalRates;
         }
     },
-    COINGECKO("Coingecko", "No historical rates") {
+    COINGECKO("Coingecko", "Historical rates for the last 365 days") {
         @Override
         public List<Currency> getSupportedCurrencies() {
             return getRates().rates.entrySet().stream().filter(rate -> "fiat".equals(rate.getValue().type) && isValidISO4217Code(rate.getKey().toUpperCase(Locale.ROOT)))
@@ -148,7 +152,7 @@ public enum ExchangeSource {
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                return httpClientService.requestJson(url, CoinGeckoRates.class, null);
+                return httpClientService.requestJson(url, CoinGeckoRates.class, HTTP_HEADERS);
             } catch(Exception e) {
                 if(log.isDebugEnabled()) {
                     log.warn("Error retrieving currency rates", e);
@@ -164,6 +168,11 @@ public enum ExchangeSource {
             long startDate = start.getTime() / 1000;
             long endDate = end.getTime() / 1000;
 
+            Calendar cal = Calendar.getInstance();
+            cal.add(Calendar.YEAR, -1);
+            startDate = Math.max(cal.getTimeInMillis() / 1000, startDate);
+            endDate = Math.max(cal.getTimeInMillis() / 1000, endDate);
+
             String url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=" + currency.getCurrencyCode() + "&from=" + startDate + "&to=" + endDate;
 
             if(log.isInfoEnabled()) {
@@ -173,7 +182,7 @@ public enum ExchangeSource {
             Map<Date, Double> historicalRates = new TreeMap<>();
             HttpClientService httpClientService = AppServices.getHttpClientService();
             try {
-                CoinGeckoHistoricalRates coinGeckoHistoricalRates = httpClientService.requestJson(url, CoinGeckoHistoricalRates.class, null);
+                CoinGeckoHistoricalRates coinGeckoHistoricalRates = httpClientService.requestJson(url, CoinGeckoHistoricalRates.class, HTTP_HEADERS);
                 for(List<Number> historicalRate : coinGeckoHistoricalRates.prices) {
                     Date date = new Date(historicalRate.get(0).longValue());
                     historicalRates.put(DateUtils.truncate(date, Calendar.DAY_OF_MONTH), historicalRate.get(1).doubleValue());
@@ -260,6 +269,7 @@ public enum ExchangeSource {
     };
 
     private static final Logger log = LoggerFactory.getLogger(ExchangeSource.class);
+    private static final Map<String, String> HTTP_HEADERS = Map.of("User-Agent", "Mozilla/4.0 (compatible; MSIE 9.0; Windows NT 6.1)", "Accept", "*/*");
 
     private final String name;
     private final String description;
@@ -295,6 +305,19 @@ public enum ExchangeSource {
     @Override
     public String toString() {
         return name;
+    }
+
+    public SVGImage getSVGImage() {
+        try {
+            URL url = AppServices.class.getResource("/image/exchangesource/" + name.toLowerCase(Locale.ROOT) + "-icon.svg");
+            if(url != null) {
+                return SVGLoader.load(url);
+            }
+        } catch(Exception e) {
+            log.error("Could not load exchange source image for " + name);
+        }
+
+        return null;
     }
 
     public static class CurrenciesService extends Service<List<Currency>> {

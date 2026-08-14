@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.gson.Gson;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
@@ -37,7 +36,7 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             String outputDescriptor = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(outputDescriptor);
@@ -46,24 +45,22 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
                 throw new IllegalArgumentException("Output descriptor describes a multisig wallet");
             }
 
+            if(policyType == PolicyType.SINGLE_SP && !descriptor.isSilentPayments()) {
+                throw new IllegalArgumentException("Export does not contain the spscan value for silent payments");
+            }
+
             if(descriptor.getScriptType() != scriptType) {
                 throw new IllegalArgumentException("Output descriptor describes a " + descriptor.getScriptType().getDescription() + " wallet");
             }
 
-            ExtendedKey xpub = descriptor.getSingletonExtendedPublicKey();
-            KeyDerivation keyDerivation = descriptor.getKeyDerivation(xpub);
-
-            Keystore keystore = new Keystore();
+            Wallet wallet = descriptor.toWallet();
+            Keystore keystore = wallet.getKeystores().getFirst();
             keystore.setLabel(getName());
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
-            keystore.setWalletModel(WalletModel.KEYSTONE);
-            keystore.setKeyDerivation(keyDerivation);
-            keystore.setExtendedPublicKey(xpub);
+            keystore.setWalletModel(getWalletModel());
 
             return keystore;
-        } catch (IllegalArgumentException e) {
-            throw new ImportException("Error getting " + getName() + " keystore - not an output descriptor", e);
-        } catch (Exception e) {
+        } catch(Exception e) {
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }
@@ -76,13 +73,13 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         //Use default of P2WPKH
-        Keystore keystore = getKeystore(ScriptType.P2WPKH, inputStream, "");
+        Keystore keystore = getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH, inputStream, "");
 
         Wallet wallet = new Wallet();
-        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(ScriptType.P2WPKH);
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, ScriptType.P2WPKH, wallet.getKeystores(), null));
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, ScriptType.P2WPKH, wallet.getKeystores(), null));
 
         try {
             wallet.checkWallet();

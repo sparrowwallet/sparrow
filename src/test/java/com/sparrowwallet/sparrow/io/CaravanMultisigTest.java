@@ -19,7 +19,7 @@ public class CaravanMultisigTest extends IoTest {
         CaravanMultisig ccMultisig = new CaravanMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("caravan-multisig-export-1.json"), null);
         Assertions.assertEquals("Test Wallet", wallet.getName());
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wsh(sortedmulti(2,mercury,venus,earth))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -28,6 +28,19 @@ public class CaravanMultisigTest extends IoTest {
         Assertions.assertEquals("m/48'/0'/0'/2'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assertions.assertEquals(WalletModel.TREZOR_1, wallet.getKeystores().get(0).getWalletModel());
         Assertions.assertEquals("xpub6EMVvcTUbaABdaPLaVWE72CjcN72URa5pKK1knrKLz1hKaDwUkgddc3832a8MHEpLyuow7MfjMRomt2iMtwPH4pWrFLft4JsquHjeZfKsYp", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+    }
+
+    @Test
+    public void importWallet2() {
+        CaravanMultisig ccMultisig = new CaravanMultisig();
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.importWallet(getInputStream("caravan-multisig-export-2.json"), null));
+    }
+
+    //A declared quorum larger than the keys provided would import as a smaller wallet deriving different addresses
+    @Test
+    public void importWallet3() {
+        CaravanMultisig ccMultisig = new CaravanMultisig();
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.importWallet(getInputStream("caravan-multisig-export-3.json"), null));
     }
 
     @Test

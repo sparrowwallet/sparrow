@@ -7,6 +7,7 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.sparrow.net.BlockStats;
 
 import java.util.List;
 import java.util.Map;
@@ -48,6 +49,9 @@ public interface BitcoindClientService {
     @JsonRpcMethod("getblockheader")
     VerboseBlockHeader getBlockHeader(@JsonRpcParam("blockhash") String blockhash);
 
+    @JsonRpcMethod("getblockstats")
+    BlockStats getBlockStats(@JsonRpcParam("blockhash") int hash_or_height);
+
     @JsonRpcMethod("getrawtransaction")
     Object getRawTransaction(@JsonRpcParam("txid") String txid, @JsonRpcParam("verbose") boolean verbose);
 
@@ -72,6 +76,9 @@ public interface BitcoindClientService {
     CreateLoadWalletResult createWallet(@JsonRpcParam("wallet_name") String name, @JsonRpcParam("disable_private_keys") boolean disablePrivateKeys, @JsonRpcParam("blank") boolean blank,
                                         @JsonRpcParam("passphrase") String passphrase, @JsonRpcParam("avoid_reuse") boolean avoidReuse, @JsonRpcParam("descriptors") boolean descriptors,
                                         @JsonRpcParam("load_on_startup") boolean loadOnStartup, @JsonRpcParam("external_signer") boolean externalSigner);
+
+    @JsonRpcMethod("loadwallet")
+    CreateLoadWalletResult loadWallet(@JsonRpcParam("filename") String name);
 
     @JsonRpcMethod("loadwallet")
     CreateLoadWalletResult loadWallet(@JsonRpcParam("filename") String name, @JsonRpcParam("load_on_startup") boolean loadOnStartup);

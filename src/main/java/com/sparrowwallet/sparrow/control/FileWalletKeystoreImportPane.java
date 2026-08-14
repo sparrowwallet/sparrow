@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletImportEvent;
@@ -30,8 +31,8 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class FileWalletKeystoreImportPane extends FileImportPane {
     private static final Logger log = LoggerFactory.getLogger(FileWalletKeystoreImportPane.class);
@@ -42,7 +43,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
     private String password;
 
     public FileWalletKeystoreImportPane(KeystoreFileImport importer) {
-        super(importer, importer.getName(), "Wallet import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png", importer.isKeystoreImportScannable(), importer.isFileFormatAvailable());
+        super(importer, importer.getName(), "Wallet import", importer.getKeystoreImportDescription(), importer.getWalletModel(), importer.isKeystoreImportScannable(), importer.isFileFormatAvailable());
         this.importer = importer;
     }
 
@@ -50,19 +51,25 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         this.fileName = fileName;
         this.password = password;
 
-        List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE);
+        List<PolicyAndScriptType> types = new ArrayList<>();
+        for(PolicyType policyType : List.of(PolicyType.SINGLE_HD, PolicyType.SINGLE_SP)) {
+            for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(policyType)) {
+                types.add(new PolicyAndScriptType(policyType, scriptType));
+            }
+        }
+
         if(wallets != null && !wallets.isEmpty()) {
-            if(wallets.size() == 1 && scriptTypes.contains(wallets.get(0).getScriptType())) {
-                Wallet wallet = wallets.get(0);
-                wallet.setPolicyType(PolicyType.SINGLE);
-                wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), null));
-                wallet.setName(importer.getName());
-                EventManager.get().post(new WalletImportEvent(wallets.get(0)));
-            } else {
-                scriptTypes.retainAll(wallets.stream().map(Wallet::getScriptType).collect(Collectors.toList()));
-                if(scriptTypes.isEmpty()) {
-                    throw new ImportException("No singlesig script types present in QR code");
-                }
+            wallets.stream().filter(w -> w.getPolicyType() == null).forEach(w -> w.setPolicyType(PolicyType.SINGLE_HD));
+            List<PolicyAndScriptType> walletTypes = wallets.stream().map(w -> new PolicyAndScriptType(w.getPolicyType(), w.getScriptType())).toList();
+            types.retainAll(walletTypes);
+            if(types.isEmpty()) {
+                throw new ImportException("No singlesig script types present in QR code");
+            }
+
+            if(types.size() == 1) {
+                Wallet wallet = wallets.stream().filter(w -> w.getPolicyType() == types.getFirst().policyType() && w.getScriptType() == types.getFirst().scriptType()).findFirst().orElseThrow(ImportException::new);
+                importScannedWallet(wallet);
+                return;
             }
         } else {
             try {
@@ -72,58 +79,75 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
             }
         }
 
-        setContent(getScriptTypeEntry(scriptTypes));
+        setContent(getScriptTypeEntry(types));
         setExpanded(true);
         importButton.setDisable(true);
     }
 
-    private void importWallet(ScriptType scriptType) throws ImportException {
+    private void importWallet(PolicyAndScriptType type) throws ImportException {
+        PolicyType policyType = type.policyType();
+        ScriptType scriptType = type.scriptType();
+
         if(wallets != null && !wallets.isEmpty()) {
-            Wallet wallet = wallets.stream().filter(wallet1 -> wallet1.getScriptType() == scriptType).findFirst().orElseThrow(ImportException::new);
-            wallet.setName(importer.getName());
-            wallet.setPolicyType(PolicyType.SINGLE);
-            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, wallet.getScriptType(), wallet.getKeystores(), null));
-            EventManager.get().post(new WalletImportEvent(wallet));
+            Wallet wallet = wallets.stream().filter(w -> w.getPolicyType() == policyType && w.getScriptType() == scriptType).findFirst().orElseThrow(ImportException::new);
+            importScannedWallet(wallet);
         } else {
             ByteArrayInputStream bais = new ByteArrayInputStream(fileBytes);
-            Keystore keystore = importer.getKeystore(scriptType, bais, password);
+            Keystore keystore = importer.getKeystore(policyType, scriptType, bais, password);
 
             Wallet wallet = new Wallet();
             wallet.setName(Files.getNameWithoutExtension(fileName));
-            wallet.setPolicyType(PolicyType.SINGLE);
+            wallet.setPolicyType(policyType);
             wallet.setScriptType(scriptType);
             wallet.getKeystores().add(keystore);
-            wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, scriptType, wallet.getKeystores(), null));
+            wallet.setDefaultPolicy(Policy.getPolicy(policyType, scriptType, wallet.getKeystores(), null));
 
             EventManager.get().post(new WalletImportEvent(wallet));
         }
     }
 
-    private Node getScriptTypeEntry(List<ScriptType> scriptTypes) {
-        Label label = new Label("Script Type:");
+    private void importScannedWallet(Wallet wallet) {
+        wallet.setName(importer.getName());
+        wallet.setDefaultPolicy(Policy.getPolicy(wallet.getPolicyType(), wallet.getScriptType(), wallet.getKeystores(), null));
+
+        Keystore keystore = wallet.getKeystores().getFirst();
+        if(keystore.getSource() == KeystoreSource.SW_WATCH) {
+            if(Keystore.DEFAULT_LABEL.equals(keystore.getLabel())) {
+                keystore.setLabel(importer.getName());
+            }
+            keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+            keystore.setWalletModel(importer.getWalletModel());
+        }
+
+        EventManager.get().post(new WalletImportEvent(wallet));
+    }
+
+    private Node getScriptTypeEntry(List<PolicyAndScriptType> types) {
+        Label label = new Label("Type:");
 
         HBox fieldBox = new HBox(5);
         fieldBox.setAlignment(Pos.CENTER_RIGHT);
-        ComboBox<ScriptType> scriptTypeComboBox = new ComboBox<>(FXCollections.observableArrayList(scriptTypes));
-        if(scriptTypes.contains(ScriptType.P2WPKH)) {
-            scriptTypeComboBox.setValue(ScriptType.P2WPKH);
+        ComboBox<PolicyAndScriptType> comboBox = new ComboBox<>(FXCollections.observableArrayList(types));
+        PolicyAndScriptType defaultType = new PolicyAndScriptType(PolicyType.SINGLE_HD, ScriptType.P2WPKH);
+        if(types.contains(defaultType)) {
+            comboBox.setValue(defaultType);
         }
-        scriptTypeComboBox.setConverter(new StringConverter<>() {
+        comboBox.setConverter(new StringConverter<>() {
             @Override
-            public String toString(ScriptType scriptType) {
-                return scriptType == null ? "" : scriptType.getDescription();
+            public String toString(PolicyAndScriptType type) {
+                return type == null ? "" : type.getDescription();
             }
 
             @Override
-            public ScriptType fromString(String string) {
+            public PolicyAndScriptType fromString(String string) {
                 return null;
             }
         });
-        scriptTypeComboBox.setMaxWidth(170);
+        comboBox.setMaxWidth(220);
 
         HelpLabel helpLabel = new HelpLabel();
-        helpLabel.setHelpText("P2WPKH is a Native Segwit type and is usually the best choice for new wallets.\nP2SH-P2WPKH is a Wrapped Segwit type and is a reasonable choice for the widest compatibility.\nP2PKH is a Legacy type and should be avoided for new wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
-        fieldBox.getChildren().addAll(scriptTypeComboBox, helpLabel);
+        helpLabel.setHelpText("Native Segwit is usually the best choice for new wallets.\nTaproot is newer and supports both HD and SP (silent payments) wallets.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are importing.");
+        fieldBox.getChildren().addAll(comboBox, helpLabel);
 
         Region region = new Region();
         HBox.setHgrow(region, Priority.SOMETIMES);
@@ -133,7 +157,7 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
             showHideLink.setVisible(true);
             setExpanded(false);
             try {
-                importWallet(scriptTypeComboBox.getValue());
+                importWallet(comboBox.getValue());
             } catch(ImportException e) {
                 log.error("Error importing file", e);
                 String errorMessage = e.getMessage();
@@ -154,8 +178,14 @@ public class FileWalletKeystoreImportPane extends FileImportPane {
         contentBox.setPadding(new Insets(10, 30, 10, 30));
         contentBox.setPrefHeight(60);
 
-        Platform.runLater(scriptTypeComboBox::requestFocus);
+        Platform.runLater(comboBox::requestFocus);
 
         return contentBox;
+    }
+
+    protected record PolicyAndScriptType(PolicyType policyType, ScriptType scriptType) {
+        public String getDescription() {
+            return scriptType.getDescription() + (policyType == PolicyType.SINGLE_SP ? " SP" : " HD");
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.net.FeeRatesSource;
 import javafx.application.Platform;
@@ -7,6 +8,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Slider;
 import javafx.util.StringConverter;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -14,9 +16,11 @@ import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class FeeRangeSlider extends Slider {
     private static final double FEE_RATE_SCROLL_INCREMENT = 0.01;
+    private static final DecimalFormat INTEGER_FEE_RATE_FORMAT = new DecimalFormat("0");
+    private static final DecimalFormat FRACTIONAL_FEE_RATE_FORMAT = new DecimalFormat("0.###");
 
     public FeeRangeSlider() {
-        super(0, FEE_RATES_RANGE.size() - 1, 0);
+        super(0, AppServices.getFeeRatesRange().size() - 1, 0);
         setMajorTickUnit(1);
         setMinorTickCount(0);
         setSnapToTicks(false);
@@ -27,11 +31,11 @@ public class FeeRangeSlider extends Slider {
         setLabelFormatter(new StringConverter<>() {
             @Override
             public String toString(Double object) {
-                Long feeRate = LONG_FEE_RATES_RANGE.get(object.intValue());
+                Double feeRate = AppServices.getLongFeeRatesRange().get(object.intValue());
                 if(isLongFeeRange() && feeRate >= 1000) {
-                    return feeRate / 1000 + "k";
+                    return INTEGER_FEE_RATE_FORMAT.format(feeRate / 1000) + "k";
                 }
-                return Long.toString(feeRate);
+                return feeRate > 0d && feeRate < Transaction.DEFAULT_MIN_RELAY_FEE ? FRACTIONAL_FEE_RATE_FORMAT.format(feeRate) : INTEGER_FEE_RATE_FORMAT.format(feeRate);
             }
 
             @Override
@@ -51,10 +55,10 @@ public class FeeRangeSlider extends Slider {
         setOnScroll(event -> {
             if(event.getDeltaY() != 0) {
                 double newFeeRate = getFeeRate() + (event.getDeltaY() > 0 ? FEE_RATE_SCROLL_INCREMENT : -FEE_RATE_SCROLL_INCREMENT);
-                if(newFeeRate < LONG_FEE_RATES_RANGE.get(0)) {
-                    newFeeRate = LONG_FEE_RATES_RANGE.get(0);
-                } else if(newFeeRate > LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1)) {
-                    newFeeRate = LONG_FEE_RATES_RANGE.get(LONG_FEE_RATES_RANGE.size() - 1);
+                if(newFeeRate < AppServices.getLongFeeRatesRange().getFirst()) {
+                    newFeeRate = AppServices.getLongFeeRatesRange().getFirst();
+                } else if(newFeeRate > AppServices.getLongFeeRatesRange().getLast()) {
+                    newFeeRate = AppServices.getLongFeeRatesRange().getLast();
                 }
                 setFeeRate(newFeeRate);
             }
@@ -62,27 +66,79 @@ public class FeeRangeSlider extends Slider {
     }
 
     public double getFeeRate() {
-        return Math.pow(2.0, getValue());
+        return getFeeRate(AppServices.getMinimumRelayFeeRate());
+    }
+
+    public double getFeeRate(Double minRelayFeeRate) {
+        if(minRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
+            return Math.pow(2.0, getValue());
+        }
+
+        if(getValue() < 1.0d) {
+            if(minRelayFeeRate == 0.0d) {
+                return getValue();
+            }
+            return Math.pow(minRelayFeeRate, 1.0d - getValue());
+        }
+
+        return Math.pow(2.0, getValue() - 1.0d);
     }
 
     public void setFeeRate(double feeRate) {
-        double value = Math.log(feeRate) / Math.log(2);
+        setFeeRate(feeRate, AppServices.getMinimumRelayFeeRate());
+    }
+
+    public void setFeeRate(double feeRate, Double minRelayFeeRate) {
+        double value = getValue(feeRate, minRelayFeeRate);
         updateMaxFeeRange(value);
         setValue(value);
     }
 
+    private double getValue(double feeRate, Double minRelayFeeRate) {
+        double value;
+
+        if(minRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
+            value = Math.log(feeRate) / Math.log(2);
+        } else {
+            if(feeRate < Transaction.DEFAULT_MIN_RELAY_FEE) {
+                if(minRelayFeeRate == 0.0d) {
+                    return feeRate;
+                }
+                value = 1.0d - (Math.log(feeRate) / Math.log(minRelayFeeRate));
+            } else {
+                value = (Math.log(feeRate) / Math.log(2.0)) + 1.0d;
+            }
+        }
+
+        return value;
+    }
+
+    public void updateFeeRange(Double minRelayFeeRate, Double previousMinRelayFeeRate) {
+        if(minRelayFeeRate != null && previousMinRelayFeeRate != null) {
+            setFeeRate(getFeeRate(previousMinRelayFeeRate), minRelayFeeRate);
+        }
+        setMinorTickCount(1);
+        setMinorTickCount(0);
+    }
+
     private void updateMaxFeeRange(double value) {
         if(value >= getMax() && !isLongFeeRange()) {
-            setMax(LONG_FEE_RATES_RANGE.size() - 1);
+            if(AppServices.getMinimumRelayFeeRate() < Transaction.DEFAULT_MIN_RELAY_FEE) {
+                setMin(1.0d);
+            }
+            setMax(AppServices.getLongFeeRatesRange().size() - 1);
             updateTrackHighlight();
         } else if(value == getMin() && isLongFeeRange()) {
-            setMax(FEE_RATES_RANGE.size() - 1);
+            if(AppServices.getMinimumRelayFeeRate() < Transaction.DEFAULT_MIN_RELAY_FEE) {
+                setMin(0.0d);
+            }
+            setMax(AppServices.getFeeRatesRange().size() - 1);
             updateTrackHighlight();
         }
     }
 
-    private boolean isLongFeeRange() {
-        return getMax() > FEE_RATES_RANGE.size() - 1;
+    public boolean isLongFeeRange() {
+        return getMax() > AppServices.getFeeRatesRange().size() - 1;
     }
 
     public void updateTrackHighlight() {
@@ -137,9 +193,9 @@ public class FeeRangeSlider extends Slider {
     }
 
     private int getPercentageOfFeeRange(Double feeRate) {
-        double index = Math.log(feeRate) / Math.log(2);
+        double index = getValue(feeRate, AppServices.getMinimumRelayFeeRate());
         if(isLongFeeRange()) {
-            index *= ((double)FEE_RATES_RANGE.size() / (LONG_FEE_RATES_RANGE.size())) * 0.99;
+            index *= ((double)AppServices.getFeeRatesRange().size() / (AppServices.getLongFeeRatesRange().size())) * 0.99;
         }
         return (int)Math.round(index * 10.0);
     }

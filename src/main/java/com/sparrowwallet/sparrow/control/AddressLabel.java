@@ -22,6 +22,7 @@ public class AddressLabel extends IdLabel {
 
     public AddressLabel(String text) {
         super(text);
+        setSkin(new AddressTextFieldSkin(this));
         addressProperty().addListener((observable, oldValue, newValue) -> {
             setAddressAsText(newValue);
             contextMenu.copyHex.setText("Copy " + newValue.getOutputScriptDataType());

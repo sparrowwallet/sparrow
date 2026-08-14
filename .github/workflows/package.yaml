@@ -5,50 +5,70 @@ on: workflow_dispatch
 permissions:
   contents: read
 
+env:
+  JDK_JAVAC_OPTIONS: '-Xlint:-module'
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-2022, ubuntu-20.04, ubuntu-22.04-arm, macos-13, macos-14]
+        os: [windows-2022, ubuntu-22.04, ubuntu-22.04-arm, macos-15-intel, macos-14]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
-          submodules: true
-      - name: Set up JDK 22.0.2
-        uses: actions/setup-java@v4
+          submodules: recursive
+      - name: Clear Java tool-cache for reproducibility
+        shell: bash
+        run: rm -rf "$RUNNER_TOOL_CACHE"/Java_*
+      - name: Set up JDK 25.0.2
+        uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
         with:
           distribution: 'temurin'
-          java-version: '22.0.2'
+          java-version: '25.0.2'
       - name: Show Build Versions
         run: ./gradlew -v
       - name: Build with Gradle
         run: ./gradlew jpackage
-      - name: Package zip distribution
-        if: ${{ runner.os == 'Windows' || runner.os == 'macOS' }}
+      - name: Codesign, package and notarize macOS distribution
+        if: ${{ runner.os == 'macOS' }}
+        uses: sparrowwallet/github-actions/codesign-macos@6eeb7bf9b882cf89ff96b77f99bcf487b9d33992 # v1
+        with:
+          app-name: Sparrow
+          certificate: ${{ secrets.MACOS_CERTIFICATE }}
+          certificate-password: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          apple-id: ${{ secrets.MACOS_NOTARIZATION_APPLE_ID }}
+          team-id: ${{ secrets.MACOS_NOTARIZATION_TEAM_ID }}
+          notarization-password: ${{ secrets.MACOS_NOTARIZATION_PASSWORD }}
+      - name: Package Windows zip distribution
+        if: ${{ runner.os == 'Windows' }}
         run: ./gradlew packageZipDistribution
-      - name: Package tar distribution
+      - name: Package Linux tar distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew packageTarDistribution
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Repackage Linux deb distribution
+        if: ${{ runner.os == 'Linux' }}
+        run: ./repackage.sh
+      - name: Upload Artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }}
           path: |
             build/jpackage/*
             !build/jpackage/Sparrow/
+            !build/jpackage/Sparrow.app/
       - name: Headless build with Gradle
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew -Djava.awt.headless=true clean jpackage
-      - name: Package headless tar distribution
+      - name: Package Linux headless tar distribution
         if: ${{ runner.os == 'Linux' }}
         run: ./gradlew -Djava.awt.headless=true packageTarDistribution
-      - name: Rename Headless Artifacts
+      - name: Repackage Linux headless deb distribution
         if: ${{ runner.os == 'Linux' }}
-        run: for f in build/jpackage/sparrow*; do mv -v "$f" "${f/sparrow/sparrow-server}"; done;
+        run: ./repackage.sh
       - name: Upload Headless Artifact
         if: ${{ runner.os == 'Linux' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: Sparrow Build - ${{ runner.os }} ${{ runner.arch }} Headless
           path: |

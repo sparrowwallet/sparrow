@@ -1,22 +1,34 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.lark.DeviceException;
 import com.sparrowwallet.lark.Lark;
 import com.sparrowwallet.lark.bitbox02.BitBoxFileNoiseConfig;
+import com.sparrowwallet.lark.trezor.TrezorFileNoiseConfig;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.control.BitBoxPairingDialog;
+import com.sparrowwallet.sparrow.control.TextfieldDialog;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.MapChangeListener;
+import javafx.collections.ObservableMap;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.layout.HBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +37,9 @@ import javax.smartcardio.CardNotPresentException;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Hwi {
@@ -33,8 +47,9 @@ public class Hwi {
     private static final String HWI_HOME_DIR = "hwi";
     private static final String LARK_HOME_DIR = "lark";
     private static final String BITBOX_FILENAME = "bitbox02.json";
+    private static final String TREZOR_FILENAME = "trezor.json";
 
-    private static boolean isPromptActive = false;
+    private static volatile boolean isPromptActive = false;
 
     private final Set<byte[]> newDeviceRegistrations = new HashSet<>();
 
@@ -82,7 +97,7 @@ public class Hwi {
             } catch(CardNotPresentException e) {
                 //ignore
             } catch(CardException e) {
-                log.error("Error reading card", e);
+                log.info("Error reading card", e);
             }
         }
 
@@ -131,25 +146,38 @@ public class Hwi {
         }
     }
 
-    public Map<StandardAccount, String> getXpubs(Device device, String passphrase, Map<StandardAccount, String> accountDerivationPaths) throws ImportException {
-        Map<StandardAccount, String> accountXpubs = new LinkedHashMap<>();
-        for(Map.Entry<StandardAccount, String> entry : accountDerivationPaths.entrySet()) {
+    public Map<WalletType, ExtendedKey> getXpubs(Device device, String passphrase, Map<WalletType, String> accountDerivationPaths, Map<WalletType, ExtendedKey> accountXpubs) throws ImportException {
+        for(Map.Entry<WalletType, String> entry : accountDerivationPaths.entrySet()) {
             accountXpubs.put(entry.getKey(), getXpub(device, passphrase, entry.getValue()));
         }
 
         return accountXpubs;
     }
 
-    public String getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
+    public ExtendedKey getXpub(Device device, String passphrase, String derivationPath) throws ImportException {
         try {
             Lark lark = getLark(passphrase);
             ExtendedKey xpub = lark.getPubKeyAtPath(device.getType(), device.getPath(), derivationPath);
             isPromptActive = false;
-            return xpub.toString();
+            return xpub;
         } catch(DeviceException e) {
             throw new ImportException(e.getMessage(), e);
         } catch(RuntimeException e) {
             log.error("Error retrieving xpub", e);
+            throw e;
+        }
+    }
+
+    public SilentPaymentScanAddress getSpscan(Device device, String passphrase, String derivationPath) throws ImportException {
+        try {
+            Lark lark = getLark(passphrase);
+            SilentPaymentScanAddress spscan = lark.getSpscanAtPath(device.getType(), device.getPath(), derivationPath);
+            isPromptActive = false;
+            return spscan;
+        } catch(DeviceException e) {
+            throw new ImportException(e.getMessage(), e);
+        } catch(RuntimeException e) {
+            log.error("Error retrieving spscan", e);
             throw e;
         }
     }
@@ -222,6 +250,7 @@ public class Hwi {
     private Lark getLark(String passphrase, OutputDescriptor walletDescriptor, String walletName, byte[] walletRegistration) {
         Lark lark = new Lark(AppServices.getHttpClientService());
         lark.setBitBoxNoiseConfig(new BitBoxFxNoiseConfig());
+        lark.setTrezorNoiseConfig(new TrezorFxNoiseConfig());
         if(passphrase != null) {
             lark.setPassphrase(passphrase);
         }
@@ -240,7 +269,7 @@ public class Hwi {
     private static void deleteHwiDir() {
         try {
             if(OsType.getCurrent() == OsType.MACOS || OsType.getCurrent() == OsType.WINDOWS) {
-                File hwiHomeDir = new File(Storage.getSparrowDir(), HWI_HOME_DIR);
+                File hwiHomeDir = new File(Storage.getCacheDir(), HWI_HOME_DIR);
                 if(hwiHomeDir.exists()) {
                     IOUtils.deleteDirectory(hwiHomeDir);
                 }
@@ -407,7 +436,7 @@ public class Hwi {
         }
     }
 
-    public static class GetXpubService extends Service<String> {
+    public static class GetXpubService extends Service<ExtendedKey> {
         private final Device device;
         private final String passphrase;
         private final String derivationPath;
@@ -419,9 +448,9 @@ public class Hwi {
         }
 
         @Override
-        protected Task<String> createTask() {
+        protected Task<ExtendedKey> createTask() {
             return new Task<>() {
-                protected String call() throws ImportException {
+                protected ExtendedKey call() throws ImportException {
                     Hwi hwi = new Hwi();
                     return hwi.getXpub(device, passphrase, derivationPath);
                 }
@@ -429,23 +458,48 @@ public class Hwi {
         }
     }
 
-    public static class GetXpubsService extends Service<Map<StandardAccount, String>> {
+    public static class GetSpscanService extends Service<SilentPaymentScanAddress> {
         private final Device device;
         private final String passphrase;
-        private final Map<StandardAccount, String> accountDerivationPaths;
+        private final String derivationPath;
 
-        public GetXpubsService(Device device, String passphrase, Map<StandardAccount, String> accountDerivationPaths) {
+        public GetSpscanService(Device device, String passphrase, String derivationPath) {
+            this.device = device;
+            this.passphrase = passphrase;
+            this.derivationPath = derivationPath;
+        }
+
+        @Override
+        protected Task<SilentPaymentScanAddress> createTask() {
+            return new Task<>() {
+                protected SilentPaymentScanAddress call() throws ImportException {
+                    Hwi hwi = new Hwi();
+                    return hwi.getSpscan(device, passphrase, derivationPath);
+                }
+            };
+        }
+    }
+
+    public static class GetXpubsService extends Service<Map<WalletType, ExtendedKey>> {
+        private final Device device;
+        private final String passphrase;
+        private final Map<WalletType, String> accountDerivationPaths;
+
+        public GetXpubsService(Device device, String passphrase, Map<WalletType, String> accountDerivationPaths) {
             this.device = device;
             this.passphrase = passphrase;
             this.accountDerivationPaths = accountDerivationPaths;
         }
 
         @Override
-        protected Task<Map<StandardAccount, String>> createTask() {
+        protected Task<Map<WalletType, ExtendedKey>> createTask() {
             return new Task<>() {
-                protected Map<StandardAccount, String> call() throws ImportException {
+                protected Map<WalletType, ExtendedKey> call() throws ImportException {
                     Hwi hwi = new Hwi();
-                    return hwi.getXpubs(device, passphrase, accountDerivationPaths);
+                    updateProgress(0, accountDerivationPaths.size());
+                    ObservableMap<WalletType, ExtendedKey> accountXpubs = FXCollections.observableMap(new LinkedHashMap<>());
+                    accountXpubs.addListener((MapChangeListener<? super WalletType, ? super ExtendedKey>) _ -> updateProgress(accountXpubs.size(), accountDerivationPaths.size()));
+                    return hwi.getXpubs(device, passphrase, accountDerivationPaths, accountXpubs);
                 }
             };
         }
@@ -487,10 +541,25 @@ public class Hwi {
     }
 
     private static final class BitBoxFxNoiseConfig extends BitBoxFileNoiseConfig {
+        private static final AtomicBoolean attestationWarningShown = new AtomicBoolean(false);
+
         private BitBoxPairingDialog pairingDialog;
 
         public BitBoxFxNoiseConfig() {
-            super(Path.of(Storage.getSparrowHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
+            super(Path.of(Storage.getDataHome().getAbsolutePath(), LARK_HOME_DIR, BITBOX_FILENAME).toFile());
+        }
+
+        @Override
+        public void attestationCheck(boolean result) {
+            if(!result) {
+                log.warn("BitBox02 attestation check failed, device may not be genuine");
+                //Devices are opened repeatedly while enumerating, so warn only once per session
+                if(attestationWarningShown.compareAndSet(false, true)) {
+                    Platform.runLater(() -> AppServices.showWarningDialog("BitBox02 Attestation Failed",
+                            "This BitBox02 did not pass the attestation check, which means it may not be a genuine device.\n\n" +
+                                    "Do not use it to store funds until you have verified it externally."));
+                }
+            }
         }
 
         @Override
@@ -535,4 +604,89 @@ public class Hwi {
             return confirmedDevice.get();
         }
     }
+
+    private static final class TrezorFxNoiseConfig extends TrezorFileNoiseConfig {
+        private String deviceInfo;
+
+        public TrezorFxNoiseConfig() {
+            super(Path.of(Storage.getDataHome().getAbsolutePath(), LARK_HOME_DIR, TREZOR_FILENAME).toFile());
+        }
+
+        @Override
+        public String promptForPairingCode() {
+            CompletableFuture<String> future = new CompletableFuture<>();
+            Platform.runLater(() -> {
+                TextfieldDialog textfieldDialog = new TextfieldDialog();
+                textfieldDialog.initOwner(AppServices.getActiveWindow());
+                textfieldDialog.setTitle("Enter Pairing Code");
+                textfieldDialog.setHeaderText("Enter the code shown on the " + deviceInfo + ":");
+                textfieldDialog.getDialogPane().setPrefWidth(300);
+                textfieldDialog.getEditor().setOnAction(_ -> textfieldDialog.setResult(textfieldDialog.getEditor().getText()));
+                textfieldDialog.getEditor().setTextFormatter(new TextFormatter<>(change -> {
+                    String newText = change.getControlNewText();
+                    if(newText.matches("\\d*")) {
+                        return change;
+                    }
+                    return null;
+                }));
+                textfieldDialog.getEditor().setStyle("-fx-font-size: 30px;");
+                HBox.setMargin(textfieldDialog.getEditor(), new Insets(0, 65, 0, 65));
+                textfieldDialog.getEditor().requestFocus();
+                textfieldDialog.showAndWait().ifPresentOrElse(future::complete, () -> future.complete(null));
+            });
+
+            try {
+                isPromptActive = true;
+                return future.get(); // Block until dialog is closed
+            } catch (InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            } finally {
+                isPromptActive = false;
+            }
+        }
+
+        @Override
+        public boolean confirmPairing(String deviceInfo) {
+            this.deviceInfo = deviceInfo;
+            CompletableFuture<ButtonType> future = new CompletableFuture<>();
+            Platform.runLater(() -> {
+                AppServices.showAlertDialog("Pairing Required", "Pair the " + deviceInfo + " with " + SparrowWallet.APP_NAME + "?",
+                        Alert.AlertType.CONFIRMATION, ButtonType.YES, ButtonType.NO).ifPresentOrElse(future::complete, () -> future.complete(null));
+            });
+
+            try {
+                isPromptActive = true;
+                return future.get() == ButtonType.YES; // Block until dialog is closed
+            } catch (InterruptedException | ExecutionException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            } finally {
+                isPromptActive = false;
+            }
+        }
+
+        @Override
+        public void displayPairingCode(String code) {
+            super.displayPairingCode(code);
+        }
+
+        @Override
+        public String getAppName() {
+            return SparrowWallet.APP_NAME;
+        }
+
+        @Override
+        public void pairingFailed(String reason) {
+            Platform.runLater(() -> AppServices.showErrorDialog("Pairing Failed", "Pairing failed: " + reason));
+        }
+
+        @Override
+        public void pairingSuccessful(String deviceInfo) {
+            this.deviceInfo = deviceInfo;
+            Platform.runLater(() -> AppServices.showSuccessDialog("Pairing Successful", "The " + deviceInfo + " has been successfully paired."));
+        }
+    }
+
+    public record WalletType(ScriptType scriptType, StandardAccount standardAccount) {}
 }

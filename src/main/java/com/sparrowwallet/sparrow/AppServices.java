@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.crypto.Key;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.*;
+import com.sparrowwallet.sparrow.control.DialogImage;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.Auth47;
@@ -25,6 +26,8 @@ import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.net.*;
+import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
+import io.reactivex.subjects.PublishSubject;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
@@ -42,7 +45,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
@@ -66,8 +68,12 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.sparrowwallet.sparrow.AppController.CONNECTION_FAILED_PREFIX;
 import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
 
 public class AppServices {
@@ -87,8 +93,7 @@ public class AppServices {
     private static final String TOR_DEFAULT_PROXY_CIRCUIT_ID = "default";
 
     public static final List<Integer> TARGET_BLOCKS_RANGE = List.of(1, 2, 3, 4, 5, 10, 25, 50);
-    public static final List<Long> LONG_FEE_RATES_RANGE = List.of(1L, 2L, 4L, 8L, 16L, 32L, 64L, 128L, 256L, 512L, 1024L, 2048L, 4096L, 8192L);
-    public static final List<Long> FEE_RATES_RANGE = LONG_FEE_RATES_RANGE.subList(0, LONG_FEE_RATES_RANGE.size() - 3);
+    private static final List<Double> LONG_FEE_RATES_RANGE = List.of(1d, 2d, 4d, 8d, 16d, 32d, 64d, 128d, 256d, 512d, 1024d, 2048d, 4096d, 8192d);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
 
@@ -103,6 +108,8 @@ public class AppServices {
     private final Map<Window, List<WalletTabData>> walletWindows = new LinkedHashMap<>();
 
     private TrayManager trayManager;
+
+    private final PublishSubject<NewBlockEvent> newBlockSubject = PublishSubject.create();
 
     private static Image windowIcon;
 
@@ -126,11 +133,17 @@ public class AppServices {
 
     private static BlockHeader latestBlockHeader;
 
+    private static final Map<Integer, BlockSummary> blockSummaries = new ConcurrentHashMap<>();
+
     private static Map<Integer, Double> targetBlockFeeRates;
+
+    private static Double nextBlockMedianFeeRate;
 
     private static final TreeMap<Date, Set<MempoolRateSize>> mempoolHistogram = new TreeMap<>();
 
     private static Double minimumRelayFeeRate;
+
+    private static Double serverMinimumRelayFeeRate;
 
     private static CurrencyRate fiatCurrencyExchangeRate;
 
@@ -182,6 +195,12 @@ public class AppServices {
     private AppServices(Application application, InteractionServices interactionServices) {
         this.application = application;
         this.interactionServices = interactionServices;
+
+        newBlockSubject.buffer(4, TimeUnit.SECONDS)
+                .filter(newBlockEvents -> !newBlockEvents.isEmpty())
+                .observeOn(JavaFxScheduler.platform())
+                .subscribe(this::fetchBlockSummaries, exception -> log.error("Error fetching block summaries", exception));
+
         EventManager.get().register(this);
     }
 
@@ -195,6 +214,7 @@ public class AppServices {
         preventSleepService = createPreventSleepService();
 
         onlineProperty.addListener(onlineServicesListener);
+        minimumRelayFeeRate = getConfiguredMinimumRelayFeeRate(config);
 
         if(config.getMode() == Mode.ONLINE) {
             if(config.requiresInternalTor()) {
@@ -261,7 +281,7 @@ public class AppServices {
         }
 
         if(Tor.getDefault() != null) {
-            Tor.getDefault().getTorManager().destroy(true, success -> {});
+            Tor.getDefault().close();
         }
     }
 
@@ -291,12 +311,6 @@ public class AppServices {
             if(event != null) {
                 EventManager.get().post(event);
             }
-
-            FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
-            feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
-            if(event instanceof ConnectionEvent && feeRatesSource.supportsNetwork(Network.get()) && feeRatesSource.isExternal()) {
-                EventManager.get().post(new FeeRatesSourceChangedEvent(feeRatesSource));
-            }
         });
         connectionService.setOnFailed(failEvent -> {
             //Close connection here to create a new transport next time we try
@@ -316,6 +330,9 @@ public class AppServices {
                                 "\n\nChange the configured server certificate if you would like to proceed.");
                     } else {
                         crtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
+                        if(crtFile == null) {
+                            crtFile = Storage.getCaCertificateFile(tlsServerException.getServer().getHost());
+                        }
                         if(crtFile != null) {
                             Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
                                     "\n\nThis may be simply due to a certificate renewal, or it may indicate a man-in-the-middle attack." +
@@ -352,15 +369,18 @@ public class AppServices {
             onlineProperty.setValue(false);
             onlineProperty.addListener(onlineServicesListener);
 
+            log.debug("Connection failed", failEvent.getSource().getException());
             if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
-                Config.get().changePublicServer();
-                connectionService.setPeriod(Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS));
+                boolean changed = changePublicServer();
+                connectionService.setPeriod(changed ? Duration.seconds(PUBLIC_SERVER_RETRY_PERIOD_SECS) : Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
+                EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
+                if(!changed) {
+                    Platform.runLater(() -> EventManager.get().post(new StatusEvent(CONNECTION_FAILED_PREFIX + "No public servers available that can serve the open wallets, retrying later...")));
+                }
             } else {
                 connectionService.setPeriod(Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
+                EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
             }
-
-            log.debug("Connection failed", failEvent.getSource().getException());
-            EventManager.get().post(new ConnectionFailedEvent(failEvent.getSource().getException()));
         });
 
         return connectionService;
@@ -477,6 +497,26 @@ public class AppServices {
             } else {
                 preventSleepService.cancel();
             }
+        }
+    }
+
+    private void fetchFeeRates() {
+        if(feeRatesService != null && !feeRatesService.isRunning() && Config.get().getMode() != Mode.OFFLINE) {
+            feeRatesService = createFeeRatesService();
+            feeRatesService.start();
+        }
+    }
+
+    private void fetchBlockSummaries(List<NewBlockEvent> newBlockEvents) {
+        if(isConnected()) {
+            ElectrumServer.BlockSummaryService blockSummaryService = new ElectrumServer.BlockSummaryService(newBlockEvents);
+            blockSummaryService.setOnSucceeded(_ -> {
+                EventManager.get().post(blockSummaryService.getValue());
+            });
+            blockSummaryService.setOnFailed(failedState -> {
+                log.error("Error fetching block summaries", failedState.getSource().getException());
+            });
+            blockSummaryService.start();
         }
     }
 
@@ -705,6 +745,10 @@ public class AppServices {
         return latestBlockHeader;
     }
 
+    public static Map<Integer, BlockSummary> getBlockSummaries() {
+        return blockSummaries;
+    }
+
     public static Double getDefaultFeeRate() {
         int defaultTarget = TARGET_BLOCKS_RANGE.get((TARGET_BLOCKS_RANGE.size() / 2) - 1);
         return getTargetBlockFeeRates() == null ? getFallbackFeeRate() : getTargetBlockFeeRates().get(defaultTarget);
@@ -714,6 +758,30 @@ public class AppServices {
         Optional<Double> optMinFeeRate = getTargetBlockFeeRates().values().stream().min(Double::compareTo);
         Double minRate = optMinFeeRate.orElse(getFallbackFeeRate());
         return Math.max(minRate, Transaction.DUST_RELAY_TX_FEE);
+    }
+
+    public static List<Double> getLongFeeRatesRange() {
+        if(minimumRelayFeeRate == null || minimumRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
+            return LONG_FEE_RATES_RANGE;
+        } else {
+            List<Double> longFeeRatesRange = new ArrayList<>();
+            longFeeRatesRange.add(minimumRelayFeeRate);
+            longFeeRatesRange.addAll(LONG_FEE_RATES_RANGE);
+            return longFeeRatesRange;
+        }
+    }
+
+    public static List<Double> getFeeRatesRange() {
+        if(minimumRelayFeeRate == null || minimumRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
+            return LONG_FEE_RATES_RANGE.subList(0, LONG_FEE_RATES_RANGE.size() - 3);
+        } else {
+            List<Double> longFeeRatesRange = getLongFeeRatesRange();
+            return longFeeRatesRange.subList(0, longFeeRatesRange.size() - 4);
+        }
+    }
+
+    public static Double getNextBlockMedianFeeRate() {
+        return nextBlockMedianFeeRate == null ? getDefaultFeeRate() : nextBlockMedianFeeRate;
     }
 
     public static double getFallbackFeeRate() {
@@ -750,8 +818,16 @@ public class AppServices {
         });
     }
 
+    public static Double getConfiguredMinimumRelayFeeRate(Config config) {
+        return config.getMinRelayFeeRate() >= 0d && config.getMinRelayFeeRate() < Transaction.DEFAULT_MIN_RELAY_FEE ? config.getMinRelayFeeRate() : null;
+    }
+
     public static Double getMinimumRelayFeeRate() {
         return minimumRelayFeeRate == null ? Transaction.DEFAULT_MIN_RELAY_FEE : minimumRelayFeeRate;
+    }
+
+    public static Double getServerMinimumRelayFeeRate() {
+        return serverMinimumRelayFeeRate;
     }
 
     public static CurrencyRate getFiatCurrencyExchangeRate() {
@@ -767,8 +843,8 @@ public class AppServices {
     }
 
     public static void addPayjoinURI(BitcoinURI bitcoinURI) {
-        if(bitcoinURI.getPayjoinUrl() == null) {
-            throw new IllegalArgumentException("Not a payjoin URI");
+        if(bitcoinURI.getPayjoinUrl() == null || bitcoinURI.getAddress() == null) {
+            throw new IllegalArgumentException("Not a valid payjoin URI");
         }
         payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
     }
@@ -780,6 +856,10 @@ public class AppServices {
     public static void clearTransactionHistoryCache(Wallet wallet) {
         ElectrumServer.clearRetrievedScriptHashes(wallet);
 
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.isValid()) {
+            ElectrumServer.releaseSilentPaymentSubscription(wallet.getSilentPaymentScanAddress());
+        }
+
         for(Wallet childWallet : wallet.getChildWallets()) {
             if(childWallet.isNested()) {
                 AppServices.clearTransactionHistoryCache(childWallet);
@@ -789,6 +869,22 @@ public class AppServices {
 
     public static boolean isWalletFile(File file) {
         return Storage.isWalletFile(file);
+    }
+
+    public boolean changePublicServer() {
+        List<PolicyType> policyTypes = getOpenWallets().keySet().stream().map(Wallet::getPolicyType).filter(Objects::nonNull).collect(Collectors.toList());
+        return changePublicServer(policyTypes.isEmpty() ? List.of(PolicyType.SINGLE_HD) : policyTypes);
+    }
+
+    private boolean changePublicServer(List<PolicyType> policyTypes) {
+        Config config = Config.get();
+        List<Server> otherServers = PublicElectrumServer.getServers().stream().filter(pes -> pes.supportsAllPolicyTypes(policyTypes))
+                .map(PublicElectrumServer::getServer).filter(server -> !server.equals(config.getPublicElectrumServer())).collect(Collectors.toList());
+        if(!otherServers.isEmpty()) {
+            config.setPublicElectrumServer(otherServers.get(ThreadLocalRandom.current().nextInt(otherServers.size())));
+            return true;
+        }
+        return false;
     }
 
     public static Optional<ButtonType> showWarningDialog(String title, String content, ButtonType... buttons) {
@@ -819,8 +915,13 @@ public class AppServices {
         Stage stage = (Stage)window;
         stage.getIcons().add(getWindowIcon());
 
-        if(stage.getScene() != null && Config.get().getTheme() == Theme.DARK) {
-            stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+        if(stage.getScene() != null) {
+            if(Config.get().getTheme() == Theme.DARK) {
+                stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+            }
+            if(Config.get().isChunkAddresses()) {
+                stage.getScene().getRoot().getStyleClass().add("chunk-addresses");
+            }
         }
     }
 
@@ -1001,7 +1102,7 @@ public class AppServices {
         try {
             Auth47 auth47 = new Auth47(uri);
             List<ScriptType> scriptTypes = PaymentCode.SEGWIT_SCRIPT_TYPES;
-            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE), scriptTypes, false, true, "login to " + auth47.getCallback().getHost(), true);
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE_HD), scriptTypes, false, true, "login to " + auth47.getCallback().getHost(), true);
 
             if(wallet != null) {
                 try {
@@ -1021,8 +1122,8 @@ public class AppServices {
     private static void openLnurlAuthUri(URI uri) {
         try {
             LnurlAuth lnurlAuth = new LnurlAuth(uri);
-            List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE);
-            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE), scriptTypes, true, true, lnurlAuth.getLoginMessage(), true);
+            List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD);
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE_HD), scriptTypes, true, true, lnurlAuth.getLoginMessage(), true);
 
             if(wallet != null) {
                 if(wallet.isEncrypted()) {
@@ -1045,7 +1146,6 @@ public class AppServices {
                                 showErrorDialog("Error authenticating", "Failed to authenticate.\n\n" + e.getMessage());
                             } finally {
                                 key.clear();
-                                encryptionFullKey.clear();
                                 password.get().clear();
                             }
                         });
@@ -1095,8 +1195,7 @@ public class AppServices {
             walletChoiceDialog.initOwner(getActiveWindow());
             walletChoiceDialog.setTitle("Choose Wallet");
             walletChoiceDialog.setHeaderText("Choose a wallet to " + actionDescription);
-            Image image = new Image("/image/sparrow-small.png");
-            walletChoiceDialog.getDialogPane().setGraphic(new ImageView(image));
+            walletChoiceDialog.getDialogPane().setGraphic(new DialogImage(DialogImage.Type.SPARROW));
             setStageIcon(walletChoiceDialog.getDialogPane().getScene().getWindow());
             moveToActiveWindowScreen(walletChoiceDialog);
             Optional<Wallet> optWallet = walletChoiceDialog.showAndWait();
@@ -1108,10 +1207,36 @@ public class AppServices {
         return wallet;
     }
 
+    public static boolean disallowAnyInvalidDerivationPaths(Wallet wallet) {
+        Optional<ScriptType> optInvalidScriptType = wallet.getKeystores().stream()
+                .filter(keystore -> keystore.getKeyDerivation() != null)
+                .map(keystore -> wallet.getOtherScriptTypeMatchingDerivation(keystore.getKeyDerivation().getDerivationPath()))
+                .filter(Optional::isPresent).map(Optional::get).findFirst();
+        if(optInvalidScriptType.isPresent()) {
+            ScriptType invalidScriptType = optInvalidScriptType.get();
+            boolean includePolicyType = !wallet.getScriptType().getAllowedPolicyTypes().getFirst().equals(invalidScriptType.getAllowedPolicyTypes().getFirst());
+            Optional<ButtonType> optType = AppServices.showWarningDialog("Invalid derivation path", "This wallet is using the derivation path for " +
+                    invalidScriptType.getDescription(includePolicyType) + ", instead of the derivation path for its defined script type of " + wallet.getScriptType().getDescription(includePolicyType) +
+                    ". \n\nDisable derivation path validation to import this wallet?", ButtonType.NO, ButtonType.YES);
+            if(optType.isPresent()) {
+                if(optType.get() == ButtonType.YES) {
+                    Config.get().setValidateDerivationPaths(false);
+                    System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(true));
+                    System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, Boolean.toString(true));
+                } else {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public static final List<Network> WHIRLPOOL_NETWORKS = List.of(Network.MAINNET, Network.TESTNET);
 
     public static boolean isWhirlpoolCompatible(Wallet wallet) {
         return WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getPolicyType() == PolicyType.SINGLE_HD
                 && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
                 && wallet.getKeystores().size() == 1
                 && wallet.getKeystores().get(0).hasSeed()
@@ -1122,6 +1247,7 @@ public class AppServices {
 
     public static boolean isWhirlpoolPostmixCompatible(Wallet wallet) {
         return WHIRLPOOL_NETWORKS.contains(Network.get())
+                && wallet.getPolicyType() == PolicyType.SINGLE_HD
                 && wallet.getScriptType() != ScriptType.P2TR    //Taproot not yet supported
                 && wallet.getKeystores().size() == 1
                 && wallet.getKeystores().getFirst().getWalletModel() != WalletModel.BITBOX_02; //BitBox02 does not support high account numbers
@@ -1141,7 +1267,7 @@ public class AppServices {
     }
 
     public static Font getMonospaceFont() {
-        return Font.font("Roboto Mono", 13);
+        return Font.font("Fragment Mono Regular", 13);
     }
 
     public static boolean isOnWayland() {
@@ -1157,9 +1283,22 @@ public class AppServices {
     public void newConnection(ConnectionEvent event) {
         currentBlockHeight = event.getBlockHeight();
         System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
-        minimumRelayFeeRate = Math.max(event.getMinimumRelayFeeRate(), Transaction.DEFAULT_MIN_RELAY_FEE);
+        if(getConfiguredMinimumRelayFeeRate(Config.get()) == null) {
+            minimumRelayFeeRate = event.getMinimumRelayFeeRate() == null ? Transaction.DEFAULT_MIN_RELAY_FEE : event.getMinimumRelayFeeRate();
+        }
+        serverMinimumRelayFeeRate = event.getMinimumRelayFeeRate();
         latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
+
+        FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
+        feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
+        if(feeRatesSource.supportsNetwork(Network.get()) && feeRatesSource.isExternal()) {
+            fetchFeeRates();
+        }
+
+        if(!blockSummaries.containsKey(currentBlockHeight)) {
+            fetchBlockSummaries(Collections.emptyList());
+        }
     }
 
     @Subscribe
@@ -1174,11 +1313,22 @@ public class AppServices {
         latestBlockHeader = event.getBlockHeader();
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
+        newBlockSubject.onNext(event);
+    }
+
+    @Subscribe
+    public void blockSummary(BlockSummaryEvent event) {
+        blockSummaries.putAll(event.getBlockSummaryMap());
+        if(AppServices.currentBlockHeight != null) {
+            blockSummaries.keySet().removeIf(height -> AppServices.currentBlockHeight - height > 5);
+        }
+        nextBlockMedianFeeRate = event.getNextBlockMedianFeeRate();
     }
 
     @Subscribe
     public void feesUpdated(FeeRatesUpdatedEvent event) {
         targetBlockFeeRates = event.getTargetBlockFeeRates();
+        nextBlockMedianFeeRate = event.getNextBlockMedianFeeRate();
     }
 
     @Subscribe
@@ -1191,10 +1341,8 @@ public class AppServices {
     @Subscribe
     public void feeRateSourceChanged(FeeRatesSourceChangedEvent event) {
         //Perform once-off fee rates retrieval to immediately change displayed rates
-        if(feeRatesService != null && !feeRatesService.isRunning() && Config.get().getMode() != Mode.OFFLINE) {
-            feeRatesService = createFeeRatesService();
-            feeRatesService.start();
-        }
+        fetchFeeRates();
+        fetchBlockSummaries(Collections.emptyList());
     }
 
     @Subscribe
@@ -1335,10 +1483,28 @@ public class AppServices {
     @Subscribe
     public void walletHistoryFailed(WalletHistoryFailedEvent event) {
         if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && isConnected()) {
+            String currentName = Config.get().getServerDisplayName();
             onlineProperty.set(false);
-            log.warn("Failed to fetch wallet history from " + Config.get().getServerDisplayName() + ", reconnecting to another server...");
-            Config.get().changePublicServer();
+            boolean changed = changePublicServer();
+            if(changed) {
+                log.warn("Failed to fetch wallet history from " + currentName + ", reconnecting to another server...");
+            } else {
+                log.warn("Failed to fetch wallet history from " + currentName + ", retrying later");
+                connectionService.setDelay(Duration.seconds(PRIVATE_SERVER_RETRY_PERIOD_SECS));
+                EventManager.get().post(new StatusEvent("Wallet load failed: No other public servers available that can serve the open wallets, retrying later..."));
+            }
             onlineProperty.set(true);
+        }
+    }
+
+    @Subscribe
+    public void silentPaymentsUnsubscribe(SilentPaymentsUnsubscribeEvent event) {
+        if(isConnected()) {
+            ElectrumServer.SilentPaymentsUnsubscribeService unsubscribeService = new ElectrumServer.SilentPaymentsUnsubscribeService(event.getScanAddress());
+            unsubscribeService.setOnFailed(workerStateEvent -> {
+                log.warn("Failed to unsubscribe silent payments for " + event.getScanAddress().getAddress(), workerStateEvent.getSource().getException());
+            });
+            unsubscribeService.start();
         }
     }
 }

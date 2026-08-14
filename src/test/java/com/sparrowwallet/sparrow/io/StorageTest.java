@@ -12,6 +12,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
 
 public class StorageTest extends IoTest {
     @Test
@@ -34,7 +37,7 @@ public class StorageTest extends IoTest {
             Keystore keystore = wallet.getKeystores().get(i);
             if(keystore.hasSeed()) {
                 Keystore copyKeystore = copy.getKeystores().get(i);
-                Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), wallet.getPolicyType(), copyKeystore.getKeyDerivation().getDerivation());
                 keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                 keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                 keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
@@ -45,7 +48,7 @@ public class StorageTest extends IoTest {
         Assertions.assertTrue(wallet.isValid());
 
         Assertions.assertEquals("testd2", wallet.getName());
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("pkh(60bcd3a7)", wallet.getDefaultPolicy().getMiniscript().getScript());
@@ -82,6 +85,51 @@ public class StorageTest extends IoTest {
         Storage temp2Storage = new Storage(tempWallet);
         wallet = temp2Storage.loadEncryptedWallet("pass").getWallet();
         Assertions.assertTrue(wallet.isValid());
+    }
+
+    @Test
+    public void getBackupsExcludesLongerWalletNames() throws IOException {
+        File backupDir = createBackupDir("Savings-20250101120000.mv.db", "Savings-20240101120000.mv.db",
+                "Savings-2023-20250101120000.mv.db", "Savings.old-20250101120000.mv.db", "SavingsX-20250101120000.mv.db");
+
+        assertBackups(backupDir, PersistenceType.DB, "Savings.mv.db", "Savings-20250101120000.mv.db", "Savings-20240101120000.mv.db");
+        assertBackups(backupDir, PersistenceType.DB, "Savings-2023.mv.db", "Savings-2023-20250101120000.mv.db");
+        assertBackups(backupDir, PersistenceType.DB, "Savings.old.mv.db", "Savings.old-20250101120000.mv.db");
+    }
+
+    @Test
+    public void getBackupsRequiresAWholeDateAndAMatchingExtension() throws IOException {
+        File backupDir = createBackupDir("Savings-20250101120000.mv.db", "Savings-2025010112000.mv.db", "Savings-202501011200000.mv.db",
+                "Savings-20250101120000.json", "Savings-20250101120000", "Savings.mv.db", "Savings-notes.txt");
+
+        assertBackups(backupDir, PersistenceType.DB, "Savings.mv.db", "Savings-20250101120000.mv.db");
+        assertBackups(backupDir, PersistenceType.JSON, "Savings.json", "Savings-20250101120000.json");
+        assertBackups(backupDir, PersistenceType.JSON, "Savings", "Savings-20250101120000");
+    }
+
+    @Test
+    public void getBackupsTreatsAWalletNameLiterally() throws IOException {
+        File backupDir = createBackupDir("SavingsXold-20250101120000.mv.db");
+
+        assertBackups(backupDir, PersistenceType.DB, "Savings.old.mv.db");
+    }
+
+    private File createBackupDir(String... backupNames) throws IOException {
+        Path backupDir = Files.createTempDirectory("sprw-backup");
+        backupDir.toFile().deleteOnExit();
+        for(String backupName : backupNames) {
+            File backup = backupDir.resolve(backupName).toFile();
+            backup.createNewFile();
+            backup.deleteOnExit();
+        }
+
+        return backupDir.toFile();
+    }
+
+    private void assertBackups(File backupDir, PersistenceType persistenceType, String walletFileName, String... expectedBackupNames) {
+        Storage storage = new Storage(persistenceType, new File(backupDir.getParentFile(), walletFileName));
+        File[] backups = storage.getBackups(backupDir, null);
+        Assertions.assertArrayEquals(expectedBackupNames, Arrays.stream(backups).map(File::getName).toArray(String[]::new));
     }
 
     @AfterEach

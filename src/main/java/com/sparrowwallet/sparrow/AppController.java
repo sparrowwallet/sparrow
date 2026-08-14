@@ -1,17 +1,16 @@
 package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.JCommander;
-import com.google.common.base.Charsets;
 import com.google.common.eventbus.Subscribe;
-import com.google.common.io.ByteSource;
 import com.sparrowwallet.drongo.*;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.dns.DnsPayment;
+import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
-import com.sparrowwallet.drongo.psbt.PSBT;
-import com.sparrowwallet.drongo.psbt.PSBTInput;
-import com.sparrowwallet.drongo.psbt.PSBTParseException;
-import com.sparrowwallet.drongo.psbt.PSBTSignatureException;
+import com.sparrowwallet.drongo.psbt.*;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.registry.CryptoPSBT;
@@ -32,7 +31,7 @@ import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
-import de.codecentric.centerdevice.MenuToolkit;
+import de.jangassen.MenuToolkit;
 import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -51,12 +50,14 @@ import javafx.geometry.Side;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuItem;
 import javafx.scene.input.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.*;
+import javafx.stage.Window;
 import javafx.util.Duration;
 import org.controlsfx.control.Notifications;
 import org.controlsfx.control.StatusBar;
@@ -71,6 +72,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.*;
@@ -80,12 +82,15 @@ public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
 
     public static final String DRAG_OVER_CLASS = "drag-over";
+    public static final int TAB_LABEL_MAX_WIDTH = 300;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_INACTIVE = 0.8;
     public static final double TAB_LABEL_GRAPHIC_OPACITY_ACTIVE = 0.95;
     public static final String LOADING_TRANSACTIONS_MESSAGE = "Loading wallet, select Transactions tab to view...";
     public static final String CONNECTION_FAILED_PREFIX = "Connection failed: ";
     public static final String TRYING_ANOTHER_SERVER_MESSAGE = "trying another server...";
-    public static final String JPACKAGE_APP_PATH = "jpackage.app-path";
+
+    @FXML
+    private VBox rootBox;
 
     @FXML
     private MenuItem saveTransaction;
@@ -136,6 +141,13 @@ public class AppController implements Initializable {
     private ToggleGroup unitFormat;
 
     @FXML
+    private CheckMenuItem chunkAddresses;
+
+    @FXML
+    private CheckMenuItem hideEmptyUsedAddresses;
+    private static final BooleanProperty hideEmptyUsedAddressesProperty = new SimpleBooleanProperty();
+
+    @FXML
     private ToggleGroup theme;
 
     @FXML
@@ -143,8 +155,7 @@ public class AppController implements Initializable {
     private static final BooleanProperty openWalletsInNewWindowsProperty = new SimpleBooleanProperty();
 
     @FXML
-    private CheckMenuItem hideEmptyUsedAddresses;
-    private static final BooleanProperty hideEmptyUsedAddressesProperty = new SimpleBooleanProperty();
+    private CheckMenuItem hideAmounts;
 
     @FXML
     private CheckMenuItem useHdCameraResolution;
@@ -367,6 +378,13 @@ public class AppController implements Initializable {
         Optional<Toggle> selectedFormatToggle = unitFormat.getToggles().stream().filter(toggle -> selectedFormat.equals(toggle.getUserData())).findFirst();
         selectedFormatToggle.ifPresent(toggle -> unitFormat.selectToggle(toggle));
 
+        chunkAddresses.setSelected(Config.get().isChunkAddresses());
+        if(Config.get().isChunkAddresses()) {
+            rootBox.getStyleClass().add("chunk-addresses");
+        }
+        hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
+        hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
+
         Theme configTheme = Config.get().getTheme();
         if(configTheme == null) {
             configTheme = Theme.SYSTEM_DEFAULT;
@@ -379,9 +397,8 @@ public class AppController implements Initializable {
 
         openWalletsInNewWindowsProperty.set(Config.get().isOpenWalletsInNewWindows());
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
-        hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
-        hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
-        useHdCameraResolutionProperty.set(Config.get().isHdCapture());
+        hideAmounts.setSelected(Config.get().isHideAmounts());
+        useHdCameraResolutionProperty.set(Config.get().getWebcamResolution() == null || Config.get().getWebcamResolution().isWidescreenAspect());
         useHdCameraResolution.selectedProperty().bindBidirectional(useHdCameraResolutionProperty);
         mirrorCameraImageProperty.set(Config.get().isMirrorCapture());
         mirrorCameraImage.selectedProperty().bindBidirectional(mirrorCameraImageProperty);
@@ -402,7 +419,7 @@ public class AppController implements Initializable {
             networkItem.setOnAction(event -> restart(event, network));
             restart.getItems().add(networkItem);
         }
-        restart.setVisible(System.getProperty(JPACKAGE_APP_PATH) != null);
+        restart.setVisible(System.getProperty(SparrowWallet.JPACKAGE_APP_PATH) != null);
 
         saveTransaction.setDisable(true);
         showTransaction.visibleProperty().bind(Bindings.and(saveTransaction.visibleProperty(), saveTransaction.disableProperty().not()));
@@ -454,7 +471,7 @@ public class AppController implements Initializable {
 
     private void setPlatformApplicationMenu() {
         OsType osType = OsType.getCurrent();
-        if(osType == OsType.MACOS) {
+        if(osType == OsType.MACOS && Interface.get() == Interface.DESKTOP) {
             MenuToolkit tk = MenuToolkit.toolkit();
             MenuItem settings = new MenuItem("Settings...");
             settings.setOnAction(this::openSettings);
@@ -507,7 +524,7 @@ public class AppController implements Initializable {
     }
 
     public void showLogFile(ActionEvent event) throws IOException {
-        File logFile = new File(Storage.getSparrowHome(), "sparrow.log");
+        File logFile = new File(Storage.getStateHome(), "sparrow.log");
         if(logFile.exists()) {
             AppServices.get().getApplication().getHostServices().showDocument(logFile.toPath().toUri().toString());
         } else {
@@ -573,16 +590,16 @@ public class AppController implements Initializable {
 
     public void installUdevRules(ActionEvent event) {
         String commands = """
-                sudo install -m 644 /opt/sparrow/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
+                sudo install -m 644 /opt/sparrowwallet/lib/runtime/conf/udev/*.rules /etc/udev/rules.d
                 sudo udevadm control --reload
                 sudo udevadm trigger
-                sudo groupadd -f plugdev
+                sudo groupadd -f -r plugdev
                 sudo usermod -aG plugdev `whoami`
                 """;
-        String home = System.getProperty(JPACKAGE_APP_PATH);
-        if(home != null && !home.startsWith("/opt/sparrow") && home.endsWith("bin/Sparrow")) {
+        String home = System.getProperty(SparrowWallet.JPACKAGE_APP_PATH);
+        if(home != null && !home.startsWith("/opt/sparrowwallet") && home.endsWith("bin/Sparrow")) {
             home = home.replace("bin/Sparrow", "");
-            commands = commands.replace("/opt/sparrow/", home);
+            commands = commands.replace("/opt/sparrowwallet/", home);
         }
 
         TextAreaDialog dialog = new TextAreaDialog(commands, false);
@@ -597,6 +614,10 @@ public class AppController implements Initializable {
     }
 
     public void openTransactionFromFile(ActionEvent event) {
+        openTransactionFromFile(event, null);
+    }
+
+    private void openTransactionFromFile(ActionEvent event, PSBT contextPsbt) {
         Stage window = new Stage();
 
         FileChooser fileChooser = new FileChooser();
@@ -611,19 +632,21 @@ public class AppController implements Initializable {
         List<File> files = fileChooser.showOpenMultipleDialog(window);
         if(files != null) {
             for(File file : files) {
-                openTransactionFile(file);
+                openTransactionFile(file, contextPsbt);
             }
         }
     }
 
-    private void openTransactionFile(File file) {
-        for(Tab tab : tabs.getTabs()) {
-            TabData tabData = (TabData)tab.getUserData();
-            if(tabData instanceof TransactionTabData) {
-                TransactionTabData transactionTabData = (TransactionTabData)tabData;
-                if(file.equals(transactionTabData.getFile())) {
-                    tabs.getSelectionModel().select(tab);
-                    return;
+    private void openTransactionFile(File file, PSBT contextPsbt) {
+        if(contextPsbt == null) {
+            for(Tab tab : tabs.getTabs()) {
+                TabData tabData = (TabData)tab.getUserData();
+                if(tabData instanceof TransactionTabData) {
+                    TransactionTabData transactionTabData = (TransactionTabData)tabData;
+                    if(file.equals(transactionTabData.getFile())) {
+                        tabs.getSelectionModel().select(tab);
+                        return;
+                    }
                 }
             }
         }
@@ -634,9 +657,9 @@ public class AppController implements Initializable {
                 String name = file.getName();
 
                 if(Utils.isHex(bytes) || Utils.isBase64(bytes)) {
-                    addTransactionTab(name, file, new String(bytes, StandardCharsets.UTF_8).trim());
+                    addTransactionTab(name, file, new String(bytes, StandardCharsets.UTF_8).trim(), contextPsbt);
                 } else {
-                    addTransactionTab(name, file, bytes);
+                    addTransactionTab(name, file, bytes, contextPsbt);
                 }
             } catch(IOException e) {
                 showErrorDialog("Error opening file", e.getMessage());
@@ -658,7 +681,7 @@ public class AppController implements Initializable {
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty()) {
             try {
-                addTransactionTab(null, null, text.get().trim());
+                addTransactionTab(null, null, text.get().trim(), null);
             } catch(PSBTParseException e) {
                 showErrorDialog("Invalid PSBT", e.getMessage());
             } catch(TransactionParseException e) {
@@ -764,7 +787,8 @@ public class AppController implements Initializable {
                 byte[] txBytes = transaction.bitcoinSerialize();
                 UR ur = UR.fromBytes(txBytes);
                 BBQR bbqr = new BBQR(BBQRType.TXN, txBytes);
-                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, false, false);
+                String raw = Utils.bytesToHex(txBytes);
+                QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(ur, bbqr, raw, false, false, QREncoding.UR);
                 qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
                 qrDisplayDialog.showAndWait();
             } catch(Exception e) {
@@ -823,10 +847,10 @@ public class AppController implements Initializable {
                 try(FileOutputStream outputStream = new FileOutputStream(file)) {
                     if(asText) {
                         PrintWriter writer = new PrintWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
-                        writer.print(transactionTabData.getPsbt().toBase64String(includeXpubs));
+                        writer.print(transactionTabData.getPsbt().getForExport().toBase64String(includeXpubs));
                         writer.flush();
                     } else {
-                        outputStream.write(transactionTabData.getPsbt().serialize(includeXpubs, true));
+                        outputStream.write(transactionTabData.getPsbt().getForExport().serialize(includeXpubs, true));
                     }
                 } catch(IOException e) {
                     log.error("Error saving PSBT", e);
@@ -849,7 +873,7 @@ public class AppController implements Initializable {
         TabData tabData = (TabData)selectedTab.getUserData();
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
-            String data = asBase64 ? transactionTabData.getPsbt().toBase64String() : transactionTabData.getPsbt().toString();
+            String data = asBase64 ? transactionTabData.getPsbt().getForExport().toBase64String() : transactionTabData.getPsbt().getForExport().toString();
 
             ClipboardContent content = new ClipboardContent();
             content.putString(data);
@@ -863,10 +887,10 @@ public class AppController implements Initializable {
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
 
-            byte[] psbtBytes = transactionTabData.getPsbt().serialize();
+            byte[] psbtBytes = transactionTabData.getPsbt().getForExport().serialize();
             CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
             BBQR bbqr = new BBQR(BBQRType.PSBT, psbtBytes);
-            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, false);
+            QRDisplayDialog qrDisplayDialog = new QRDisplayDialog(cryptoPSBT.toUR(), bbqr, false, true, QREncoding.UR);
             qrDisplayDialog.initOwner(rootStack.getScene().getWindow());
             qrDisplayDialog.show();
         }
@@ -938,15 +962,35 @@ public class AppController implements Initializable {
         EventManager.get().post(new OpenWalletsNewWindowsStatusEvent(item.isSelected()));
     }
 
+    public void chunkAddresses(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setChunkAddresses(item.isSelected());
+        if(item.isSelected() && !rootBox.getStyleClass().contains("chunk-addresses")) {
+            rootBox.getStyleClass().add("chunk-addresses");
+        } else {
+            rootBox.getStyleClass().remove("chunk-addresses");
+        }
+    }
+
     public void hideEmptyUsedAddresses(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
         Config.get().setHideEmptyUsedAddresses(item.isSelected());
         EventManager.get().post(new HideEmptyUsedAddressesStatusEvent(item.isSelected()));
     }
 
+    public void hideAmounts(ActionEvent event) {
+        CheckMenuItem item = (CheckMenuItem)event.getSource();
+        Config.get().setHideAmounts(item.isSelected());
+        EventManager.get().post(new HideAmountsStatusEvent(item.isSelected()));
+    }
+
     public void useHdCameraResolution(ActionEvent event) {
         CheckMenuItem item = (CheckMenuItem)event.getSource();
-        Config.get().setHdCapture(item.isSelected());
+        if(Config.get().getWebcamResolution().isStandardAspect() && item.isSelected()) {
+            Config.get().setWebcamResolution(WebcamResolution.HD);
+        } else if(Config.get().getWebcamResolution().isWidescreenAspect() && !item.isSelected()) {
+            Config.get().setWebcamResolution(WebcamResolution.VGA);
+        }
     }
 
     public void mirrorCameraImage(ActionEvent event) {
@@ -996,7 +1040,7 @@ public class AppController implements Initializable {
         Stage window = new Stage();
         DirectoryChooser directoryChooser = new DirectoryChooser();
         directoryChooser.setTitle("Choose Sparrow Home Folder");
-        directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists() ? Storage.getSparrowHome() : initialDir);
+        directoryChooser.setInitialDirectory(initialDir == null || !initialDir.exists() ? Storage.getDefaultHome() : initialDir);
         File newHome = directoryChooser.showDialog(window);
 
         if(newHome != null) {
@@ -1006,8 +1050,8 @@ public class AppController implements Initializable {
     }
 
     public void restart(ActionEvent event, Network network) {
-        if(System.getProperty(JPACKAGE_APP_PATH) == null) {
-            throw new IllegalStateException("Property " + JPACKAGE_APP_PATH + " is not present");
+        if(System.getProperty(SparrowWallet.JPACKAGE_APP_PATH) == null) {
+            throw new IllegalStateException("Property " + SparrowWallet.JPACKAGE_APP_PATH + " is not present");
         }
 
         Args args = getRestartArgs();
@@ -1028,9 +1072,13 @@ public class AppController implements Initializable {
     private void restart(ActionEvent event, Args args) {
         try {
             List<String> cmd = new ArrayList<>();
-            cmd.add(System.getProperty(JPACKAGE_APP_PATH));
+            cmd.add(System.getProperty(SparrowWallet.JPACKAGE_APP_PATH));
             cmd.addAll(args.toParams());
             final ProcessBuilder builder = new ProcessBuilder(cmd);
+            if(OsType.getCurrent() == OsType.UNIX) {
+                Map<String, String> env = builder.environment();
+                env.remove("LD_LIBRARY_PATH");
+            }
             builder.start();
             quit(event);
         } catch(Exception e) {
@@ -1049,7 +1097,7 @@ public class AppController implements Initializable {
                     verifyOpened = true;
                 }
             } else {
-                openTransactionFile(file);
+                openTransactionFile(file, null);
             }
         }
     }
@@ -1079,7 +1127,7 @@ public class AppController implements Initializable {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
             File walletFile = Storage.getWalletFile(nameAndBirthDate.getName());
             Storage storage = new Storage(walletFile);
-            Wallet wallet = new Wallet(nameAndBirthDate.getName(), PolicyType.SINGLE, ScriptType.P2WPKH, nameAndBirthDate.getBirthDate());
+            Wallet wallet = new Wallet(nameAndBirthDate.getName(), PolicyType.SINGLE_HD, ScriptType.P2WPKH, nameAndBirthDate.getBirthDate());
             addWalletTabOrWindow(storage, wallet, false);
         }
     }
@@ -1097,8 +1145,33 @@ public class AppController implements Initializable {
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         List<File> files = fileChooser.showOpenMultipleDialog(window);
         if(files != null) {
+            configureWalletsDir(files);
             for(File file : files) {
                 openWalletFile(file, forceSameWindow);
+            }
+        }
+    }
+
+    private static void configureWalletsDir(List<File> files) {
+        List<File> parentDirs = files.stream().map(File::getParentFile).distinct().collect(Collectors.toList());
+        if(parentDirs.size() == 1 && !Boolean.FALSE.equals(Config.get().getSuggestChangeWalletsDir())) {
+            File selectedDir = parentDirs.getFirst();
+            boolean sameDir;
+            try {
+                sameDir = Files.isSameFile(selectedDir.toPath(), Storage.getWalletsDir().toPath());
+            } catch(IOException e) {
+                sameDir = selectedDir.toPath().normalize().equals(Storage.getWalletsDir().toPath().normalize());
+            }
+            if(!sameDir) {
+                ConfirmationAlert alert = new ConfirmationAlert("Change wallets directory?",
+                    "Do you want to configure Sparrow to use " + selectedDir + " as the default wallets directory?", ButtonType.NO, ButtonType.YES);
+                Optional<ButtonType> optType = alert.showAndWait();
+                if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                    Config.get().setWalletsDir(selectedDir);
+                    Config.get().setSuggestChangeWalletsDir(null);
+                } else if(alert.isDontAskAgain()) {
+                    Config.get().setSuggestChangeWalletsDir(Boolean.FALSE);
+                }
             }
         }
     }
@@ -1173,8 +1246,10 @@ public class AppController implements Initializable {
     private void openWallet(Storage storage, WalletAndKey walletAndKey, AppController appController, boolean forceSameWindow) {
         try {
             storage.restorePublicKeysFromSeed(walletAndKey.getWallet(), walletAndKey.getKey());
-            if(!walletAndKey.getWallet().isValid()) {
-                throw new IllegalStateException("Wallet file is not valid.");
+            try {
+                walletAndKey.getWallet().checkWallet();
+            } catch(InvalidWalletException e) {
+                throw new IllegalStateException("Wallet file is not valid: " + e.getMessage());
             }
             AppController walletAppController = appController.addWalletTabOrWindow(storage, walletAndKey.getWallet(), forceSameWindow);
             for(Map.Entry<WalletAndKey, Storage> entry : walletAndKey.getChildWallets().entrySet()) {
@@ -1195,28 +1270,31 @@ public class AppController implements Initializable {
         List<WalletForm> selectedWalletForms = getSelectedWalletForms();
         WalletImportDialog dlg = new WalletImportDialog(selectedWalletForms);
         dlg.initOwner(rootStack.getScene().getWindow());
-        Optional<Wallet> optionalWallet = dlg.showAndWait();
-        if(optionalWallet.isPresent()) {
-            Wallet wallet = optionalWallet.get();
+        Optional<List<Wallet>> optionalWallets = dlg.showAndWait();
+        if(optionalWallets.isPresent()) {
+            List<Wallet> wallets = optionalWallets.get();
 
-            List<WalletTabData> walletTabData = getOpenWalletTabData();
-            List<ExtendedKey> xpubs = wallet.getKeystores().stream().map(Keystore::getExtendedPublicKey).collect(Collectors.toList());
-            Optional<WalletForm> optNewWalletForm = walletTabData.stream()
-                    .map(WalletTabData::getWalletForm)
-                    .filter(wf -> wf.getSettingsWalletForm() != null && wf.getSettingsWalletForm().getWallet().getPolicyType() == PolicyType.MULTI &&
-                            wf.getSettingsWalletForm().getWallet().getScriptType() == wallet.getScriptType() && !wf.getSettingsWalletForm().getWallet().isValid() &&
-                            wf.getSettingsWalletForm().getWallet().getKeystores().stream().map(Keystore::getExtendedPublicKey).anyMatch(xpubs::contains)).findFirst();
-            if(optNewWalletForm.isPresent()) {
-                EventManager.get().post(new ExistingWalletImportedEvent(optNewWalletForm.get().getWalletId(), wallet));
-                selectTab(optNewWalletForm.get().getWallet());
-            } else if(selectedWalletForms.isEmpty() || wallet != selectedWalletForms.get(0).getWallet()) {
-                addImportedWallet(wallet);
+            for(Wallet wallet : wallets) {
+                List<WalletTabData> walletTabData = getOpenWalletTabData();
+                List<ExtendedKey> xpubs = wallet.getKeystores().stream().map(Keystore::getExtendedPublicKey).collect(Collectors.toList());
+                Optional<WalletForm> optNewWalletForm = walletTabData.stream()
+                        .map(WalletTabData::getWalletForm)
+                        .filter(wf -> wf.getSettingsWalletForm() != null && wf.getSettingsWalletForm().getWallet().getPolicyType() == PolicyType.MULTI_HD &&
+                                wf.getSettingsWalletForm().getWallet().getScriptType() == wallet.getScriptType() && !wf.getSettingsWalletForm().getWallet().isValid() &&
+                                wf.getSettingsWalletForm().getWallet().getKeystores().stream().map(Keystore::getExtendedPublicKey).anyMatch(xpubs::contains)).findFirst();
+                if(optNewWalletForm.isPresent()) {
+                    EventManager.get().post(new ExistingWalletImportedEvent(optNewWalletForm.get().getWalletId(), wallet));
+                    selectTab(optNewWalletForm.get().getWallet());
+                } else if(selectedWalletForms.isEmpty() || wallet != selectedWalletForms.get(0).getWallet()) {
+                    addImportedWallet(wallet);
+                }
             }
         }
     }
 
     private boolean attemptImportWallet(File file, SecureString password) {
         List<WalletImport> walletImporters = List.of(new ColdcardSinglesig(), new ColdcardMultisig(),
+                new Bip129(),
                 new Electrum(),
                 new SpecterDesktop(),
                 new Descriptor(),
@@ -1254,13 +1332,27 @@ public class AppController implements Initializable {
     }
 
     private void addImportedWallet(Wallet wallet) {
-        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getBirthDate());
+        if(AppServices.disallowAnyInvalidDerivationPaths(wallet)) {
+            return;
+        }
+
+        try {
+            wallet.checkWallet();
+        } catch(InvalidWalletException e) {
+            showErrorDialog("Error Importing Wallet", "The imported wallet is not valid: " + e.getMessage());
+            return;
+        }
+
+        WalletNameDialog nameDlg = new WalletNameDialog(wallet.getName(), true, wallet.getPolicyType(), wallet.getBirthDate(), false);
         nameDlg.initOwner(rootStack.getScene().getWindow());
         Optional<WalletNameDialog.NameAndBirthDate> optNameAndBirthDate = nameDlg.showAndWait();
         if(optNameAndBirthDate.isPresent()) {
             WalletNameDialog.NameAndBirthDate nameAndBirthDate = optNameAndBirthDate.get();
             wallet.setName(nameAndBirthDate.getName());
             wallet.setBirthDate(nameAndBirthDate.getBirthDate());
+            if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.getBirthDate() == null) {
+                wallet.setBirthDate(new Date());
+            }
         } else {
             return;
         }
@@ -1348,7 +1440,6 @@ public class AppController implements Initializable {
                     } catch(IOException | StorageException | MnemonicException e) {
                         log.error("Error saving imported wallet", e);
                     } finally {
-                        encryptionFullKey.clear();
                         if(key != null) {
                             key.clear();
                         }
@@ -1369,7 +1460,7 @@ public class AppController implements Initializable {
     public void exportWallet(ActionEvent event) {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
-            WalletExportDialog dlg = new WalletExportDialog(selectedWalletForm);
+            WalletExportDialog dlg = new WalletExportDialog(selectedWalletForm, getSelectedWalletForms());
             dlg.initOwner(rootStack.getScene().getWindow());
             Optional<Wallet> wallet = dlg.showAndWait();
             if(wallet.isPresent()) {
@@ -1399,7 +1490,7 @@ public class AppController implements Initializable {
         WalletForm selectedWalletForm = getSelectedWalletForm();
         if(selectedWalletForm != null) {
             Wallet wallet = selectedWalletForm.getWallet();
-            if(wallet.getKeystores().size() == 1) {
+            if(wallet.getPolicyType() == PolicyType.SINGLE_HD || wallet.getPolicyType() == PolicyType.SINGLE_SP) {
                 //Can sign and verify
                 messageSignDialog = new MessageSignDialog(wallet);
             }
@@ -1415,6 +1506,10 @@ public class AppController implements Initializable {
     }
 
     public void sendToMany(ActionEvent event) {
+        sendToMany(Collections.emptyList());
+    }
+
+    private void sendToMany(List<Payment> initialPayments) {
         if(sendToManyDialog != null) {
             Stage stage = (Stage)sendToManyDialog.getDialogPane().getScene().getWindow();
             stage.setAlwaysOnTop(true);
@@ -1430,7 +1525,7 @@ public class AppController implements Initializable {
                 bitcoinUnit = wallet.getAutoUnit();
             }
 
-            sendToManyDialog = new SendToManyDialog(bitcoinUnit);
+            sendToManyDialog = new SendToManyDialog(bitcoinUnit, Config.get().getUnitFormat(), initialPayments);
             sendToManyDialog.initModality(Modality.NONE);
             Optional<List<Payment>> optPayments = sendToManyDialog.showAndWait();
             sendToManyDialog = null;
@@ -1471,6 +1566,7 @@ public class AppController implements Initializable {
             stage.setAlwaysOnTop(true);
             stage.setAlwaysOnTop(false);
             if(event.getSource() instanceof File file) {
+                downloadVerifierDialog.setInitialFile(file);
                 downloadVerifierDialog.setSignatureFile(file);
             }
             return;
@@ -1849,25 +1945,29 @@ public class AppController implements Initializable {
         return Collections.emptyList();
     }
 
-    private void addTransactionTab(String name, File file, String string) throws ParseException, PSBTParseException, TransactionParseException {
+    private void addTransactionTab(String name, File file, String string, PSBT contextPsbt) throws ParseException, PSBTParseException, TransactionParseException {
         if(Utils.isBase64(string) && !Utils.isHex(string)) {
-            addTransactionTab(name, file, Base64.getDecoder().decode(string));
+            addTransactionTab(name, file, Base64.getDecoder().decode(string), contextPsbt);
         } else if(Utils.isHex(string)) {
-            addTransactionTab(name, file, Utils.hexToBytes(string));
+            addTransactionTab(name, file, Utils.hexToBytes(string), contextPsbt);
         } else {
             throw new ParseException("Input is not base64 or hex", 0);
         }
     }
 
-    private void addTransactionTab(String name, File file, byte[] bytes) throws PSBTParseException, ParseException, TransactionParseException {
+    private void addTransactionTab(String name, File file, byte[] bytes, PSBT contextPsbt) throws PSBTParseException, ParseException, TransactionParseException {
         if(PSBT.isPSBT(bytes)) {
             //Don't verify signatures here - provided PSBT may omit UTXO data that can be found when combining with an existing PSBT
             PSBT psbt = new PSBT(bytes, false);
-            addTransactionTab(name, file, psbt);
+            if(verifyTransactionContext(contextPsbt, null, psbt, "loaded")) {
+                addTransactionTab(name, file, psbt);
+            }
         } else if(Transaction.isTransaction(bytes)) {
             try {
                 Transaction transaction = new Transaction(bytes);
-                addTransactionTab(name, file, transaction);
+                if(verifyTransactionContext(contextPsbt, transaction, null, "loaded")) {
+                    addTransactionTab(name, file, transaction);
+                }
             } catch(Exception e) {
                 throw new TransactionParseException(e.getMessage());
             }
@@ -1900,6 +2000,39 @@ public class AppController implements Initializable {
             }
         }
 
+        //Add DNS payment information if not already cached
+        for(PSBTOutput psbtOutput : psbt.getPsbtOutputs()) {
+            if(psbtOutput.getDnssecProof() != null && !psbtOutput.getDnssecProof().isEmpty()) {
+                Address address = psbtOutput.getScript() != null ? psbtOutput.getScript().getToAddress() : null;
+                if(address != null && DnsPaymentCache.getDnsPayment(address) == null) {
+                    try {
+                        Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                        if(optDnsPayment.isPresent() && address.equals(optDnsPayment.get().bitcoinURI().getAddress())) {
+                            DnsPaymentCache.putDnsPayment(address, optDnsPayment.get());
+                        }
+                    } catch(Exception e) {
+                        log.debug("Error resolving DNS payment", e);
+                    }
+                }
+
+                SilentPaymentAddress silentPaymentAddress = psbtOutput.getSilentPaymentAddress();
+                if(address != null && silentPaymentAddress == null) {
+                    silentPaymentAddress = AppServices.get().getOpenWallets().keySet().stream()
+                            .map(wallet -> wallet.getSilentPaymentAddress(address)).filter(Objects::nonNull).findFirst().orElse(null);
+                }
+                if(silentPaymentAddress != null && DnsPaymentCache.getDnsPayment(silentPaymentAddress) == null) {
+                    try {
+                        Optional<DnsPayment> optDnsPayment = psbtOutput.getDnsPayment();
+                        if(optDnsPayment.isPresent() && silentPaymentAddress.equals(optDnsPayment.get().bitcoinURI().getSilentPaymentAddress())) {
+                            DnsPaymentCache.putDnsPayment(silentPaymentAddress, optDnsPayment.get());
+                        }
+                    } catch(Exception e) {
+                        log.debug("Error resolving DNS payment", e);
+                    }
+                }
+            }
+        }
+
         Window psbtWalletWindow = AppServices.get().getWindowForPSBT(psbt);
         if(psbtWalletWindow != null && !tabs.getScene().getWindow().equals(psbtWalletWindow)) {
             EventManager.get().post(new ViewPSBTEvent(psbtWalletWindow, name, file, psbt));
@@ -1923,39 +2056,13 @@ public class AppController implements Initializable {
     private void addTransactionTab(String name, File file, Transaction transaction, PSBT psbt, BlockTransaction blockTransaction, TransactionView initialView, Integer initialIndex) {
         for(Tab tab : tabs.getTabs()) {
             TabData tabData = (TabData)tab.getUserData();
-            if(tabData instanceof TransactionTabData) {
-                TransactionTabData transactionTabData = (TransactionTabData)tabData;
+            if(tabData instanceof TransactionTabData transactionTabData) {
+                if(isExistingTransaction(transactionTabData, transaction, psbt, getTabName(tab))) {
+                    handleTransactionMerge(transactionTabData, psbt, name, tab);
+                    return;
+                }
 
-                //If an exact match bytewise of an existing tab, return that tab
-                if(Arrays.equals(transactionTabData.getTransaction().bitcoinSerialize(), transaction.bitcoinSerialize())) {
-                    if(transactionTabData.getPsbt() != null && psbt != null && !transactionTabData.getPsbt().isFinalized()) {
-                        if(!psbt.isFinalized()) {
-                            //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
-                            transactionTabData.getPsbt().combine(psbt);
-                            if(name != null && !name.isEmpty()) {
-                                ((Label)tab.getGraphic()).setText(name);
-                            }
-
-                            EventManager.get().post(new PSBTCombinedEvent(transactionTabData.getPsbt()));
-                        } else {
-                            //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
-                            for(int i = 0; i < transactionTabData.getPsbt().getPsbtInputs().size(); i++) {
-                                PSBTInput existingInput = transactionTabData.getPsbt().getPsbtInputs().get(i);
-                                PSBTInput finalizedInput = psbt.getPsbtInputs().get(i);
-                                existingInput.setFinalScriptSig(finalizedInput.getFinalScriptSig());
-                                existingInput.setFinalScriptWitness(finalizedInput.getFinalScriptWitness());
-                                existingInput.clearNonFinalFields();
-                            }
-
-                            if(name != null && !name.isEmpty()) {
-                                ((Label)tab.getGraphic()).setText(name);
-                            }
-
-                            EventManager.get().post(new PSBTFinalizedEvent(transactionTabData.getPsbt()));
-                        }
-                    }
-
-                    tabs.getSelectionModel().select(tab);
+                if(transactionTabData.getPsbt() != null && transactionTabData.getPsbt().possibleUnverifiableSilentPaymentsTransaction(transaction) && !openUnverifiableTransaction(getTabName(tab))) {
                     return;
                 }
             }
@@ -1967,6 +2074,34 @@ public class AppController implements Initializable {
                 psbt.verifySignatures();
             } catch(PSBTSignatureException e) {
                 AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+                return;
+            }
+
+            try {
+                psbt.verifySigHashes();
+            } catch(PSBTSignatureException e) {
+                Optional<ButtonType> result = AppServices.showWarningDialog("Non-Default Sighash",
+                        e.getMessage() + "\n\nReview this PSBT carefully before signing.\n\nOpen the transaction?", ButtonType.YES, ButtonType.NO);
+                if(result.isEmpty() || result.get() != ButtonType.YES) {
+                    return;
+                }
+            }
+        }
+
+        //Skip the warning for already-confirmed transactions loaded for inspection
+        if(blockTransaction == null) {
+            List<TransactionOutput> unknownScriptOutputs = new ArrayList<>();
+            for(int i = 0; i < transaction.getOutputs().size(); i++) {
+                TransactionOutput txOutput = transaction.getOutputs().get(i);
+                if(txOutput.getValue() > 0 && txOutput.getScript().getToAddress() == null) {
+                    //Silent payment outputs have an empty script and non-zero value until the recipient script is computed
+                    if(psbt != null && i < psbt.getPsbtOutputs().size() && psbt.getPsbtOutputs().get(i).getSilentPaymentAddress() != null) {
+                        continue;
+                    }
+                    unknownScriptOutputs.add(txOutput);
+                }
+            }
+            if(!unknownScriptOutputs.isEmpty() && !confirmUnknownScriptOutputs(unknownScriptOutputs)) {
                 return;
             }
         }
@@ -1983,8 +2118,13 @@ public class AppController implements Initializable {
             glyph.setFontSize(10.0);
             glyph.setOpacity(TAB_LABEL_GRAPHIC_OPACITY_ACTIVE);
             Label tabLabel = new Label(tabName);
+            tabLabel.setMaxWidth(TAB_LABEL_MAX_WIDTH);
             tabLabel.setGraphic(glyph);
             tabLabel.setGraphicTextGap(5.0);
+            if(TextUtils.computeTextWidth(tabLabel.getFont(), tabName, 0.0D) > TAB_LABEL_MAX_WIDTH) {
+                Tooltip tooltip = new Tooltip(tabName);
+                tabLabel.setTooltip(tooltip);
+            }
             tab.setGraphic(tabLabel);
             tab.setContextMenu(getTabContextMenu(tab));
             tab.setClosable(true);
@@ -2017,6 +2157,117 @@ public class AppController implements Initializable {
         }
     }
 
+    private boolean isExistingTransaction(TransactionTabData transactionTabData, Transaction transaction, PSBT psbt, String tabName) {
+        PSBT currentPsbt = transactionTabData.getPsbt();
+        Transaction currentTransaction = transactionTabData.getTransaction();
+
+        if(currentPsbt != null && psbt != null && currentPsbt.matches(psbt)) {
+            return true;
+        } else if(currentTransaction.getTxId().equals(transaction.getTxId())) {
+            if(currentTransaction.getWTxId().equals(transaction.getWTxId())) {
+                return true;
+            } else if(currentPsbt == null) {
+                AppServices.showWarningDialog("Suspicious Transaction",
+                        "This transaction has the same txid as the transaction in tab " + tabName + ", but contains different witnesses. It will be opened in a separate tab.");
+            }
+        }
+
+        return false;
+    }
+
+    private void handleTransactionMerge(TransactionTabData transactionTabData, PSBT psbt, String name, Tab tab) {
+        PSBT currentPsbt = transactionTabData.getPsbt();
+
+        if(currentPsbt != null && psbt != null && !currentPsbt.isFinalized()) {
+            if(!psbt.isFinalized()) {
+                //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
+                try {
+                    currentPsbt.verifyCombinedSignatures(psbt);
+                    currentPsbt.combine(psbt);
+                    setTabName(tab, name);
+                    EventManager.get().post(new PSBTCombinedEvent(currentPsbt));
+                } catch(PSBTSignatureException e) {
+                    AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+                }
+            } else {
+                //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
+                currentPsbt.copyFinalizedFields(psbt);
+                setTabName(tab, name);
+                EventManager.get().post(new PSBTFinalizedEvent(currentPsbt));
+            }
+        }
+
+        tabs.getSelectionModel().select(tab);
+    }
+
+    private boolean verifyTransactionContext(PSBT contextPsbt, Transaction transaction, PSBT psbt, String source) {
+        if(contextPsbt == null || matchesOpenTransactionTab(transaction, psbt)) {
+            return true;
+        }
+
+        if(psbt == null && contextPsbt.possibleUnverifiableSilentPaymentsTransaction(transaction)) {
+            AppServices.showErrorDialog("Silent Payments Transaction", "This transaction pays a silent payment address.\n\nThe signing device must return the PSBT rather than the final transaction, so the silent payment outputs can be verified.");
+        } else {
+            AppServices.showErrorDialog("Mismatched Transaction", "The " + source + " transaction does not match the transaction in this or any other open tab.\n\nCheck that the correct transaction was signed and exported from the signing device.");
+        }
+
+        return false;
+    }
+
+    private boolean matchesOpenTransactionTab(Transaction transaction, PSBT psbt) {
+        for(Tab tab : tabs.getTabs()) {
+            TabData tabData = (TabData)tab.getUserData();
+            if(tabData instanceof TransactionTabData transactionTabData) {
+                if(transactionTabData.getPsbt() != null) {
+                    if(psbt != null ? transactionTabData.getPsbt().matches(psbt) : transactionTabData.getPsbt().matches(transaction)) {
+                        return true;
+                    }
+                } else if(transactionTabData.getTransaction().calculateTxId(false).equals(psbt != null ? psbt.getTransaction().getTxId() : transaction.getTxId())) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean openUnverifiableTransaction(String tabName) {
+        Optional<ButtonType> result = AppServices.showWarningDialog(
+                "Unverifiable Silent Payments Transaction",
+                "This transaction contains an unverifiable silent payments output.\n\n" +
+                        "The tab " + tabName + " contains a similar transaction spending to a silent payments address, " +
+                        "but this transaction does not contain enough information to determine if the recipient address is correct.\n\n" +
+                        "Open the transaction in another tab?", ButtonType.YES, ButtonType.NO);
+        return result.isPresent() && result.get() == ButtonType.YES;
+    }
+
+    private boolean confirmUnknownScriptOutputs(List<TransactionOutput> unknownScriptOutputs) {
+        long totalAmount = unknownScriptOutputs.stream().mapToLong(TransactionOutput::getValue).sum();
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        BitcoinUnit unit = Config.get().getBitcoinUnit();
+        if(unit == null || unit.equals(BitcoinUnit.AUTO)) {
+            unit = totalAmount >= BitcoinUnit.getAutoThreshold() ? BitcoinUnit.BTC : BitcoinUnit.SATOSHIS;
+        }
+        String amount = unit.equals(BitcoinUnit.BTC) ? format.formatBtcValue(totalAmount) + " BTC" : format.formatSatsValue(totalAmount) + " sats";
+        String outputDesc = unknownScriptOutputs.size() == 1 ? "an output" : unknownScriptOutputs.size() + " outputs";
+        Optional<ButtonType> result = AppServices.showWarningDialog("Unknown Script Type",
+                "This transaction contains " + outputDesc + " of a non-standard or unrecognised script type, totalling " + amount + ".\n\n" +
+                        "Sparrow cannot resolve these outputs to addresses, so they will not appear in the transaction diagram. " +
+                        "Review the individual output(s) in the transaction tree carefully before signing or broadcasting.\n\n" +
+                        "Open the transaction?", ButtonType.YES, ButtonType.NO);
+        return result.isPresent() && result.get() == ButtonType.YES;
+    }
+
+    private String getTabName(Tab tab) {
+        return ((Label)tab.getGraphic()).getText();
+    }
+
+    private void setTabName(Tab tab, String name){
+        if(name != null && !name.isEmpty()) {
+            ((Label)tab.getGraphic()).setText(name);
+        }
+    }
+
     private ContextMenu getTabContextMenu(Tab tab) {
         ContextMenu contextMenu = new ContextMenu();
 
@@ -2033,23 +2284,33 @@ public class AppController implements Initializable {
         }
 
         MenuItem moveRight = new MenuItem("Move Right");
+        moveRight.setAccelerator(new KeyCodeCombination(KeyCode.RIGHT, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         moveRight.setOnAction(event -> {
-            int index = tabs.getTabs().indexOf(tab);
+            int currentIndex = tabs.getSelectionModel().getSelectedIndex();
+            if(currentIndex + 1 >= tabs.getTabs().size()) {
+                return;
+            }
+            Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
             tabs.getTabs().removeListener(tabsChangeListener);
-            tabs.getTabs().remove(tab);
-            tabs.getTabs().add(index + 1, tab);
+            tabs.getTabs().remove(selectedTab);
+            tabs.getTabs().add(currentIndex + 1, selectedTab);
             tabs.getTabs().addListener(tabsChangeListener);
-            tabs.getSelectionModel().select(tab);
+            tabs.getSelectionModel().select(selectedTab);
             EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
         });
         MenuItem moveLeft = new MenuItem("Move Left");
+        moveLeft.setAccelerator(new KeyCodeCombination(KeyCode.LEFT, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         moveLeft.setOnAction(event -> {
-            int index = tabs.getTabs().indexOf(tab);
+            int currentIndex = tabs.getSelectionModel().getSelectedIndex();
+            if(currentIndex == 0) {
+                return;
+            }
+            Tab selectedTab = tabs.getSelectionModel().getSelectedItem();
             tabs.getTabs().removeListener(tabsChangeListener);
-            tabs.getTabs().remove(tab);
-            tabs.getTabs().add(index - 1, tab);
+            tabs.getTabs().remove(selectedTab);
+            tabs.getTabs().add(currentIndex - 1, selectedTab);
             tabs.getTabs().addListener(tabsChangeListener);
-            tabs.getSelectionModel().select(tab);
+            tabs.getSelectionModel().select(selectedTab);
             EventManager.get().post(new RequestOpenWalletsEvent());   //Rearrange recent files list
         });
         contextMenu.getItems().addAll(moveRight, moveLeft);
@@ -2170,13 +2431,11 @@ public class AppController implements Initializable {
                     keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(selectedWalletForm.getWalletId(), TimedEvent.Action.END, "Done"));
-                        ECKey encryptionFullKey = keyDerivationService.getValue();
 
                         try {
                             tabs.getTabs().remove(tabs.getSelectionModel().getSelectedItem());
                             deleteStorage(storage, true);
                         } finally {
-                            encryptionFullKey.clear();
                             keyDerivationService = null;
                         }
                     });
@@ -2506,7 +2765,7 @@ public class AppController implements Initializable {
             if(event instanceof TransactionTabSelectedEvent) {
                 TransactionTabSelectedEvent txTabEvent = (TransactionTabSelectedEvent)event;
                 TransactionTabData transactionTabData = txTabEvent.getTransactionTabData();
-                if(transactionTabData.getPsbt() == null || transactionTabData.getPsbt().getTransaction() != transactionTabData.getTransaction()) {
+                if(transactionTabData.getPsbt() == null || !transactionTabData.getPsbt().getTransaction().getTxId().equals(transactionTabData.getTransaction().getTxId())) {
                     saveTransaction.setVisible(true);
                     saveTransaction.setDisable(false);
                 } else {
@@ -2645,7 +2904,6 @@ public class AppController implements Initializable {
                     }
                 });
 
-                Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
                 String walletName = event.getWallet().getFullDisplayName();
                 if(walletName.length() > 40) {
                     walletName = walletName.substring(0, 40) + "...";
@@ -2654,10 +2912,10 @@ public class AppController implements Initializable {
                 Notifications notificationBuilder = Notifications.create()
                         .title("Sparrow - " + walletName)
                         .text(text)
-                        .graphic(new ImageView(image))
+                        .graphic(new DialogImage(DialogImage.Type.SPARROW))
                         .hideAfter(Duration.seconds(15))
                         .position(Pos.TOP_RIGHT)
-                        .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new ImageView(image)))
+                        .threshold(5, Notifications.create().title("Sparrow").text("Multiple new wallet transactions").graphic(new DialogImage(DialogImage.Type.SPARROW)))
                         .onAction(e -> selectTab(event.getWallet()));
 
                 //If controlsfx can't find our window, we must set the window ourselves (unfortunately notification is then shown within this window)
@@ -2898,6 +3156,7 @@ public class AppController implements Initializable {
             }
         } else if(event.isCompleted()) {
             serverToggle.setDisable(false);
+            statusBar.setProgress(0);
             if(statusBar.getText().startsWith("Scanning...")) {
                 statusBar.setText("");
             }
@@ -3032,7 +3291,7 @@ public class AppController implements Initializable {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             if(event.getBlockTransaction() != null) {
                 addTransactionTab(event.getBlockTransaction(), event.getInitialView(), event.getInitialIndex());
-            } else {
+            } else if(verifyTransactionContext(event.getContextPsbt(), event.getTransaction(), null, "scanned")) {
                 addTransactionTab(event.getTransaction(), event.getInitialView(), event.getInitialIndex());
             }
         }
@@ -3041,7 +3300,9 @@ public class AppController implements Initializable {
     @Subscribe
     public void viewPSBT(ViewPSBTEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            addTransactionTab(event.getLabel(), event.getFile(), event.getPsbt());
+            if(verifyTransactionContext(event.getContextPsbt(), null, event.getPsbt(), "scanned")) {
+                addTransactionTab(event.getLabel(), event.getFile(), event.getPsbt());
+            }
         }
     }
 
@@ -3076,6 +3337,11 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        hideAmounts.setSelected(event.isHideAmounts());
+    }
+
+    @Subscribe
     public void requestOpenWallets(RequestOpenWalletsEvent event) {
         EventManager.get().post(new OpenWalletsEvent(tabs.getScene().getWindow(), getOpenWalletTabData()));
     }
@@ -3097,9 +3363,9 @@ public class AppController implements Initializable {
     public void requestTransactionOpen(RequestTransactionOpenEvent event) {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             if(event.getFile() != null) {
-                openTransactionFile(event.getFile());
+                openTransactionFile(event.getFile(), event.getContextPsbt());
             } else {
-                openTransactionFromFile(null);
+                openTransactionFromFile(null, event.getContextPsbt());
             }
         }
     }
@@ -3116,6 +3382,11 @@ public class AppController implements Initializable {
         if(tabs.getScene().getWindow().equals(event.getWindow())) {
             verifyDownload(new ActionEvent(event.getFile(), rootStack));
         }
+    }
+
+    @Subscribe
+    public void requestSendToMany(RequestSendToManyEvent event) {
+        sendToMany(event.getPayments());
     }
 
     @Subscribe
@@ -3171,7 +3442,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void webcamResolutionChanged(WebcamResolutionChangedEvent event) {
-        useHdCameraResolutionProperty.set(event.isHdResolution());
+        useHdCameraResolutionProperty.set(event.getResolution().isWidescreenAspect());
     }
 
     @Subscribe

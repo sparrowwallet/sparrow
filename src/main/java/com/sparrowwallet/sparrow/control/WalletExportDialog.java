@@ -18,8 +18,8 @@ import java.util.List;
 public class WalletExportDialog extends Dialog<Wallet> {
     private Wallet wallet;
 
-    public WalletExportDialog(WalletForm walletForm) {
-        this.wallet = walletForm.getWallet();
+    public WalletExportDialog(WalletForm selectedWalletForm, List<WalletForm> allWalletForms) {
+        this.wallet = selectedWalletForm.getWallet();
 
         EventManager.get().register(this);
         setOnCloseRequest(event -> {
@@ -44,11 +44,13 @@ public class WalletExportDialog extends Dialog<Wallet> {
         AnchorPane.setRightAnchor(scrollPane, 0.0);
 
         List<WalletExport> exporters;
-        if(wallet.getPolicyType() == PolicyType.SINGLE) {
-            exporters = List.of(new Electrum(), new ElectrumPersonalServer(), new Descriptor(), new SpecterDesktop(), new Sparrow(), new WalletLabels(), new WalletTransactions(walletForm));
-        } else if(wallet.getPolicyType() == PolicyType.MULTI) {
+        if(wallet.getPolicyType() == PolicyType.SINGLE_HD) {
+            exporters = List.of(new Electrum(), new ElectrumPersonalServer(), new Descriptor(), new SpecterDesktop(), new Sparrow(), new WalletLabels(allWalletForms), new WalletTransactions(selectedWalletForm));
+        } else if(wallet.getPolicyType() == PolicyType.MULTI_HD) {
             exporters = List.of(new Bip129(), new CaravanMultisig(), new ColdcardMultisig(), new CoboVaultMultisig(), new Electrum(), new ElectrumPersonalServer(), new KeystoneMultisig(),
-                    new Descriptor(), new JadeMultisig(), new PassportMultisig(), new SpecterDesktop(), new BlueWalletMultisig(), new SpecterDIY(), new Sparrow(), new WalletLabels(), new WalletTransactions(walletForm));
+                    new Descriptor(), new JadeMultisig(), new PassportMultisig(), new SpecterDesktop(), new BlueWalletMultisig(), new SpecterDIY(), new Sparrow(), new WalletLabels(allWalletForms), new WalletTransactions(selectedWalletForm));
+        } else if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+            exporters = List.of(new Descriptor(), new Sparrow(), new WalletLabels(allWalletForms), new WalletTransactions(selectedWalletForm));
         } else {
             throw new UnsupportedOperationException("Cannot export wallet with policy type " + wallet.getPolicyType());
         }

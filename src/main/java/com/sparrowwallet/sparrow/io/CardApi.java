@@ -5,12 +5,14 @@ import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.io.ckcard.CkCardApi;
+import com.sparrowwallet.sparrow.io.keycard.KeycardApi;
 import com.sparrowwallet.sparrow.io.satochip.SatoCardApi;
 import javafx.beans.property.StringProperty;
 import javafx.concurrent.Service;
@@ -58,6 +60,13 @@ public abstract class CardApi {
             //ignore
         }
 
+        try {
+            KeycardApi keycardApi = new KeycardApi(null, null);
+            cards.add(keycardApi.getCardType());
+        } catch(Exception e) {
+            //ignore
+        }
+
         return cards;
     }
 
@@ -68,6 +77,10 @@ public abstract class CardApi {
 
         if(walletModel == WalletModel.SATOCHIP) {
             return new SatoCardApi(walletModel, pin);
+        }
+
+        if(walletModel == WalletModel.KEYCARD) {
+            return new KeycardApi(walletModel, pin);
         }
 
         throw new IllegalArgumentException("Cannot create card API for " + walletModel.toDisplayString());
@@ -95,7 +108,7 @@ public abstract class CardApi {
 
     public abstract Service<Void> getInitializationService(byte[] entropy, StringProperty messageProperty);
 
-    public abstract Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty);
+    public abstract Service<Keystore> getImportService(PolicyType policyType, List<ChildNumber> derivation, StringProperty messageProperty);
 
     public abstract Service<PSBT> getSignService(Wallet wallet, PSBT psbt, StringProperty messageProperty);
 

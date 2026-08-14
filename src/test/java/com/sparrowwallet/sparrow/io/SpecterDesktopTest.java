@@ -14,7 +14,7 @@ public class SpecterDesktopTest extends IoTest {
         SpecterDesktop specterDesktop = new SpecterDesktop();
         Wallet wallet = specterDesktop.importWallet(getInputStream("specter-wallet.json"), null);
 
-        Assertions.assertEquals(PolicyType.SINGLE, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2SH_P2WPKH, wallet.getScriptType());
         Assertions.assertEquals(1, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("sh(wpkh(keystore1))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
@@ -29,7 +29,7 @@ public class SpecterDesktopTest extends IoTest {
         SpecterDesktop specterDesktop = new SpecterDesktop();
         Wallet wallet = specterDesktop.importWallet(getInputStream("specter-multisig-wallet.json"), null);
 
-        Assertions.assertEquals(PolicyType.MULTI, wallet.getPolicyType());
+        Assertions.assertEquals(PolicyType.MULTI_HD, wallet.getPolicyType());
         Assertions.assertEquals(ScriptType.P2WSH, wallet.getScriptType());
         Assertions.assertEquals(3, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wsh(sortedmulti(3,keystore1,keystore2,keystore3,keystore4))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));

@@ -37,7 +37,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
     private final boolean file;
 
     public FileKeystoreExportPane(Keystore keystore, KeystoreFileExport exporter) {
-        super(exporter.getName(), "Keystore export", exporter.getKeystoreExportDescription(), "image/" + exporter.getWalletModel().getType() + ".png");
+        super(exporter.getName(), "Keystore export", exporter.getKeystoreExportDescription(), exporter.getWalletModel());
         this.keystore = keystore;
         this.exporter = exporter;
         this.scannable = exporter.isKeystoreExportScannable();
@@ -157,7 +157,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
                 if(exporter instanceof Bip129) {
                     UR ur = UR.fromBytes(baos.toByteArray());
                     BBQR bbqr = new BBQR(BBQRType.UNICODE, baos.toByteArray());
-                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, false);
+                    qrDisplayDialog = new QRDisplayDialog(ur, bbqr, false, true, QREncoding.UR);
                 } else {
                     qrDisplayDialog = new QRDisplayDialog(baos.toString(StandardCharsets.UTF_8));
                 }

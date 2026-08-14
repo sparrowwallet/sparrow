@@ -36,7 +36,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
     private ExtendedKey xprv;
 
     public XprvKeystoreImportPane(Wallet wallet, KeystoreXprvImport importer, KeyDerivation defaultDerivation) {
-        super(importer.getName(), "Extended key import", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Enter master private key", importer.getKeystoreImportDescription(), importer.getWalletModel());
         this.wallet = wallet;
         this.importer = importer;
         this.defaultDerivation = defaultDerivation;
@@ -46,7 +46,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
     }
 
     public XprvKeystoreImportPane(Keystore keystore) {
-        super("Master Private Key", "BIP32 key", "", "image/" + WalletModel.SEED.getType() + ".png");
+        super("Master Private Key", "BIP32 key", "", WalletModel.SEED);
         this.wallet = null;
         this.importer = null;
         this.defaultDerivation = keystore.getKeyDerivation();
@@ -79,7 +79,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         importButton = new SplitMenuButton();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
-        importButton.getStyleClass().add("default-button");
+        setDefaultButton(importButton);
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
             importKeystore(getDefaultDerivation());
@@ -114,7 +114,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
     private void importKeystore(List<ChildNumber> derivation) {
         importButton.setDisable(true);
         try {
-            Keystore keystore = importer.getKeystore(derivation, xprv);
+            Keystore keystore = importer.getKeystore(wallet.getPolicyType(), derivation, xprv);
             EventManager.get().post(new KeystoreImportEvent(keystore));
         } catch (ImportException e) {
             String errorMessage = e.getMessage();
@@ -151,6 +151,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
         Button importXprvButton = new Button("Import");
         importXprvButton.setMinWidth(80);
         importXprvButton.setDisable(true);
+        importXprvButton.setDefaultButton(true);
         importXprvButton.setOnAction(event -> {
             enterXprvButton.setVisible(false);
             importButton.setVisible(true);

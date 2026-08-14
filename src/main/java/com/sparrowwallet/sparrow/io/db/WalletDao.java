@@ -31,6 +31,9 @@ public interface WalletDao {
     DetachedLabelDao createDetachedLabelDao();
 
     @CreateSqlObject
+    SilentPaymentAddressDao createSilentPaymentAddressDao();
+
+    @CreateSqlObject
     WalletConfigDao createWalletConfigDao();
 
     @CreateSqlObject
@@ -42,21 +45,21 @@ public interface WalletDao {
     @CreateSqlObject
     UtxoMixDataDao createUtxoMixDataDao();
 
-    @SqlQuery("select wallet.id, wallet.name, wallet.label, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.watchLast, wallet.birthDate, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id")
+    @SqlQuery("select wallet.id, wallet.name, wallet.label, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.watchLast, wallet.birthDate, wallet.birthHeight, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id")
     @RegisterRowMapper(WalletMapper.class)
     List<Wallet> loadAllWallets();
 
-    @SqlQuery("select wallet.id, wallet.name, wallet.label, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.watchLast, wallet.birthDate, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id where wallet.id = 1")
+    @SqlQuery("select wallet.id, wallet.name, wallet.label, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.watchLast, wallet.birthDate, wallet.birthHeight, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id where wallet.id = 1")
     @RegisterRowMapper(WalletMapper.class)
     Wallet loadMainWallet();
 
-    @SqlQuery("select wallet.id, wallet.name, wallet.label, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.watchLast, wallet.birthDate, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id where wallet.id != 1")
+    @SqlQuery("select wallet.id, wallet.name, wallet.label, wallet.network, wallet.policyType, wallet.scriptType, wallet.storedBlockHeight, wallet.gapLimit, wallet.watchLast, wallet.birthDate, wallet.birthHeight, policy.id, policy.name, policy.script from wallet left join policy on wallet.defaultPolicy = policy.id where wallet.id != 1")
     @RegisterRowMapper(WalletMapper.class)
     List<Wallet> loadChildWallets();
 
-    @SqlUpdate("insert into wallet (name, label, network, policyType, scriptType, storedBlockHeight, gapLimit, watchLast, birthDate, defaultPolicy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    @SqlUpdate("insert into wallet (name, label, network, policyType, scriptType, storedBlockHeight, gapLimit, watchLast, birthDate, birthHeight, defaultPolicy) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
     @GetGeneratedKeys("id")
-    long insert(String name, String label, int network, int policyType, int scriptType, Integer storedBlockHeight, Integer gapLimit, Integer watchLast, Date birthDate, long defaultPolicy);
+    long insert(String name, String label, int network, int policyType, int scriptType, Integer storedBlockHeight, Integer gapLimit, Integer watchLast, Date birthDate, Integer birthHeight, long defaultPolicy);
 
     @SqlUpdate("update wallet set name = :name where id = :id")
     void updateName(@Bind("id") long id, @Bind("name") String name);
@@ -112,7 +115,7 @@ public interface WalletDao {
         wallet.getKeystores().addAll(createKeystoreDao().getForWalletId(wallet.getId()));
 
         List<WalletNode> walletNodes = createWalletNodeDao().getForWalletId(wallet.getScriptType().ordinal(), wallet.getId());
-        wallet.getPurposeNodes().addAll(walletNodes.stream().filter(walletNode -> walletNode.getDerivation().size() == 1).collect(Collectors.toList()));
+        wallet.getPurposeNodes().addAll(walletNodes.stream().filter(WalletNode::isPurposeNode).collect(Collectors.toList()));
         wallet.getPurposeNodes().forEach(walletNode -> walletNode.setWallet(wallet));
 
         Map<Sha256Hash, BlockTransaction> blockTransactions = createBlockTransactionDao().getForWalletId(wallet.getId());
@@ -120,6 +123,8 @@ public interface WalletDao {
 
         Map<String, String> detachedLabels = createDetachedLabelDao().getAll();
         wallet.getDetachedLabels().putAll(detachedLabels);
+
+        wallet.getSilentPaymentAddresses().putAll(createSilentPaymentAddressDao().getAll());
 
         wallet.setWalletConfig(createWalletConfigDao().getForWalletId(wallet.getId()));
 
@@ -137,13 +142,14 @@ public interface WalletDao {
             setSchema(schema);
             createPolicyDao().addPolicy(wallet.getDefaultPolicy());
 
-            long id = insert(truncate(wallet.getName()), truncate(wallet.getLabel()), wallet.getNetwork().ordinal(), wallet.getPolicyType().ordinal(), wallet.getScriptType().ordinal(), wallet.getStoredBlockHeight(), wallet.gapLimit(), wallet.getWatchLast(), wallet.getBirthDate(), wallet.getDefaultPolicy().getId());
+            long id = insert(truncate(wallet.getName()), truncate(wallet.getLabel()), wallet.getNetwork().ordinal(), wallet.getPolicyType().ordinal(), wallet.getScriptType().ordinal(), wallet.getStoredBlockHeight(), wallet.gapLimit(), wallet.getWatchLast(), wallet.getBirthDate(), wallet.getBirthHeight(), wallet.getDefaultPolicy().getId());
             wallet.setId(id);
 
             createKeystoreDao().addKeystores(wallet);
             createWalletNodeDao().addWalletNodes(wallet);
             createBlockTransactionDao().addBlockTransactions(wallet);
             createDetachedLabelDao().clearAndAddAll(wallet);
+            createSilentPaymentAddressDao().clearAndAddAll(wallet);
             createWalletConfigDao().addWalletConfig(wallet);
             createWalletTableDao().addWalletTables(wallet);
             createMixConfigDao().addMixConfig(wallet);

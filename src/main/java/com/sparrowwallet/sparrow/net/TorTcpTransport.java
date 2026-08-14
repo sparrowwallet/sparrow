@@ -23,6 +23,6 @@ public class TorTcpTransport extends TcpTransport {
         }
 
         socket = new Socket(Tor.getDefault().getProxy());
-        socket.connect(new InetSocketAddress(server.getHost(), server.getPortOrDefault(getDefaultPort())));
+        socket.connect(InetSocketAddress.createUnresolved(server.getHost(), server.getPortOrDefault(getDefaultPort())));
     }
 }

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import org.junit.jupiter.api.Assertions;
@@ -10,7 +11,7 @@ public class CoboVaultSinglesigTest extends IoTest {
     @Test
     public void testImport() throws ImportException {
         CoboVaultSinglesig coboSingleSig = new CoboVaultSinglesig();
-        Keystore keystore = coboSingleSig.getKeystore(ScriptType.P2WPKH, getInputStream("cobo-singlesig-keystore-1.json"), null);
+        Keystore keystore = coboSingleSig.getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH, getInputStream("cobo-singlesig-keystore-1.json"), null);
 
         Assertions.assertEquals("Cobo Vault", keystore.getLabel());
         Assertions.assertEquals("m/84'/0'/0'", keystore.getKeyDerivation().getDerivationPath());
@@ -22,6 +23,6 @@ public class CoboVaultSinglesigTest extends IoTest {
     @Test
     public void testIncorrectScriptType() throws ImportException {
         CoboVaultSinglesig coboSingleSig = new CoboVaultSinglesig();
-        Assertions.assertThrows(ImportException.class, () -> coboSingleSig.getKeystore(ScriptType.P2SH_P2WPKH, getInputStream("cobo-singlesig-keystore-1.json"), null));
+        Assertions.assertThrows(ImportException.class, () -> coboSingleSig.getKeystore(PolicyType.SINGLE_HD, ScriptType.P2SH_P2WPKH, getInputStream("cobo-singlesig-keystore-1.json"), null));
     }
 }

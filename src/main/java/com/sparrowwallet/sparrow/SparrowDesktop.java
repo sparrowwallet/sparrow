@@ -72,10 +72,6 @@ public class SparrowDesktop extends Application {
             Config.get().setServerType(ServerType.ELECTRUM_SERVER);
         }
 
-        if(Config.get().getHdCapture() == null && OsType.getCurrent() == OsType.MACOS) {
-            Config.get().setHdCapture(Boolean.TRUE);
-        }
-
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_SCRIPT_TYPES_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
         System.setProperty(Wallet.ALLOW_DERIVATIONS_MATCHING_OTHER_NETWORKS_PROPERTY, Boolean.toString(!Config.get().isValidateDerivationPaths()));
 
@@ -117,8 +113,8 @@ public class SparrowDesktop extends Application {
     private void initializeFonts() {
         GlyphFontRegistry.register(new FontAwesome5());
         GlyphFontRegistry.register(new FontAwesome5Brands());
-        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Regular.ttf"), 13);
-        Font.loadFont(AppServices.class.getResourceAsStream("/font/RobotoMono-Italic.ttf"), 11);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/FragmentMono-Regular.ttf"), 13);
+        Font.loadFont(AppServices.class.getResourceAsStream("/font/FragmentMono-Italic.ttf"), 11);
         if(OsType.getCurrent() == OsType.MACOS) {
             Font.loadFont(AppServices.class.getResourceAsStream("/font/LiberationSans-Regular.ttf"), 13);
         }

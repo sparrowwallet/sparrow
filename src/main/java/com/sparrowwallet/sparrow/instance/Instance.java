@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 public abstract class Instance {
@@ -31,6 +32,8 @@ public abstract class Instance {
 
     private Selector selector;
     private ServerSocketChannel serverChannel;
+    private Path acquiredLockFile;
+    private Path acquiredLockFilePointer;
 
     public Instance(final String applicationId) {
         this(applicationId, true);
@@ -65,6 +68,7 @@ public abstract class Instance {
             serverChannel.configureBlocking(false);
             serverChannel.register(selector, SelectionKey.OP_ACCEPT);
             lockFile.toFile().deleteOnExit();
+            acquiredLockFile = lockFile;
         } catch(Exception e) {
             throw new InstanceException("Could not open UNIX socket lock file for instance at " + lockFile.toAbsolutePath(), e);
         }
@@ -145,26 +149,27 @@ public abstract class Instance {
 
     private Path getLockFile(boolean findExisting) {
         if(findExisting) {
-            Path pointer = getUserLockFilePointer();
-            try {
-                if(pointer != null && Files.exists(pointer)) {
-                    if(Files.isSymbolicLink(pointer)) {
-                        return Files.readSymbolicLink(pointer);
-                    } else {
-                        Path lockFile = Path.of(Files.readString(pointer, StandardCharsets.UTF_8));
-                        if(Files.exists(lockFile)) {
-                            return lockFile;
+            for(Path pointer : getUserLockFilePointers()) {
+                try {
+                    if(Files.exists(pointer)) {
+                        if(Files.isSymbolicLink(pointer)) {
+                            return Files.readSymbolicLink(pointer);
+                        } else {
+                            Path lockFile = Path.of(Files.readString(pointer, StandardCharsets.UTF_8));
+                            if(Files.exists(lockFile)) {
+                                return lockFile;
+                            }
                         }
                     }
+                } catch(IOException e) {
+                    log.warn("Could not find lock file at " + pointer.toAbsolutePath());
+                } catch(Exception e) {
+                    //ignore
                 }
-            } catch(IOException e) {
-                log.warn("Could not find lock file at " + pointer.toAbsolutePath());
-            } catch(Exception e) {
-                //ignore
             }
         }
 
-        return Storage.getSparrowDir().toPath().resolve(applicationId + ".lock");
+        return Storage.getStateDir().toPath().resolve(applicationId + ".lock");
     }
 
     private void createSymlink(Path lockFile) {
@@ -173,6 +178,7 @@ public abstract class Instance {
             if(pointer != null && !Files.exists(pointer, LinkOption.NOFOLLOW_LINKS)) {
                 Files.createSymbolicLink(pointer, lockFile);
                 pointer.toFile().deleteOnExit();
+                acquiredLockFilePointer = pointer;
             }
         } catch(IOException e) {
             log.debug("Could not create symlink " + pointer.toAbsolutePath() + " to lockFile at " + lockFile.toAbsolutePath() + ", writing as normal file", e);
@@ -180,6 +186,7 @@ public abstract class Instance {
             try {
                 Files.writeString(pointer, lockFile.toAbsolutePath().toString(), StandardCharsets.UTF_8);
                 pointer.toFile().deleteOnExit();
+                acquiredLockFilePointer = pointer;
             } catch(IOException ex) {
                 log.warn("Could not create pointer " + pointer.toAbsolutePath() + " to lockFile at " + lockFile.toAbsolutePath(), ex);
             }
@@ -188,21 +195,42 @@ public abstract class Instance {
         }
     }
 
+    /**
+     * Returns the location this instance writes its pointer to, ignoring any configured home so that instances started with
+     * and without one still find each other.
+     */
     private Path getUserLockFilePointer() {
         if(Boolean.parseBoolean(System.getenv(LINK_ENV_PROPERTY))) {
             return null;
         }
 
         try {
-            File sparrowHome = Storage.getSparrowHome(true);
-            if(!sparrowHome.exists()) {
-                Storage.createOwnerOnlyDirectory(sparrowHome);
+            File stateHome = Storage.getStateHome(true);
+            if(!stateHome.exists()) {
+                Storage.createOwnerOnlyDirectory(stateHome);
+                stateHome.deleteOnExit(); //Will only delete on exit if empty
             }
 
-            return sparrowHome.toPath().resolve(applicationId + ".default");
+            return stateHome.toPath().resolve(applicationId + ".default");
         } catch(Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Returns the locations that may hold a pointer to a running instance, without creating any of them.
+     *
+     * An instance started before the state directory was migrated writes its pointer to the default home, so that is searched
+     * as well, ensuring migrating does not hide an instance that is already running.
+     */
+    private List<Path> getUserLockFilePointers() {
+        Path statePointer = getUserLockFilePointer();
+        if(statePointer == null) {
+            return List.of();
+        }
+
+        Path defaultPointer = Storage.getDefaultHome().toPath().resolve(applicationId + ".default");
+        return statePointer.equals(defaultPointer) ? List.of(statePointer) : List.of(statePointer, defaultPointer);
     }
 
     /**
@@ -215,10 +243,13 @@ public abstract class Instance {
             if(serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close();
             }
-            if(getUserLockFilePointer() != null) {
-                Files.deleteIfExists(getUserLockFilePointer());
+            //Free the paths this instance acquired, which are not necessarily those that would be resolved now
+            if(acquiredLockFilePointer != null) {
+                Files.deleteIfExists(acquiredLockFilePointer);
             }
-            Files.deleteIfExists(getLockFile(false));
+            if(acquiredLockFile != null) {
+                Files.deleteIfExists(acquiredLockFile);
+            }
         } catch(Exception e) {
             throw new InstanceException(e);
         }

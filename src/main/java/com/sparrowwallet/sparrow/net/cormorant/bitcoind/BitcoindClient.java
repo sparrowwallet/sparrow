@@ -49,6 +49,12 @@ public class BitcoindClient {
 
     private static final long PRUNED_RESCAN_TIMEGAP_MILLIS = 7200*1000;
 
+    //Error codes from https://github.com/bitcoin/bitcoin/blob/master/src/rpc/protocol.h
+    public static final int RPC_METHOD_NOT_FOUND = -32601;
+    public static final int RPC_WALLET_NOT_FOUND = -18;
+
+    public static final String WALLET_ALREADY_LOADING_MESSAGE = "Wallet already loading.";
+
     private final JsonRpcClient jsonRpcClient;
     private final Timer timer = new Timer(true);
     private final Store store = new Store();
@@ -60,8 +66,8 @@ public class BitcoindClient {
     private final Map<String, Lock> descriptorLocks = Collections.synchronizedMap(new HashMap<>());
     private final Map<String, ScanDate> importedDescriptors = Collections.synchronizedMap(new HashMap<>());
 
-    private final Map<String, Date> descriptorBirthDates = new HashMap<>();
-    private final Map<String, Integer> descriptorUsedIndexes = new HashMap<>();
+    private final Map<String, Date> descriptorBirthDates = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, Integer> descriptorUsedIndexes = new ConcurrentHashMap<>();
 
     private boolean initialized;
     private boolean stopped;
@@ -70,6 +76,8 @@ public class BitcoindClient {
 
     private final boolean useWallets;
     private boolean pruned;
+    private Integer pruneHeight;
+    private volatile Date cachedPrunedDate;
     private boolean legacyWalletExists;
 
     private final Lock syncingLock = new ReentrantLock();
@@ -113,6 +121,7 @@ public class BitcoindClient {
 
         BlockchainInfo blockchainInfo = getBitcoindService().getBlockchainInfo();
         pruned = blockchainInfo.pruned();
+        pruneHeight = blockchainInfo.pruneheight();
         VerboseBlockHeader blockHeader = getBitcoindService().getBlockHeader(blockchainInfo.bestblockhash());
         tip = blockHeader.getBlockHeader();
         timer.schedule(new PollTask(), 5000, 5000);
@@ -140,21 +149,30 @@ public class BitcoindClient {
             tip = blockHeader.getBlockHeader();
         }
 
-        ListWalletDirResult listWalletDirResult = getBitcoindService().listWalletDir();
-        if(listWalletDirResult == null) {
-            throw new RuntimeException("Wallet support must be enabled in Bitcoin Core");
+        List<String> loadedWallets;
+        try {
+            loadedWallets = getBitcoindService().listWallets();
+            if(loadedWallets == null) {
+                throw new BitcoinRPCException("Wallet support must be enabled in Bitcoin Core");
+            }
+            legacyWalletExists = loadedWallets.contains(Bwt.DEFAULT_CORE_WALLET);
+        } catch(JsonRpcException e) {
+            if(e.getErrorMessage().getCode() == RPC_METHOD_NOT_FOUND) {
+                throw new BitcoinRPCException("Wallet support must be enabled in Bitcoin Core");
+            } else {
+                throw e;
+            }
         }
-        boolean exists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(CORE_WALLET_NAME));
-        legacyWalletExists = listWalletDirResult.wallets().stream().anyMatch(walletDirResult -> walletDirResult.name().equals(Bwt.DEFAULT_CORE_WALLET));
 
-        List<String> loadedWallets = getBitcoindService().listWallets();
-        boolean loaded = loadedWallets.contains(CORE_WALLET_NAME);
-
-        if(!exists && !loaded) {
-            getBitcoindService().createWallet(CORE_WALLET_NAME, true, true, "", true, true, true, false);
-        } else {
-            if(!loaded) {
+        if(!loadedWallets.contains(CORE_WALLET_NAME)) {
+            try {
                 getBitcoindService().loadWallet(CORE_WALLET_NAME, true);
+            } catch(JsonRpcException e) {
+                if(e.getErrorMessage().getCode() == RPC_WALLET_NOT_FOUND) {
+                    getBitcoindService().createWallet(CORE_WALLET_NAME, true, true, "", true, true, true, false);
+                } else if(!WALLET_ALREADY_LOADING_MESSAGE.equals(e.getErrorMessage().getMessage())) {
+                    throw e;
+                }
             }
         }
 
@@ -186,9 +204,21 @@ public class BitcoindClient {
                     .sorted(Comparator.comparingLong(o -> o.getBirthDate().getTime())).collect(Collectors.toList());
             if(!prePruneWallets.isEmpty()) {
                 pruneWarnedDescriptors.add(e.getDescriptor());
-                Platform.runLater(() -> EventManager.get().post(new CormorantPruneStatusEvent("Error: Wallet birthday earlier than Bitcoin Core prune date", prePruneWallets.get(0), e.getRescanSince(), e.getPrunedDate(), legacyWalletExists)));
+                if(!legacyWalletExists) {
+                    legacyWalletExists = checkLegacyWalletExists();
+                }
+                Platform.runLater(() -> EventManager.get().post(new CormorantPruneStatusEvent("Error: Wallet birthday earlier than Bitcoin Core prune date", prePruneWallets.getFirst(), e.getRescanSince(), e.getPrunedDate(), legacyWalletExists)));
             }
             throw new ImportFailedException("Wallet birthday earlier than prune date");
+        }
+    }
+
+    private boolean checkLegacyWalletExists() {
+        try {
+            getBitcoindService().loadWallet(Bwt.DEFAULT_CORE_WALLET);
+            return true;
+        } catch(Exception e) {
+            return false;
         }
     }
 
@@ -256,10 +286,16 @@ public class BitcoindClient {
         if(blockchainInfo.pruned()) {
             String pruneBlockHash = getBitcoindService().getBlockHash(blockchainInfo.pruneheight());
             VerboseBlockHeader pruneBlockHeader = getBitcoindService().getBlockHeader(pruneBlockHash);
-            return Optional.of(new Date(pruneBlockHeader.time() * 1000));
+            Date prunedDate = new Date(pruneBlockHeader.time() * 1000);
+            cachedPrunedDate = prunedDate;
+            return Optional.of(prunedDate);
         }
 
         return Optional.empty();
+    }
+
+    public Date getCachedPrunedDate() {
+        return cachedPrunedDate;
     }
 
     private ScanDate getScanDate(String normalizedDescriptor, Wallet wallet, KeyPurpose keyPurpose, Date earliestBirthDate) {
@@ -616,6 +652,14 @@ public class BitcoindClient {
 
     public boolean isUseWallets() {
         return useWallets;
+    }
+
+    public boolean isPruned() {
+        return pruned;
+    }
+
+    public Integer getPruneHeight() {
+        return pruneHeight;
     }
 
     public Store getStore() {

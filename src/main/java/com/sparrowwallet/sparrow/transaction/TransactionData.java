@@ -3,6 +3,8 @@ package com.sparrowwallet.sparrow.transaction;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.psbt.PSBTOutput;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
@@ -192,5 +194,17 @@ public class TransactionData {
 
     public Wallet getWallet() {
         return getSigningWallet() != null ? getSigningWallet() : (getWalletTransaction() != null ? getWalletTransaction().getWallet() : null);
+    }
+
+    protected SilentPaymentAddress getSilentPaymentAddress(TransactionOutput txOutput) {
+        if(getPsbt() != null && txOutput.getParent() != null) {
+            for(PSBTOutput psbtOutput : getPsbt().getPsbtOutputs()) {
+                if(psbtOutput.getOutput().getIndex() == txOutput.getIndex() && psbtOutput.getSilentPaymentAddress() != null) {
+                    return psbtOutput.getSilentPaymentAddress();
+                }
+            }
+        }
+
+        return null;
     }
 }

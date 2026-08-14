@@ -2,17 +2,34 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
 import com.sparrowwallet.drongo.ExtendedKey;
+import com.sparrowwallet.drongo.FileType;
+import com.sparrowwallet.drongo.IOUtils;
+import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
+import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.EncryptedData;
+import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
+import com.sparrowwallet.drongo.policy.Miniscript;
+import com.sparrowwallet.drongo.policy.Policy;
+import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
+import com.sparrowwallet.drongo.wallet.MasterPrivateExtendedKey;
+import com.sparrowwallet.drongo.wallet.UtxoMixData;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.drongo.wallet.WalletTable;
 
 import java.io.*;
 import java.lang.reflect.Type;
@@ -335,6 +352,36 @@ public class JsonPersistence implements Persistence {
         gsonBuilder.registerTypeAdapter(Transaction.class, new TransactionDeserializer());
         gsonBuilder.registerTypeAdapter(Address.class, new AddressSerializer());
         gsonBuilder.registerTypeAdapter(Address.class, new AddressDeserializer());
+        gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeSerializer());
+        gsonBuilder.registerTypeAdapter(PolicyType.class, new PolicyTypeDeserializer());
+        gsonBuilder.registerTypeAdapter(File.class, new FileSerializer());
+        gsonBuilder.registerTypeAdapter(File.class, new FileDeserializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentAddress.class, new SilentPaymentAddressSerializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentAddress.class, new SilentPaymentAddressDeserializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentScanAddress.class, new SilentPaymentScanAddressSerializer());
+        gsonBuilder.registerTypeAdapter(SilentPaymentScanAddress.class, new SilentPaymentScanAddressDeserializer());
+
+        //Reflection on any class outside this project fails at Gson adapter construction when running on the module path, unless its module opens the package to Gson
+        //Blocking these classes here ensures classpath-based tests fail in the same way production does, ensuring custom serializers are registered above as necessary
+        gsonBuilder.addReflectionAccessFilter(rawClass -> rawClass.getName().startsWith("com.sparrowwallet.") ? ReflectionAccessFilter.FilterResult.INDECISIVE : ReflectionAccessFilter.FilterResult.BLOCK_ALL);
+
+        //Instance creators are required for classes without no-args constructors, since Gson's fallback of sun.misc.Unsafe is unavailable on the module path (jdk.unsupported is not resolved)
+        //Unsafe is also explicitly disabled below so that classpath-based tests fail in the same way production does if a class is missed here
+        gsonBuilder.disableJdkUnsafe();
+        gsonBuilder.registerTypeAdapter(Policy.class, (InstanceCreator<Policy>) type -> new Policy(null));
+        gsonBuilder.registerTypeAdapter(Miniscript.class, (InstanceCreator<Miniscript>) type -> new Miniscript(null));
+        gsonBuilder.registerTypeAdapter(KeyDerivation.class, (InstanceCreator<KeyDerivation>) type -> new KeyDerivation(null, (String)null));
+        gsonBuilder.registerTypeAdapter(WalletNode.class, (InstanceCreator<WalletNode>) type -> new WalletNode("m/0"));
+        gsonBuilder.registerTypeAdapter(BlockTransaction.class, (InstanceCreator<BlockTransaction>) type -> new BlockTransaction(null, 0, null, null, null));
+        gsonBuilder.registerTypeAdapter(BlockTransactionHashIndex.class, (InstanceCreator<BlockTransactionHashIndex>) type -> new BlockTransactionHashIndex(null, 0, null, null, 0, 0));
+        gsonBuilder.registerTypeAdapter(DeterministicSeed.class, (InstanceCreator<DeterministicSeed>) type -> new DeterministicSeed((EncryptedData)null, false, 0, null));
+        gsonBuilder.registerTypeAdapter(MasterPrivateExtendedKey.class, (InstanceCreator<MasterPrivateExtendedKey>) type -> new MasterPrivateExtendedKey((EncryptedData)null));
+        gsonBuilder.registerTypeAdapter(EncryptedData.class, (InstanceCreator<EncryptedData>) type -> new EncryptedData(new byte[0], new byte[0], null, (EncryptionType)null));
+        gsonBuilder.registerTypeAdapter(EncryptionType.class, (InstanceCreator<EncryptionType>) type -> new EncryptionType(null, null));
+        gsonBuilder.registerTypeAdapter(PaymentCode.class, (InstanceCreator<PaymentCode>) type -> new PaymentCode(new byte[33], new byte[32]));
+        gsonBuilder.registerTypeAdapter(UtxoMixData.class, (InstanceCreator<UtxoMixData>) type -> new UtxoMixData(0, null));
+        gsonBuilder.registerTypeAdapter(WalletTable.class, (InstanceCreator<WalletTable>) type -> new WalletTable(null, null, 0, null));
+
         if(includeWalletSerializers) {
             gsonBuilder.registerTypeAdapter(Keystore.class, new KeystoreSerializer());
             gsonBuilder.registerTypeAdapter(WalletNode.class, new NodeSerializer());
@@ -398,6 +445,51 @@ public class JsonPersistence implements Persistence {
         }
     }
 
+    //Maintains the same format as the previous reflective serialization of java.io.File, which requires java.base/java.io to be opened to Gson
+    private static class FileSerializer implements JsonSerializer<File> {
+        @Override
+        public JsonElement serialize(File src, Type typeOfSrc, JsonSerializationContext context) {
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("path", src.getPath());
+            return jsonObject;
+        }
+    }
+
+    private static class FileDeserializer implements JsonDeserializer<File> {
+        @Override
+        public File deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return new File(json.isJsonObject() ? json.getAsJsonObject().get("path").getAsString() : json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class SilentPaymentAddressSerializer implements JsonSerializer<SilentPaymentAddress> {
+        @Override
+        public JsonElement serialize(SilentPaymentAddress src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.getAddress());
+        }
+    }
+
+    private static class SilentPaymentAddressDeserializer implements JsonDeserializer<SilentPaymentAddress> {
+        @Override
+        public SilentPaymentAddress deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return SilentPaymentAddress.from(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
+    private static class SilentPaymentScanAddressSerializer implements JsonSerializer<SilentPaymentScanAddress> {
+        @Override
+        public JsonElement serialize(SilentPaymentScanAddress src, Type typeOfSrc, JsonSerializationContext context) {
+            return new JsonPrimitive(src.toKeyString());
+        }
+    }
+
+    private static class SilentPaymentScanAddressDeserializer implements JsonDeserializer<SilentPaymentScanAddress> {
+        @Override
+        public SilentPaymentScanAddress deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            return SilentPaymentScanAddress.fromKeyString(json.getAsJsonPrimitive().getAsString());
+        }
+    }
+
     private static class DateSerializer implements JsonSerializer<Date> {
         @Override
         public JsonElement serialize(Date src, Type typeOfSrc, JsonSerializationContext context) {
@@ -448,6 +540,30 @@ public class JsonPersistence implements Persistence {
             } catch(InvalidAddressException e) {
                 throw new IllegalStateException(e);
             }
+        }
+    }
+
+    private static class PolicyTypeSerializer implements JsonSerializer<PolicyType> {
+        @Override
+        public JsonElement serialize(PolicyType src, Type typeOfSrc, JsonSerializationContext context) {
+            return switch(src) {
+                case SINGLE_HD -> new JsonPrimitive("SINGLE");
+                case MULTI_HD -> new JsonPrimitive("MULTI");
+                default -> new JsonPrimitive(src.name());
+            };
+        }
+    }
+
+    private static class PolicyTypeDeserializer implements JsonDeserializer<PolicyType> {
+        @Override
+        public PolicyType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            String value = json.getAsJsonPrimitive().getAsString();
+
+            return switch(value) {
+                case "SINGLE" -> PolicyType.SINGLE_HD;
+                case "MULTI" -> PolicyType.MULTI_HD;
+                default -> PolicyType.valueOf(value);
+            };
         }
     }
 

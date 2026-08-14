@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public class WalletImportDialog extends Dialog<Wallet> {
-    private Wallet wallet;
+public class WalletImportDialog extends Dialog<List<Wallet>> {
+    private List<Wallet> wallets;
     private final Accordion importAccordion;
     private final Button scanButton;
 
@@ -52,7 +52,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
 
         importAccordion = new Accordion();
         List<KeystoreFileImport> keystoreImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(),
-                new GordianSeedTool(), new SeedSigner(), new SpecterDIY(), new Krux(), new AirGapVault(), new Samourai());
+                new GordianSeedTool(), new SeedSigner(), new SpecterDIY(), new Krux(), new AirGapVault(), new Samourai(), new KeycardShellSinglesig(), new EraSinglesig());
         for(KeystoreFileImport importer : keystoreImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
                 FileWalletKeystoreImportPane importPane = new FileWalletKeystoreImportPane(importer);
@@ -95,13 +95,13 @@ public class WalletImportDialog extends Dialog<Wallet> {
         dialogPane.setMinHeight(dialogPane.getPrefHeight());
         AppServices.moveToActiveWindowScreen(this);
 
-        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallet : null);
+        setResultConverter(dialogButton -> dialogButton != cancelButtonType ? wallets : null);
     }
 
     @Subscribe
     public void walletImported(WalletImportEvent event) {
-        wallet = event.getWallet();
-        setResult(wallet);
+        wallets = event.getWallets();
+        setResult(wallets);
     }
 
     private void scan() {
@@ -112,7 +112,7 @@ public class WalletImportDialog extends Dialog<Wallet> {
             List<Device> devices = enumerateService.getValue();
             importAccordion.getPanes().removeIf(titledPane -> titledPane instanceof DevicePane);
             for(Device device : devices) {
-                DevicePane devicePane = new DevicePane(new Wallet(), device, devices.size() == 1, null);
+                DevicePane devicePane = new DevicePane(new Wallet(), device, devices.size() == 1, null, null);
                 importAccordion.getPanes().add(0, devicePane);
             }
             Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));

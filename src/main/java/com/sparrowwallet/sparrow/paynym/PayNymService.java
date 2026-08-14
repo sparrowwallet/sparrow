@@ -11,7 +11,6 @@ import com.sparrowwallet.sparrow.AppServices;
 import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
-import java8.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

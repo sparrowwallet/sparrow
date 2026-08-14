@@ -66,6 +66,7 @@ public class AdvancedDialog extends WalletDialog {
             try {
                 Date newDate = DATE_FORMAT.parse(newText);
                 wallet.setBirthDate(newDate);
+                wallet.setBirthHeight(null);
                 apply.setEnabled(true);
             } catch(ParseException e) {
                 //ignore

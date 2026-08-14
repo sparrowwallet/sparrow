@@ -45,7 +45,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     private List<String> generatedMnemonicCode;
 
     public MnemonicKeystoreImportPane(Wallet wallet, KeystoreMnemonicImport importer, KeyDerivation defaultDerivation) {
-        super(importer.getName(), "Create or enter seed", importer.getKeystoreImportDescription(), "image/" + importer.getWalletModel().getType() + ".png");
+        super(importer.getName(), "Create or enter seed", importer.getKeystoreImportDescription(), importer.getWalletModel());
         this.wallet = wallet;
         this.importer = importer;
         this.defaultDerivation = defaultDerivation;
@@ -58,7 +58,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
         importButton = new SplitMenuButton();
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
-        importButton.getStyleClass().add("default-button");
+        setDefaultButton(importButton);
         importButton.setOnAction(event -> {
             importButton.setDisable(true);
             importKeystore(getDefaultDerivation(), false);
@@ -141,7 +141,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     protected void onWordChange(boolean empty, boolean validWords, boolean validChecksum) {
         if(!empty && validWords) {
             try {
-                importer.getKeystore(wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
+                importer.getKeystore(wallet.getPolicyType(), wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
                 validChecksum = true;
             } catch(ImportException e) {
                 if(e.getCause() instanceof MnemonicException.MnemonicTypeException) {
@@ -256,7 +256,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     private boolean importKeystore(List<ChildNumber> derivation, boolean dryrun) {
         importButton.setDisable(true);
         try {
-            Keystore keystore = importer.getKeystore(derivation, wordEntriesProperty.get(), passphraseProperty.get());
+            Keystore keystore = importer.getKeystore(wallet.getPolicyType(), derivation, wordEntriesProperty.get(), passphraseProperty.get());
             if(!dryrun) {
                 if(passphraseProperty.get() != null && !passphraseProperty.get().isEmpty()) {
                     KeystorePassphraseDialog keystorePassphraseDialog = new KeystorePassphraseDialog(null, keystore, true);

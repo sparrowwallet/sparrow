@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.Version;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.SparrowWallet;
@@ -66,7 +67,7 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
                 String signature = versionCheck.signatures.get(addressString);
                 ECKey signedMessageKey = ECKey.signedMessageToKey(versionCheck.version, signature, false);
                 Address providedAddress = Address.fromString(addressString);
-                Address signedMessageAddress = ScriptType.P2PKH.getAddress(signedMessageKey);
+                Address signedMessageAddress = ScriptType.P2PKH.getAddress(PolicyType.SINGLE_HD, signedMessageKey);
 
                 if(providedAddress.equals(signedMessageAddress)) {
                     return true;

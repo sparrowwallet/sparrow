@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutPoint;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -55,6 +56,20 @@ public class InputForm extends IndexedTransactionForm {
     public boolean isWalletTxo() {
         TransactionInput txInput = getTransactionInput();
         return getWallet() != null && getWallet().isWalletTxo(txInput);
+    }
+
+    @Override
+    public Address getAddress() {
+        TransactionInput txInput = getTransactionInput();
+        if(txInput != null && !txInput.isCoinBase() && getInputTransactions() != null) {
+            BlockTransaction blockTransaction = getInputTransactions().get(txInput.getOutpoint().getHash());
+            if(blockTransaction != null) {
+                TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+                return output.getScript().getToAddress();
+            }
+        }
+
+        return null;
     }
 
     @Override

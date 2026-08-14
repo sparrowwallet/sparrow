@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.common.io.CharStreams;
 import com.sparrowwallet.drongo.OutputDescriptor;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
@@ -17,24 +18,24 @@ public class SpecterDIY implements KeystoreFileImport, WalletExport {
     private static final Logger log = LoggerFactory.getLogger(SpecterDIY.class);
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             String text = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-            String outputDesc = "sh(" + text + ")";
+            String outputDesc = policyType == PolicyType.SINGLE_SP ? "sp(" + text + ")" : "sh(" + text + ")";
             OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(outputDesc);
             Wallet wallet = outputDescriptor.toWallet();
 
             if(wallet.getKeystores().size() != 1) {
-                throw new ImportException("Could not determine keystore from import");
+                throw new IllegalArgumentException("Could not determine keystore from import");
             }
 
-            Keystore keystore = wallet.getKeystores().get(0);
+            Keystore keystore = wallet.getKeystores().getFirst();
             keystore.setLabel(getName());
             keystore.setWalletModel(getWalletModel());
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
 
             return keystore;
-        } catch(IOException e) {
+        } catch(Exception e) {
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
     }

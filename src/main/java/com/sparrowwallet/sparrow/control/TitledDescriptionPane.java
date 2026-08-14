@@ -2,14 +2,14 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -23,17 +23,18 @@ public class TitledDescriptionPane extends TitledPane {
     protected Hyperlink showHideLink;
     protected HBox buttonBox;
 
-    public TitledDescriptionPane(String title, String description, String content, String imageUrl) {
+    public TitledDescriptionPane(String title, String description, String content, WalletModel walletModel) {
         getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         getStyleClass().add("titled-description-pane");
+        setAccessibleText(title);
 
         setPadding(Insets.EMPTY);
-        setGraphic(getTitle(title, description, imageUrl));
+        setGraphic(getTitle(title, description, walletModel));
         setContent(getContentBox(content));
         removeArrow();
     }
 
-    protected Node getTitle(String title, String description, String imageUrl) {
+    protected Node getTitle(String title, String description, WalletModel walletModel) {
         HBox listItem = new HBox();
         listItem.setPadding(new Insets(10, 20, 10, 10));
         listItem.setSpacing(10);
@@ -43,12 +44,8 @@ public class TitledDescriptionPane extends TitledPane {
         imageBox.setMinHeight(50);
         listItem.getChildren().add(imageBox);
 
-        Image image = new Image(imageUrl, 50, 50, true, true);
-        if (!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setImage(image);
-            imageBox.getChildren().add(imageView);
-        }
+        WalletModelImage walletModelImage = new WalletModelImage(walletModel);
+        imageBox.getChildren().add(walletModelImage);
 
         VBox labelsBox = new VBox();
         labelsBox.setSpacing(5);
@@ -184,6 +181,22 @@ public class TitledDescriptionPane extends TitledPane {
                 removeArrow(count+1);
             }
         });
+    }
+
+    protected static void setDefaultButton(ButtonBase button) {
+        button.getStyleClass().add("default-button");
+        if(button instanceof SplitMenuButton splitMenuButton) {
+            for(MenuItem item : splitMenuButton.getItems()) {
+                item.getStyleClass().add("default-button");
+            }
+            splitMenuButton.getItems().addListener((ListChangeListener<MenuItem>) c -> {
+                while(c.next()) {
+                    for(MenuItem item : c.getAddedSubList()) {
+                        item.getStyleClass().add("default-button");
+                    }
+                }
+            });
+        }
     }
 
     protected static int getAccount(Wallet wallet, KeyDerivation requiredDerivation) {

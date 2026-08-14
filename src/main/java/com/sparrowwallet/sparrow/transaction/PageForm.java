@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.transaction;
 
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.scene.Node;
 
@@ -27,6 +28,11 @@ public class PageForm extends IndexedTransactionForm {
     @Override
     public TransactionView getView() {
         return view;
+    }
+
+    @Override
+    public Address getAddress() {
+        return null;
     }
 
     public int getPageStart() {

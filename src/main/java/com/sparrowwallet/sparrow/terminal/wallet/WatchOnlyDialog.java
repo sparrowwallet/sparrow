@@ -20,8 +20,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static com.sparrowwallet.sparrow.wallet.KeystoreController.DEFAULT_WATCH_ONLY_FINGERPRINT;
-
 public class WatchOnlyDialog extends NewWalletDialog {
     private static final Logger log = LoggerFactory.getLogger(WatchOnlyDialog.class);
 
@@ -95,38 +93,41 @@ public class WatchOnlyDialog extends NewWalletDialog {
 
     @Override
     protected List<Wallet> getWallets() throws ImportException {
-        try {
-            return getWalletFromXpub();
-        } catch(Exception e1) {
-            try {
-                return getWalletFromOutputDescriptor();
-            } catch(Exception e2) {
-                log.error("Could not determine wallet from descriptor: " + descriptor.getText(), e2);
+        String text = descriptor.getText().replaceAll("\\s+", "");
+
+        if(ExtendedKey.isValid(text)) {
+            ExtendedKey extendedKey = ExtendedKey.fromDescriptor(text);
+            if(!extendedKey.getKey().isPubKeyOnly()) {
+                throw new ImportException("An extended private key cannot be used to create a watch only wallet. Enter an extended public key, or an output descriptor if the private key is intended to be imported.");
             }
+
+            return getWalletFromXpub(extendedKey, ExtendedKey.Header.fromExtendedKey(text));
         }
 
-        return Collections.emptyList();
+        try {
+            return getWalletFromOutputDescriptor(text);
+        } catch(Exception e) {
+            log.error("Could not determine wallet from descriptor: " + text, e);
+            throw new ImportException("Could not determine wallet from descriptor: " + e.getMessage(), e);
+        }
     }
 
-    private List<Wallet> getWalletFromXpub() {
-        ExtendedKey xpub = ExtendedKey.fromDescriptor(descriptor.getText().replaceAll("\\s+", ""));
-        ExtendedKey.Header header = ExtendedKey.Header.fromExtendedKey(descriptor.getText());
-
+    private List<Wallet> getWalletFromXpub(ExtendedKey xpub, ExtendedKey.Header header) {
         Set<ScriptType> scriptTypes = new LinkedHashSet<>();
         scriptTypes.add(ScriptType.P2WPKH);
         scriptTypes.add(header.getDefaultScriptType());
-        scriptTypes.addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE));
+        scriptTypes.addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD));
 
         List<Wallet> wallets = new ArrayList<>();
         for(ScriptType scriptType : scriptTypes) {
             Wallet wallet = new Wallet(walletName);
-            wallet.setPolicyType(PolicyType.SINGLE);
+            wallet.setPolicyType(PolicyType.SINGLE_HD);
             wallet.setScriptType(scriptType);
 
             Keystore keystore = new Keystore();
             keystore.setSource(KeystoreSource.SW_WATCH);
             keystore.setWalletModel(WalletModel.SPARROW);
-            keystore.setKeyDerivation(new KeyDerivation(DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath()));
+            keystore.setKeyDerivation(new KeyDerivation(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath()));
             keystore.setExtendedPublicKey(xpub);
             wallet.makeLabelsUnique(keystore);
             wallet.getKeystores().add(keystore);
@@ -138,8 +139,8 @@ public class WatchOnlyDialog extends NewWalletDialog {
         return wallets;
     }
 
-    private List<Wallet> getWalletFromOutputDescriptor() {
-        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(descriptor.getText().replaceAll("\\s+", ""));
+    private List<Wallet> getWalletFromOutputDescriptor(String text) {
+        OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(text);
         Wallet wallet = outputDescriptor.toWallet();
         wallet.setName(walletName);
         return List.of(wallet);

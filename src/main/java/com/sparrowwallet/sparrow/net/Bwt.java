@@ -23,6 +23,7 @@ import javafx.concurrent.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
@@ -42,22 +43,47 @@ public class Bwt {
 
     public synchronized static void initialize() {
         if(!initialized) {
+            OsType osType = OsType.getCurrent();
+            String osArch = System.getProperty("os.arch");
+            String libName;
+            if(osType == OsType.MACOS) {
+                libName = "libbwt_jni.dylib";
+            } else if(osType == OsType.WINDOWS) {
+                libName = "bwt_jni.dll";
+            } else {
+                libName = "libbwt_jni.so";
+            }
+
+            // Try loading from the application image lib/ directory
+            String javaHome = System.getProperty("java.home");
+            if(javaHome != null) {
+                File libFile = new File(javaHome, "lib" + java.io.File.separator + libName);
+                if(libFile.exists()) {
+                    try {
+                        System.load(libFile.getAbsolutePath());
+                        initialized = true;
+                        return;
+                    } catch(UnsatisfiedLinkError e) {
+                        log.debug("Could not load bwt from java.home, falling back to JAR extraction", e);
+                    }
+                }
+            }
+
+            // Fallback: extract from JAR
             try {
-                OsType osType = OsType.getCurrent();
-                String osArch = System.getProperty("os.arch");
                 if(osType == OsType.MACOS && osArch.equals("aarch64")) {
-                    NativeUtils.loadLibraryFromJar("/native/osx/aarch64/libbwt_jni.dylib");
+                    NativeUtils.loadLibraryFromJar("/native/osx/aarch64/" + libName);
                 } else if(osType == OsType.MACOS) {
-                    NativeUtils.loadLibraryFromJar("/native/osx/x64/libbwt_jni.dylib");
+                    NativeUtils.loadLibraryFromJar("/native/osx/x64/" + libName);
                 } else if(osType == OsType.WINDOWS) {
-                    NativeUtils.loadLibraryFromJar("/native/windows/x64/bwt_jni.dll");
+                    NativeUtils.loadLibraryFromJar("/native/windows/x64/" + libName);
                 } else if(osArch.equals("aarch64")) {
-                    NativeUtils.loadLibraryFromJar("/native/linux/aarch64/libbwt_jni.so");
+                    NativeUtils.loadLibraryFromJar("/native/linux/aarch64/" + libName);
                 } else {
-                    NativeUtils.loadLibraryFromJar("/native/linux/x64/libbwt_jni.so");
+                    NativeUtils.loadLibraryFromJar("/native/linux/x64/" + libName);
                 }
                 initialized = true;
-            } catch(IOException e) {
+            } catch(UnsatisfiedLinkError | IOException e) {
                 log.error("Error loading bwt library", e);
             }
         }

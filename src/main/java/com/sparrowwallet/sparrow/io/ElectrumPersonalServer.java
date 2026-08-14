@@ -30,6 +30,10 @@ public class ElectrumPersonalServer implements WalletExport {
 
     @Override
     public void exportWallet(Wallet wallet, OutputStream outputStream, String password) throws ExportException {
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+            throw new ExportException(getName() + " does not support silent payments wallets.");
+        }
+
         if(wallet.getScriptType() == ScriptType.P2TR) {
             throw new ExportException(getName() + " does not support Taproot wallets.");
         }
@@ -37,7 +41,8 @@ public class ElectrumPersonalServer implements WalletExport {
         try {
             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8));
             writer.write("# Electrum Personal Server configuration file fragments\n");
-            writer.write("# Copy the lines below into the relevant sections in your EPS config.ini file\n\n");
+            writer.write("# First close Sparrow and edit your config file in Sparrow home to set \"legacyServer\": true\n");
+            writer.write("# Then copy the lines below into the relevant sections in your EPS config.ini file\n\n");
             writer.write("# Copy into [master-public-keys] section\n");
             Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
             writeWalletXpub(masterWallet, writer);
@@ -60,7 +65,7 @@ public class ElectrumPersonalServer implements WalletExport {
         writer.write(wallet.getFullName().replace(' ', '_') + " = ");
 
         ExtendedKey.Header xpubHeader = ExtendedKey.Header.fromScriptType(wallet.getScriptType(), false);
-        if(wallet.getPolicyType() == PolicyType.MULTI) {
+        if(wallet.getPolicyType() == PolicyType.MULTI_HD) {
             writer.write(wallet.getDefaultPolicy().getNumSignaturesRequired() + " ");
         }
 

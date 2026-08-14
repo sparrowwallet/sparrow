@@ -28,7 +28,8 @@ public class UsbStatusButton extends MenuButton {
         for(Device device : devices) {
             MenuItem deviceItem = new MenuItem(device.getModel().toDisplayString());
             if(!device.isNeedsPinSent() && (device.getModel() == WalletModel.TREZOR_1 || device.getModel() == WalletModel.TREZOR_T || device.getModel() == WalletModel.TREZOR_SAFE_3 ||
-                    device.getModel() == WalletModel.TREZOR_SAFE_5 || device.getModel() == WalletModel.KEEPKEY || device.getModel() == WalletModel.BITBOX_02)) {
+                    device.getModel() == WalletModel.TREZOR_SAFE_5 || device.getModel() == WalletModel.TREZOR_SAFE_7 || device.getModel() == WalletModel.KEEPKEY || device.getModel() == WalletModel.BITBOX_02 ||
+                    device.getModel() == WalletModel.ONEKEY_CLASSIC_1S || device.getModel() == WalletModel.ONEKEY_PRO)) {
                 deviceItem = new Menu(device.getModel().toDisplayString());
                 MenuItem toggleItem = new MenuItem("Toggle Passphrase" + (!device.getModel().externalPassphraseEntry() ? "" : (device.isNeedsPassphraseSent() ? " Off" : " On")));
                 toggleItem.setOnAction(event -> {
@@ -36,7 +37,8 @@ public class UsbStatusButton extends MenuButton {
                     togglePassphraseService.setOnSucceeded(event1 -> {
                         EventManager.get().post(new RequestOpenWalletsEvent());
                         if(!device.getModel().externalPassphraseEntry()) {
-                            AppServices.showAlertDialog("Reconnect device", "Reconnect your " + device.getModel().toDisplayString() + " to reset the passphrase.", Alert.AlertType.INFORMATION);
+                            AppServices.showAlertDialog("Restart device", "Reconnect your " + device.getModel().toDisplayString() + " to reset the passphrase." +
+                                    "\n\nIf it has a battery, hold down the power button until it restarts.", Alert.AlertType.INFORMATION);
                         }
                     });
                     togglePassphraseService.setOnFailed(event1 -> {

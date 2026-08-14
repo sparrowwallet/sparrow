@@ -2,11 +2,13 @@ package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.*;
 import com.sparrowwallet.drongo.crypto.*;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
@@ -23,23 +25,22 @@ import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Storage {
     private static final Logger log = LoggerFactory.getLogger(Storage.class);
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
 
-    private static final DateFormat BACKUP_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
-    private static final Pattern DATE_PATTERN = Pattern.compile(".+-([0-9]{14}?).*");
+    private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+    private static final Set<String> warnedDirectories = ConcurrentHashMap.newKeySet();
 
-    public static final String SPARROW_DIR = ".sparrow";
-    public static final String WINDOWS_SPARROW_DIR = "Sparrow";
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
@@ -138,6 +139,10 @@ public class Storage {
         closePersistenceService.start();
     }
 
+    public void closeAndWait() {
+        persistence.close();
+    }
+
     public void restorePublicKeysFromSeed(Wallet wallet, Key key) throws MnemonicException {
         checkWalletNetwork(wallet);
 
@@ -181,19 +186,21 @@ public class Storage {
                 Keystore keystore = wallet.getKeystores().get(i);
                 if(keystore.hasSeed()) {
                     Keystore copyKeystore = copy.getKeystores().get(i);
-                    Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), copyKeystore.getKeyDerivation().getDerivation());
+                    Keystore derivedKeystore = Keystore.fromSeed(copyKeystore.getSeed(), wallet.getPolicyType(), copyKeystore.getKeyDerivation().getDerivation());
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.getSeed().setPassphrase(copyKeystore.getSeed().getPassphrase());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
+                    keystore.setSilentPaymentScanAddress(derivedKeystore.getSilentPaymentScanAddress());
                     copyKeystore.getSeed().clear();
                 } else if(keystore.hasMasterPrivateExtendedKey()) {
                     Keystore copyKeystore = copy.getKeystores().get(i);
-                    Keystore derivedKeystore = Keystore.fromMasterPrivateExtendedKey(copyKeystore.getMasterPrivateExtendedKey(), copyKeystore.getKeyDerivation().getDerivation());
+                    Keystore derivedKeystore = Keystore.fromMasterPrivateExtendedKey(copyKeystore.getMasterPrivateExtendedKey(), wallet.getPolicyType(), copyKeystore.getKeyDerivation().getDerivation());
                     keystore.setKeyDerivation(derivedKeystore.getKeyDerivation());
                     keystore.setExtendedPublicKey(derivedKeystore.getExtendedPublicKey());
                     keystore.setBip47ExtendedPrivateKey(derivedKeystore.getBip47ExtendedPrivateKey());
-                    copyKeystore.getMasterPrivateKey().clear();
+                    keystore.setSilentPaymentScanAddress(derivedKeystore.getSilentPaymentScanAddress());
+                    copyKeystore.getMasterPrivateExtendedKey().clear();
                 }
             }
         }
@@ -230,9 +237,8 @@ public class Storage {
     private void backupWallet(String prefix) throws IOException {
         File backupDir = getWalletsBackupDir();
 
-        Date backupDate = new Date();
         String walletName = persistence.getWalletName(walletFile, null);
-        String dateSuffix = "-" + BACKUP_DATE_FORMAT.format(backupDate);
+        String dateSuffix = "-" + BACKUP_DATE_FORMAT.format(LocalDateTime.now());
         String backupName = walletName + dateSuffix + walletFile.getName().substring(walletName.length());
 
         if(prefix != null) {
@@ -265,17 +271,6 @@ public class Storage {
         deleteBackups(null);
     }
 
-    private boolean hasStartedSince(File lastBackup) {
-        try {
-            Date date = BACKUP_DATE_FORMAT.parse(getBackupDate(lastBackup.getName()));
-            ProcessHandle.Info processInfo = ProcessHandle.current().info();
-            return (processInfo.startInstant().isPresent() && processInfo.startInstant().get().isAfter(date.toInstant()));
-        } catch(Exception e) {
-            log.error("Error parsing date for backup file " + lastBackup.getName(), e);
-            return false;
-        }
-    }
-
     private void deleteBackups(String prefix) {
         File[] backups = getBackups(prefix);
         for(File backup : backups) {
@@ -284,28 +279,19 @@ public class Storage {
     }
 
     File[] getBackups(String prefix) {
-        File backupDir = getWalletsBackupDir();
-        String walletName = persistence.getWalletName(walletFile, null);
-        String extension = walletFile.getName().substring(walletName.length());
-        File[] backups = backupDir.listFiles((dir, name) -> {
-            return name.startsWith((prefix == null ? "" : prefix + "_") + walletName + "-") &&
-                    getBackupDate(name) != null &&
-                    (extension.isEmpty() || name.endsWith(extension));
-        });
-
-        backups = backups == null ? new File[0] : backups;
-        Arrays.sort(backups, Comparator.comparing(o -> getBackupDate(((File)o).getName())).reversed());
-
-        return backups;
+        return getBackups(getWalletsBackupDir(), prefix);
     }
 
-    private String getBackupDate(String backupFileName) {
-        Matcher matcher = DATE_PATTERN.matcher(backupFileName);
-        if(matcher.matches()) {
-            return matcher.group(1);
-        }
+    File[] getBackups(File backupDir, String prefix) {
+        String walletName = persistence.getWalletName(walletFile, null);
+        String extension = walletFile.getName().substring(walletName.length());
+        Pattern backupPattern = Pattern.compile(Pattern.quote((prefix == null ? "" : prefix + "_") + walletName + "-") + "[0-9]{14}" + Pattern.quote(extension));
+        File[] backups = backupDir.listFiles((dir, name) -> backupPattern.matcher(name).matches());
 
-        return null;
+        backups = backups == null ? new File[0] : backups;
+        Arrays.sort(backups, Comparator.comparing(File::getName).reversed());
+
+        return backups;
     }
 
     private WalletAndKey migrateToDb(WalletAndKey masterWalletAndKey) throws IOException, StorageException {
@@ -479,23 +465,54 @@ public class Storage {
         File walletsBackupDir = new File(getWalletsDir(), WALLETS_BACKUP_DIR);
         if(!walletsBackupDir.exists()) {
             createOwnerOnlyDirectory(walletsBackupDir);
+        } else {
+            //Unlike the wallets directory below, this directory is always created by Sparrow, so restricting it restores the permissions it was created with
+            setOwnerOnlyDirectory(walletsBackupDir);
         }
 
         return walletsBackupDir;
     }
 
     public static File getWalletsDir() {
-        File walletsDir = new File(getSparrowDir(), WALLETS_DIR);
+        boolean defaultWalletsDir = false;
+        File walletsDir = Config.get().getWalletsDir();
+        if(walletsDir != null) {
+            if(!walletsDir.exists() && (walletsDir.getParentFile() == null || !walletsDir.getParentFile().exists() || !walletsDir.getParentFile().canWrite())) {
+                log.info("Configured wallets directory " + walletsDir.getAbsolutePath() + " is not reachable, reverting to default");
+                walletsDir = null;
+            }
+        }
+        if(walletsDir == null) {
+            walletsDir = new File(getDataDir(), WALLETS_DIR);
+            defaultWalletsDir = true;
+        }
         if(!walletsDir.exists()) {
             createOwnerOnlyDirectory(walletsDir);
+        } else if(defaultWalletsDir) {
+            setOwnerOnlyDirectory(walletsDir);
         }
 
         return walletsDir;
     }
 
     public static File getCertificateFile(String host) {
-        File certsDir = getCertsDir();
-        File[] certs = certsDir.listFiles((dir, name) -> name.equals(host));
+        return findCertFile(getCertName(host));
+    }
+
+    public static void saveCertificate(String host, Certificate cert) {
+        writeCertPem(getCertName(host), cert);
+    }
+
+    public static File getCaCertificateFile(String host) {
+        return findCertFile(host + ".cacert");
+    }
+
+    public static void saveCaCertificate(String host, Certificate cert) {
+        writeCertPem(host + ".cacert", cert);
+    }
+
+    private static File findCertFile(String filename) {
+        File[] certs = getCertsDir().listFiles((dir, name) -> name.equals(filename));
         if(certs != null && certs.length > 0) {
             return certs[0];
         }
@@ -503,8 +520,8 @@ public class Storage {
         return null;
     }
 
-    public static void saveCertificate(String host, Certificate cert) {
-        try(FileWriter writer = new FileWriter(new File(getCertsDir(), host))) {
+    private static void writeCertPem(String filename, Certificate cert) {
+        try(FileWriter writer = new FileWriter(new File(getCertsDir(), filename))) {
             writer.write("-----BEGIN CERTIFICATE-----\n");
             writer.write(Base64.getEncoder().encodeToString(cert.getEncoded()).replaceAll("(.{64})", "$1\n"));
             writer.write("\n-----END CERTIFICATE-----\n");
@@ -515,8 +532,16 @@ public class Storage {
         }
     }
 
+    private static String getCertName(String host) {
+        if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+            return host + ".bitcoind";
+        }
+
+        return host;
+    }
+
     static File getCertsDir() {
-        File certsDir = new File(getSparrowDir(), CERTS_DIR);
+        File certsDir = new File(getDataDir(), CERTS_DIR);
         if(!certsDir.exists()) {
             createOwnerOnlyDirectory(certsDir);
         }
@@ -524,73 +549,123 @@ public class Storage {
         return certsDir;
     }
 
-    public static File getSparrowDir() {
-        File sparrowDir;
+    /**
+     * Returns the network specific directory containing the configuration file.
+     */
+    public static File getConfigDir() {
+        return getNetworkDir(getConfigHome());
+    }
+
+    /**
+     * Returns the network specific directory containing wallets and certificates.
+     */
+    public static File getDataDir() {
+        return getNetworkDir(getDataHome());
+    }
+
+    /**
+     * Returns the network specific directory containing regenerable files.
+     */
+    public static File getCacheDir() {
+        return getNetworkDir(getCacheHome());
+    }
+
+    /**
+     * Returns the network specific directory containing logs and runtime state.
+     */
+    public static File getStateDir() {
+        return getNetworkDir(getStateHome());
+    }
+
+    public static File getConfigHome() {
+        return ApplicationDir.CONFIG.get(SparrowWallet.APP_NAME);
+    }
+
+    public static File getDataHome() {
+        return ApplicationDir.DATA.get(SparrowWallet.APP_NAME);
+    }
+
+    public static File getCacheHome() {
+        return ApplicationDir.CACHE.get(SparrowWallet.APP_NAME);
+    }
+
+    public static File getStateHome() {
+        return getStateHome(false);
+    }
+
+    public static File getStateHome(boolean useDefault) {
+        return ApplicationDir.STATE.get(SparrowWallet.APP_NAME, useDefault);
+    }
+
+    /**
+     * Returns the single directory used when the XDG Base Directory Specification is not followed, ignoring any configured home.
+     *
+     * Provides a fixed location that does not move as categories are migrated, and is where earlier versions wrote all of their files.
+     */
+    public static File getDefaultHome() {
+        return ApplicationDir.getDefaultDir(SparrowWallet.APP_NAME);
+    }
+
+    /**
+     * Resolves the network specific directory within the given application directory, creating it if necessary.
+     *
+     * Where a network has been renamed, any existing directory under the previous name is moved and replaced with a symlink,
+     * and a symlink under the previous name is otherwise maintained for convenience.
+     */
+    private static File getNetworkDir(File applicationDir) {
+        File networkDir;
         Network network = Network.get();
         if(network != Network.MAINNET) {
-            sparrowDir = new File(getSparrowHome(), network.getHome());
-            if(!network.getName().equals(network.getHome()) && !sparrowDir.exists()) {
-                File networkNameDir = new File(getSparrowHome(), network.getName());
+            networkDir = new File(applicationDir, network.getHome());
+            if(!network.getName().equals(network.getHome()) && !networkDir.exists()) {
+                File networkNameDir = new File(applicationDir, network.getName());
                 if(networkNameDir.exists() && networkNameDir.isDirectory() && !Files.isSymbolicLink(networkNameDir.toPath())) {
                     try {
-                        if(networkNameDir.renameTo(sparrowDir) && !isWindows()) {
-                            Files.createSymbolicLink(networkNameDir.toPath(), Path.of(sparrowDir.getName()));
+                        if(networkNameDir.renameTo(networkDir) && !isWindows()) {
+                            Files.createSymbolicLink(networkNameDir.toPath(), Path.of(networkDir.getName()));
                         }
                     } catch(Exception e) {
-                        log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + sparrowDir.getName(), e);
+                        log.debug("Error creating symlink from " + networkNameDir.getAbsolutePath() + " to " + networkDir.getName(), e);
                     }
                 }
             }
         } else {
-            sparrowDir = getSparrowHome();
+            networkDir = applicationDir;
         }
 
-        if(!sparrowDir.exists()) {
-            createOwnerOnlyDirectory(sparrowDir);
+        if(!networkDir.exists()) {
+            createOwnerOnlyDirectory(networkDir);
         }
 
         if(!network.getName().equals(network.getHome()) && !isWindows()) {
             try {
-                Path networkNamePath = getSparrowHome().toPath().resolve(network.getName());
+                Path networkNamePath = applicationDir.toPath().resolve(network.getName());
                 if(Files.isSymbolicLink(networkNamePath)) {
-                    Path symlinkTarget = getSparrowHome().toPath().resolve(Files.readSymbolicLink(networkNamePath));
-                    if(!Files.isSameFile(sparrowDir.toPath(), symlinkTarget)) {
+                    Path symlinkTarget = applicationDir.toPath().resolve(Files.readSymbolicLink(networkNamePath));
+                    if(!Files.isSameFile(networkDir.toPath(), symlinkTarget)) {
                         Files.delete(networkNamePath);
-                        Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                        Files.createSymbolicLink(networkNamePath, Path.of(networkDir.getName()));
                     }
                 } else if(!Files.exists(networkNamePath)) {
-                    Files.createSymbolicLink(networkNamePath, Path.of(sparrowDir.getName()));
+                    Files.createSymbolicLink(networkNamePath, Path.of(networkDir.getName()));
                 }
             } catch(Exception e) {
-                log.debug("Error updating symlink from " + network.getName() + " to " + sparrowDir.getName(), e);
+                log.debug("Error updating symlink from " + network.getName() + " to " + networkDir.getName(), e);
             }
         }
 
-        return sparrowDir;
+        return networkDir;
     }
 
-    public static File getSparrowHome() {
-        return getSparrowHome(false);
-    }
-
-    public static File getSparrowHome(boolean useDefault) {
-        if(!useDefault && System.getProperty(SparrowWallet.APP_HOME_PROPERTY) != null) {
-            return new File(System.getProperty(SparrowWallet.APP_HOME_PROPERTY));
+    /**
+     * Logs the application directories in use where they do not all resolve to the default application directory.
+     */
+    public static void logApplicationDirs() {
+        List<ApplicationDir> xdgDirs = Arrays.stream(ApplicationDir.values()).filter(applicationDir -> applicationDir.isXdg(SparrowWallet.APP_NAME)).toList();
+        if(!xdgDirs.isEmpty() && log.isInfoEnabled()) {
+            log.info("Using XDG base directories for " + xdgDirs.stream().map(applicationDir -> applicationDir.toString().toLowerCase(Locale.ROOT)).collect(Collectors.joining(", ")) +
+                    " (config: " + getConfigHome() + ", data: " + getDataHome() + ", cache: " + getCacheHome() + ", state: " + getStateHome() + ")");
         }
-
-        if(isWindows()) {
-            return new File(getHomeDir(), WINDOWS_SPARROW_DIR);
-        }
-
-        return new File(getHomeDir(), SPARROW_DIR);
-    }
-
-    static File getHomeDir() {
-        if(isWindows()) {
-            return new File(System.getenv("APPDATA"));
-        }
-
-        return new File(System.getProperty("user.home"));
     }
 
     public static boolean createOwnerOnlyDirectory(File directory) {
@@ -609,6 +684,32 @@ public class Storage {
         }
 
         return false;
+    }
+
+    public static void setOwnerOnlyDirectory(File directory) {
+        //A symlinked directory has a target outside the application directories that may be deliberately shared, so leave it alone
+        if(isWindows() || Files.isSymbolicLink(directory.toPath())) {
+            return;
+        }
+
+        Set<PosixFilePermission> ownerOnly = getDirectoryOwnerOnlyPosixFilePermissions();
+        Set<PosixFilePermission> currentPermissions;
+        try {
+            currentPermissions = Files.getPosixFilePermissions(directory.toPath());
+        } catch(UnsupportedOperationException | IOException e) {
+            log.debug("Could not read permissions on directory " + directory.getAbsolutePath(), e);
+            return;
+        }
+
+        if(!ownerOnly.equals(currentPermissions)) {
+            try {
+                Files.setPosixFilePermissions(directory.toPath(), ownerOnly);
+            } catch(IOException e) {
+                if(warnedDirectories.add(directory.getAbsolutePath())) {
+                    log.warn("Could not restrict permissions on directory " + directory.getAbsolutePath() + ", it remains readable by other users", e);
+                }
+            }
+        }
     }
 
     public static boolean createOwnerOnlyFile(File file) {
@@ -684,7 +785,7 @@ public class Storage {
 
         public static Executor getSingleThreadedExecutor() {
             if(singleThreadedExecutor == null) {
-                BasicThreadFactory factory = new BasicThreadFactory.Builder().namingPattern("LoadWalletService-single").daemon(true).priority(Thread.MIN_PRIORITY).build();
+                BasicThreadFactory factory = BasicThreadFactory.builder().namingPattern("LoadWalletService-single").daemon(true).priority(Thread.MIN_PRIORITY).build();
                 singleThreadedExecutor = Executors.newSingleThreadScheduledExecutor(factory);
             }
 

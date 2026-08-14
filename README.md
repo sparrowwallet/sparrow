@@ -16,13 +16,13 @@ or for those without SSH credentials:
 
 `git clone --recursive https://github.com/sparrowwallet/sparrow.git`
 
-In order to build, Sparrow requires Java 22 or higher to be installed. 
-The release binaries are built with [Eclipse Temurin 22.0.2+9](https://github.com/adoptium/temurin22-binaries/releases/tag/jdk-22.0.2%2B9).
+In order to build, Sparrow requires Java 25 or higher to be installed. 
+The release binaries are built with [Eclipse Temurin 25.0.2+10](https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.2%2B10).
+If you are using [SDKMAN](https://sdkman.io/), you can use `sdk env install` to ensure you have the correct version.
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
 
 `sudo apt install -y rpm fakeroot binutils`
-
 
 The Sparrow binaries can be built from source using
 
@@ -44,7 +44,7 @@ If you prefer to run Sparrow directly from source, it can be launched from withi
 
 `./sparrow`
 
-Java 22 or higher must be installed. 
+Java 25 or higher must be installed. 
 
 ## Configuration
 
@@ -81,11 +81,23 @@ When not explicitly configured using the command line argument above, Sparrow st
 
 | Platform | Location |
 |----------| -------- |
-| OSX      | ~/.sparrow |
+| macOS    | ~/.sparrow |
 | Linux    | ~/.sparrow |
 | Windows  | %APPDATA%/Sparrow |
 
 Testnet3, testnet4, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
+
+On macOS and Linux, Sparrow also supports the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/). 
+This is opt in: for each category below, if the corresponding directory already exists, Sparrow uses it, otherwise it continues to use the home folder above. Categories are resolved independently, so files can be moved across one at a time.
+
+| Category | Location | Contents                              |
+|----------| -------- |---------------------------------------|
+| Config   | `$XDG_CONFIG_HOME/sparrow` (default `~/.config/sparrow`) | `config`, `network-*` markers         |
+| Data     | `$XDG_DATA_HOME/sparrow` (default `~/.local/share/sparrow`) | `wallets`, `certs`, `lark`            |
+| State    | `$XDG_STATE_HOME/sparrow` (default `~/.local/state/sparrow`) | `sparrow.log`, `tor/work`, lock files |
+| Cache    | `$XDG_CACHE_HOME/sparrow` (default `~/.cache/sparrow`) | `tor/cache`                           |
+
+Specifying a home folder with the `-d` argument disables XDG resolution entirely, and stores all files in the given folder.
 
 ## Reporting Issues
 

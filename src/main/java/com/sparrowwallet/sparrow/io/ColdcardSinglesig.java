@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,21 +55,37 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
         try {
             Gson gson = new Gson();
             Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {
             }.getType();
             Map<String, JsonElement> map = gson.fromJson(new InputStreamReader(inputStream, StandardCharsets.UTF_8), stringStringMap);
 
-            if (map.get("xfp") == null) {
-                throw new ImportException("File was not a valid " + getName() + " wallet export");
+            if(map.get("xfp") == null) {
+                throw new ImportException("Export was not a valid " + getName() + " wallet export");
             }
 
             String masterFingerprint = map.get("xfp").getAsString();
 
-            for (String key : map.keySet()) {
-                if (key.startsWith("bip")) {
+            if(policyType == PolicyType.SINGLE_SP) {
+                JsonElement bip352Element = map.get("bip352");
+                if(bip352Element == null) {
+                    throw new ImportException("Export does not contain the spscan value for silent payments");
+                }
+
+                ColdcardKeystore ck = gson.fromJson(bip352Element, ColdcardKeystore.class);
+                Keystore keystore = new Keystore();
+                keystore.setLabel(getName());
+                keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+                keystore.setWalletModel(getWalletModel());
+                keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, ck.deriv, true));
+                keystore.setSilentPaymentScanAddress(SilentPaymentScanAddress.fromKeyString(ck.spscan));
+                return keystore;
+            }
+
+            for(String key : map.keySet()) {
+                if(key.startsWith("bip")) {
                     ColdcardKeystore ck = gson.fromJson(map.get(key), ColdcardKeystore.class);
 
                     if(ck.name != null) {
@@ -77,7 +94,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                             Keystore keystore = new Keystore();
                             keystore.setLabel(getName());
                             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
-                            keystore.setWalletModel(WalletModel.COLDCARD);
+                            keystore.setWalletModel(getWalletModel());
                             keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, ck.deriv, true));
                             keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(ck.xpub));
 
@@ -86,7 +103,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                     }
                 }
             }
-        } catch (Exception e) {
+        } catch(Exception e) {
             throw new ImportException("Error getting " + getName() + " keystore", e);
         }
 
@@ -101,13 +118,13 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
     @Override
     public Wallet importWallet(InputStream inputStream, String password) throws ImportException {
         //Use default of P2WPKH
-        Keystore keystore = getKeystore(ScriptType.P2WPKH, inputStream, "");
+        Keystore keystore = getKeystore(PolicyType.SINGLE_HD, ScriptType.P2WPKH, inputStream, "");
 
         Wallet wallet = new Wallet();
-        wallet.setPolicyType(PolicyType.SINGLE);
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(ScriptType.P2WPKH);
         wallet.getKeystores().add(keystore);
-        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE, ScriptType.P2WPKH, wallet.getKeystores(), null));
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, ScriptType.P2WPKH, wallet.getKeystores(), null));
 
         try {
             wallet.checkWallet();
@@ -122,6 +139,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
         public String deriv;
         public String name;
         public String xpub;
+        public String spscan;
         public String xfp;
     }
 }

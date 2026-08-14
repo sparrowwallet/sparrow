@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,13 +39,29 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
 
     @Override
     public List<String> getServerVersion(Transport transport, String clientName, String[] supportedVersions) {
+        if(Config.get().getServerType() == ServerType.ELECTRUM_SERVER && Config.get().isLegacyServer()) {
+            return getLegacyServerVersion(transport, clientName);
+        }
+
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            //Using 1.4 as the version number as EPS tries to parse this number to a float :(
             return new RetryLogic<List<String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
-                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).params(clientName, "1.4").execute());
+                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).params(clientName, supportedVersions).execute());
+        } catch(JsonRpcException e) {
+            return getLegacyServerVersion(transport, clientName);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server version", e);
+        }
+    }
+
+    private List<String> getLegacyServerVersion(Transport transport, String clientName) {
+        try {
+            //Fallback to using 1.4 as the version number as EPS tries to parse this number to a float :(
+            JsonRpcClient client = new JsonRpcClient(transport);
+            return new RetryLogic<List<String>>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAsList(String.class).method("server.version").id(idCounter.incrementAndGet()).params(clientName, "1.4").execute());
+        } catch(Exception ex) {
+            throw new ElectrumServerRpcException("Error getting legacy server version", ex);
         }
     }
 
@@ -56,6 +73,17 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                     client.createRequest().returnAs(String.class).method("server.banner").id(idCounter.incrementAndGet()).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server banner", e);
+        }
+    }
+
+    @Override
+    public ServerFeatures getServerFeatures(Transport transport) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            return new RetryLogic<ServerFeatures>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(ServerFeatures.class).method("server.features").id(idCounter.incrementAndGet()).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error getting server features", e);
         }
     }
 
@@ -123,9 +151,9 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
         for(String path : pathScriptHashes.keySet()) {
             EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Finding transactions for " + path));
             try {
-                String scriptHash = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                String scriptHashStatus = new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
                         client.createRequest().returnAs(String.class).method("blockchain.scripthash.subscribe").id(idCounter.incrementAndGet()).params(pathScriptHashes.get(path)).executeNullable());
-                result.put(path, scriptHash);
+                result.put(path, scriptHashStatus);
             } catch(Exception e) {
                 //Even if we have some successes, failure to subscribe for all script hashes will result in outdated wallet view. Don't proceed.
                 throw new ElectrumServerRpcException("Failed to subscribe to path: " + path, e);
@@ -133,6 +161,46 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
         }
 
         return result;
+    }
+
+    @Override
+    public Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+
+        Map<String, Boolean> result = new LinkedHashMap<>();
+        for(String scriptHash : scriptHashes) {
+            try {
+                Boolean wasSubscribed = new RetryLogic<Boolean>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                        client.createRequest().returnAs(Boolean.class).method("blockchain.scripthash.unsubscribe").id(idCounter.incrementAndGet()).params(scriptHash).executeNullable());
+                result.put(scriptHash, wasSubscribed);
+            } catch(Exception e) {
+                log.warn("Failed to unsubscribe from script hash: " + scriptHash, e);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public SilentPaymentsSubscription subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+        try {
+            return new RetryLogic<SilentPaymentsSubscription>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(SilentPaymentsSubscription.class).method("blockchain.silentpayments.subscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex, start, labels).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to subscribe to silent payments for wallet " + wallet.getName(), e);
+        }
+    }
+
+    @Override
+    public String unsubscribeSilentPayments(Transport transport, String scanPrivKeyHex, String spendPubKeyHex) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+        try {
+            return new RetryLogic<String>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(String.class).method("blockchain.silentpayments.unsubscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to unsubscribe silent payments", e);
+        }
     }
 
     @Override
@@ -153,6 +221,29 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 log.warn("Failed to retrieve block header for block height: " + blockHeight + (e.getErrorMessage() != null ? " (" + e.getErrorMessage().getMessage() + ")" : ""));
             } catch(Exception e) {
                 log.warn("Failed to retrieve block header for block height: " + blockHeight + " (" + e.getMessage() + ")");
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public Map<Integer, BlockStats> getBlockStats(Transport transport, Set<Integer> blockHeights) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+
+        Map<Integer, BlockStats> result = new LinkedHashMap<>();
+        for(Integer blockHeight : blockHeights) {
+            try {
+                BlockStats blockStats = new RetryLogic<BlockStats>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                        client.createRequest().returnAs(BlockStats.class).method("blockchain.block.stats").id(idCounter.incrementAndGet()).params(blockHeight).execute());
+                result.put(blockHeight, blockStats);
+            } catch(ServerException e) {
+                //If there is an error with the server connection, don't keep trying - this may take too long given many blocks
+                throw new ElectrumServerRpcException("Failed to retrieve block stats for block height: " + blockHeight, e);
+            } catch(JsonRpcException e) {
+                log.warn("Failed to retrieve block stats for block height: " + blockHeight + (e.getErrorMessage() != null ? " (" + e.getErrorMessage().getMessage() + ")" : ""));
+            } catch(Exception e) {
+                log.warn("Failed to retrieve block stats for block height: " + blockHeight + " (" + e.getMessage() + ")");
             }
         }
 

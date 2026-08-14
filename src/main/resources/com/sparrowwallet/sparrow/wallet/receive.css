@@ -16,6 +16,14 @@
     -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.5), 10, 0, 0, 0);
 }
 
+#spQrCode {
+    -fx-cursor: default;
+}
+
+#spQrCode:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.8), 10, 0, 0, 0);
+}
+
 #lastUsedField .input-container, #derivationField .input-container {
     -fx-alignment: center-left;
 }

@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.JCommander;
+import com.sparrowwallet.drongo.ApplicationDir;
 import com.sparrowwallet.drongo.Drongo;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.io.Storage;
@@ -18,14 +19,24 @@ import java.util.*;
 public class SparrowWallet {
     public static final String APP_ID = "sparrow";
     public static final String APP_NAME = "Sparrow";
-    public static final String APP_VERSION = "2.1.3";
+    public static final String APP_VERSION = "2.5.4";
     public static final String APP_VERSION_SUFFIX = "";
-    public static final String APP_HOME_PROPERTY = "sparrow.home";
+    public static final String APP_HOME_PROPERTY = ApplicationDir.getHomeProperty(APP_NAME);
     public static final String NETWORK_ENV_PROPERTY = "SPARROW_NETWORK";
+    public static final String JPACKAGE_APP_PATH = "jpackage.app-path";
 
     private static Instance instance;
 
     public static void main(String[] argv) {
+        if(System.getProperty(JPACKAGE_APP_PATH) != null) {
+            String libDir = System.getProperty("java.home") + File.separator + "lib";
+            System.setProperty("jna.boot.library.path", libDir);
+            System.setProperty("jna.library.path", libDir);
+            System.setProperty("jSerialComm.library.path", libDir);
+            System.setProperty("org.usb4java.LibraryName", "usb4java");
+            System.setProperty("java.library.path", libDir);
+        }
+
         Args args = new Args();
         JCommander jCommander = JCommander.newBuilder().addObject(args).programName(APP_NAME.toLowerCase(Locale.ROOT)).acceptUnknownOptions(true).build();
         jCommander.parse(argv);
@@ -61,17 +72,19 @@ public class SparrowWallet {
             }
         }
 
-        File testnetFlag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET.getName());
+        Storage.logApplicationDirs();
+
+        File testnetFlag = new File(Storage.getConfigHome(), "network-" + Network.TESTNET.getName());
         if(testnetFlag.exists()) {
             Network.set(Network.TESTNET);
         }
 
-        File testnet4Flag = new File(Storage.getSparrowHome(), "network-" + Network.TESTNET4.getName());
+        File testnet4Flag = new File(Storage.getConfigHome(), "network-" + Network.TESTNET4.getName());
         if(testnet4Flag.exists()) {
             Network.set(Network.TESTNET4);
         }
 
-        File signetFlag = new File(Storage.getSparrowHome(), "network-" + Network.SIGNET.getName());
+        File signetFlag = new File(Storage.getConfigHome(), "network-" + Network.SIGNET.getName());
         if(signetFlag.exists()) {
             Network.set(Network.SIGNET);
         }

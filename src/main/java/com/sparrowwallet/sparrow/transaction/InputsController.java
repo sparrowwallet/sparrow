@@ -184,4 +184,9 @@ public class InputsController extends TransactionFormController implements Initi
             updatePSBTInputs(inputsForm.getPsbt());
         }
     }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        total.refresh();
+    }
 }

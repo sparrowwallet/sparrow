@@ -13,7 +13,11 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.psbt.PSBTProofException;
+import com.sparrowwallet.drongo.silentpayments.*;
+import com.sparrowwallet.drongo.wallet.Payment;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.UnitFormat;
@@ -27,8 +31,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
@@ -61,10 +63,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private final TextArea key;
     private final ComboBox<ScriptType> keyScriptType;
     private final CopyableLabel keyAddress;
+    private final CopyableLabel keyUtxos;
     private final ComboBoxTextField toAddress;
     private final ComboBox<Wallet> toWallet;
     private final FeeRangeSlider feeRange;
     private final CopyableLabel feeRate;
+    private final UnlabeledToggleSwitch ignoreDust;
+    private SilentPaymentAddress silentPaymentAddress;
 
     public PrivateKeySweepDialog(Wallet wallet) {
         final DialogPane dialogPane = getDialogPane();
@@ -72,14 +77,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText("Sweep Private Key");
-
-        Image image = new Image("image/seed.png", 50, 50, false, false);
-        if(!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setSmooth(false);
-            imageView.setImage(image);
-            dialogPane.setGraphic(imageView);
-        }
+        dialogPane.setGraphic(new WalletModelImage(WalletModel.SEED));
 
         Form form = new Form();
         Fieldset fieldset = new Fieldset();
@@ -115,7 +113,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         Field keyScriptTypeField = new Field();
         keyScriptTypeField.setText("Script Type:");
         keyScriptType = new ComboBox<>();
-        keyScriptType.setItems(FXCollections.observableList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE)));
+        keyScriptType.setItems(FXCollections.observableList(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD)));
         keyScriptTypeField.getInputs().add(keyScriptType);
 
         keyScriptType.setConverter(new StringConverter<ScriptType>() {
@@ -136,10 +134,17 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         keyAddress.getStyleClass().add("fixed-width");
         addressField.getInputs().add(keyAddress);
 
+        Field utxosField = new Field();
+        utxosField.setText("UTXOs:");
+        keyUtxos = new CopyableLabel();
+        utxosField.getInputs().add(keyUtxos);
+
+
         Field toAddressField = new Field();
         toAddressField.setText("Sweep to:");
         toAddress = new ComboBoxTextField();
         toAddress.getStyleClass().add("fixed-width");
+        toAddress.setSkin(new AddressTextFieldSkin(toAddress));
         toWallet = new ComboBox<>();
         toWallet.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream()
                 .filter(w -> !w.isWhirlpoolChildWallet() && !w.isBip47()).collect(Collectors.toList())));
@@ -166,7 +171,12 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         feeRange.setFeeRate(AppServices.getDefaultFeeRate());
         updateFeeRate();
 
-        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField);
+        Field ignoreDustField = new Field();
+        ignoreDustField.setText("Ignore dust:");
+        ignoreDust = new UnlabeledToggleSwitch();
+        ignoreDustField.getInputs().add(ignoreDust);
+
+        fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, ignoreDustField);
         form.getChildren().add(fieldset);
         dialogPane.setContent(form);
 
@@ -203,18 +213,31 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         });
 
         toAddress.textProperty().addListener((observable, oldValue, newValue) -> {
+            try {
+                silentPaymentAddress = SilentPaymentAddress.from(newValue);
+            } catch(Exception e) {
+                silentPaymentAddress = null;
+            }
             createButton.setDisable(!isValidKey() || !isValidToAddress());
         });
 
         toWallet.valueProperty().addListener((observable, oldValue, selectedWallet) -> {
             if(selectedWallet != null) {
-                toAddress.setText(selectedWallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+                if(selectedWallet.getPolicyType() == PolicyType.SINGLE_SP) {
+                    toAddress.setText(selectedWallet.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+                } else {
+                    toAddress.setText(selectedWallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+                }
             }
         });
 
         keyScriptType.setValue(ScriptType.P2PKH);
         if(wallet != null) {
-            toAddress.setText(wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+            if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+                toAddress.setText(wallet.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+            } else {
+                toAddress.setText(wallet.getFreshNode(KeyPurpose.RECEIVE).getAddress().toString());
+            }
         }
 
         AppServices.onEscapePressed(dialogPane.getScene(), () -> setResult(null));
@@ -271,10 +294,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     }
 
     private boolean isValidToAddress() {
-        try {
-            Address address = getToAddress();
+        if(silentPaymentAddress != null) {
             return true;
-        } catch (InvalidAddressException e) {
+        }
+        try {
+            getToAddress();
+            return true;
+        } catch(InvalidAddressException e) {
             return false;
         }
     }
@@ -286,14 +312,14 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private void setFromAddress() {
         DumpedPrivateKey privateKey = getPrivateKey();
         ScriptType scriptType = keyScriptType.getValue();
-        Address address = scriptType.getAddress(privateKey.getKey());
+        Address address = scriptType.getAddress(PolicyType.SINGLE_HD, privateKey.getKey());
         keyAddress.setText(address.toString());
     }
 
     private void setScriptTypes(boolean isValidKey) {
         boolean compressed = !isValidKey || getPrivateKey().getKey().isCompressed();
-        if(compressed && !keyScriptType.getItems().equals(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE))) {
-            keyScriptType.getItems().addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE).stream().filter(s -> !keyScriptType.getItems().contains(s)).collect(Collectors.toList()));
+        if(compressed && !keyScriptType.getItems().equals(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD))) {
+            keyScriptType.getItems().addAll(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD).stream().filter(s -> !keyScriptType.getItems().contains(s)).collect(Collectors.toList()));
         } else if(!compressed && !keyScriptType.getItems().equals(List.of(ScriptType.P2PKH))) {
             keyScriptType.getSelectionModel().select(0);
             keyScriptType.getItems().removeIf(scriptType -> scriptType != ScriptType.P2PKH);
@@ -345,8 +371,9 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         try {
             DumpedPrivateKey privateKey = getPrivateKey();
             ScriptType scriptType = keyScriptType.getValue();
-            Address fromAddress = scriptType.getAddress(privateKey.getKey());
-            Address destAddress = getToAddress();
+            Address fromAddress = scriptType.getAddress(PolicyType.SINGLE_HD, privateKey.getKey());
+            Payment payment = silentPaymentAddress != null ? new SilentPayment(silentPaymentAddress, null, 0, true)
+                    : new Payment(getToAddress(), null, 0, true);
 
             Date since = null;
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
@@ -355,12 +382,23 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                 Optional<Date> optSince = addressScanDateDialog.showAndWait();
                 if(optSince.isPresent()) {
                     since = optSince.get();
+                } else {
+                    return;
                 }
             }
 
             ElectrumServer.AddressUtxosService addressUtxosService = new ElectrumServer.AddressUtxosService(fromAddress, since);
             addressUtxosService.setOnSucceeded(successEvent -> {
-                createTransaction(privateKey.getKey(), scriptType, addressUtxosService.getValue(), destAddress);
+                List<TransactionOutput> utxos = addressUtxosService.getValue();
+                if(ignoreDust.isSelected()) {
+                    utxos = removeDust(utxos);
+                    if(utxos.isEmpty()) {
+                        AppServices.showErrorDialog("No outputs to sweep", "All of the unspent outputs for this private key have been ignored as dust.");
+                        return;
+                    }
+                }
+
+                createTransaction(privateKey.getKey(), scriptType, utxos, payment);
             });
             addressUtxosService.setOnFailed(failedEvent -> {
                 Throwable rootCause = Throwables.getRootCause(failedEvent.getSource().getException());
@@ -369,7 +407,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             });
 
             if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
-                ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Address Scan", "Scanning address for transactions...", "/image/sparrow.png", addressUtxosService);
+                ServiceProgressDialog serviceProgressDialog = new ServiceProgressDialog("Address Scan", "Scanning address for transactions...", new DialogImage(DialogImage.Type.SPARROW), addressUtxosService);
                 serviceProgressDialog.initOwner(getDialogPane().getScene().getWindow());
                 AppServices.moveToActiveWindowScreen(serviceProgressDialog);
             }
@@ -380,13 +418,19 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         }
     }
 
-    private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Address destAddress) {
+    private List<TransactionOutput> removeDust(List<TransactionOutput> txOutputs) {
+        long dustAttackThreshold = Config.get().getDustAttackThreshold();
+        return txOutputs.stream().filter(txOutput -> txOutput.getValue() > dustAttackThreshold).collect(Collectors.toList());
+    }
+
+    private void createTransaction(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, Payment payment) {
+        Address destAddress = payment instanceof SilentPayment silentPayment ? computeSilentPaymentAddress(privKey, scriptType, txOutputs, silentPayment) : payment.getAddress();
         ECKey pubKey = ECKey.fromPublicOnly(privKey);
 
         Transaction noFeeTransaction = new Transaction();
         long total = 0;
         for(TransactionOutput txOutput : txOutputs) {
-            scriptType.addSpendingInput(noFeeTransaction, txOutput, pubKey, TransactionSignature.dummy(scriptType == P2TR ? TransactionSignature.Type.SCHNORR : TransactionSignature.Type.ECDSA));
+            scriptType.addSpendingInput(PolicyType.SINGLE_HD, noFeeTransaction, txOutput, pubKey, TransactionSignature.dummy(scriptType == P2TR ? TransactionSignature.Type.SCHNORR : TransactionSignature.Type.ECDSA));
             total += txOutput.getValue();
         }
 
@@ -395,14 +439,14 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
         double feeRate = feeRange.getFeeRate();
         long fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate);
-        if(feeRate == Transaction.DEFAULT_MIN_RELAY_FEE) {
+        if(feeRate == AppServices.getMinimumRelayFeeRate() && feeRate > 0d) {
             fee++;
         }
 
         long dustThreshold = destAddress.getScriptType().getDustThreshold(sweepOutput, Transaction.DUST_RELAY_TX_FEE);
         if(total - fee <= dustThreshold) {
-            feeRate = Transaction.DEFAULT_MIN_RELAY_FEE;
-            fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate) + 1;
+            feeRate = AppServices.getMinimumRelayFeeRate();
+            fee = (long)Math.ceil(noFeeTransaction.getVirtualSize() * feeRate) + (feeRate > 0d ? 1 : 0);
 
             if(total - fee <= dustThreshold) {
                 AppServices.showErrorDialog("Insufficient funds", "The unspent outputs for this private key contain insufficient funds to spend (" + total + " sats).");
@@ -445,7 +489,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
                 psbtInput.setWitnessScript(txInput.getWitness().getWitnessScript());
             }
 
-            if(!psbtInput.sign(scriptType.getOutputKey(privKey))) {
+            if(!psbtInput.sign(scriptType.getOutputKey(PolicyType.SINGLE_HD, privKey))) {
                 AppServices.showErrorDialog("Failed to sign", "Failed to sign for transaction output " + utxoOutput.getHash() + ":" + utxoOutput.getIndex());
                 return;
             }
@@ -453,12 +497,39 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             TransactionSignature signature = psbtInput.isTaproot() ? psbtInput.getTapKeyPathSignature() : psbtInput.getPartialSignature(pubKey);
 
             Transaction finalizeTransaction = new Transaction();
-            TransactionInput finalizedTxInput = scriptType.addSpendingInput(finalizeTransaction, utxoOutput, pubKey, signature);
+            TransactionInput finalizedTxInput = scriptType.addSpendingInput(PolicyType.SINGLE_HD, finalizeTransaction, utxoOutput, pubKey, signature);
             psbtInput.setFinalScriptSig(finalizedTxInput.getScriptSig());
             psbtInput.setFinalScriptWitness(finalizedTxInput.getWitness());
         }
 
-        setResult(psbt.extractTransaction());
+        try {
+            setResult(psbt.extractTransaction());
+        } catch(PSBTProofException e) {
+            AppServices.showErrorDialog("Invalid Silent Payments Transaction", e.getMessage());
+        }
+    }
+
+    private Address computeSilentPaymentAddress(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, SilentPayment silentPayment) {
+        ECKey summedPrivateKey = scriptType.getOutputKey(PolicyType.SINGLE_HD, privKey);
+        if(scriptType == P2TR && summedPrivateKey.hasOddYCoord()) {
+            summedPrivateKey = summedPrivateKey.negatePrivate();
+        }
+
+        Set<HashIndex> outpoints = new LinkedHashSet<>();
+        for(TransactionOutput txOutput : txOutputs) {
+            outpoints.add(new HashIndex(txOutput.getHash(), txOutput.getIndex()));
+        }
+
+        try {
+            SilentPaymentUtils.computeOutputAddresses(List.of(silentPayment), summedPrivateKey, outpoints);
+            if(!silentPayment.isAddressComputed()) {
+                throw new IllegalStateException("Failed to compute silent payment address");
+            }
+
+            return silentPayment.getAddress();
+        } catch(InvalidSilentPaymentException e) {
+            throw new IllegalStateException("Failed to compute silent payment address", e);
+        }
     }
 
     public Glyph getGlyph(FontAwesome5.Glyph glyphEnum) {

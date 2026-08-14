@@ -550,7 +550,7 @@ public class PayNymController {
             decryptedWallet.finalise(psbt);
             Transaction transaction = psbt.extractTransaction();
 
-            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction);
+            ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(transaction, psbt.getFee());
             broadcastTransactionService.setOnSucceeded(successEvent -> {
                 ElectrumServer.TransactionMempoolService transactionMempoolService = new ElectrumServer.TransactionMempoolService(walletTransaction.getWallet(), transaction.getTxId(), new HashSet<>(walletTransaction.getSelectedUtxos().values()));
                 transactionMempoolService.setDelay(Duration.seconds(2));
@@ -616,6 +616,7 @@ public class PayNymController {
         List<byte[]> opReturns = List.of(blindedPaymentCode);
         Double feeRate = AppServices.getDefaultFeeRate();
         Double minimumFeeRate = AppServices.getMinimumFeeRate();
+        Double minRelayFeeRate = AppServices.getMinimumRelayFeeRate();
         boolean groupByAddress = Config.get().isGroupByAddress();
         boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
 
@@ -623,7 +624,9 @@ public class PayNymController {
         List<UtxoSelector> utxoSelectors = List.of(utxos == null ? new KnapsackUtxoSelector(noInputsFee) : new PresetUtxoSelector(utxos, true, false));
         List<TxoFilter> txoFilters = List.of(new SpentTxoFilter(), new FrozenTxoFilter(), new CoinbaseTxoFilter(wallet));
 
-        return wallet.createWalletTransaction(utxoSelectors, txoFilters, payments, opReturns, Collections.emptySet(), feeRate, minimumFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs);
+        TransactionParameters params = new TransactionParameters(utxoSelectors, txoFilters, payments, opReturns, Collections.emptySet(),
+                feeRate, minimumFeeRate, minRelayFeeRate, null, AppServices.getCurrentBlockHeight(), groupByAddress, includeMempoolOutputs, true);
+        return wallet.createWalletTransaction(params);
     }
 
     private Map<BlockTransaction, WalletNode> getNotificationTransaction(PaymentCode externalPaymentCode) {

@@ -14,8 +14,7 @@ import org.fxmisc.richtext.CodeArea;
 
 import java.util.List;
 
-import static com.sparrowwallet.drongo.policy.PolicyType.MULTI;
-import static com.sparrowwallet.drongo.policy.PolicyType.SINGLE;
+import static com.sparrowwallet.drongo.policy.PolicyType.*;
 import static com.sparrowwallet.drongo.protocol.ScriptType.MULTISIG;
 
 public class DescriptorArea extends CodeArea {
@@ -33,13 +32,13 @@ public class DescriptorArea extends CodeArea {
         List<Keystore> keystores = wallet.getKeystores();
         int threshold = wallet.getDefaultPolicy().getNumSignaturesRequired();
 
-        if(SINGLE.equals(policyType)) {
+        if(SINGLE_HD.equals(policyType)) {
             append(scriptType.getDescriptor(), "descriptor-text");
             replace(getLength(), getLength(), keystores.get(0).getScriptName(), List.of(keystores.get(0).isValid() ? "descriptor-text" : "descriptor-error", keystores.get(0).getScriptName()));
             append(scriptType.getCloseDescriptor(), "descriptor-text");
         }
 
-        if(MULTI.equals(policyType)) {
+        if(MULTI_HD.equals(policyType)) {
             append(scriptType.getDescriptor(), "descriptor-text");
             append(MULTISIG.getDescriptor(), "descriptor-text");
             append(Integer.toString(threshold), "descriptor-text");
@@ -51,6 +50,12 @@ public class DescriptorArea extends CodeArea {
 
             append(MULTISIG.getCloseDescriptor(), "descriptor-text");
             append(scriptType.getCloseDescriptor(), "descriptor-text");
+        }
+
+        if(SINGLE_SP.equals(policyType)) {
+            append("sp(", "descriptor-text");
+            replace(getLength(), getLength(), keystores.get(0).getScriptName(), List.of(keystores.get(0).isValid() ? "descriptor-text" : "descriptor-error", keystores.get(0).getScriptName()));
+            append(")", "descriptor-text");
         }
     }
 

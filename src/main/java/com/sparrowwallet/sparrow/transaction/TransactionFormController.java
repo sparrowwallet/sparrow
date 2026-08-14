@@ -5,16 +5,20 @@ import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.NonStandardScriptException;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
-import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.sparrow.BaseController;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.control.AddressLabelSkin;
 import com.sparrowwallet.sparrow.event.TransactionTabsClosedEvent;
 import com.sparrowwallet.sparrow.io.Config;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.PieChart;
 import javafx.scene.control.ContextMenu;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
@@ -33,23 +37,41 @@ public abstract class TransactionFormController extends BaseController {
         long totalAmt = 0;
         for(int i = 0; i < outputs.size(); i++) {
             TransactionOutput output = outputs.get(i);
-            String name = "#" + i;
-            try {
-                Address[] addresses = output.getScript().getToAddresses();
-                if(addresses.length == 1) {
-                    name = name + " " + addresses[0].getAddress();
-                } else {
-                    name = name + " [" + addresses[0].getAddress() + ",...]";
-                }
-            } catch(NonStandardScriptException e) {
-                //ignore
-            }
+            String name = getPieDataName(i, output);
 
             totalAmt += output.getValue();
             outputsPieData.add(new PieChart.Data(name, output.getValue()));
         }
 
         addPieData(pie, outputsPieData);
+    }
+
+    protected void updatePieData(PieChart pie, List<TransactionOutput> outputs) {
+        for(int i = 0; i < outputs.size(); i++) {
+            TransactionOutput output = outputs.get(i);
+            String name = getPieDataName(i, output);
+            pie.getData().get(i).setName(name);
+        }
+    }
+
+    private String getPieDataName(int i, TransactionOutput output) {
+        String name = "#" + i;
+        Address address = output.getScript().getToAddress();
+        SilentPaymentAddress silentPaymentAddress = getTransactionForm().getSilentPaymentAddress(output);
+        if(address != null) {
+            name = name + " " + address.getAddress();
+        } else if(silentPaymentAddress != null) {
+            name = name + " " + silentPaymentAddress.toAbbreviatedString();
+        } else {
+            try {
+                Address[] addresses = output.getScript().getToAddresses();
+                name = name + " [" + addresses[0].getAddress() + ",...]";
+            } catch(NonStandardScriptException e) {
+                //ignore
+            }
+        }
+
+        return name;
     }
 
     protected void addCoinbasePieData(PieChart pie, long value) {
@@ -74,13 +96,30 @@ public abstract class TransactionFormController extends BaseController {
             Tooltip.install(data.getNode(), tooltip);
             data.pieValueProperty().addListener((observable, oldValue, newValue) -> tooltip.setText(newValue + "%"));
         });
+
+        Platform.runLater(() -> applyAddressLabelSkinToLegend(pie));
+    }
+
+    private void applyAddressLabelSkinToLegend(PieChart pie) {
+        pie.lookupAll(".chart-legend-item").forEach(node -> {
+            if(node instanceof Label label) {
+                String text = label.getText();
+                label.setSkin(new AddressLabelSkin(label));
+                label.setText("");
+                label.setText(text);
+            }
+        });
+    }
+
+    public void close() {
+        EventManager.get().unregister(this);
     }
 
     @Subscribe
     public void transactionTabsClosed(TransactionTabsClosedEvent event) {
         for(TransactionTabData tabData : event.getClosedTransactionTabData()) {
             if(tabData.getTransactionData() == getTransactionForm().getTransactionData()) {
-                EventManager.get().unregister(this);
+                close();
             }
         }
     }

@@ -7,6 +7,7 @@ import com.sparrowwallet.sparrow.control.TitledDescriptionPane;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.io.ckcard.Satschip;
 import com.sparrowwallet.sparrow.io.ckcard.Tapsigner;
+import com.sparrowwallet.sparrow.io.keycard.Keycard;
 import com.sparrowwallet.sparrow.io.satochip.Satochip;
 import javafx.fxml.FXML;
 import javafx.scene.control.Accordion;
@@ -25,10 +26,10 @@ public class HwAirgappedController extends KeystoreImportDetailController {
 
     public void initializeView() {
         List<KeystoreFileImport> fileImporters = Collections.emptyList();
-        if(getMasterController().getWallet().getPolicyType().equals(PolicyType.SINGLE)) {
-            fileImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY(), new Krux(), new AirGapVault());
-        } else if(getMasterController().getWallet().getPolicyType().equals(PolicyType.MULTI)) {
-            fileImporters = List.of(new Bip129(), new ColdcardMultisig(), new CoboVaultMultisig(), new JadeMultisig(), new KeystoneMultisig(), new PassportMultisig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY(), new Krux());
+        if(getMasterController().getWallet().getPolicyType().equals(PolicyType.SINGLE_HD) || getMasterController().getWallet().getPolicyType().equals(PolicyType.SINGLE_SP)) {
+            fileImporters = List.of(new ColdcardSinglesig(), new CoboVaultSinglesig(), new Jade(), new KeystoneSinglesig(), new PassportSinglesig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY(), new Krux(), new AirGapVault(), new KeycardShellSinglesig(), new EraSinglesig());
+        } else if(getMasterController().getWallet().getPolicyType().equals(PolicyType.MULTI_HD)) {
+            fileImporters = List.of(new Bip129(), new ColdcardMultisig(), new CoboVaultMultisig(), new JadeMultisig(), new KeystoneMultisig(), new PassportMultisig(), new SeedSigner(), new GordianSeedTool(), new SpecterDIY(), new Krux(), new KeycardShellMultisig());
         }
 
         for(KeystoreFileImport importer : fileImporters) {
@@ -40,10 +41,10 @@ public class HwAirgappedController extends KeystoreImportDetailController {
             }
         }
 
-        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner(), new Satochip(), new Satschip());
+        List<KeystoreCardImport> cardImporters = List.of(new Tapsigner(), new Satochip(), new Satschip(), new Keycard());
         for(KeystoreCardImport importer : cardImporters) {
             if(!importer.isDeprecated() || Config.get().isShowDeprecatedImportExport()) {
-                CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getRequiredDerivation());
+                CardImportPane importPane = new CardImportPane(getMasterController().getWallet(), importer, getMasterController().getDefaultDerivation(), getMasterController().getRequiredDerivation());
                 if(getMasterController().getRequiredModel() == null || getMasterController().getRequiredModel() == importer.getWalletModel()) {
                     importAccordion.getPanes().add(importPane);
                 }

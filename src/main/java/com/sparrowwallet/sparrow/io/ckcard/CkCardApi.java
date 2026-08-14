@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -141,12 +142,12 @@ public class CkCardApi extends CardApi {
     }
 
     @Override
-    public Service<Keystore> getImportService(List<ChildNumber> derivation, StringProperty messageProperty) {
+    public Service<Keystore> getImportService(PolicyType policyType, List<ChildNumber> derivation, StringProperty messageProperty) {
         if(cardType == WalletModel.SATSCHIP) {
-            return new CardImportPane.CardImportService(new Satschip(), cvc, derivation, messageProperty);
+            return new CardImportPane.CardImportService(new Satschip(), policyType, cvc, derivation, messageProperty);
         }
 
-        return new CardImportPane.CardImportService(new Tapsigner(), cvc, derivation, messageProperty);
+        return new CardImportPane.CardImportService(new Tapsigner(), policyType, cvc, derivation, messageProperty);
     }
 
     @Override
@@ -300,7 +301,7 @@ public class CkCardApi extends CardApi {
         }
 
         CardRead cardRead = cardProtocol.read(null, currentSlot);
-        Address address = getDefaultScriptType().getAddress(cardRead.getPubKey());
+        Address address = getDefaultScriptType().getAddress(PolicyType.SINGLE_HD, cardRead.getPubKey());
 
         String left = addr.substring(0, addr.indexOf('_'));
         String right = addr.substring(addr.lastIndexOf('_') + 1);

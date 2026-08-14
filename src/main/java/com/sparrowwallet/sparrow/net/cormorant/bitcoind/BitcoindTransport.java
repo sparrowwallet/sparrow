@@ -4,7 +4,9 @@ import com.github.arteam.simplejsonrpc.client.Transport;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Server;
+import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.Protocol;
+import com.sparrowwallet.sparrow.net.TcpOverTlsTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,8 +16,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.security.cert.Certificate;
 import java.util.Base64;
 
 public class BitcoindTransport implements Transport {
@@ -27,6 +28,7 @@ public class BitcoindTransport implements Transport {
     private File cookieFile;
     private Long cookieFileTimestamp;
     private String bitcoindAuthEncoded;
+    private SSLSocketFactory sslSocketFactory;
 
     public BitcoindTransport(Server bitcoindServer, String bitcoindWallet, String bitcoindAuth) {
         this(bitcoindServer, bitcoindWallet);
@@ -57,9 +59,10 @@ public class BitcoindTransport implements Transport {
         HttpURLConnection connection = proxy != null && Protocol.isOnionAddress(bitcoindServer) ? (HttpURLConnection)bitcoindUrl.openConnection(proxy) : (HttpURLConnection)bitcoindUrl.openConnection();
 
         if(connection instanceof HttpsURLConnection httpsURLConnection) {
-            SSLSocketFactory sslSocketFactory = getTrustAllSocketFactory();
+            SSLSocketFactory sslSocketFactory = getSSLSocketFactory();
             if(sslSocketFactory != null) {
                 httpsURLConnection.setSSLSocketFactory(sslSocketFactory);
+                httpsURLConnection.setHostnameVerifier((_, _) -> true);
             }
         }
 
@@ -81,6 +84,19 @@ public class BitcoindTransport implements Transport {
         }
 
         int statusCode = connection.getResponseCode();
+
+        if(connection instanceof HttpsURLConnection httpsConn && Storage.getCertificateFile(bitcoindServer.getHost()) == null) {
+            try {
+                Certificate[] certs = httpsConn.getServerCertificates();
+                if(certs.length > 0) {
+                    Storage.saveCertificate(bitcoindServer.getHost(), certs[0]);
+                    sslSocketFactory = null;
+                }
+            } catch(SSLPeerUnverifiedException e) {
+                log.warn("Could not retrieve certificate for saving", e);
+            }
+        }
+
         if(statusCode == 401) {
             throw new IOException((cookieFile == null ? "User/pass" : "Cookie file") + " authentication failed");
         }
@@ -138,29 +154,24 @@ public class BitcoindTransport implements Transport {
         return bitcoindDir;
     }
 
-    private SSLSocketFactory getTrustAllSocketFactory() {
-        TrustManager[] trustAllCerts = new TrustManager[] {
-            new X509TrustManager() {
-                public X509Certificate[] getAcceptedIssuers() {
-                    return new X509Certificate[0];
-                }
-
-                public void checkClientTrusted(X509Certificate[] certs, String authType) throws CertificateException {
-                }
-
-                public void checkServerTrusted(X509Certificate[] certs, String authType) throws CertificateException {
-                }
-            }
-        };
-
-        try {
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, trustAllCerts, null);
-            return sslContext.getSocketFactory();
-        } catch (Exception e) {
-            log.error("Error creating SSL socket factory", e);
+    private SSLSocketFactory getSSLSocketFactory() {
+        if(sslSocketFactory == null) {
+            sslSocketFactory = createSSLSocketFactory();
         }
 
-        return null;
+        return sslSocketFactory;
+    }
+
+    private SSLSocketFactory createSSLSocketFactory() {
+        try {
+            String host = bitcoindServer.getHost();
+            TrustManager[] trustManagers = TcpOverTlsTransport.getTrustManagers(Storage.getCertificateFile(host), host);
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, trustManagers, null);
+            return sslContext.getSocketFactory();
+        } catch(Exception e) {
+            log.error("Error creating SSL socket factory", e);
+            return null;
+        }
     }
 }

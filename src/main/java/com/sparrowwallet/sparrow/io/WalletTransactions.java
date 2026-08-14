@@ -93,7 +93,7 @@ public class WalletTransactions implements WalletExport {
                 writer.write(txEntry.getLabel());
                 writer.write(getCoinValue(bitcoinUnit, txEntry.getValue()));
                 writer.write(getCoinValue(bitcoinUnit, txEntry.getBalance()));
-                Long fee = txEntry.getValue() < 0 ? getFee(wallet, txEntry.getBlockTransaction()) : null;
+                Long fee = getFee(wallet, txEntry.getBlockTransaction());
                 writer.write(fee == null ? "" : getCoinValue(bitcoinUnit, fee));
                 if(fiatCurrency != null) {
                     Double fiatValue = getFiatValue(txEntry, fiatRates);

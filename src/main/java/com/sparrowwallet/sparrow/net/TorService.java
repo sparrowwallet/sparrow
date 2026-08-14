@@ -1,10 +1,12 @@
 package com.sparrowwallet.sparrow.net;
 
-import io.matthewnelson.kmp.tor.ext.callback.manager.CallbackTorManager;
-import io.matthewnelson.kmp.tor.manager.common.event.TorManagerEvent;
+import io.matthewnelson.kmp.tor.runtime.Action;
+import io.matthewnelson.kmp.tor.runtime.TorListeners;
+import io.matthewnelson.kmp.tor.runtime.TorRuntime;
+import io.matthewnelson.kmp.tor.runtime.core.OnEvent;
+import io.matthewnelson.kmp.tor.runtime.core.ctrl.Reply;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,37 +34,25 @@ public class TorService extends ScheduledService<Tor> {
             protected Tor call() throws Exception {
                 Tor tor = Tor.getDefault();
                 if(tor == null) {
-                    tor = new Tor();
-                    CallbackTorManager callbackTorManager = tor.getTorManager();
-                    callbackTorManager.addListener(new TorManagerEvent.Listener() {
-                        @Override
-                        public void managerEventAddressInfo(@NotNull TorManagerEvent.AddressInfo info) {
-                            if(!info.isNull) {
-                                try {
-                                    startupLock.lock();
-                                    startupCondition.signalAll();
-                                } finally {
-                                    startupLock.unlock();
-                                }
-                            }
-                        }
-                    });
-                    callbackTorManager.start(throwable -> {
-                        if(throwable instanceof Exception exception) {
+                    tor = new Tor(new StartupListener());
+                    TorRuntime torRuntime = tor.getTorRuntime();
+
+                    torRuntime.enqueue(Action.StartDaemon, throwable -> {
+                        if(throwable instanceof Reply.Error replyError && !replyError.replies.isEmpty()) {
+                            startupException = new TorStartupException(replyError.replies.getFirst().message);
+                        } else if(throwable instanceof Exception exception) {
                             startupException = exception;
                         } else {
                             startupException = new Exception(throwable);
                         }
-                        log.error("Error", throwable);
+                        log.error("Error starting Tor daemon", throwable);
                         try {
                             startupLock.lock();
                             startupCondition.signalAll();
                         } finally {
                             startupLock.unlock();
                         }
-                    }, success -> {
-                        log.info("Tor daemon started successfully");
-                    });
+                    }, _ -> log.info("Tor daemon started successfully"));
 
                     try {
                         startupLock.lock();
@@ -81,5 +71,19 @@ public class TorService extends ScheduledService<Tor> {
                 return tor;
             }
         };
+    }
+
+    private class StartupListener implements OnEvent<TorListeners> {
+        @Override
+        public void invoke(TorListeners torListeners) {
+            if(!torListeners.socks.isEmpty()) {
+                try {
+                    startupLock.lock();
+                    startupCondition.signalAll();
+                } finally {
+                    startupLock.unlock();
+                }
+            }
+        }
     }
 }

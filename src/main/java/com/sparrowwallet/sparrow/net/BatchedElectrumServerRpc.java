@@ -4,7 +4,6 @@ import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
-import com.github.arteam.simplejsonrpc.core.domain.ErrorMessage;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
@@ -62,6 +61,17 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
                     client.createRequest().returnAs(String.class).method("server.banner").id(idCounter.incrementAndGet()).execute());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error getting server banner", e);
+        }
+    }
+
+    @Override
+    public ServerFeatures getServerFeatures(Transport transport) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            return new RetryLogic<ServerFeatures>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
+                    client.createRequest().returnAs(ServerFeatures.class).method("server.features").id(idCounter.incrementAndGet()).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Error getting server features", e);
         }
     }
 
@@ -152,6 +162,49 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
+    public Map<String, Boolean> unsubscribeScriptHashes(Transport transport, Set<String> scriptHashes) {
+        PagedBatchRequestBuilder<String, Boolean> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(Boolean.class);
+
+        for(String scriptHash : scriptHashes) {
+            batchRequest.add(scriptHash, "blockchain.scripthash.unsubscribe", scriptHash);
+        }
+
+        try {
+            return batchRequest.execute();
+        } catch(JsonRpcBatchException e) {
+            log.info("Failed to unsubscribe from script hashes: " + e.getErrors().keySet(), e);
+            Map<String, Boolean> unsubscribedScriptHashes = scriptHashes.stream().collect(Collectors.toMap(s -> s, _ -> true));
+            unsubscribedScriptHashes.keySet().removeIf(scriptHash -> e.getErrors().containsKey(scriptHash));
+            return unsubscribedScriptHashes;
+        } catch(Exception e) {
+            log.info("Failed to unsubscribe from script hashes: " + scriptHashes, e);
+            return Collections.emptyMap();
+        }
+    }
+
+    @Override
+    public SilentPaymentsSubscription subscribeSilentPayments(Transport transport, Wallet wallet, String scanPrivKeyHex, String spendPubKeyHex, Object start, int[] labels) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+        try {
+            return new RetryLogic<SilentPaymentsSubscription>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(SilentPaymentsSubscription.class).method("blockchain.silentpayments.subscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex, start, labels).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to subscribe to silent payments for wallet " + wallet.getName(), e);
+        }
+    }
+
+    @Override
+    public String unsubscribeSilentPayments(Transport transport, String scanPrivKeyHex, String spendPubKeyHex) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+        try {
+            return new RetryLogic<String>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(String.class).method("blockchain.silentpayments.unsubscribe").id(idCounter.incrementAndGet()).params(scanPrivKeyHex, spendPubKeyHex).execute());
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to unsubscribe silent payments", e);
+        }
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
         PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(String.class);
@@ -167,6 +220,24 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
             return (Map<Integer, String>)e.getSuccesses();
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve block headers for block heights: " + blockHeights, e);
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<Integer, BlockStats> getBlockStats(Transport transport, Set<Integer> blockHeights) {
+        PagedBatchRequestBuilder<Integer, BlockStats> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(BlockStats.class);
+
+        for(Integer height : blockHeights) {
+            batchRequest.add(height, "blockchain.block.stats", height);
+        }
+
+        try {
+            return batchRequest.execute();
+        } catch(JsonRpcBatchException e) {
+            return (Map<Integer, BlockStats>)e.getSuccesses();
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve block stats for block heights: " + blockHeights, e);
         }
     }
 

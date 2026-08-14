@@ -10,7 +10,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import java.util.Date;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class VerboseTransaction {
+public class VerboseTransaction {
     public String blockhash;
     public long blocktime;
     public int confirmations;
@@ -44,6 +44,12 @@ class VerboseTransaction {
     }
 
     public BlockTransaction getBlockTransaction() {
-        return new BlockTransaction(Sha256Hash.wrap(txid), getHeight(), getDate(), 0L, new Transaction(Utils.hexToBytes(hex)), blockhash == null ? null : Sha256Hash.wrap(blockhash));
+        Sha256Hash declaredTxid = Sha256Hash.wrap(txid);
+        Transaction transaction = new Transaction(Utils.hexToBytes(hex));
+        if(!transaction.getTxId().equals(declaredTxid)) {
+            throw new IllegalStateException("Server returned transaction " + transaction.getTxId() + " for declared txid " + declaredTxid);
+        }
+
+        return new BlockTransaction(declaredTxid, getHeight(), getDate(), 0L, transaction, blockhash == null ? null : Sha256Hash.wrap(blockhash));
     }
 }

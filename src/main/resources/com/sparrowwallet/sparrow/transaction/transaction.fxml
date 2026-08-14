@@ -10,7 +10,7 @@
 <items>
     <MasterDetailPane fx:id="transactionMasterDetail" detailSide="BOTTOM">
         <masterNode>
-            <SplitPane dividerPositions="0.15">
+            <SplitPane fx:id="txSplitPane" dividerPositions="0.15">
                 <items>
                     <TreeView fx:id="txtree" minWidth="170">
                         <SplitPane.resizableWithParent>false</SplitPane.resizableWithParent>

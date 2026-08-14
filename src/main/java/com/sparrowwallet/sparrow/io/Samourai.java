@@ -7,6 +7,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.SamouraiUtil;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.*;
 
@@ -25,14 +26,15 @@ public class Samourai implements KeystoreFileImport {
     }
 
     @Override
-    public Keystore getKeystore(ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+    public Keystore getKeystore(PolicyType policyType, ScriptType scriptType, InputStream inputStream, String password) throws ImportException {
+        if(policyType == PolicyType.SINGLE_SP) {
+            throw new ImportException(getName() + " does not support receiving silent payments");
+        }
+
         try {
             String input = CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 
-            Gson gson = new Gson();
-            Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {
-            }.getType();
-            Map<String, JsonElement> map = gson.fromJson(input, stringStringMap);
+            Map<String, JsonElement> map = this.parseJsonInput(input);
 
             String payload = input;
             if(map.containsKey("payload")) {
@@ -53,9 +55,9 @@ public class Samourai implements KeystoreFileImport {
                 throw new ImportException("Unsupported backup version: " + version);
             }
 
-            SamouraiBackup backup = gson.fromJson(decrypted, SamouraiBackup.class);
+            SamouraiBackup backup = new Gson().fromJson(decrypted, SamouraiBackup.class);
             DeterministicSeed seed = new DeterministicSeed(Utils.hexToBytes(backup.wallet.seed), password, 0);
-            Keystore keystore = Keystore.fromSeed(seed, scriptType.getDefaultDerivation());
+            Keystore keystore = Keystore.fromSeed(seed, PolicyType.SINGLE_HD, scriptType.getDefaultDerivation());
             keystore.setLabel(getWalletModel().toDisplayString());
             return keystore;
         } catch(JsonParseException e) {
@@ -64,6 +66,24 @@ public class Samourai implements KeystoreFileImport {
             throw e;
         } catch(Exception e) {
             throw new ImportException("Error importing backup", e);
+        }
+    }
+
+    private Map<String, JsonElement> parseJsonInput(String input) {
+        Gson gson = new Gson();
+        Type stringStringMap = new TypeToken<Map<String, JsonElement>>() {
+        }.getType();
+
+        try {
+            return gson.fromJson(input, stringStringMap);
+        } catch (JsonParseException e) {
+            int closingBracket = input.indexOf('}');
+            if (closingBracket < 0) {
+                throw e;
+            }
+
+            String fixedInput = input.substring(0, closingBracket + 1);
+            return gson.fromJson(fixedInput, stringStringMap);
         }
     }
 

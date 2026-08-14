@@ -46,6 +46,15 @@ public class OutputForm extends IndexedTransactionForm {
     }
 
     @Override
+    public Address getAddress() {
+        if(getTransactionOutput() != null) {
+            return getTransactionOutput().getScript().getToAddress();
+        }
+
+        return null;
+    }
+
+    @Override
     public Node getContents() throws IOException {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("output.fxml"));
         Node node = loader.load();
@@ -61,7 +70,7 @@ public class OutputForm extends IndexedTransactionForm {
     }
 
     public String toString() {
-        Address address = getTransactionOutput().getScript().getToAddress();
+        Address address = getAddress();
         return address != null ? address.toString() : "Output #" + getIndex();
     }
 
@@ -78,9 +87,15 @@ public class OutputForm extends IndexedTransactionForm {
                     } else {
                         return new Label("Output #" + getIndex(), GlyphUtils.getOpcodeGlyph());
                     }
+                } else if(output instanceof WalletTransaction.SilentPaymentChangeOutput) {
+                    return new Label("Change", GlyphUtils.getChangeGlyph());
                 } else if(output instanceof WalletTransaction.PaymentOutput paymentOutput) {
                     Payment payment = paymentOutput.getPayment();
-                    return new Label(payment.getLabel() != null && payment.getType() != Payment.Type.FAKE_MIX && payment.getType() != Payment.Type.MIX ? payment.getLabel() : payment.getAddress().toString(),
+                    return new Label(payment.getLabel() != null && payment.getType() != Payment.Type.FAKE_MIX && payment.getType() != Payment.Type.MIX ? payment.getLabel() : payment.toString(),
+                            GlyphUtils.getOutputGlyph(getWalletTransaction(), payment));
+                } else if(output instanceof WalletTransaction.ConsolidationOutput consolidationOutput) {
+                    Payment payment = consolidationOutput.getWalletNodePayment();
+                    return new Label(payment.getLabel() != null && payment.getType() != Payment.Type.FAKE_MIX && payment.getType() != Payment.Type.MIX ? payment.getLabel() : payment.toString(),
                             GlyphUtils.getOutputGlyph(getWalletTransaction(), payment));
                 } else if(output instanceof WalletTransaction.ChangeOutput changeOutput) {
                     return new Label("Change", GlyphUtils.getChangeGlyph());

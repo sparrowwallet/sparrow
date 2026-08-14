@@ -46,9 +46,22 @@ public class WebcamView {
         imageView.setOnContextMenuRequested(event -> {
             contextMenu.show(imageView, event.getScreenX(), event.getScreenY());
         });
+        imageView.setOnScroll(scrollEvent -> {
+            if(service.isRunning() && scrollEvent.getDeltaY() != 0 && service.getZoomLimits() != null) {
+                int currentZoom = service.getZoom();
+                if(currentZoom >= 0) {
+                    int newZoom = scrollEvent.getDeltaY() > 0 ? Math.round(currentZoom * 1.1f) : Math.round(currentZoom * 0.9f);
+                    newZoom = Math.max(newZoom, service.getZoomLimits().min());
+                    newZoom = Math.min(newZoom, service.getZoomLimits().max());
+                    if(newZoom != currentZoom) {
+                        service.setZoom(newZoom);
+                    }
+                }
+            }
+        });
 
         service.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null) {
+            if(newValue != null && !service.getCancelRequested()) {
                 imageProperty.set(newValue);
             }
         });
@@ -57,27 +70,29 @@ public class WebcamView {
         this.view = new Region() {
             {
                 service.stateProperty().addListener((obs, oldState, newState) -> {
-                    switch (newState) {
+                    switch(newState) {
                         case READY:
                             if(imageProperty.get() == null) {
                                 statusPlaceholder.setText("Initializing");
                                 getChildren().setAll(statusPlaceholder);
                             }
-                            break ;
+                            break;
                         case SCHEDULED:
                             if(imageProperty.get() == null) {
                                 statusPlaceholder.setText("Waiting");
                                 getChildren().setAll(statusPlaceholder);
                             }
-                            break ;
+                            break;
                         case RUNNING:
-                            imageView.imageProperty().unbind();
-                            imageView.imageProperty().bind(imageProperty);
-                            getChildren().setAll(imageView);
-                            break ;
+                            if(imageProperty.get() == null) {
+                                imageView.imageProperty().unbind();
+                                imageView.imageProperty().bind(imageProperty);
+                                getChildren().setAll(imageView);
+                            }
+                            break;
                         case CANCELLED:
+                            imageProperty.set(null);
                             imageView.imageProperty().unbind();
-                            imageView.setImage(null);
                             statusPlaceholder.setText("Stopped");
                             getChildren().setAll(statusPlaceholder);
                             break;
@@ -93,7 +108,6 @@ public class WebcamView {
                             statusPlaceholder.setText("");
                             getChildren().clear();
                     }
-                    requestLayout();
                 });
             }
 
@@ -102,14 +116,14 @@ public class WebcamView {
                 super.layoutChildren();
                 double w = getWidth();
                 double h = getHeight();
-                if (service.isRunning()) {
+                if(service.isRunning()) {
                     imageView.setFitWidth(w);
                     imageView.setFitHeight(h);
                     imageView.resizeRelocate(0, 0, w, h);
                 } else {
                     double labelHeight = statusPlaceholder.prefHeight(w);
                     double labelWidth = statusPlaceholder.prefWidth(labelHeight);
-                    statusPlaceholder.resizeRelocate((w - labelWidth)/2, (h-labelHeight)/2, labelWidth, labelHeight);
+                    statusPlaceholder.resizeRelocate((w - labelWidth) / 2, (h - labelHeight) / 2, labelWidth, labelHeight);
                 }
             }
 

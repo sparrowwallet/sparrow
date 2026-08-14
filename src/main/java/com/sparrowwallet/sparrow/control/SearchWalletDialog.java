@@ -60,14 +60,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("search.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         dialogPane.setHeaderText(showWallet ? "Search All Wallets" : "Search Wallet " + walletForms.get(0).getMasterWallet().getName());
-
-        Image image = new Image("image/sparrow-small.png", 50, 50, false, false);
-        if(!image.isError()) {
-            ImageView imageView = new ImageView();
-            imageView.setSmooth(false);
-            imageView.setImage(image);
-            dialogPane.setGraphic(imageView);
-        }
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         VBox vBox = new VBox();
         vBox.setSpacing(20);
@@ -81,6 +74,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         searchField.setText("Search:");
         search = TextFields.createClearableTextField();
         search.setPromptText("Label, address, value or transaction ID");
+        search.setSkin(new AddressTextFieldSkin(search));
         searchField.getInputs().add(search);
 
         fieldset.getChildren().addAll(searchField);
@@ -120,7 +114,11 @@ public class SearchWalletDialog extends Dialog<Entry> {
         entryCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
         });
-        entryCol.setCellFactory(p -> new SearchEntryCell());
+        entryCol.setCellFactory(p -> {
+            SearchEntryCell searchEntryCell = new SearchEntryCell();
+            searchEntryCell.setSkin(new AddressTreeTableCellSkin<>(searchEntryCell));
+            return searchEntryCell;
+        });
         String address = walletForms.iterator().next().getNodeEntry(KeyPurpose.RECEIVE).getAddress().toString();
         entryCol.setMinWidth(TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0));
         results.getColumns().add(entryCol);

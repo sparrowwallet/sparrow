@@ -31,7 +31,7 @@
 
 .address-cell, .utxo-row.entry-cell {
     -fx-font-size: 13px;
-    -fx-font-family: 'Roboto Mono';
+    -fx-font-family: 'Fragment Mono Regular';
 }
 
 .cell > .hyperlink {
@@ -149,7 +149,7 @@
 
 .address-text-field {
     -fx-font-size: 13px;
-    -fx-font-family: 'Roboto Mono';
+    -fx-font-family: 'Fragment Mono Regular';
 }
 
 .unconfirmed-row {

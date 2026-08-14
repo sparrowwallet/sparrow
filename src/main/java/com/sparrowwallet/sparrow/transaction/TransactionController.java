@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.transaction;
 
 import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -14,14 +15,13 @@ import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.Label;
-import javafx.scene.control.TreeCell;
-import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
+import javafx.scene.control.*;
 import javafx.scene.input.*;
 import javafx.scene.layout.Pane;
 import org.controlsfx.control.MasterDetailPane;
@@ -45,6 +45,9 @@ public class TransactionController implements Initializable {
     private MasterDetailPane transactionMasterDetail;
 
     @FXML
+    private SplitPane txSplitPane;
+
+    @FXML
     private TreeView<TransactionForm> txtree;
 
     @FXML
@@ -66,6 +69,8 @@ public class TransactionController implements Initializable {
 
     private TreeItem<TransactionForm> draggedItem;
     private TreeCell<TransactionForm> dropZone;
+
+    private final DoubleProperty txTreeWidthProperty = new SimpleDoubleProperty();
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -99,6 +104,8 @@ public class TransactionController implements Initializable {
     }
 
     private void initializeTxTree() {
+        txTreeWidthProperty.bind(txSplitPane.widthProperty().multiply(txSplitPane.getDividers().getFirst().positionProperty()));
+
         HeadersForm headersForm = new HeadersForm(txdata);
         TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);
         rootItem.setExpanded(true);
@@ -159,8 +166,20 @@ public class TransactionController implements Initializable {
 
                 if(form != null) {
                     Label label = form.getLabel();
-                    label.setMaxWidth(115);
+                    label.maxWidthProperty().bind(txTreeWidthProperty.subtract(62));
                     setGraphic(label);
+
+                    Address address = null;
+                    if(form instanceof IndexedTransactionForm indexedForm) {
+                        address = indexedForm.getAddress();
+                    }
+
+                    if(address != null) {
+                        Tooltip tooltip = new Tooltip(label.getText() + (label.getText().equals(address.toString()) ? "" : "\n" + address));
+                        tooltip.setMaxWidth(transactionMasterDetail.getWidth());
+                        tooltip.setWrapText(true);
+                        label.setTooltip(tooltip);
+                    }
 
                     if(form.getSigningWallet() != null) {
                         setOnDragDetected(null);
@@ -339,6 +358,17 @@ public class TransactionController implements Initializable {
 
     void highlightTxHex() {
         txhex.applyHighlighting(getTransaction(), selectedInputIndex, selectedOutputIndex);
+        setTxHexHideAmounts(Config.get().isHideAmounts());
+    }
+
+    private void setTxHexHideAmounts(boolean hideAmounts) {
+        if(hideAmounts) {
+            if(!txhex.getStyleClass().contains("hide-amounts")) {
+                txhex.getStyleClass().add("hide-amounts");
+            }
+        } else {
+            txhex.getStyleClass().remove("hide-amounts");
+        }
     }
 
     private void fetchThisAndInputBlockTransactions(int indexStart, int indexEnd) {
@@ -712,5 +742,10 @@ public class TransactionController implements Initializable {
             txhex.setTransaction(getTransaction());
             highlightTxHex();
         }
+    }
+
+    @Subscribe
+    public void hideAmountsStatusChanged(HideAmountsStatusEvent event) {
+        setTxHexHideAmounts(event.isHideAmounts());
     }
 }

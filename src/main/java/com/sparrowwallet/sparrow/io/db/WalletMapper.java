@@ -34,6 +34,8 @@ public class WalletMapper implements RowMapper<Wallet> {
         int watchLast = rs.getInt("wallet.watchLast");
         wallet.setWatchLast(rs.wasNull() ? null : watchLast);
         wallet.setBirthDate(rs.getTimestamp("wallet.birthDate"));
+        int birthHeight = rs.getInt("wallet.birthHeight");
+        wallet.setBirthHeight(rs.wasNull() ? null : birthHeight);
 
         return wallet;
     }

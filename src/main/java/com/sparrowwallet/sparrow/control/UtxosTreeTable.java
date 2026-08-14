@@ -57,7 +57,11 @@ public class UtxosTreeTable extends CoinTreeTable {
             addressCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, UtxoEntry.AddressStatus> param) -> {
                 return ((UtxoEntry)param.getValue().getValue()).addressStatusProperty();
             });
-            addressCol.setCellFactory(p -> new AddressCell());
+            addressCol.setCellFactory(p -> {
+                AddressCell addressCell = new AddressCell();
+                addressCell.setSkin(new AddressTreeTableCellSkin<>(addressCell));
+                return addressCell;
+            });
             addressCol.setSortable(true);
             addressCol.setComparator(Comparator.comparing(o -> o.getAddress().toString()));
             getColumns().add(addressCol);

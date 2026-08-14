@@ -83,7 +83,6 @@ public class WalletDialog extends DialogWindow {
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                         ECKey encryptionFullKey = keyDerivationService.getValue();
                         Key key = new Key(encryptionFullKey.getPrivKeyBytes(), getWalletForm().getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                        encryptionFullKey.clear();
                         masterWallet.decrypt(key);
                         addAndEncryptAccount(masterWallet, standardAccount, key);
                         if(postAddition != null) {

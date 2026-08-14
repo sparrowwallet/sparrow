@@ -30,7 +30,11 @@ public class AddressTreeTable extends CoinTreeTable {
         addressCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<Entry, Entry> param) -> {
             return new ReadOnlyObjectWrapper<>(param.getValue().getValue());
         });
-        addressCol.setCellFactory(p -> new EntryCell());
+        addressCol.setCellFactory(p -> {
+            EntryCell entryCell = new EntryCell();
+            entryCell.setSkin(new AddressTreeTableCellSkin<>(entryCell));
+            return entryCell;
+        });
         addressCol.setSortable(false);
         getColumns().add(addressCol);
 
@@ -76,6 +80,7 @@ public class AddressTreeTable extends CoinTreeTable {
         contextMenu.getItems().add(showCountItem);
         getColumns().forEach(col -> col.setContextMenu(contextMenu));
 
+        setPlaceholder(getDefaultPlaceholder(rootEntry.getWallet()));
         setEditable(true);
         setupColumnWidths();
 

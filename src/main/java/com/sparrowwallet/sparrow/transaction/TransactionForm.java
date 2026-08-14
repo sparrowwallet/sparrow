@@ -2,8 +2,10 @@ package com.sparrowwallet.sparrow.transaction;
 
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.protocol.TransactionSignature;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.beans.property.SimpleObjectProperty;
@@ -110,6 +112,10 @@ public abstract class TransactionForm {
 
     public Wallet getWallet() {
         return txdata.getWallet();
+    }
+
+    public SilentPaymentAddress getSilentPaymentAddress(TransactionOutput output) {
+        return txdata.getSilentPaymentAddress(output);
     }
 
     public boolean isEditable() {

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptChunk;
+import com.sparrowwallet.drongo.protocol.ScriptOpCodes;
 import javafx.geometry.Pos;
 import org.controlsfx.control.decoration.Decorator;
 import org.controlsfx.control.decoration.GraphicDecoration;
@@ -53,7 +54,11 @@ public class ScriptArea extends CodeArea {
             for (int i = 0; i < script.getChunks().size(); i++) {
                 ScriptChunk chunk = script.getChunks().get(i);
                 if(chunk.isOpCode()) {
-                    append(chunk.toString(), "script-opcode");
+                    if(chunk.getOpcode() == ScriptOpCodes.OP_0 && witnessScript != null) {
+                        append("<empty>", "script-other");
+                    } else {
+                        append(chunk.toString(), "script-opcode");
+                    }
                 } else if(chunk.isPubKey()) {
                     append("<pubkey" + pubKeyCount++ + ">", "script-pubkey");
                 } else if(chunk.isSignature()) {

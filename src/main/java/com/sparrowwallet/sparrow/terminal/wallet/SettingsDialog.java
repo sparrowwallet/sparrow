@@ -75,7 +75,7 @@ public class SettingsDialog extends WalletDialog {
             Panel leftButtonPanel = new Panel();
             leftButtonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
             leftButtonPanel.addComponent(new Button("Add Account", this::showAddAccount));
-            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE) {
+            if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_HD || getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
                 leftButtonPanel.addComponent(new Button("Show Seed", this::showSeed));
             } else {
                 leftButtonPanel.addComponent(new EmptySpace(TerminalSize.ZERO));
@@ -148,7 +148,6 @@ public class SettingsDialog extends WalletDialog {
                             copy.decrypt(key);
                             showSuccessDialog("Wallet Seed", copy.getKeystores().get(0).getSeed().getMnemonicString().asString());
                         } finally {
-                            encryptionFullKey.clear();
                             if(key != null) {
                                 key.clear();
                             }
@@ -247,7 +246,6 @@ public class SettingsDialog extends WalletDialog {
                             log.error("Error saving wallet", e);
                             AppServices.showErrorDialog("Error saving wallet", e.getMessage());
                         } finally {
-                            encryptionFullKey.clear();
                             if(key != null) {
                                 key.clear();
                             }

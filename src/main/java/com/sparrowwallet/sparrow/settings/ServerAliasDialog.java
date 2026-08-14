@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.settings;
 
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.control.DialogImage;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Server;
@@ -28,7 +29,6 @@ public class ServerAliasDialog extends Dialog<Server> {
     private final TableView<ServerEntry> serverTable;
     private final Button closeButton;
 
-    @SuppressWarnings("deprecation")
     public ServerAliasDialog(ServerType serverType) {
         this.serverType = serverType;
 
@@ -39,9 +39,7 @@ public class ServerAliasDialog extends Dialog<Server> {
         setTitle("Server Aliases");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.setHeaderText("Configure aliases for recently connected servers.\nNew servers are added to this list on successful connections.");
-
-        Image image = new Image("/image/sparrow-small.png");
-        dialogPane.setGraphic(new ImageView(image));
+        dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         serverTable = new TableView<>();
         serverTable.setPlaceholder(new Label("No servers added yet"));
@@ -62,7 +60,7 @@ public class ServerAliasDialog extends Dialog<Server> {
         serverTable.getColumns().add(urlColumn);
         serverTable.getColumns().add(aliasColumn);
         serverTable.setEditable(true);
-        serverTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        serverTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         List<Server> servers = serverType == ServerType.BITCOIN_CORE ? Config.get().getRecentCoreServers() : Config.get().getRecentElectrumServers();
         List<ServerEntry> serverEntries = servers.stream().map(server -> new ServerEntry(serverType, server)).collect(Collectors.toList());

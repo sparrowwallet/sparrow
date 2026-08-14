@@ -1,8 +1,8 @@
 [Desktop Entry]
 Name=Sparrow
 Comment=Sparrow
-Exec=/opt/sparrow/bin/Sparrow %U
-Icon=/opt/sparrow/lib/Sparrow.png
+Exec=/opt/sparrowwallet/bin/Sparrow %U
+Icon=/opt/sparrowwallet/lib/Sparrow.png
 Terminal=false
 Type=Application
 Categories=Finance;Network;

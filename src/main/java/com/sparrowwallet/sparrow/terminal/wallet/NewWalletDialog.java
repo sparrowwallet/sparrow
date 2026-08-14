@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.SecureString;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
 import com.sparrowwallet.drongo.crypto.Key;
+import com.sparrowwallet.drongo.wallet.InvalidWalletException;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -46,8 +47,9 @@ public abstract class NewWalletDialog extends DialogWindow {
 
         try {
             discoverAndSaveWallet(getWallets());
-        } catch(ImportException e) {
+        } catch(Exception e) {
             log.error("Cannot import wallet", e);
+            showErrorDialog("Error Creating Wallet", e.getMessage());
         }
     }
 
@@ -74,6 +76,15 @@ public abstract class NewWalletDialog extends DialogWindow {
             return;
         }
 
+        for(Wallet wallet : wallets) {
+            try {
+                wallet.checkWallet();
+            } catch(InvalidWalletException e) {
+                showErrorDialog("Error Creating Wallet", "The wallet is not valid: " + e.getMessage());
+                return;
+            }
+        }
+
         if(AppServices.onlineProperty().get()) {
             discoverAccounts(wallets);
         } else {
@@ -88,8 +99,8 @@ public abstract class NewWalletDialog extends DialogWindow {
         Platform.runLater(() -> {
             ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallets);
             walletDiscoveryService.setOnSucceeded(successEvent -> {
-                Optional<Wallet> optWallet = walletDiscoveryService.getValue();
-                wallet = optWallet.orElseGet(() -> wallets.get(0));
+                Optional<List<Wallet>> optWallets = walletDiscoveryService.getValue();
+                wallet = optWallets.orElseGet(() -> wallets).getFirst();
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     SparrowTerminal.get().getGui().removeWindow(discoveringDialog);
                     saveWallet(wallet);
@@ -172,7 +183,6 @@ public abstract class NewWalletDialog extends DialogWindow {
                         } catch(IOException | StorageException | MnemonicException e) {
                             log.error("Error saving imported wallet", e);
                         } finally {
-                            encryptionFullKey.clear();
                             if(key != null) {
                                 key.clear();
                             }

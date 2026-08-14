@@ -10,8 +10,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.Tooltip;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.event.EventHandler;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.MouseButton;
 
 public class CopyableCoinLabel extends CopyableLabel {
     private final LongProperty valueProperty = new SimpleLongProperty(-1);
@@ -29,6 +28,10 @@ public class CopyableCoinLabel extends CopyableLabel {
         valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getUnitFormat(), Config.get().getBitcoinUnit()));
 
         setOnMouseClicked(event -> {
+            if(!event.getButton().equals(MouseButton.PRIMARY)) {
+                return;
+            }
+
             if(bitcoinUnit == null) {
                 bitcoinUnit = Config.get().getBitcoinUnit();
             }
@@ -67,6 +70,13 @@ public class CopyableCoinLabel extends CopyableLabel {
     }
 
     private void setValueAsText(Long value, UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
+        if(Config.get().isHideAmounts()) {
+            setText(CoinLabel.HIDDEN_AMOUNT_TEXT);
+            setTooltip(null);
+            setContextMenu(null);
+            return;
+        }
+
         setTooltip(tooltip);
         setContextMenu(contextMenu);
 
