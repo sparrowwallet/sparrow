@@ -2611,8 +2611,7 @@ public class AppController implements Initializable {
     }
 
     private Theme detectSystemTheme() {
-        String os = System.getProperty("os.name").toLowerCase();
-        if (os.contains("mac")) {
+        if (OsType.getCurrent() == OsType.MACOS) {
             return isMacDarkMode() ? Theme.DARK : Theme.LIGHT;
         }
         return Theme.LIGHT;
@@ -2624,7 +2623,7 @@ public class AppController implements Initializable {
                     new ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start().getInputStream()))) {
             String result = reader.readLine();
             return result != null && result.trim().equalsIgnoreCase("Dark");
-        } catch (IOException e) {
+        } catch (Throwable e) {
             return false;
         }
     }
