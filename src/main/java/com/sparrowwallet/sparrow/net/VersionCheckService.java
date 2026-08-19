@@ -30,9 +30,11 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
             protected VersionUpdatedEvent call() {
                 try {
                     VersionCheck versionCheck = getVersionCheck();
-                    version = versionCheck.version;
-                    if(isNewer(versionCheck) && verifySignature(versionCheck)) {
-                        return new VersionUpdatedEvent(versionCheck.version);
+                    if(verifySignature(versionCheck)) {
+                        version = versionCheck.version;
+                        if(isNewer(versionCheck)) {
+                            return new VersionUpdatedEvent(versionCheck.version);
+                        }
                     }
                 } catch(IOException e) {
                     log.error("Error retrieving version check file", e);
@@ -57,6 +59,11 @@ public class VersionCheckService extends ScheduledService<VersionUpdatedEvent> {
     }
 
     private boolean verifySignature(VersionCheck versionCheck) {
+        if(versionCheck == null || versionCheck.version == null || versionCheck.signatures == null) {
+            log.warn("Invalid version check file");
+            return false;
+        }
+
         try {
             for(String addressString : versionCheck.signatures.keySet()) {
                 if(!addressString.equals("1LiJx1HQ49L2LzhBwbgwXdHiGodvPg5YaV")) {
