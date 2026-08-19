@@ -403,7 +403,7 @@ public class ServerSettingsController extends SettingsDetailController {
         });
 
         useProxy.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            config.setUseProxy(newValue);
+            config.setUseProxy(newValue && config.getProxyServer() != null && !config.getProxyServer().isBlank());
             proxyHost.setText(proxyHost.getText() + " ");
             proxyHost.setText(proxyHost.getText().trim());
             proxyHost.setDisable(!newValue);
@@ -748,7 +748,7 @@ public class ServerSettingsController extends SettingsDetailController {
         ));
 
         validationSupport.registerValidator(proxyHost, Validator.combine(
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Proxy host required", useProxy.isSelected() && newValue.isEmpty()),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Proxy host required", useProxy.isSelected() && newValue.isBlank()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid host name", getHost(newValue) == null)
         ));
 
@@ -874,14 +874,22 @@ public class ServerSettingsController extends SettingsDetailController {
                 return;
             }
 
-            String hostAsString = getHost(proxyHost.getText());
-            Integer portAsInteger = getPort(proxyPort.getText());
-            if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
-                config.setProxyServer(HostAndPort.fromParts(hostAsString, portAsInteger).toString());
-            } else if(hostAsString != null) {
-                config.setProxyServer(HostAndPort.fromHost(hostAsString).toString());
-            }
+            setProxyConfig(config);
         };
+    }
+
+    private void setProxyConfig(Config config) {
+        String hostAsString = getHost(proxyHost.getText());
+        Integer portAsInteger = getPort(proxyPort.getText());
+        String proxyServer = null;
+        if(hostAsString != null && !hostAsString.isBlank() && portAsInteger != null && isValidPort(portAsInteger)) {
+            proxyServer = HostAndPort.fromParts(hostAsString, portAsInteger).toString();
+        } else if(hostAsString != null && !hostAsString.isBlank()) {
+            proxyServer = HostAndPort.fromHost(hostAsString).toString();
+        }
+
+        config.setProxyServer(proxyServer);
+        config.setUseProxy(useProxy.isSelected() && proxyServer != null);
     }
 
     private Protocol getProtocol() {
@@ -890,7 +898,7 @@ public class ServerSettingsController extends SettingsDetailController {
 
     private String getHost(String text) {
         try {
-            return HostAndPort.fromHost(text).getHost();
+            return HostAndPort.fromHost(text.trim()).getHost();
         } catch(IllegalArgumentException e) {
             return null;
         }
