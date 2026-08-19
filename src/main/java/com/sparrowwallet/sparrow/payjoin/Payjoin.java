@@ -183,8 +183,8 @@ public class Payjoin {
                 proposedPSBTInput.getTapDerivedPublicKeys().putAll(originalPSBTInput.getTapDerivedPublicKeys());
                 proposedPSBTInput.setTapInternalKey(originalPSBTInput.getTapInternalKey());
                 proposedPSBTInput.getProprietary().putAll(originalPSBTInput.getProprietary());
-                proposedPSBTInput.setRedeemScript(originalPSBTInput.getFinalScriptSig().getFirstNestedScript());
-                proposedPSBTInput.setWitnessScript(originalPSBTInput.getFinalScriptWitness().getWitnessScript());
+                proposedPSBTInput.setRedeemScript(originalPSBTInput.getFinalScriptSig() == null ? null : originalPSBTInput.getFinalScriptSig().getFirstNestedScript());
+                proposedPSBTInput.setWitnessScript(originalPSBTInput.getFinalScriptWitness() == null ? null : originalPSBTInput.getFinalScriptWitness().getWitnessScript());
                 proposedPSBTInput.setSigHash(originalPSBTInput.getSigHash());
             } else {
                 // Verify the PSBT input is finalized
