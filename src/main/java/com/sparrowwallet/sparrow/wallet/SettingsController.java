@@ -46,6 +46,7 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 
 import static com.sparrowwallet.drongo.OutputDescriptor.KEY_ORIGIN_PATTERN;
+import static com.sparrowwallet.drongo.OutputDescriptor.LEGACY_MULTI_PATTERN;
 import static com.sparrowwallet.drongo.OutputDescriptor.XPUB_PATTERN;
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 import static com.sparrowwallet.sparrow.AppServices.showWarningDialog;
@@ -487,7 +488,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 (walletForm.getWallet().getPolicyType() == PolicyType.MULTI_HD ? "\nKey expressions are shown in canonical order." : ""));
         Optional<String> text = dialog.showAndWait();
         if(text.isPresent() && !text.get().isEmpty() && !text.get().equals(outputDescriptorString)) {
-            if(text.get().contains("(multi(")) {
+            if(LEGACY_MULTI_PATTERN.matcher(text.get()).find()) {
                 AppServices.showWarningDialog("Legacy multisig wallet detected", "Sparrow supports BIP67 compatible multisig wallets only.\n\nThe public keys will be lexicographically sorted, and the output descriptor represented with sortedmulti.");
             }
 

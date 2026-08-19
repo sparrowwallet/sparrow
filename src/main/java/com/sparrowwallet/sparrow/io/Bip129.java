@@ -325,7 +325,7 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
             return;
         }
 
-        if(descriptor.contains("multi(") && !descriptor.contains("sortedmulti(")) {
+        if(OutputDescriptor.LEGACY_MULTI_PATTERN.matcher(descriptor).find()) {
             throw new IllegalStateException("The first address in this BSMS record (" + recordAddress + ") does not match the first address of " + firstAddress + " derived by sorting the provided keys");
         } else {
             throw new IllegalStateException("The first address in this file (" + recordAddress + ") does not match the first address of the provided descriptor (" + firstAddress + "). " +
