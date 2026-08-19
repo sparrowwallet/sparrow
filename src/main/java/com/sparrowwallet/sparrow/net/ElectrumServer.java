@@ -1619,8 +1619,20 @@ public class ElectrumServer {
         //batch and needs its spent-input nodes identified.
         Set<Sha256Hash> alreadyInWallet = new HashSet<>();
         for(SilentPaymentsTx entry : entries) {
-            Sha256Hash txid = Sha256Hash.wrap(entry.tx_hash);
-            tweakMap.putIfAbsent(txid, Utils.hexToBytes(entry.tweak_key));
+            Sha256Hash txid;
+            byte[] tweakKey;
+            try {
+                txid = Sha256Hash.wrap(entry.tx_hash);
+                tweakKey = Utils.hexToBytes(entry.tweak_key);
+                if(tweakKey.length != 33) {
+                    throw new ProtocolException("Tweak key must be 33 bytes, not " + tweakKey.length);
+                }
+            } catch(NullPointerException | ProtocolException e) {
+                log.warn("Skipping malformed silent payments entry " + entry + ": " + e);
+                continue;
+            }
+
+            tweakMap.putIfAbsent(txid, tweakKey);
             BlockTransaction existing = wallet.getWalletTransaction(txid);
             if(existing != null) {
                 transactionMap.put(txid, existing);
@@ -1691,7 +1703,7 @@ public class ElectrumServer {
                         }
                     }
                 }
-            } catch(InvalidSilentPaymentException e) {
+            } catch(InvalidSilentPaymentException | IllegalArgumentException e) {
                 log.warn("Invalid silent payment tweak for tx " + txid + " — skipping", e);
             }
         }
