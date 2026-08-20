@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net;
 
 import com.google.common.net.HostAndPort;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.annotations.SerializedName;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
@@ -204,7 +205,13 @@ public class Bwt {
 
         Gson gson = new Gson();
         String jsonConfig = gson.toJson(bwtConfig);
-        log.debug("Configuring bwt: " + jsonConfig);
+        if(log.isDebugEnabled()) {
+            JsonObject loggedConfig = gson.toJsonTree(bwtConfig).getAsJsonObject();
+            if(loggedConfig.has("bitcoind_auth")) {
+                loggedConfig.addProperty("bitcoind_auth", "*****");
+            }
+            log.debug("Configuring bwt: " + loggedConfig);
+        }
 
         NativeBwtDaemon.start(jsonConfig, callback);
     }
