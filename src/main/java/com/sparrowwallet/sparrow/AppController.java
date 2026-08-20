@@ -3157,6 +3157,14 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
+    public void cormorantImportStatus(CormorantImportStatusEvent event) {
+        String walletNames = event.getWallets().stream().map(Wallet::getFullDisplayName).collect(Collectors.joining(", "));
+        AppServices.showErrorDialog("Error importing Bitcoin Core descriptors",
+                "Bitcoin Core did not import " + (walletNames.isEmpty() ? "one or more descriptors" : "the descriptors for " + walletNames) + ":\n\n" + event.getErrorMessage() + "\n\n" +
+                        "Transactions and balances may be incomplete until the import succeeds.");
+    }
+
+    @Subscribe
     public void bwtBootStatus(BwtBootStatusEvent event) {
         serverToggle.setDisable(true);
         if(AppServices.isConnecting()) {

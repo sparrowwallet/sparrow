@@ -219,4 +219,9 @@ public class SparrowTextGui extends MultiWindowTextGUI {
     public void cormorantPruneStatus(CormorantPruneStatusEvent event) {
         statusUpdated(new StatusEvent("Error importing wallet, pruned date after wallet birthday"));
     }
+
+    @Subscribe
+    public void cormorantImportStatus(CormorantImportStatusEvent event) {
+        statusUpdated(new StatusEvent("Error importing descriptors, wallet history may be incomplete"));
+    }
 }
