@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -40,10 +41,20 @@ import java.util.Locale;
 public final class IpAddressMatcher {
     private static final Logger log = LoggerFactory.getLogger(IpAddressMatcher.class);
 
-    private static final IpAddressMatcher LOCAL_RANGE_1 = new IpAddressMatcher("10.0.0.0/8");
-    private static final IpAddressMatcher LOCAL_RANGE_2 = new IpAddressMatcher("172.16.0.0/12");
-    private static final IpAddressMatcher LOCAL_RANGE_3 = new IpAddressMatcher("192.168.0.0/16");
-    private static final IpAddressMatcher LOCAL_RANGE_4 = new IpAddressMatcher("100.64.0.0/10");
+    //Names in these domains cannot resolve outside the local network - .local is resolved by link-local multicast (RFC 6762), .home.arpa is reserved for home networks (RFC 8375),
+    //.internal is reserved for private use, and .lan is a suffix commonly assigned by routers
+    private static final List<String> LOCAL_DOMAIN_SUFFIXES = List.of(".local", ".lan", ".home.arpa", ".internal");
+
+    private static final List<IpAddressMatcher> LOCAL_RANGES = List.of(
+            new IpAddressMatcher("10.0.0.0/8"),
+            new IpAddressMatcher("172.16.0.0/12"),
+            new IpAddressMatcher("192.168.0.0/16"),
+            new IpAddressMatcher("100.64.0.0/10"),
+            new IpAddressMatcher("127.0.0.0/8"),
+            new IpAddressMatcher("169.254.0.0/16"),
+            new IpAddressMatcher("::1"),
+            new IpAddressMatcher("fc00::/7"),
+            new IpAddressMatcher("fe80::/10"));
 
     private final int nMaskBits;
     private final InetAddress requiredAddress;
@@ -72,8 +83,10 @@ public final class IpAddressMatcher {
     }
 
     public boolean matches(String address) {
-        InetAddress remoteAddress = parseAddress(address);
+        return matches(parseAddress(address));
+    }
 
+    public boolean matches(InetAddress remoteAddress) {
         if (!requiredAddress.getClass().equals(remoteAddress.getClass())) {
             return false;
         }
@@ -101,7 +114,7 @@ public final class IpAddressMatcher {
         return true;
     }
 
-    private InetAddress parseAddress(String address) {
+    private static InetAddress parseAddress(String address) {
         try {
             return InetAddress.getByName(address);
         } catch(UnknownHostException e) {
@@ -109,20 +122,28 @@ public final class IpAddressMatcher {
         }
     }
 
+    public static boolean isLocalNetworkName(String host) {
+        String lowerHost = host.toLowerCase(Locale.ROOT);
+        return "localhost".equals(lowerHost) || LOCAL_DOMAIN_SUFFIXES.stream().anyMatch(lowerHost::endsWith);
+    }
+
     public static boolean isLocalNetworkAddress(String address) {
         try {
-            if("localhost".equals(address) || "127.0.0.1".equals(address)) {
+            if(isLocalNetworkName(address)) {
                 return true;
             }
 
             //Matching a hostname against the local ranges requires resolving it, which leaks the name to (and trusts the answer of) the local DNS resolver even when a proxy is configured
-            //Only IP literals and mDNS names (which RFC 6762 requires to be resolved via link-local multicast, not upstream DNS) are considered potentially local when using a proxy
-            if(AppServices.isUsingProxy() && !InetAddresses.isInetAddress(address) && !address.toLowerCase(Locale.ROOT).endsWith(".local")) {
+            //Only IP literals are considered potentially local when using a proxy, since local network names have already returned above
+            if(AppServices.isUsingProxy() && !InetAddresses.isInetAddress(address)) {
                 log.info("Avoiding local DNS resolution of " + address + ", assuming it is a non-local address to be resolved by the configured proxy");
                 return false;
             }
 
-            return LOCAL_RANGE_1.matches(address) || LOCAL_RANGE_2.matches(address) || LOCAL_RANGE_3.matches(address) || LOCAL_RANGE_4.matches(address);
+            //Resolve once for all of the ranges, as a hostname lookup may be involved
+            InetAddress inetAddress = parseAddress(address);
+
+            return LOCAL_RANGES.stream().anyMatch(localRange -> localRange.matches(inetAddress));
         } catch(IllegalArgumentException e) {
             if(AppServices.isUsingProxy()) {
                 log.info(e.getMessage() + ", assuming it is a non-local address to be resolved by the configured proxy");

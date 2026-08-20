@@ -15,11 +15,15 @@ import javafx.scene.layout.StackPane;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class SettingsController implements Initializable {
     private Config config;
+
+    private final Map<String, FXMLLoader> settingsDetailLoaders = new HashMap<>();
 
     @FXML
     private ToggleGroup settingsMenu;
@@ -78,6 +82,13 @@ public class SettingsController implements Initializable {
     FXMLLoader setPreferencePane(String fxmlName) {
         settingsPane.getChildren().removeAll(settingsPane.getChildren());
 
+        //Retain the pane already loaded for this group, so that a controller is not created (and its listeners and event subscriptions added) each time the group is selected
+        FXMLLoader existingDetailLoader = settingsDetailLoaders.get(fxmlName);
+        if(existingDetailLoader != null) {
+            settingsPane.getChildren().add(existingDetailLoader.getRoot());
+            return existingDetailLoader;
+        }
+
         try {
             FXMLLoader settingsDetailLoader = new FXMLLoader(AppServices.class.getResource("settings/" + fxmlName + ".fxml"));
             Node preferenceGroupNode = settingsDetailLoader.load();
@@ -85,6 +96,7 @@ public class SettingsController implements Initializable {
             controller.setMasterController(this);
             controller.initializeView(config);
             settingsPane.getChildren().add(preferenceGroupNode);
+            settingsDetailLoaders.put(fxmlName, settingsDetailLoader);
 
             return settingsDetailLoader;
         } catch (IOException e) {

@@ -55,6 +55,10 @@ public class BitcoindTransport implements Transport {
 
     @Override
     public String pass(String request) throws IOException {
+        //Bitcoin Core RPC is a connection to the user's own node, expected to be on this computer or the local network, or reached over its onion service or a VPN or SSH tunnel.
+        //A configured proxy is therefore applied to onion addresses only - AppServices.getProxy() is also non-null whenever the internal Tor is running, and Tor can reach neither
+        //loopback nor private addresses, while routing a clearnet node through it would expose the RPC credentials below to an exit node.
+        //Configuring a node that is neither local nor onion warns the user on testing the connection or closing the dialog, see ServerSettingsController.
         Proxy proxy = AppServices.getProxy();
         HttpURLConnection connection = proxy != null && Protocol.isOnionAddress(bitcoindServer) ? (HttpURLConnection)bitcoindUrl.openConnection(proxy) : (HttpURLConnection)bitcoindUrl.openConnection();
 
@@ -62,6 +66,7 @@ public class BitcoindTransport implements Transport {
             SSLSocketFactory sslSocketFactory = getSSLSocketFactory();
             if(sslSocketFactory != null) {
                 httpsURLConnection.setSSLSocketFactory(sslSocketFactory);
+                //A private node's RPC certificate is necessarily self-signed, so the certificate pinned on first use below authenticates it - there is no hostname to verify
                 httpsURLConnection.setHostnameVerifier((_, _) -> true);
             }
         }
@@ -85,6 +90,7 @@ public class BitcoindTransport implements Transport {
 
         int statusCode = connection.getResponseCode();
 
+        //Trust on first use, as for non-CA-certified Electrum servers: the certificate presented by the node on the first connection is saved, and required on all connections thereafter
         if(connection instanceof HttpsURLConnection httpsConn && Storage.getCertificateFile(bitcoindServer.getHost()) == null) {
             try {
                 Certificate[] certs = httpsConn.getServerCertificates();
