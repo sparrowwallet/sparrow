@@ -933,10 +933,15 @@ public class DbPersistence implements Persistence {
     }
 
     private String getUrl(File walletFile, String password) throws StorageException {
-        if(JDBC_URL_INJECTION_PATTERN.matcher(walletFile.getAbsolutePath()).find()) {
+        File dbFile = walletFile.getAbsoluteFile();
+        if(JDBC_URL_INJECTION_PATTERN.matcher(dbFile.getPath()).find()) {
             throw new StorageException("Wallet file path contains invalid characters");
         }
-        return "jdbc:h2:" + walletFile.getAbsolutePath().replace("." + getType().getExtension(), "") + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
+
+        //H2 appends the extension to the database name in the URL, so only a trailing extension can be removed - removing every occurrence would
+        //open a different file to the one tracked here, as would removing one from a directory name
+        File dbName = new File(dbFile.getParentFile(), getWalletName(dbFile, null));
+        return "jdbc:h2:" + dbName.getPath() + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
     }
 
     private boolean persistsFor(Wallet wallet) {

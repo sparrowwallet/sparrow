@@ -176,6 +176,22 @@ public class DbPersistenceTest {
     }
 
     @Test
+    public void walletNameContainingExtensionUsesItsOwnFile() throws Exception {
+        Storage otherStorage = createUnencryptedWallet("backup2");
+        otherStorage.closeAndWait();
+        File otherFile = otherStorage.getWalletFile();
+        Sha256Hash otherHash = getFileHash(otherFile);
+
+        //The file for this wallet is backup.mv.db2.mv.db - removing every occurrence of the extension from the path yields the database name backup2
+        Storage storage = createUnencryptedWallet("backup.mv.db2");
+        storage.closeAndWait();
+
+        Assertions.assertTrue(storage.getWalletFile().exists(), "wallet was written to a file other than the one tracked");
+        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadUnencryptedWallet().getWallet().isValid());
+        Assertions.assertEquals(otherHash, getFileHash(otherFile), "another wallet file was written by a wallet name containing the extension");
+    }
+
+    @Test
     public void passwordRemovalDecryptsWalletFile() throws Exception {
         Storage storage = createUnencryptedWallet("Savings");
         setPassword(storage, "pass");
