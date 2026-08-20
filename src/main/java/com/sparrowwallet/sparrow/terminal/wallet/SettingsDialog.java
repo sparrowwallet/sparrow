@@ -170,17 +170,16 @@ public class SettingsDialog extends WalletDialog {
         }
     }
 
-    private void saveWallet(boolean changePassword, boolean suggestChangePassword) {
+    //Returns true if the wallet save was initiated, and false if it was abandoned without any change to the wallet or its storage
+    private boolean saveWallet(boolean changePassword, boolean suggestChangePassword) {
         WalletForm walletForm = getWalletForm();
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         PasswordRequirement requirement;
-        if(existingPubKey == null) {
-            if(changePassword) {
-                requirement = PasswordRequirement.UPDATE_CHANGE;
-            } else {
-                requirement = PasswordRequirement.UPDATE_NEW;
-            }
+        if(changePassword) {
+            requirement = PasswordRequirement.UPDATE_CHANGE;
+        } else if(existingPubKey == null) {
+            requirement = PasswordRequirement.UPDATE_NEW;
         } else if(Storage.NO_PASSWORD_KEY.equals(existingPubKey)) {
             requirement = PasswordRequirement.UPDATE_EMPTY;
         } else {
@@ -213,7 +212,8 @@ public class SettingsDialog extends WalletDialog {
                         try {
                             ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
 
-                            if(existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
+                            //When changing the password, the existing encryption key is retained until the new one is derived, so a different key is expected here
+                            if(!changePassword && existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
                                 AppServices.showErrorDialog("Incorrect Password", "The password was incorrect.");
                                 return;
                             }
@@ -222,14 +222,32 @@ public class SettingsDialog extends WalletDialog {
 
                             Wallet masterWallet = walletForm.getWallet().isMasterWallet() ? walletForm.getWallet() : walletForm.getWallet().getMasterWallet();
                             if(suggestChangePassword && requirement == PasswordRequirement.UPDATE_SET) {
-                                walletForm.getStorage().setEncryptionPubKey(null);
                                 masterWallet.decrypt(key);
                                 for(Wallet childWallet : masterWallet.getChildWallets()) {
                                     if(!childWallet.isNested()) {
                                         childWallet.decrypt(key);
                                     }
                                 }
-                                SparrowTerminal.get().getGuiThread().invokeLater(() -> saveWallet(true, false));
+
+                                //The next dialog is shown on the gui thread, so hand the existing key over to re-encrypt with rather than clearing it here
+                                Key existingKey = key;
+                                key = null;
+                                SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+                                    boolean saving = saveWallet(true, false);
+                                    Platform.runLater(() -> {
+                                        //If a new password is not provided, re-encrypt with the existing key rather than leaving the wallet decrypted for the session
+                                        if(!saving) {
+                                            masterWallet.encrypt(existingKey);
+                                            for(Wallet childWallet : masterWallet.getChildWallets()) {
+                                                if(!childWallet.isNested()) {
+                                                    childWallet.encrypt(existingKey);
+                                                }
+                                            }
+                                        }
+
+                                        existingKey.clear();
+                                    });
+                                });
                                 return;
                             }
 
@@ -259,7 +277,11 @@ public class SettingsDialog extends WalletDialog {
                     keyDerivationService.start();
                 }
             });
+
+            return true;
         }
+
+        return false;
     }
 
     public static List<String> splitString(String stringToSplit, int maxLength) {

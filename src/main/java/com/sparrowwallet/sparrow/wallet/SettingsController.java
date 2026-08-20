@@ -956,16 +956,15 @@ public class SettingsController extends WalletFormController implements Initiali
         }
     }
 
-    private void saveWallet(boolean changePassword, boolean suggestChangePassword) {
+    //Returns true if the wallet save was initiated, and false if it was abandoned without any change to the wallet or its storage
+    private boolean saveWallet(boolean changePassword, boolean suggestChangePassword) {
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         WalletPasswordDialog.PasswordRequirement requirement;
-        if(existingPubKey == null) {
-            if(changePassword) {
-                requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_CHANGE;
-            } else {
-                requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
-            }
+        if(changePassword) {
+            requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_CHANGE;
+        } else if(existingPubKey == null) {
+            requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_NEW;
         } else if(Storage.NO_PASSWORD_KEY.equals(existingPubKey)) {
             requirement = WalletPasswordDialog.PasswordRequirement.UPDATE_EMPTY;
         } else {
@@ -977,7 +976,7 @@ public class SettingsController extends WalletFormController implements Initiali
             if(optResponse.isPresent() && optResponse.get().equals(ButtonType.CANCEL)) {
                 revert.setDisable(false);
                 apply.setDisable(false);
-                return;
+                return false;
             }
         }
 
@@ -993,7 +992,7 @@ public class SettingsController extends WalletFormController implements Initiali
                     AppServices.showErrorDialog("Error saving wallet backup", e.getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);
-                    return;
+                    return false;
                 }
             }
 
@@ -1018,7 +1017,8 @@ public class SettingsController extends WalletFormController implements Initiali
                     try {
                         ECKey encryptionPubKey = ECKey.fromPublicOnly(encryptionFullKey);
 
-                        if(existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
+                        //When changing the password, the existing encryption key is retained until the new one is derived, so a different key is expected here
+                        if(!changePassword && existingPubKey != null && !Storage.NO_PASSWORD_KEY.equals(existingPubKey) && !existingPubKey.equals(encryptionPubKey)) {
                             AppServices.showErrorDialog("Incorrect Password", "The password was incorrect.");
                             revert.setDisable(false);
                             apply.setDisable(false);
@@ -1033,14 +1033,22 @@ public class SettingsController extends WalletFormController implements Initiali
                                 walletForm.deleteBackups();
                             }
 
-                            walletForm.getStorage().setEncryptionPubKey(null);
                             masterWallet.decrypt(key);
                             for(Wallet childWallet : masterWallet.getChildWallets()) {
                                 if(!childWallet.isNested()) {
                                     childWallet.decrypt(key);
                                 }
                             }
-                            saveWallet(true, false);
+
+                            //If a new password is not provided, re-encrypt with the existing key rather than leaving the wallet decrypted for the session
+                            if(!saveWallet(true, false)) {
+                                masterWallet.encrypt(key);
+                                for(Wallet childWallet : masterWallet.getChildWallets()) {
+                                    if(!childWallet.isNested()) {
+                                        childWallet.encrypt(key);
+                                    }
+                                }
+                            }
                             return;
                         }
 
@@ -1077,9 +1085,12 @@ public class SettingsController extends WalletFormController implements Initiali
                 EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.START, "Encrypting wallet..."));
                 keyDerivationService.start();
             }
+
+            return true;
         } else {
             revert.setDisable(false);
             apply.setDisable(false);
+            return false;
         }
     }
 
