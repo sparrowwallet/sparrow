@@ -82,6 +82,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private final Label releaseVerified;
     private final Hyperlink releaseLink;
 
+    private PGPVerifyService pgpVerifyService;
+    private FileSha256Service hashService;
+    private long verificationCount;
+
     private static File lastFileParent;
 
     public DownloadVerifierDialog(File initialFile) {
@@ -152,6 +156,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
         setOnCloseRequest(event -> {
             if(ButtonBar.ButtonData.CANCEL_CLOSE.equals(getResult())) {
+                cancelVerification();
                 signature.set(null);
                 manifest.set(null);
                 publicKey.set(null);
@@ -274,6 +279,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     }
 
     private void verify() {
+        cancelVerification();
+        long verification = verificationCount;
+
         manifestDisabled.set(false);
         publicKeyDisabled.set(false);
 
@@ -282,14 +290,22 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             return;
         }
 
-        PGPVerifyService pgpVerifyService = new PGPVerifyService(signature.get(), manifest.get(), publicKey.get());
+        pgpVerifyService = new PGPVerifyService(signature.get(), manifest.get(), publicKey.get());
         pgpVerifyService.setOnRunning(event -> {
+            if(verification != verificationCount) {
+                return;
+            }
+
             signedBy.setText("Verifying...");
             signedBy.setGraphic(GlyphUtils.getBusyGlyph());
             signedBy.setTooltip(null);
             clearReleaseFields();
         });
         pgpVerifyService.setOnSucceeded(event -> {
+            if(verification != verificationCount) {
+                return;
+            }
+
             PGPVerificationResult result = pgpVerifyService.getValue();
 
             String message = result.userId() + " on " + signatureDateFormat.format(result.signatureTimestamp()) + (result.expired() ? " (key expired)" : "");
@@ -310,10 +326,14 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 releaseVerified.setGraphic(GlyphUtils.getSuccessGlyph());
                 releaseLink.setText(release.get().getName());
             } else {
-                verifyManifest();
+                verifyManifest(verification);
             }
         });
         pgpVerifyService.setOnFailed(event -> {
+            if(verification != verificationCount) {
+                return;
+            }
+
             Throwable e = event.getSource().getException();
             signedBy.setText(getDisplayMessage(e));
             signedBy.setGraphic(GlyphUtils.getFailureGlyph());
@@ -322,6 +342,21 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         });
 
         pgpVerifyService.start();
+    }
+
+    //Supersedes any verification in progress - the counter is only changed on the FX thread, so a task that completes as it is replaced cannot render its result
+    private void cancelVerification() {
+        verificationCount++;
+
+        if(pgpVerifyService != null) {
+            pgpVerifyService.cancel();
+            pgpVerifyService = null;
+        }
+
+        if(hashService != null) {
+            hashService.cancel();
+            hashService = null;
+        }
     }
 
     private void clearReleaseFields() {
@@ -333,11 +368,16 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         releaseLink.setText("");
     }
 
-    private void verifyManifest() {
+    private void verifyManifest(long verification) {
         File releaseFile = release.get();
         if(releaseFile != null && releaseFile.exists()) {
-            FileSha256Service hashService = new FileSha256Service(releaseFile);
+            File manifestFile = manifest.get();
+            hashService = new FileSha256Service(releaseFile);
             hashService.setOnRunning(event -> {
+                if(verification != verificationCount) {
+                    return;
+                }
+
                 releaseHash.setText("Calculating...");
                 releaseHash.setGraphic(GlyphUtils.getBusyGlyph());
                 releaseHash.setTooltip(null);
@@ -346,9 +386,13 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 releaseLink.setText("");
             });
             hashService.setOnSucceeded(event -> {
+                if(verification != verificationCount) {
+                    return;
+                }
+
                 String calculatedHash = hashService.getValue();
                 try {
-                    Map<File, String> manifestMap = getManifest(manifest.get());
+                    Map<File, String> manifestMap = getManifest(manifestFile);
                     String manifestHash = getManifestHash(releaseFile.getName(), manifestMap);
                     if(calculatedHash.equalsIgnoreCase(manifestHash)) {
                         releaseHash.setText("Matched manifest hash");
@@ -382,6 +426,10 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 }
             });
             hashService.setOnFailed(event -> {
+                if(verification != verificationCount) {
+                    return;
+                }
+
                 releaseHash.setText("Could not calculate manifest");
                 releaseHash.setGraphic(GlyphUtils.getFailureGlyph());
                 releaseHash.setTooltip(new Tooltip(event.getSource().getException().getMessage()));
