@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class WalletAndKey implements Comparable<WalletAndKey> {
     private final Wallet wallet;
-    private final ECKey encryptionKey;
+    private ECKey encryptionKey;
     private final Key key;
     private final Map<WalletAndKey, Storage> childWallets;
 
@@ -38,6 +38,7 @@ public class WalletAndKey implements Comparable<WalletAndKey> {
         if(key != null) {
             key.clear();
         }
+        encryptionKey = null;
     }
 
     @Override
