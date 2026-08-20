@@ -1276,7 +1276,7 @@ public class AppController implements Initializable {
 
             for(Wallet wallet : wallets) {
                 List<WalletTabData> walletTabData = getOpenWalletTabData();
-                List<ExtendedKey> xpubs = wallet.getKeystores().stream().map(Keystore::getExtendedPublicKey).collect(Collectors.toList());
+                List<ExtendedKey> xpubs = wallet.getKeystores().stream().map(Keystore::getExtendedPublicKey).filter(Objects::nonNull).collect(Collectors.toList());
                 Optional<WalletForm> optNewWalletForm = walletTabData.stream()
                         .map(WalletTabData::getWalletForm)
                         .filter(wf -> wf.getSettingsWalletForm() != null && wf.getSettingsWalletForm().getWallet().getPolicyType() == PolicyType.MULTI_HD &&
