@@ -1150,7 +1150,12 @@ public class ElectrumServer {
         Double minFeeRateBtcKb = electrumServerRpc.getMinimumRelayFee(getTransport());
         if(minFeeRateBtcKb != null) {
             long minFeeRateSatsKb = (long)(minFeeRateBtcKb * Transaction.SATOSHIS_PER_BITCOIN);
-            return minFeeRateSatsKb / 1000d;
+            double minFeeRate = minFeeRateSatsKb / 1000d;
+            if(minFeeRate >= 0d && minFeeRate <= AppServices.getLongFeeRatesRange().getLast()) {
+                return minFeeRate;
+            }
+
+            log.warn("Server returned an out of range minimum relay fee of " + minFeeRateBtcKb + " BTC/kB, using default");
         }
 
         return Transaction.DEFAULT_MIN_RELAY_FEE;
