@@ -36,6 +36,7 @@ public class Auth47 {
     private boolean srbn;
     private String srbnName;
     private String resource;
+    private boolean resourceSpecified;
 
     public Auth47(URI uri) throws MalformedURLException, URISyntaxException {
         this.nonce = uri.getHost();
@@ -79,8 +80,11 @@ public class Auth47 {
 
         this.expiry = parameterMap.get("e");
         this.resource = parameterMap.get("r");
+        String defaultResource = srbn ? "srbn" : strCallback;
         if(resource == null) {
-            this.resource = srbn ? "srbn" : strCallback;
+            this.resource = defaultResource;
+        } else {
+            this.resourceSpecified = !resource.equals(defaultResource);
         }
     }
 
@@ -185,6 +189,27 @@ public class Auth47 {
 
     public URL getCallback() {
         return callback;
+    }
+
+    //The signed challenge is scoped to the resource, which need not be the callback the response is sent to
+    public String getLoginMessage() {
+        String callbackHost = callback.getHost();
+        String resourceHost = resourceSpecified ? getResourceHost() : callbackHost;
+        if(resourceHost == null) {
+            return "login to an unrecognised resource (sending the response to " + callbackHost + ")";
+        } else if(!resourceHost.equalsIgnoreCase(callbackHost)) {
+            return "login to " + resourceHost + " (sending the response to " + callbackHost + ")";
+        }
+
+        return "login to " + callbackHost;
+    }
+
+    private String getResourceHost() {
+        try {
+            return new URI(resource).getHost();
+        } catch(URISyntaxException e) {
+            return null;
+        }
     }
 
     private static class Response {

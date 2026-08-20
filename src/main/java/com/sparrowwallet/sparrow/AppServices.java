@@ -1102,7 +1102,7 @@ public class AppServices {
         try {
             Auth47 auth47 = new Auth47(uri);
             List<ScriptType> scriptTypes = PaymentCode.SEGWIT_SCRIPT_TYPES;
-            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE_HD), scriptTypes, false, true, "login to " + auth47.getCallback().getHost(), true);
+            Wallet wallet = selectWallet(List.of(PolicyType.SINGLE_HD), scriptTypes, false, true, auth47.getLoginMessage(), true);
 
             if(wallet != null) {
                 try {
