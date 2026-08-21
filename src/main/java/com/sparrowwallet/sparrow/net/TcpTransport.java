@@ -144,10 +144,13 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             }
         }
 
+        //This deadline must bound the entire wait for a response, not just acquiring readLock below. The read thread releases
+        //readLock while blocked on the socket, so tryLock() returns almost immediately and the real wait is the await further down
+        long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS));
+
         try {
-            if(!readLock.tryLock((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS), TimeUnit.MILLISECONDS)) {
-                readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
-                log.warn("No response from server, setting read timeout to " + readTimeouts[readTimeoutIndex] + " secs");
+            if(!readLock.tryLock(deadlineNanos - System.nanoTime(), TimeUnit.NANOSECONDS)) {
+                escalateReadTimeout();
                 throw new IOException("No response from server");
             }
         } catch(InterruptedException e) {
@@ -165,8 +168,14 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             }
 
             while(reading && running) {
+                long remainingNanos = deadlineNanos - System.nanoTime();
+                if(remainingNanos <= 0) {
+                    escalateReadTimeout();
+                    throw new IOException("No response from server");
+                }
+
                 try {
-                    readingCondition.await();
+                    readingCondition.awaitNanos(remainingNanos);
                 } catch(InterruptedException e) {
                     //Restore interrupt status and break
                     Thread.currentThread().interrupt();
@@ -189,6 +198,13 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         } finally {
             readLock.unlock();
         }
+    }
+
+    //Note the connection is deliberately left open here - callers retry over the same transport with the escalated
+    //timeout and a halved batch page size, discarding the stale response that a slow server eventually delivers
+    private void escalateReadTimeout() {
+        readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
+        log.warn("No response from server, setting read timeout to " + readTimeouts[readTimeoutIndex] + " secs");
     }
 
     public void readInputLoop() throws ServerException {
