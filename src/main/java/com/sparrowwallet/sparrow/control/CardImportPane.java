@@ -112,6 +112,11 @@ public class CardImportPane extends TitledDescriptionPane {
             setError("Card Error", e.getMessage());
             importButton.setDisable(false);
             return;
+        } catch(Exception e) {
+            log.error("Error reading card", e);
+            setError("Card Error", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+            importButton.setDisable(false);
+            return;
         }
 
         CardImportService cardImportService = new CardImportService(importer, policyType, pin.get(), derivation, messageProperty);

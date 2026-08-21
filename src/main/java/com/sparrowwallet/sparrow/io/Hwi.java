@@ -98,6 +98,9 @@ public class Hwi {
                 //ignore
             } catch(CardException e) {
                 log.info("Error reading card", e);
+            } catch(Exception e) {
+                //a card is free to return any bytes it likes, so a malformed response can surface as any runtime exception
+                log.error("Error reading card", e);
             }
         }
 
