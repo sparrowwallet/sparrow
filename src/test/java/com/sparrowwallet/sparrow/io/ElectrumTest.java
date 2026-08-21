@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.io.ByteStreams;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
@@ -105,6 +106,16 @@ public class ElectrumTest extends IoTest {
         Assertions.assertEquals("f881eac5", wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint());
         Assertions.assertEquals("m/0'", wallet.getKeystores().get(0).getKeyDerivation().getDerivationPath());
         Assertions.assertEquals("xpub69iSRreMB6fu24sU8Tdxv7yYGqzPkDwPkwqUfKJTxW3p8afW7XvTewVCapuX3dQjdD197iF65WcjYaNpFbwWT3RyuZ1KJ3ToJNVWKWyAJ6f", wallet.getKeystores().get(0).getExtendedPublicKey().toString());
+    }
+
+    @Test
+    public void testEncryptedImportInvalidPassword() throws IOException {
+        Electrum electrum = new Electrum();
+        byte[] walletBytes = ByteStreams.toByteArray(getInputStream("electrum-encrypted"));
+
+        ImportException importException = Assertions.assertThrows(ImportException.class, () -> electrum.importWallet(new ByteArrayInputStream(walletBytes), "wrong"));
+        //FileImportPane reports "Invalid wallet password" by unwrapping this cause - dropping it degrades the message to a generic import error
+        Assertions.assertInstanceOf(InvalidPasswordException.class, importException.getCause());
     }
 
     @Test
