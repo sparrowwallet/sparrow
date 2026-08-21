@@ -222,10 +222,15 @@ public class PaymentController extends WalletFormController implements Initializ
                 }
 
                 DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
-                dnsPaymentService.setOnSucceeded(_ -> dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment)));
+                dnsPaymentService.setOnSucceeded(_ -> {
+                    if(isCurrentHrn(dnsPaymentHrn)) {
+                        dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
+                    }
+                });
                 dnsPaymentService.setOnFailed(failEvent -> {
-                    if(failEvent.getSource().getException() != null && !(failEvent.getSource().getException().getCause() instanceof TimeoutException)) {
-                        AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(failEvent.getSource().getException()).getMessage());
+                    Throwable exception = failEvent.getSource().getException();
+                    if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
+                        AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
                     }
                 });
                 dnsPaymentService.start();
@@ -447,6 +452,12 @@ public class PaymentController extends WalletFormController implements Initializ
         if(existingPayNym != null && payNym.nymName().equals(existingPayNym.nymName())) {
             sendController.updateTransaction();
         }
+    }
+
+    //Resolution is slow enough that several may be in flight at once, since every keystroke forming a valid hrn starts one.
+    //Only the hrn the address field currently holds may be applied - an earlier one landing later must not replace the recipient.
+    private boolean isCurrentHrn(String hrn) {
+        return DnsPayment.getHrn(address.getText()).filter(hrn::equals).isPresent();
     }
 
     public void setDnsPayment(DnsPayment dnsPayment) {
