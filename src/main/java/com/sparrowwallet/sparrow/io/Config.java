@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.sparrowwallet.sparrow.AppServices.ENUMERATE_HW_PERIOD_SECS;
 import static com.sparrowwallet.sparrow.net.PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE;
@@ -95,6 +96,8 @@ public class Config {
     private double minRelayFeeRate = Transaction.DEFAULT_MIN_RELAY_FEE;
     private Double appWidth;
     private Double appHeight;
+    private boolean expertMode = false;
+    private List<String> toxicTransactions;
 
     private static Config INSTANCE;
 
@@ -793,6 +796,25 @@ public class Config {
     public void setAppHeight(Double appHeight) {
         this.appHeight = appHeight;
         flush();
+    }
+
+    public void setExpertMode(boolean mode) {
+        expertMode = mode;
+    }
+
+    public boolean getExpertMode() {
+        return expertMode;
+    }
+
+    public void setToxicTransactions(List<String> txns) {
+        toxicTransactions = txns;
+    }
+
+    public List<String> getToxicTransactions() {
+        if(toxicTransactions != null) {
+            toxicTransactions = toxicTransactions.stream().map(txn -> txn.toLowerCase()).collect(Collectors.toList());
+        }
+        return toxicTransactions != null ? toxicTransactions : new ArrayList<String>();
     }
 
     private synchronized void flush() {
