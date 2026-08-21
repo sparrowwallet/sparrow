@@ -54,6 +54,7 @@ import tornadofx.control.Field;
 
 import java.io.IOException;
 import java.net.URL;
+import java.security.SecureRandom;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -63,6 +64,7 @@ import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class SendController extends WalletFormController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(SendController.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @FXML
     private TabPane paymentTabs;
@@ -710,7 +712,7 @@ public class SendController extends WalletFormController implements Initializabl
                             filters.add(presetUtxoSelector.asExcludeTxoFilter());
                             List<OutputGroup> outputGroups = wallet.getGroupedUtxos(filters, params.feeRate(), AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
                                     .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
-                            Collections.shuffle(outputGroups);
+                            Collections.shuffle(outputGroups, SECURE_RANDOM);
 
                             while(!outputGroups.isEmpty() && presetUtxoSelector.getPresetUtxos().stream().mapToLong(BlockTransactionHashIndex::getValue).sum() < e.getTargetValue()) {
                                 OutputGroup outputGroup = outputGroups.removeFirst();

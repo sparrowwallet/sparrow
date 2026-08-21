@@ -29,6 +29,7 @@ import org.controlsfx.glyphfont.Glyph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.SecureRandom;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 
 public class EntryCell extends TreeTableCell<Entry, Entry> implements ConfirmationsListener {
     private static final Logger log = LoggerFactory.getLogger(EntryCell.class);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     public static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     public static final Pattern REPLACED_BY_FEE_SUFFIX = Pattern.compile("(.*?)( \\(Replaced By Fee( #)?(\\d+)?\\)).*?");
@@ -258,7 +260,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         double feeRate = blockTransaction.getFeeRate() == null ? AppServices.getMinimumRelayFeeRate() : blockTransaction.getFeeRate();
         List<OutputGroup> outputGroups = transactionEntry.getWallet().getGroupedUtxos(txoFilters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
                 .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
-        Collections.shuffle(outputGroups);
+        Collections.shuffle(outputGroups, SECURE_RANDOM);
         while((double)changeTotal / vSize < getMaxFeeRate() && !outputGroups.isEmpty() && !cancelTransaction && !consolidationTransaction && safeToAddInputsOrOutputs) {
             //If there is insufficient change output, include another random output group so the fee can be increased
             OutputGroup outputGroup = outputGroups.remove(0);
@@ -382,7 +384,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         double feeRate = blockTransaction.getFeeRate() == null ? AppServices.getMinimumRelayFeeRate() : blockTransaction.getFeeRate();
         List<OutputGroup> outputGroups = transactionEntry.getWallet().getGroupedUtxos(txoFilters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
                 .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
-        Collections.shuffle(outputGroups);
+        Collections.shuffle(outputGroups, SECURE_RANDOM);
 
         List<BlockTransactionHashIndex> utxos = new ArrayList<>();
         utxos.add(cpfpUtxo);
