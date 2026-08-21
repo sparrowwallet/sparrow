@@ -656,6 +656,16 @@ public class KeystoreController extends WalletFormController implements Initiali
                 AppServices.showErrorDialog("Missing Script Type", "QR Code did not contain any information for the " + getWalletForm().getWallet().getScriptType().getDescription() + " script type.");
             } else if(result.seed != null) {
                 try {
+                    try {
+                        result.seed.check();
+                    } catch(MnemonicException e) {
+                        Optional<ButtonType> optType = AppServices.showWarningDialog("Invalid checksum", "The scanned seed does not have a valid checksum, which usually indicates a scanning or transcription error. " +
+                                "Other wallets will not accept it, so any funds sent to this keystore may not be recoverable from a backup of these words.\n\nUse this seed anyway?", ButtonType.NO, ButtonType.YES);
+                        if(optType.isEmpty() || optType.get() != ButtonType.YES) {
+                            return;
+                        }
+                    }
+
                     Keystore keystore = Keystore.fromSeed(result.seed, getWalletForm().getWallet().getPolicyType(), getWalletForm().getWallet().getScriptType().getDefaultDerivation());
                     fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());
                     derivation.setText(keystore.getKeyDerivation().getDerivationPath());
