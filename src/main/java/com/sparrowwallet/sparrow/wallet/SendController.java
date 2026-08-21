@@ -548,6 +548,35 @@ public class SendController extends WalletFormController implements Initializabl
         return payments;
     }
 
+    /**
+     * Collects OP_RETURN data from all payment tabs.
+     * Returns a list of byte arrays, one for each non-empty OP_RETURN field.
+     */
+    private List<byte[]> getOpReturnsFromPaymentTabs() {
+        List<byte[]> opReturns = new ArrayList<>();
+        for(Tab tab : paymentTabs.getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            byte[] data = controller.getOpReturnData();
+            if(data != null && data.length > 0 && controller.isValidOpReturn()) {
+                opReturns.add(data);
+            }
+        }
+        return opReturns;
+    }
+
+    /**
+     * Checks if all OP_RETURN data from payment tabs is valid.
+     */
+    private boolean areAllOpReturnsValid() {
+        for(Tab tab : paymentTabs.getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            if(!controller.isValidOpReturn()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void setPayments(List<Payment> payments) {
         while(paymentTabs.getTabs().size() < payments.size()) {
             addPaymentTab();
@@ -605,7 +634,7 @@ public class SendController extends WalletFormController implements Initializabl
         try {
             List<Payment> payments = transactionPayments != null ? transactionPayments : getPayments();
             updateOptimizationButtons(payments);
-            if(!userFeeSet.get() || getFeeValueSats() != null) {
+            if((!userFeeSet.get() || getFeeValueSats() != null) && areAllOpReturnsValid()) {
                 Wallet wallet = getWalletForm().getWallet();
                 Long userFee = userFeeSet.get() ? getFeeValueSats() : null;
                 double feeRate = getUserFeeRate();
@@ -619,8 +648,12 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean allowRbf = (replacedTransaction == null || replacedTransaction.getTransaction().isReplaceByFee())
                         && payments.stream().noneMatch(payment -> payment instanceof SilentPayment);
 
+                // Combine OP_RETURN data from payment tabs with any existing opReturnsList (e.g., BIP47 notifications)
+                List<byte[]> allOpReturns = new ArrayList<>(opReturnsList);
+                allOpReturns.addAll(getOpReturnsFromPaymentTabs());
+
                 TransactionParameters params = new TransactionParameters(getUtxoSelectors(payments), getTxoFilters(),
-                        payments, opReturnsList, excludedChangeNodes,
+                        payments, allOpReturns, excludedChangeNodes,
                         feeRate, getMinimumFeeRate(), minRelayFeeRate, userFee,
                         currentBlockHeight, groupByAddress, includeMempoolOutputs, allowRbf);
                 walletTransactionService = new WalletTransactionService(wallet, params, replacedTransaction);
