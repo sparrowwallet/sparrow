@@ -871,13 +871,12 @@ public class ElectrumServer {
                         continue;
                     }
 
-                    byte[] rawtx = Utils.hexToBytes(strRawTx);
                     Transaction transaction;
 
                     try {
-                        transaction = new Transaction(rawtx);
-                    } catch(ProtocolException e) {
-                        log.error("Could not parse tx: " + strRawTx);
+                        transaction = new Transaction(Utils.hexToBytes(strRawTx));
+                    } catch(Exception e) {
+                        log.error("Could not parse tx: " + strRawTx, e);
                         continue;
                     }
 
@@ -1347,8 +1346,8 @@ public class ElectrumServer {
 
             try {
                 transaction = new Transaction(Utils.hexToBytes(strRawTx));
-            } catch(ProtocolException e) {
-                log.error("Could not parse tx: " + strRawTx);
+            } catch(Exception e) {
+                log.error("Could not parse tx: " + strRawTx, e);
                 continue;
             }
 

@@ -688,6 +688,9 @@ public class AppController implements Initializable {
                 showErrorDialog("Invalid transaction", e.getMessage());
             } catch(ParseException e) {
                 showErrorDialog("Could not recognise input", e.getMessage());
+            } catch(Exception e) {
+                log.error("Could not parse pasted transaction or PSBT", e);
+                showErrorDialog("Could not recognise input", "The pasted text could not be parsed as a transaction or PSBT.");
             }
         }
     }
