@@ -83,9 +83,11 @@ public class CkCardApi extends CardApi {
                 delayProperty.set(delay);
                 messageProperty.set("Auth delay, waiting " + delay + "s...");
                 CardWait cardWait = cardProtocol.authWait();
-                if(cardWait.success) {
-                    delay = cardWait.auth_delay == null ? 0 : cardWait.auth_delay.intValue();
+                if(!cardWait.success) {
+                    throw new CardException("Card did not accept the request to wait out the authentication delay.");
                 }
+
+                delay = cardWait.auth_delay == null ? 0 : cardWait.auth_delay.intValue();
             }
         }
     }

@@ -27,6 +27,8 @@ public class SatochipCommandSet {
 
     private static final Logger log = LoggerFactory.getLogger(SatochipCommandSet.class);
 
+    private static final int MAX_SECURE_CHANNEL_RESETS = 3;
+
     private final SatoCardTransport cardTransport;
     private final SecureChannelSession secureChannel;
     private SatoCardStatus status;
@@ -66,6 +68,7 @@ public class SatochipCommandSet {
     public APDUResponse cardTransmit(APDUCommand plainApdu) {
         // we try to transmit the APDU until we receive the answer or we receive an unrecoverable error
         boolean isApduTransmitted = false;
+        int secureChannelResets = 0;
         do {
             try {
                 byte[] apduBytes = plainApdu.serialize();
@@ -114,6 +117,11 @@ public class SatochipCommandSet {
                 // SecureChannel is not initialized
                 else if(sw12 == 0x9C21) {
                     log.error("Error, Satochip secure channel required");
+                    if(++secureChannelResets > MAX_SECURE_CHANNEL_RESETS) {
+                        // the card keeps asking for a secure channel it will not accept, so stop rather than retry indefinitely
+                        log.error("Error, Satochip secure channel could not be established");
+                        return new APDUResponse(new byte[0], (byte)0x00, (byte)0x00);
+                    }
                     secureChannel.resetSecureChannel();
                 } else {
                     // cannot resolve issue at this point
