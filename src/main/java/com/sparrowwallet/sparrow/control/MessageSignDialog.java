@@ -62,6 +62,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private final ToggleButton formatElectrum;
     private final ToggleButton formatBip322;
     private final Wallet wallet;
+    private final VBox contentBox;
     private WalletNode walletNode;
     private boolean canSign;
     private boolean closed;
@@ -123,8 +124,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         dialogPane.setHeaderText(title == null ? (wallet == null ? "Verify Message" : "Sign/Verify Message") : title);
         dialogPane.setGraphic(new WalletModelImage(WalletModel.SEED));
 
-        VBox vBox = new VBox();
-        vBox.setSpacing(20);
+        contentBox = new VBox();
+        contentBox.setSpacing(10);
 
         Form form = new Form();
         Fieldset fieldset = new Fieldset();
@@ -185,7 +186,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
         fieldset.getChildren().addAll(addressField, messageField, signatureField, formatField);
         form.getChildren().add(fieldset);
-        dialogPane.setContent(form);
+        contentBox.getChildren().add(form);
+        dialogPane.setContent(contentBox);
 
         if(msg != null) {
             message.setText(msg);
@@ -240,7 +242,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             ValidationSupport validationSupport = new ValidationSupport();
             Platform.runLater(() -> {
                 validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
-                validationSupport.registerValidator(address, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, "Invalid address", !isValidAddress()));
+                validationSupport.registerValidator(address, (Control c, String newValue) -> ValidationResult.fromErrorIf(c, getAddressValidationMessage(), !isValidAddress()));
             });
 
             address.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -335,6 +337,37 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             return address.getScriptType().isAllowed(PolicyType.SINGLE_HD) || address.getScriptType() == ScriptType.P2SH;
         } catch (InvalidAddressException e) {
             return false;
+        }
+    }
+
+    private String getAddressValidationMessage() {
+        return getAddressValidationMessage(address.getText());
+    }
+
+    static String getAddressValidationMessage(String addressText) {
+        try {
+            ScriptType scriptType = Address.fromString(addressText).getScriptType();
+            if(!scriptType.isAllowed(PolicyType.SINGLE_HD) && scriptType != ScriptType.P2SH) {
+                return "Multisig addresses are not supported for signing";
+            }
+        } catch(InvalidAddressException e) {
+            //Fall through
+        }
+        return "Invalid address";
+    }
+
+    /**
+     * Adds a notice paragraph at the top of the dialog content. Pass null to clear.
+     */
+    public void setNoticeText(String text) {
+        contentBox.getChildren().removeIf(node -> "messageSignDialogNotice".equals(node.getId()));
+        if(text != null && !text.isEmpty()) {
+            Label notice = new Label(text);
+            notice.setId("messageSignDialogNotice");
+            notice.setWrapText(true);
+            notice.setMaxWidth(Double.MAX_VALUE);
+            notice.setStyle("-fx-font-style: italic; -fx-padding: 0 0 4 0;");
+            contentBox.getChildren().addFirst(notice);
         }
     }
 
