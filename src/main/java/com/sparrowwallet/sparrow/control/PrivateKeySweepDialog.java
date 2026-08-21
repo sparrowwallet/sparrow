@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.address.InvalidAddressException;
 import com.sparrowwallet.drongo.crypto.BIP38;
 import com.sparrowwallet.drongo.crypto.DumpedPrivateKey;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
@@ -272,20 +273,28 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     }
 
     private void decryptKey() {
-        PassphraseDialog passphraseDialog = new PassphraseDialog();
-        passphraseDialog.initOwner(getDialogPane().getScene().getWindow());
-        Optional<String> optPassphrase = passphraseDialog.showAndWait();
-        if(optPassphrase.isPresent()) {
+        while(true) {
+            PassphraseDialog passphraseDialog = new PassphraseDialog();
+            passphraseDialog.initOwner(getDialogPane().getScene().getWindow());
+            Optional<String> optPassphrase = passphraseDialog.showAndWait();
+            if(optPassphrase.isEmpty()) {
+                Platform.runLater(() -> key.setText(""));
+                return;
+            }
+
             try {
                 DumpedPrivateKey decryptedKey = BIP38.decrypt(optPassphrase.get(), key.getText());
                 Platform.runLater(() -> key.setText(decryptedKey.toString()));
+                return;
+            } catch(InvalidPasswordException e) {
+                //The encrypted key is still valid, so prompt again rather than making the user re-enter it
+                AppServices.showErrorDialog("Incorrect passphrase", e.getMessage());
             } catch(Exception e) {
                 log.error("Failed to decrypt BIP38 key", e);
                 AppServices.showErrorDialog("Failed to decrypt BIP38 key", e.getMessage());
                 Platform.runLater(() -> key.setText(""));
+                return;
             }
-        } else {
-            Platform.runLater(() -> key.setText(""));
         }
     }
 
