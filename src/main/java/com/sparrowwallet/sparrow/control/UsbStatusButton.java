@@ -29,7 +29,7 @@ public class UsbStatusButton extends MenuButton {
             MenuItem deviceItem = new MenuItem(device.getModel().toDisplayString());
             if(!device.isNeedsPinSent() && (device.getModel() == WalletModel.TREZOR_1 || device.getModel() == WalletModel.TREZOR_T || device.getModel() == WalletModel.TREZOR_SAFE_3 ||
                     device.getModel() == WalletModel.TREZOR_SAFE_5 || device.getModel() == WalletModel.TREZOR_SAFE_7 || device.getModel() == WalletModel.KEEPKEY || device.getModel() == WalletModel.BITBOX_02 ||
-                    device.getModel() == WalletModel.ONEKEY_CLASSIC_1S || device.getModel() == WalletModel.ONEKEY_PRO)) {
+                    device.getModel() == WalletModel.ONEKEY_CLASSIC_1S || device.getModel() == WalletModel.ONEKEY_PRO || device.getModel() == WalletModel.UKEY_CORE_26)) {
                 deviceItem = new Menu(device.getModel().toDisplayString());
                 MenuItem toggleItem = new MenuItem("Toggle Passphrase" + (!device.getModel().externalPassphraseEntry() ? "" : (device.isNeedsPassphraseSent() ? " Off" : " On")));
                 toggleItem.setOnAction(event -> {
