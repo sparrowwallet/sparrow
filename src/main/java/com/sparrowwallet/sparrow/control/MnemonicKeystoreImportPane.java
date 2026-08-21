@@ -168,6 +168,8 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
         try {
             secureRandom = SecureRandom.getInstanceStrong();
         } catch(NoSuchAlgorithmException e) {
+            //Not a fallback to a weaker source: both resolve to the SUN provider and the same java.base implementation seeded from the OS CSPRNG
+            //This branch is in any case unreachable, since securerandom.strongAlgorithms specifies DRBG:SUN, always present in the bundled runtime - see #2040
             secureRandom = new SecureRandom();
         }
 
