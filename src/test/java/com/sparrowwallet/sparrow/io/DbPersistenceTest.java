@@ -141,6 +141,15 @@ public class DbPersistenceTest {
         return Sha256Hash.of(Files.readAllBytes(file.toPath()));
     }
 
+    private boolean isWalletValid(File walletFile, CharSequence password) throws Exception {
+        Storage storage = new Storage(PersistenceType.DB, walletFile);
+        try {
+            return (password == null ? storage.loadUnencryptedWallet() : storage.loadEncryptedWallet(password)).getWallet().isValid();
+        } finally {
+            storage.closeAndWait();
+        }
+    }
+
     @Test
     public void passwordChangeLeavesSiblingWalletUntouched() throws Exception {
         Storage siblingStorage = createUnencryptedWallet("Savings.old");
@@ -153,8 +162,8 @@ public class DbPersistenceTest {
         storage.closeAndWait();
 
         Assertions.assertEquals(siblingHash, getFileHash(siblingFile), "sibling wallet file was rewritten by the password change");
-        Assertions.assertTrue(new Storage(PersistenceType.DB, siblingFile).loadUnencryptedWallet().getWallet().isValid());
-        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadEncryptedWallet("pass").getWallet().isValid());
+        Assertions.assertTrue(isWalletValid(siblingFile, null));
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
 
         //The conversion must not leave the wallet copy or H2's temp.db behind in the wallets directory
         String[] tempFiles = tempDir.toFile().list((dir, name) -> name.equals("temp.db") || name.startsWith("sparrowenc"));
@@ -172,7 +181,7 @@ public class DbPersistenceTest {
         storage.closeAndWait();
 
         Assertions.assertEquals(siblingHash, getFileHash(siblingStorage.getWalletFile()));
-        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadEncryptedWallet("pass").getWallet().isValid());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
     }
 
     @Test
@@ -187,7 +196,7 @@ public class DbPersistenceTest {
         storage.closeAndWait();
 
         Assertions.assertTrue(storage.getWalletFile().exists(), "wallet was written to a file other than the one tracked");
-        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadUnencryptedWallet().getWallet().isValid());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), null));
         Assertions.assertEquals(otherHash, getFileHash(otherFile), "another wallet file was written by a wallet name containing the extension");
     }
 
@@ -198,6 +207,6 @@ public class DbPersistenceTest {
         setPassword(storage, null);
         storage.closeAndWait();
 
-        Assertions.assertTrue(new Storage(PersistenceType.DB, storage.getWalletFile()).loadUnencryptedWallet().getWallet().isValid());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), null));
     }
 }
