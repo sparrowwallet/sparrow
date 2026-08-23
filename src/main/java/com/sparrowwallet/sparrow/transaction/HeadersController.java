@@ -294,7 +294,6 @@ public class HeadersController extends TransactionFormController implements Init
                 EventManager.get().post(new TransactionChangedEvent(tx));
             }
         });
-        version.setDisable(!headersForm.isEditable());
 
         updateType();
 
@@ -438,13 +437,7 @@ public class HeadersController extends TransactionFormController implements Init
             }
         });
 
-        boolean locktimeEnabled = headersForm.getTransaction().isLocktimeSequenceEnabled();
-        locktimeNoneType.setDisable(!headersForm.isEditable() || !locktimeEnabled);
-        locktimeBlockType.setDisable(!headersForm.isEditable() || !locktimeEnabled);
-        locktimeDateType.setDisable(!headersForm.isEditable() || !locktimeEnabled);
-        locktimeBlock.setDisable(!headersForm.isEditable() || !locktimeEnabled);
-        locktimeDate.setDisable(!headersForm.isEditable() || !locktimeEnabled);
-        locktimeCurrentHeight.setDisable(!headersForm.isEditable() || !locktimeEnabled);
+        updateEditable(headersForm.isEditable());
 
         updateSize();
 
@@ -813,9 +806,22 @@ public class HeadersController extends TransactionFormController implements Init
         return null;
     }
 
+    private void updateEditable(boolean editable) {
+        version.setDisable(!editable);
+
+        boolean locktimeEnabled = editable && headersForm.getTransaction().isLocktimeSequenceEnabled();
+        locktimeNoneType.setDisable(!locktimeEnabled);
+        locktimeBlockType.setDisable(!locktimeEnabled);
+        locktimeDateType.setDisable(!locktimeEnabled);
+        locktimeBlock.setDisable(!locktimeEnabled);
+        locktimeDate.setDisable(!locktimeEnabled);
+        locktimeCurrentHeight.setDisable(!locktimeEnabled);
+    }
+
     private void updateBlockchainForm(BlockTransaction blockTransaction, Integer currentHeight) {
         signaturesForm.setVisible(false);
         blockchainForm.setVisible(true);
+        updateEditable(false);
 
         if(Sha256Hash.ZERO_HASH.equals(blockTransaction.getBlockHash()) && blockTransaction.getHeight() == 0 && headersForm.getSigningWallet() == null) {
             //A zero block hash indicates that this blocktransaction is incomplete and the height is likely incorrect if we are not sending a tx
@@ -1495,13 +1501,7 @@ public class HeadersController extends TransactionFormController implements Init
     public void transactionChanged(TransactionChangedEvent event) {
         if(headersForm.getTransaction().equals(event.getTransaction())) {
             updateTxId();
-            boolean locktimeEnabled = headersForm.isEditable() && headersForm.getTransaction().isLocktimeSequenceEnabled();
-            locktimeNoneType.setDisable(!locktimeEnabled);
-            locktimeBlockType.setDisable(!locktimeEnabled);
-            locktimeBlock.setDisable(!locktimeEnabled);
-            locktimeDateType.setDisable(!locktimeEnabled);
-            locktimeDate.setDisable(!locktimeEnabled);
-            locktimeCurrentHeight.setDisable(!locktimeEnabled);
+            updateEditable(headersForm.isEditable());
         }
     }
 

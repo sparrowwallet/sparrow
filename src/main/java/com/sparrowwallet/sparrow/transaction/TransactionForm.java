@@ -130,7 +130,7 @@ public abstract class TransactionForm {
             return txdata.getSigningWallet() == null;
         }
 
-        return true;
+        return !getTransaction().hasScriptSigs() && !getTransaction().hasWitnesses();
     }
 
     public boolean isTransactionFinalized() {
