@@ -433,7 +433,7 @@ public class AppServices {
         enumerateService.setOnSucceeded(workerStateEvent -> {
             List<Device> devices = enumerateService.getValue();
 
-            //Null devices are returned if the app is currently prompting for a pin. Otherwise, the enumerate clears the pin screen
+            //Null devices are returned if the app is currently prompting for a pin (the enumerate would clear the pin screen) or another device operation is in progress
             if(devices != null) {
                 //If another instance of HWI is currently accessing the usb interface, HWI returns empty device models. Ignore this run if that happens
                 List<Device> validDevices = devices.stream().filter(device -> device.getModel() != null).collect(Collectors.toList());
