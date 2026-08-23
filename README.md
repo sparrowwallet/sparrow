@@ -28,6 +28,10 @@ The Sparrow binaries can be built from source using
 
 `./gradlew jpackage`
 
+On Linux distributions without `deb` or `rpm` packaging tools installed (such as Arch), building the installers can be skipped with
+
+`./gradlew jpackage -PskipInstallers=true`
+
 Note that to build the Windows installer, you will need to install [WiX](https://github.com/wixtoolset/wix3/releases).
 
 When updating to the latest HEAD

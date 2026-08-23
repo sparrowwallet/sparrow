@@ -18,6 +18,7 @@ if(System.getProperty("os.arch") == "aarch64") {
     releaseArch = "aarch64"
 }
 def headless = "true".equals(System.getProperty("java.awt.headless"))
+def skipInstallers = "true".equals(findProperty("skipInstallers"))
 
 group = 'com.sparrowwallet'
 version = '2.5.4'
@@ -267,7 +268,7 @@ jlink {
         imageName = "Sparrow"
         installerName = "Sparrow"
         appVersion = "${version}"
-        skipInstaller = os.macOsX || properties.skipInstallers
+        skipInstaller = os.macOsX || skipInstallers
         imageOptions = []
         installerOptions = ['--file-associations', 'src/main/deploy/psbt.properties', '--file-associations', 'src/main/deploy/txn.properties', '--file-associations', 'src/main/deploy/asc.properties', '--license-file', 'LICENSE']
         if(os.windows) {
