@@ -305,6 +305,17 @@ public class MnemonicShareKeystoreImportPane extends MnemonicKeystorePane {
         return contentBox;
     }
 
+    @Override
+    protected String getPassphraseLabel() {
+        return "Global passphrase:";
+    }
+
+    @Override
+    protected String getPassphraseHelpText() {
+        return "Advanced feature: a passphrase provides optional added security, but it is not stored so it must be remembered!\n" +
+                "The passphrase applies to the reconstructed secret, and not to any individual share.";
+    }
+
     public static Glyph getIncompleteGlyph() {
         Glyph warningGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.PLUS_CIRCLE);
         warningGlyph.getStyleClass().add("warn-icon");

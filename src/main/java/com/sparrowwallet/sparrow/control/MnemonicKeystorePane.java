@@ -429,6 +429,14 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
         }
     }
 
+    protected String getPassphraseLabel() {
+        return "Passphrase:";
+    }
+
+    protected String getPassphraseHelpText() {
+        return "Advanced feature: a passphrase provides optional added security, but it is not stored so it must be remembered!";
+    }
+
     protected class PassphraseEntry extends HBox {
         private final TextField passphraseField;
 
@@ -457,7 +465,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                 }
             });
 
-            Label passphraseLabel = new Label("Passphrase:");
+            Label passphraseLabel = new Label(getPassphraseLabel());
             passphraseLabel.managedProperty().bind(passphraseLabel.visibleProperty());
             passphraseField = new TextField();
             passphraseField.setPromptText(passphraseProperty.isEmpty().get() ? "Leave blank for none" : "");
@@ -471,7 +479,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             HelpLabel helpLabel = new HelpLabel();
             helpLabel.setPrefHeight(28);
             helpLabel.setStyle("-fx-padding: 0 0 0 0");
-            helpLabel.setHelpText("Advanced feature: a passphrase provides optional added security, but it is not stored so it must be remembered!");
+            helpLabel.setHelpText(getPassphraseHelpText());
 
             getChildren().addAll(usePassphraseLabel, usePassphraseCheckbox, passphraseLabel, passphraseField, helpLabel);
         }
