@@ -54,7 +54,11 @@ public class DbPersistenceTest {
 
     private void assertRejected(File walletFile) {
         Storage storage = new Storage(PersistenceType.DB, walletFile);
-        Assertions.assertThrows(StorageException.class, storage::loadUnencryptedWallet);
+        try {
+            Assertions.assertThrows(StorageException.class, storage::loadUnencryptedWallet);
+        } finally {
+            storage.closeAndWait();
+        }
     }
 
     @Test
