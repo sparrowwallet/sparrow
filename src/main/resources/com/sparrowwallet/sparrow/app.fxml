@@ -146,6 +146,7 @@
                     <MenuItem mnemonicParsing="false" text="Sign/Verify Message" accelerator="Shortcut+M" onAction="#signVerifyMessage"/>
                     <MenuItem fx:id="sendToMany" mnemonicParsing="false" text="Send To Many" onAction="#sendToMany"/>
                     <MenuItem fx:id="sweepPrivateKey" mnemonicParsing="false" text="Sweep Private Key" onAction="#sweepPrivateKey"/>
+                    <MenuItem fx:id="timelockRecovery" mnemonicParsing="false" text="Timelock Recovery" onAction="#timelockRecovery"/>
                     <SeparatorMenuItem />
                     <MenuItem fx:id="showPayNym" mnemonicParsing="false" text="Show PayNym" onAction="#showPayNym"/>
                     <SeparatorMenuItem />
