@@ -5,6 +5,8 @@ import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.protocol.VerificationException;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletHistoryStatusEvent;
@@ -22,6 +24,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
     static final int DEFAULT_MAX_ATTEMPTS = 5;
     static final int RETRY_DELAY_SECS = 1;
+    static final int HEADERS_BATCH_PAGE_SIZE = 4; //Four difficulty periods of headers is ~1.3MB of hex, within every server's max response size
 
     private final AtomicLong idCounter;
     private final int maxTargetBlocks;
@@ -285,6 +288,93 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve verbose transactions for txids: " + txids, e);
         }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public Map<String, TransactionMerkleProof> getTransactionMerkleProofs(Transport transport, Wallet wallet, Collection<BlockTransactionHash> references) {
+        PagedBatchRequestBuilder<String, TransactionMerkleProof> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(TransactionMerkleProof.class);
+        EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Verifying " + references.size() + " transactions"));
+
+        for(BlockTransactionHash reference : references) {
+            //Keyed by the exact pair: the same txid may legitimately be requested at two heights in one batch, and each must be answered on its own
+            batchRequest.add(reference.getHashAsString() + ":" + reference.getHeight(), "blockchain.transaction.get_merkle", reference.getHashAsString(), reference.getHeight());
+        }
+
+        try {
+            //Every page is sent, per-page errors are substituted with the sentinel, and the merged map covers every requested pair
+            return batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, TransactionMerkleProof.ERROR_PROOF, e -> {
+                //Method not found is a whole batch property: either the server implements get_merkle or it does not
+                if(ElectrumServerRpc.isMethodNotFound(e)) {
+                    throw new UnsupportedMethodException("blockchain.transaction.get_merkle", e);
+                }
+            });
+        } catch(UnsupportedMethodException e) {
+            throw e;    //before the generic catch, or it is rewrapped and the caller cannot tell an unsupported server from a refusal
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve merkle proofs", e);
+        }
+    }
+
+    @Override
+    public BlockHeaders getBlockHeadersChunk(Transport transport, int startHeight, int count) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            BlockHeaders blockHeaders = new RetryLogic<BlockHeaders>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(BlockHeaders.class).method("blockchain.block.headers").id(idCounter.incrementAndGet()).params(startHeight, count).execute());
+
+            return ElectrumServerRpc.checkBlockHeaders(blockHeaders, startHeight, count);
+        } catch(UnsupportedMethodException | VerificationException e) {
+            throw e;    //before the generic catch, so callers can treat an unsupported server and a malformed response on their own terms
+        } catch(JsonRpcException e) {
+            if(ElectrumServerRpc.isMethodNotFound(e)) {
+                throw new UnsupportedMethodException("blockchain.block.headers", e);
+            }
+
+            throw new ElectrumServerRpcException("Failed to retrieve " + count + " block headers from height " + startHeight, e);
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve " + count + " block headers from height " + startHeight, e);
+        }
+    }
+
+    @Override
+    public Map<Integer, BlockHeaders> getBlockHeadersChunks(Transport transport, Map<Integer, Integer> startHeightCounts) {
+        //A page of the default size would be tens of megabytes of hex, far beyond what any server returns in one response
+        PagedBatchRequestBuilder<Integer, BlockHeaders> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(BlockHeaders.class)
+                .pageSize(HEADERS_BATCH_PAGE_SIZE);
+
+        for(Map.Entry<Integer, Integer> startHeightCount : startHeightCounts.entrySet()) {
+            batchRequest.add(startHeightCount.getKey(), "blockchain.block.headers", startHeightCount.getKey(), startHeightCount.getValue());
+        }
+
+        Map<Integer, BlockHeaders> result;
+        try {
+            result = batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, BlockHeaders.ERROR_HEADERS, e -> {
+                if(ElectrumServerRpc.isMethodNotFound(e)) {
+                    throw new UnsupportedMethodException("blockchain.block.headers", e);
+                }
+            });
+        } catch(UnsupportedMethodException e) {
+            throw e;
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve block headers for start heights: " + startHeightCounts.keySet(), e);
+        }
+
+        //A range the server errored on, or whose response fails the checks, is omitted rather than failing the ranges that succeeded
+        Map<Integer, BlockHeaders> checked = new LinkedHashMap<>();
+        for(Map.Entry<Integer, BlockHeaders> entry : result.entrySet()) {
+            if(entry.getValue() == BlockHeaders.ERROR_HEADERS) {
+                continue;
+            }
+
+            try {
+                checked.put(entry.getKey(), ElectrumServerRpc.checkBlockHeaders(entry.getValue(), entry.getKey(), startHeightCounts.get(entry.getKey())));
+            } catch(VerificationException e) {
+                log.warn("Omitting block headers from height " + entry.getKey() + ": " + e.getMessage());
+            }
+        }
+
+        return checked;
     }
 
     @Override

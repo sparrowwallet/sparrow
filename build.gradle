@@ -126,8 +126,27 @@ compileJava {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        //Checkpoint verification needs the network and checks compiled in data rather than code, so it is a release checklist step
+        excludeTags 'checkpoint'
+    }
     jvmArgs = ["--enable-native-access=ALL-UNNAMED"]
+}
+
+tasks.register('verifyCheckpoint', Test) {
+    description = 'Verifies the compiled in header checkpoints against live public Electrum servers'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'checkpoint'
+    }
+    jvmArgs = ["--enable-native-access=ALL-UNNAMED"]
+    outputs.upToDateWhen { false }
+    testLogging {
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
 }
 
 application {

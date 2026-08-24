@@ -20,6 +20,7 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.Bwt;
 import com.sparrowwallet.sparrow.net.ConfigurationException;
 import com.sparrowwallet.sparrow.net.CoreAuthType;
+import com.sparrowwallet.sparrow.net.ElectrumServerRpc;
 import com.sparrowwallet.sparrow.net.cormorant.Cormorant;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
@@ -51,7 +52,6 @@ public class BitcoindClient {
     private static final long PRUNED_RESCAN_TIMEGAP_MILLIS = 7200*1000;
 
     //Error codes from https://github.com/bitcoin/bitcoin/blob/master/src/rpc/protocol.h
-    public static final int RPC_METHOD_NOT_FOUND = -32601;
     public static final int RPC_WALLET_NOT_FOUND = -18;
 
     public static final String WALLET_ALREADY_LOADING_MESSAGE = "Wallet already loading.";
@@ -159,7 +159,7 @@ public class BitcoindClient {
             }
             legacyWalletExists = loadedWallets.contains(Bwt.DEFAULT_CORE_WALLET);
         } catch(JsonRpcException e) {
-            if(e.getErrorMessage().getCode() == RPC_METHOD_NOT_FOUND) {
+            if(ElectrumServerRpc.isMethodNotFound(e)) {
                 throw new BitcoinRPCException("Wallet support must be enabled in Bitcoin Core");
             } else {
                 throw e;

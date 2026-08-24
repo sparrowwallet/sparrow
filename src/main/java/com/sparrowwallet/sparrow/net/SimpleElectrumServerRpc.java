@@ -6,6 +6,8 @@ import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.protocol.VerificationException;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
@@ -319,6 +321,76 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
                 } catch(Exception ex) {
                     //ignore
                 }
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public Map<String, TransactionMerkleProof> getTransactionMerkleProofs(Transport transport, Wallet wallet, Collection<BlockTransactionHash> references) {
+        JsonRpcClient client = new JsonRpcClient(transport);
+
+        Map<String, TransactionMerkleProof> result = new LinkedHashMap<>();
+        for(BlockTransactionHash reference : references) {
+            EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Verifying transaction [" + reference.getHashAsString().substring(0, 6) + "]"));
+            //Keyed by the exact pair: the same txid may legitimately be requested at two heights, and each must be answered on its own
+            String key = reference.getHashAsString() + ":" + reference.getHeight();
+            try {
+                TransactionMerkleProof proof = new RetryLogic<TransactionMerkleProof>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                        client.createRequest().returnAs(TransactionMerkleProof.class).method("blockchain.transaction.get_merkle").id(idCounter.incrementAndGet())
+                                .params(reference.getHashAsString(), reference.getHeight()).execute());
+                result.put(key, proof);
+            } catch(ServerException e) {
+                //If there is an error with the server connection, don't keep trying - this may take too long given many transactions
+                throw new ElectrumServerRpcException("Failed to retrieve merkle proof for transaction [" + reference.getHashAsString().substring(0, 6) + "]", e);
+            } catch(JsonRpcException e) {
+                //Method not found is a property of the server rather than of this transaction, so stop rather than recording a refusal for every one
+                if(ElectrumServerRpc.isMethodNotFound(e)) {
+                    throw new UnsupportedMethodException("blockchain.transaction.get_merkle", e);
+                }
+
+                result.put(key, TransactionMerkleProof.ERROR_PROOF);
+            } catch(Exception e) {
+                result.put(key, TransactionMerkleProof.ERROR_PROOF);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
+    public BlockHeaders getBlockHeadersChunk(Transport transport, int startHeight, int count) {
+        try {
+            JsonRpcClient client = new JsonRpcClient(transport);
+            BlockHeaders blockHeaders = new RetryLogic<BlockHeaders>(MAX_RETRIES, RETRY_DELAY, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(() ->
+                    client.createRequest().returnAs(BlockHeaders.class).method("blockchain.block.headers").id(idCounter.incrementAndGet()).params(startHeight, count).execute());
+
+            return ElectrumServerRpc.checkBlockHeaders(blockHeaders, startHeight, count);
+        } catch(UnsupportedMethodException | VerificationException e) {
+            throw e;    //before the generic catch, so callers can treat an unsupported server and a malformed response on their own terms
+        } catch(JsonRpcException e) {
+            if(ElectrumServerRpc.isMethodNotFound(e)) {
+                throw new UnsupportedMethodException("blockchain.block.headers", e);
+            }
+
+            throw new ElectrumServerRpcException("Failed to retrieve " + count + " block headers from height " + startHeight, e);
+        } catch(Exception e) {
+            throw new ElectrumServerRpcException("Failed to retrieve " + count + " block headers from height " + startHeight, e);
+        }
+    }
+
+    @Override
+    public Map<Integer, BlockHeaders> getBlockHeadersChunks(Transport transport, Map<Integer, Integer> startHeightCounts) {
+        Map<Integer, BlockHeaders> result = new LinkedHashMap<>();
+        for(Map.Entry<Integer, Integer> startHeightCount : startHeightCounts.entrySet()) {
+            try {
+                result.put(startHeightCount.getKey(), getBlockHeadersChunk(transport, startHeightCount.getKey(), startHeightCount.getValue()));
+            } catch(UnsupportedMethodException e) {
+                throw e;
+            } catch(VerificationException | ElectrumServerRpcException e) {
+                //A range that fails is omitted rather than failing the ranges that succeeded
+                log.warn("Omitting block headers from height " + startHeightCount.getKey() + ": " + e.getMessage());
             }
         }
 

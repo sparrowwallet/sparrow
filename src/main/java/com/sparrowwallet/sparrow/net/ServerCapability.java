@@ -12,6 +12,7 @@ public class ServerCapability {
     private final boolean supportsBlockStats;
     private final boolean supportsUnsubscribe;
     private final boolean supportsServerFeatures;
+    private boolean supportsMerkleProofs = true;
     private List<Integer> supportedSilentPaymentsVersions = Collections.emptyList();
 
     public ServerCapability(boolean supportsBatching, boolean supportsUnsubscribe, boolean supportsServerFeatures) {
@@ -64,12 +65,21 @@ public class ServerCapability {
         return supportsServerFeatures;
     }
 
+    public boolean supportsMerkleProofs() {
+        return supportsMerkleProofs;
+    }
+
     public List<Integer> getSupportedSilentPaymentsVersions() {
         return supportedSilentPaymentsVersions;
     }
 
     public boolean supportsSilentPayments() {
         return supportedSilentPaymentsVersions.contains(0);
+    }
+
+    public ServerCapability withMerkleProofs(boolean supportsMerkleProofs) {
+        this.supportsMerkleProofs = supportsMerkleProofs;
+        return this;
     }
 
     public ServerCapability withServerFeatures(ServerFeatures features) {

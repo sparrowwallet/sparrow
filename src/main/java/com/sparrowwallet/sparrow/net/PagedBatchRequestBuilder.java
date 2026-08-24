@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.DEFAULT_MAX_ATTEMPTS;
 import static com.sparrowwallet.sparrow.net.BatchedElectrumServerRpc.RETRY_DELAY_SECS;
@@ -39,6 +40,12 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
      */
     @Nullable
     private final Class<V> returnType;
+
+    /**
+     * Overrides the configured page size, for methods whose responses are far larger than a typical request
+     */
+    @Nullable
+    private Integer pageSize;
 
     /**
      * Creates a new batch request builder in an initial state
@@ -84,7 +91,9 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
      * @return a new builder
      */
     public <NK> PagedBatchRequestBuilder<NK, V> keysType(@NotNull Class<NK> keysClass) {
-        return new PagedBatchRequestBuilder<NK, V>(transport, mapper, new ArrayList<Request<NK>>(), keysClass, returnType, counter);
+        PagedBatchRequestBuilder<NK, V> builder = new PagedBatchRequestBuilder<NK, V>(transport, mapper, new ArrayList<Request<NK>>(), keysClass, returnType, counter);
+        builder.pageSize = pageSize;
+        return builder;
     }
 
     /**
@@ -96,7 +105,21 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
      * @return a new builder
      */
     public <NV> PagedBatchRequestBuilder<K, NV> returnType(@NotNull Class<NV> valuesClass) {
-        return new PagedBatchRequestBuilder<K, NV>(transport, mapper, requests, keysType, valuesClass, counter);
+        PagedBatchRequestBuilder<K, NV> builder = new PagedBatchRequestBuilder<K, NV>(transport, mapper, requests, keysType, valuesClass, counter);
+        builder.pageSize = pageSize;
+        return builder;
+    }
+
+    /**
+     * Sets the number of requests sent in each batch, overriding the configured maximum page size.
+     *
+     * @param pageSize number of requests per batch
+     * @return the current builder
+     */
+    @NotNull
+    public PagedBatchRequestBuilder<K, V> pageSize(int pageSize) {
+        this.pageSize = pageSize;
+        return this;
     }
 
     public Map<K, V> execute() throws Exception {
@@ -114,54 +137,94 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
         Map<K, V> allResults = new HashMap<>();
         JsonRpcClient client = new JsonRpcClient(transport);
 
-        List<List<Request<K>>> pages = Lists.partition(requests, getPageSize());
-        for(List<Request<K>> page : pages) {
-            if(counter != null) {
-                Map<Long, K> counterIdMap = new HashMap<>();
-                BatchRequestBuilder<Long, V> batchRequest = client.createBatchRequest().keysType(Long.class).returnType(returnType);
-                for(Request<K> request : page) {
-                    counterIdMap.put(request.counterId, request.id);
-                    batchRequest.add(request.counterId, request.method, request.params);
-                }
+        for(List<Request<K>> page : Lists.partition(requests, getPageSize())) {
+            allResults.putAll(executePage(client, page, maxAttempts));
+        }
 
-                try {
-                    Map<Long, V> pageResult = new RetryLogic<Map<Long, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
-                    for(Map.Entry<Long, V> pageEntry : pageResult.entrySet()) {
-                        allResults.put(counterIdMap.get(pageEntry.getKey()), pageEntry.getValue());
-                    }
-                } catch(JsonRpcBatchException e) {
-                    Map<Object, Object> mappedSuccesess = new HashMap<>();
-                    for(Map.Entry<?, ?> successEntry : e.getSuccesses().entrySet()) {
-                        mappedSuccesess.put(counterIdMap.get((Long)successEntry.getKey()), successEntry.getValue());
-                    }
-                    Map<Object, ErrorMessage> mappedErrors = new HashMap<>();
-                    for(Map.Entry<?, ErrorMessage> errorEntry : e.getErrors().entrySet()) {
-                        mappedErrors.put(counterIdMap.get((Long)errorEntry.getKey()), errorEntry.getValue());
-                    }
-                    throw new JsonRpcBatchException(e.getMessage(), mappedSuccesess, mappedErrors);
-                }
-            } else {
-                BatchRequestBuilder<K, V> batchRequest = client.createBatchRequest().keysType(keysType).returnType(returnType);
-                for(Request<K> request : page) {
-                    if(request.id instanceof String strReq) {
-                        batchRequest.add(strReq, request.method, request.params);
-                    } else if(request.id instanceof Integer intReq) {
-                        batchRequest.add(intReq, request.method, request.params);
-                    } else {
-                        throw new IllegalArgumentException("Id of class " + request.id.getClass().getName() + " not supported");
-                    }
-                }
+        return allResults;
+    }
 
-                Map<K, V> pageResult = new RetryLogic<Map<K, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
-                allResults.putAll(pageResult);
+    /**
+     * Validates and executes the request, substituting the given value for the keys any page reports an error for so that the returned map
+     * covers every requested key. Unlike execute(), a JSON-RPC error in one page neither discards the results of earlier pages nor prevents
+     * later pages from being sent, which is what makes a per-key error meaningful when the request spans more than one page.
+     *
+     * @param maxAttempts     number of times to try each page
+     * @param errorValue      the value to record for keys the server returned an error for
+     * @param batchErrorCheck applied to each page's errors before they are substituted, to let the caller classify whole-batch failures
+     * @return map of responses by request ids, covering every requested id
+     */
+    @NotNull
+    @SuppressWarnings("unchecked")
+    public Map<K, V> executeTolerant(int maxAttempts, V errorValue, Consumer<JsonRpcBatchException> batchErrorCheck) throws Exception {
+        Map<K, V> allResults = new HashMap<>();
+        JsonRpcClient client = new JsonRpcClient(transport);
+
+        for(List<Request<K>> page : Lists.partition(requests, getPageSize())) {
+            try {
+                allResults.putAll(executePage(client, page, maxAttempts));
+            } catch(JsonRpcBatchException e) {
+                batchErrorCheck.accept(e);
+                allResults.putAll((Map<K, V>)e.getSuccesses());
+                for(Object key : e.getErrors().keySet()) {
+                    allResults.put((K)key, errorValue);
+                }
             }
         }
 
         return allResults;
     }
 
+    /**
+     * Executes a single page, mapping any batch exception back to the request ids the caller supplied
+     */
+    @NotNull
+    private Map<K, V> executePage(JsonRpcClient client, List<Request<K>> page, int maxAttempts) throws Exception {
+        if(counter != null) {
+            Map<Long, K> counterIdMap = new HashMap<>();
+            BatchRequestBuilder<Long, V> batchRequest = client.createBatchRequest().keysType(Long.class).returnType(returnType);
+            for(Request<K> request : page) {
+                counterIdMap.put(request.counterId, request.id);
+                batchRequest.add(request.counterId, request.method, request.params);
+            }
+
+            try {
+                Map<Long, V> pageResult = new RetryLogic<Map<Long, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+                Map<K, V> mappedResult = new HashMap<>();
+                for(Map.Entry<Long, V> pageEntry : pageResult.entrySet()) {
+                    mappedResult.put(counterIdMap.get(pageEntry.getKey()), pageEntry.getValue());
+                }
+
+                return mappedResult;
+            } catch(JsonRpcBatchException e) {
+                Map<Object, Object> mappedSuccesess = new HashMap<>();
+                for(Map.Entry<?, ?> successEntry : e.getSuccesses().entrySet()) {
+                    mappedSuccesess.put(counterIdMap.get((Long)successEntry.getKey()), successEntry.getValue());
+                }
+                Map<Object, ErrorMessage> mappedErrors = new HashMap<>();
+                for(Map.Entry<?, ErrorMessage> errorEntry : e.getErrors().entrySet()) {
+                    mappedErrors.put(counterIdMap.get((Long)errorEntry.getKey()), errorEntry.getValue());
+                }
+                throw new JsonRpcBatchException(e.getMessage(), mappedSuccesess, mappedErrors);
+            }
+        } else {
+            BatchRequestBuilder<K, V> batchRequest = client.createBatchRequest().keysType(keysType).returnType(returnType);
+            for(Request<K> request : page) {
+                if(request.id instanceof String strReq) {
+                    batchRequest.add(strReq, request.method, request.params);
+                } else if(request.id instanceof Integer intReq) {
+                    batchRequest.add(intReq, request.method, request.params);
+                } else {
+                    throw new IllegalArgumentException("Id of class " + request.id.getClass().getName() + " not supported");
+                }
+            }
+
+            return new RetryLogic<Map<K, V>>(maxAttempts, RETRY_DELAY_SECS, List.of(IllegalStateException.class, IllegalArgumentException.class)).getResult(batchRequest::execute);
+        }
+    }
+
     private int getPageSize() {
-        int pageSize = Config.get().getMaxPageSize();
+        int pageSize = this.pageSize != null ? this.pageSize : Config.get().getMaxPageSize();
         if(pageSize < 1) {
             pageSize = DEFAULT_PAGE_SIZE;
         }

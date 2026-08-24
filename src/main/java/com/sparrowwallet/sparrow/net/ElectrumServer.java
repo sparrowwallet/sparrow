@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 public class ElectrumServer {
     private static final Logger log = LoggerFactory.getLogger(ElectrumServer.class);
 
-    private static final String[] SUPPORTED_VERSIONS = new String[]{"1.3", "1.4.2"};
+    static final String[] SUPPORTED_VERSIONS = new String[]{"1.3", "1.4.2"};
 
     private static final Version ELECTRS_MIN_BATCHING_VERSION = new Version("0.9.0");
 
@@ -1882,7 +1882,7 @@ public class ElectrumServer {
             }
 
             if(server.startsWith("cormorant")) {
-                return new ServerCapability(true, false, true, false, true);
+                return new ServerCapability(true, false, true, false, true).withMerkleProofs(false);
             }
 
             if(server.startsWith("electrs/")) {
@@ -2094,12 +2094,23 @@ public class ElectrumServer {
                             }
                         }
 
+                        if(isVerificationMandatory() && !serverCapability.supportsMerkleProofs()) {
+                            throw new ServerException("Server does not support transaction verification (blockchain.transaction.get_merkle)");
+                        }
+
                         BlockHeaderTip tip;
                         if(subscribe) {
                             tip = electrumServer.subscribeBlockHeaders();
                             String tipError = getTipValidationError(tip);
                             if(tipError != null) {
                                 throw new ServerException(tipError);
+                            }
+                            if(isVerificationMandatory()) {
+                                //A server below the last pinned header cannot serve the header sync, and would report every proof as refused
+                                int maxCheckpointHeight = Network.get().getHeaderCheckpoints().getMaxHeight();
+                                if(tip.height < maxCheckpointHeight) {
+                                    throw new ServerException("Server is at height " + tip.height + ", below the last verified checkpoint at height " + maxCheckpointHeight);
+                                }
                             }
                             initializeTip(tip);
                             subscribedScriptHashes.clear();
@@ -2140,6 +2151,10 @@ public class ElectrumServer {
                     return null;
                 }
             };
+        }
+
+        private boolean isVerificationMandatory() {
+            return Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && Network.get() == Network.MAINNET;
         }
 
         private void checkTipStaleness() {
