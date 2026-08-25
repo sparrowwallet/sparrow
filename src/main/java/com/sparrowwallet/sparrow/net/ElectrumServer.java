@@ -18,6 +18,7 @@ import com.sparrowwallet.drongo.silentpayments.SilentPaymentUtils;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.BlockSummary;
+import com.sparrowwallet.sparrow.ChainTip;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
@@ -69,7 +70,7 @@ public class ElectrumServer {
 
     public static final BlockTransaction UNFETCHABLE_BLOCK_TRANSACTION = new BlockTransaction(Sha256Hash.ZERO_HASH, 0, null, null, null);
 
-    private static CloseableTransport transport;
+    static CloseableTransport transport;
 
     private static final Map<String, List<String>> subscribedScriptHashes = new ConcurrentHashMap<>();
 
@@ -85,11 +86,33 @@ public class ElectrumServer {
 
     private static final Set<String> sameHeightTxioScriptHashes = ConcurrentHashMap.newKeySet();
 
+    static final Set<String> reorgInvalidatedScriptHashes = ConcurrentHashMap.newKeySet();
+
+    static volatile HeaderStore headerStore;
+
+    //Not the ElectrumServer class monitor that getTransport() uses: a store load or re-walk would then block every transport acquisition for its duration
+    private static final Object headerStoreLock = new Object();
+
+    //Serialises fetch and append across the header sync service and the wallet history threads, which sync concurrently by design
+    private static final Object headerSyncLock = new Object();
+
+    //Session cache of headers below the last pin, verified by hash linkage to it and deliberately never persisted
+    static final Map<Integer, BlockHeader> verifiedHistoricalHeaders = new ConcurrentHashMap<>();
+
+    //The deepest fork point the store has been rewound to this session, at or above which a stored height may have been proven against an orphaned
+    //header. Written only under headerSyncLock, which is what makes the min in reconcile atomic; volatile is for the readers that do not take it
+    static volatile int lastReorgForkHeight = Integer.MAX_VALUE;
+
     private static final Map<Integer, WalletSyncLock> walletSyncLocks = Collections.synchronizedMap(new HashMap<>());
 
     private static final Map<String, SilentPaymentsScanCache> spScanCaches = new ConcurrentHashMap<>();
 
     private static final int TAPROOT_ACTIVATION_HEIGHT = 709632;
+
+    private static final int HEADERS_CHUNK_SIZE = HeaderChainState.RETARGET_INTERVAL;
+
+    //A reorg deeper than this is a global event rather than a client concern, and the store keeps the heavier chain it already has
+    private static final int MAX_REORG_DEPTH = 100;
 
     //Consensus rejects blocks timestamped more than 2 hours in the future, extended here to allow for local clock skew
     private static final long MAXIMUM_FUTURE_TIP_TIME_SECS = 4 * 60 * 60;
@@ -111,7 +134,7 @@ public class ElectrumServer {
 
     private final static Map<String, String> broadcastRecent = new ConcurrentHashMap<>();
 
-    private static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
+    static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static Cormorant cormorant;
 
@@ -160,6 +183,7 @@ public class ElectrumServer {
                     retrievedScriptHashes.clear();
                     retrievedTransactions.clear();
                     retrievedBlockHeaders.clear();
+                    reorgInvalidatedScriptHashes.clear();
                     walletSyncLocks.values().forEach(syncLock -> syncLock.scriptHashesInitialized = false);
                 }
                 previousServer = electrumServer;
@@ -329,6 +353,39 @@ public class ElectrumServer {
         sameHeightTxioScriptHashes.remove(scriptHash);
     }
 
+    /**
+     * Invalidates the cached status of every node holding a transaction output, or a spend of one, above the given fork point, so that the reorganised
+     * history is fetched again. A transaction re-included at the same height leaves the server reporting an unchanged status, and without this the
+     * node would never be revisited. This touches cache state only, never wallet data.
+     * <p>
+     * Returns whether any node was invalidated, which is false for a wallet holding nothing above the fork: it can have proven nothing against a
+     * header that was discarded, so there is nothing for it to fetch again.
+     */
+    public static boolean invalidateScriptHashesForReorg(Wallet wallet, int forkHeight) {
+        boolean invalidated = invalidateWalletScriptHashesForReorg(wallet, forkHeight);
+        for(Wallet childWallet : new ArrayList<>(wallet.getChildWallets())) {
+            if(childWallet.isNested()) {
+                invalidated |= invalidateWalletScriptHashesForReorg(childWallet, forkHeight);
+            }
+        }
+
+        return invalidated;
+    }
+
+    private static boolean invalidateWalletScriptHashesForReorg(Wallet wallet, int forkHeight) {
+        boolean invalidated = false;
+        for(Map.Entry<WalletNode, Set<BlockTransactionHashIndex>> entry : wallet.getWalletNodes().entrySet()) {
+            if(entry.getValue().stream().anyMatch(txo -> txo.getHeight() > forkHeight || (txo.getSpentBy() != null && txo.getSpentBy().getHeight() > forkHeight))) {
+                String scriptHash = getScriptHash(entry.getKey());
+                clearRetrievedScriptHash(scriptHash);
+                reorgInvalidatedScriptHashes.add(scriptHash);
+                invalidated = true;
+            }
+        }
+
+        return invalidated;
+    }
+
     public boolean fetchAndCalculateHistory(Wallet mainWallet, List<Wallet> filterToWallets, Set<WalletNode> filterToNodes) throws ServerException {
         boolean historyFetched = fetchAndCalculateWalletHistory(mainWallet, filterToWallets, filterToNodes);
         for(Wallet childWallet : new ArrayList<>(mainWallet.getChildWallets())) {
@@ -363,6 +420,9 @@ public class ElectrumServer {
                 getReferencedTransactions(wallet, nodeTransactionMap);
                 calculateNodeHistory(wallet, nodeTransactionMap);
 
+                //A node invalidated by a reorg has no retrieved status left to compare against, so it must not count as changed history below
+                Set<String> invalidatedScriptHashes = Set.copyOf(reorgInvalidatedScriptHashes);
+
                 //Add all of the script hashes we have now fetched the history for so we don't need to fetch again until the script hash status changes
                 Set<WalletNode> updatedNodes = new HashSet<>();
                 Map<WalletNode, Set<BlockTransactionHashIndex>> walletNodes = wallet.getWalletNodes();
@@ -377,13 +437,19 @@ public class ElectrumServer {
 
                 //If wallet was not empty, check if all used updated nodes have changed history
                 if(nodes == null && previousScriptHashes.values().stream().anyMatch(Objects::nonNull)) {
-                    if(!updatedNodes.isEmpty()
-                            && updatedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))
-                            && !sameHeightTxioScriptHashes.containsAll(updatedNodes.stream().map(ElectrumServer::getScriptHash).collect(Collectors.toSet()))) {
+                    Set<WalletNode> changedNodes = updatedNodes.stream().filter(node -> !invalidatedScriptHashes.contains(getScriptHash(node))).collect(Collectors.toSet());
+                    if(!changedNodes.isEmpty()
+                            && changedNodes.equals(walletNodes.entrySet().stream().filter(entry -> !entry.getValue().isEmpty()).map(Map.Entry::getKey).collect(Collectors.toSet()))
+                            && !sameHeightTxioScriptHashes.containsAll(changedNodes.stream().map(ElectrumServer::getScriptHash).collect(Collectors.toSet()))) {
                         //All used nodes on a non-empty wallet have changed history. Abort and trigger a full refresh.
                         log.info("All used nodes on a non-empty wallet have changed history. Triggering a full wallet refresh.");
                         throw new AllHistoryChangedException();
                     }
+                }
+
+                //The reorg exemption lasts for exactly one full fetch, and is cleared only once the check above has passed
+                if(nodes == null && !invalidatedScriptHashes.isEmpty()) {
+                    reorgInvalidatedScriptHashes.removeAll(walletNodes.keySet().stream().map(ElectrumServer::getScriptHash).collect(Collectors.toSet()));
                 }
 
                 //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool
@@ -843,6 +909,307 @@ public class ElectrumServer {
         } catch (Exception e) {
             throw new ServerException(e);
         }
+    }
+
+    /**
+     * The header store for this network, loaded on first use from a background thread. It is not cleared when the server changes: headers are claims
+     * about the chain rather than about the server, and a new server announcing a different tip is handled as an ordinary reorg.
+     */
+    static HeaderStore getHeaderStore() throws ServerException {
+        try {
+            HeaderStore store = headerStore;
+            if(store != null && store.isIntact()) {
+                return store;
+            }
+
+            synchronized(headerStoreLock) {
+                //A loaded store outlives the connection, so its file may have been removed or truncated underneath it since it was read
+                if(headerStore == null || !headerStore.isIntact()) {
+                    headerStore = HeaderStore.load(Network.get().getHeaderCheckpoints());
+                }
+
+                return headerStore;
+            }
+        } catch(IOException e) {
+            throw new ServerException("Could not load the block header store", e);
+        }
+    }
+
+    /**
+     * Advances the store to the tip the server has announced, taken as one value so that a height and a header from either side of a new block cannot
+     * be mixed. Every chain problem - a linkage or difficulty failure, a short, empty or malformed chunk, or a reorg candidate that cannot
+     * be accepted - is thrown as a VerificationException, meaning this server cannot substantiate these heights; transport problems propagate as they
+     * are, meaning the session is broken.
+     */
+    void syncHeaders(ChainTip tip) throws ServerException {
+        synchronized(headerSyncLock) {
+            HeaderStore store = getHeaderStore();
+            try {
+                if(tip == null || tip.height() < store.getStartHeight()) {
+                    return;     //no tip yet, or a server that has not caught up to the last pinned header
+                }
+
+                if(tip.height() <= store.getTipHeight() && !tip.header().getHash().equals(store.getHash(tip.height()))) {
+                    reconcile(store, tip.height());     //the tie form of a divergence, which the loop below would never examine
+                }
+
+                syncTo(store, tip.height(), tip);
+            } catch(IOException e) {
+                throw new ServerException("Could not write to the block header store", e);
+            }
+        }
+    }
+
+    /**
+     * Advances the store to the given height on the calling thread, for a wallet history that has reached a height the sync service has not, under the
+     * exception contract of syncHeaders above. Both are internal to the header sync: it is getVerifiedHeader that turns what they throw into the
+     * refusal, failure and unsupported outcomes its callers act on.
+     */
+    void syncHeadersTo(int height) throws ServerException {
+        synchronized(headerSyncLock) {
+            HeaderStore store = getHeaderStore();
+            try {
+                syncTo(store, height, AppServices.getAnnouncedTip());
+            } catch(IOException e) {
+                throw new ServerException("Could not write to the block header store", e);
+            }
+        }
+    }
+
+    private void syncTo(HeaderStore store, int targetHeight, ChainTip tip) throws ServerException, IOException {
+        while(store.getTipHeight() < targetHeight) {
+            if(tip != null && tip.height() == store.getTipHeight() + 1 && tip.header().getPrevBlockHash().equals(store.getTipHash())) {
+                store.append(tip.header());     //the steady state: the announced header extends the store, so there is nothing to fetch
+                continue;
+            }
+
+            int startHeight = store.getTipHeight() + 1;
+            BlockHeaders chunk = electrumServerRpc.getBlockHeadersChunk(getTransport(), startHeight, HEADERS_CHUNK_SIZE);
+            if(chunk.count == 0) {
+                throw new VerificationException("Server returned no headers from height " + startHeight + " while the store must reach height " + targetHeight);
+            }
+
+            List<BlockHeader> headers;
+            try {
+                //Parsed whole here rather than one at a time below, so that a chunk carrying fewer headers than it claims is a refusal like any other
+                //malformed response rather than an exception escaping the sync
+                byte[] bytes = Utils.hexToBytes(chunk.hex);
+                headers = IntStream.range(0, chunk.count).mapToObj(i -> new BlockHeader(bytes, i * HeaderStore.HEADER_LENGTH)).toList();
+            } catch(ProtocolException | IllegalArgumentException e) {
+                //Refusal class, as a short chunk is: the server could not substantiate the range
+                throw new VerificationException("Server returned a malformed header chunk from height " + startHeight, e);
+            }
+
+            if(!headers.getFirst().getPrevBlockHash().equals(store.getTipHash())) {
+                //The server's chain diverges from the store, so reconcile here, then re-read the tip and fetch again
+                reconcile(store, targetHeight);
+                continue;
+            }
+
+            store.append(headers);
+        }
+    }
+
+    /**
+     * Rewinds the store to the fork point it shares with the server's chain and adopts the server's headers above it, where they carry at least as much
+     * work. Equal work is the same height tie of a stale block and must be adopted: a client with one server can only verify against the chain that
+     * server serves, and staying on the replaced block would report every proof from the replacing one as dishonest.
+     */
+    private void reconcile(HeaderStore store, int tipHeight) throws ServerException, IOException {
+        //The fork point is at or below the store tip whatever the server has announced, so the window sits there rather than at the announced tip: a
+        //server hundreds of blocks ahead of a diverged store would otherwise be searched over a range holding no height the store has
+        int endHeight = Math.min(tipHeight, store.getTipHeight() + 1);
+        int startHeight = Math.max(endHeight - MAX_REORG_DEPTH + 1, store.getStartHeight());
+        int count = endHeight - startHeight + 1;
+        BlockHeaders chunk = electrumServerRpc.getBlockHeadersChunk(getTransport(), startHeight, count);
+        if(chunk.count != count) {
+            throw new VerificationException("Server returned " + chunk.count + " of " + count + " headers when reconciling to height " + endHeight);
+        }
+
+        List<BlockHeader> candidate;
+        try {
+            byte[] bytes = Utils.hexToBytes(chunk.hex);
+            candidate = IntStream.range(0, count).mapToObj(i -> new BlockHeader(bytes, i * HeaderStore.HEADER_LENGTH)).toList();
+        } catch(ProtocolException | IllegalArgumentException e) {
+            throw new VerificationException("Server returned a malformed header chunk when reconciling to height " + endHeight, e);
+        }
+
+        //Walk back from the announced tip, checking each header against the one below it, until one descends from a header the store already holds
+        int forkHeight = -1;
+        for(int i = count - 1; i >= 0; i--) {
+            if(candidate.get(i).getPrevBlockHash().equals(store.getHash(startHeight + i - 1))) {
+                forkHeight = startHeight + i - 1;
+                break;
+            }
+            if(i == 0 || !candidate.get(i).getPrevBlockHash().equals(candidate.get(i - 1).getHash())) {
+                break;
+            }
+        }
+
+        if(forkHeight < 0) {
+            throw new VerificationException("Server's chain at height " + endHeight + " shares no fork point with the last " + count + " verified headers");
+        }
+
+        List<BlockHeader> segment = candidate.subList(forkHeight - startHeight + 1, count);
+        HeaderChainState candidateState = store.chainStateAt(forkHeight);
+        for(BlockHeader header : segment) {
+            candidateState.add(header);
+        }
+
+        //Both chains measured from the same pinned anchor, so the work they share below the fork cancels and what remains is what would be adopted
+        //against what would be discarded. In a forward sync the candidate reaches one header past the store tip, which is why it is heavier: the
+        //server holding a header there is what exposed the divergence
+        if(candidateState.getChainWork().compareTo(store.getChainWork()) < 0) {
+            throw new VerificationException("Server's chain from height " + (forkHeight + 1) + " carries less work than the "
+                    + (store.getTipHeight() - forkHeight) + " verified headers it would replace");
+        }
+
+        log.info("Reorganising the block header store at height " + forkHeight + ", replacing " + (store.getTipHeight() - forkHeight) + " headers with " + segment.size());
+        store.truncate(forkHeight);
+        lastReorgForkHeight = Math.min(lastReorgForkHeight, forkHeight);
+        try {
+            store.append(segment);
+        } finally {
+            //The truncation is what the wallets have to hear about, whether or not the replacement was written: a height above the fork was proven
+            //against a header the store no longer holds either way. Dispatched on this thread, which is a wallet history thread as often as it is the
+            //sync service: the wallet handler hops to the FX thread itself
+            EventManager.get().post(new ChainReorgEvent(forkHeight));
+        }
+    }
+
+    /**
+     * The header at the given height verified against the compiled-in checkpoints, or null where the connected server cannot substantiate it, which is
+     * reported as a refusal. Heights above the last pin are served from the store, and those below it by hash linkage to a pin.
+     */
+    public BlockHeader getVerifiedHeader(int height) throws ServerException {
+        HeaderCheckpoints checkpoints = Network.get().getHeaderCheckpoints();
+        if(height > checkpoints.getMaxHeight()) {
+            HeaderStore store = getHeaderStore();
+            try {
+                //One object written once per event: the height and the header read separately can straddle a new block
+                ChainTip announced = AppServices.getAnnouncedTip();
+                if(announced != null && announced.height() >= store.getStartHeight() && announced.height() <= store.getTipHeight()
+                        && !announced.header().getHash().equals(store.getHash(announced.height()))) {
+                    //Never serve a stored header while the store tip disagrees with the announced tip: the tie form of a reorg
+                    syncHeaders(announced);
+                } else if(height > store.getTipHeight()) {
+                    syncHeadersTo(height);      //the sync service has not caught up, so fetch on this thread
+                }
+
+                return store.getHeader(height);
+            } catch(UnsupportedMethodException e) {
+                throw e;    //before the catch below, so the caller can disable verification for the session rather than reading a refusal
+            } catch(VerificationException e) {
+                log.warn("Could not verify the header chain to height " + height + ": " + e.getMessage());
+                return null;
+            } catch(ElectrumServerRpcException e) {
+                throw new ServerException(e.getMessage(), e.getCause());    //the server said nothing about this height, so it is a failed call rather than a refusal
+            } catch(IOException e) {
+                throw new ServerException("Could not read the block header store", e);
+            }
+        }
+
+        if(height == 0) {
+            return Network.get().getGenesisHeader();
+        }
+
+        BlockHeader cached = verifiedHistoricalHeaders.get(height);
+        if(cached != null) {
+            return cached;
+        }
+
+        //One call at a time crosses the transport, so this lock defers no fetch the connection would not have deferred anyway. What it buys is dedup: a
+        //concurrent wallet wanting this range finds it cached, and one wanting an overlapping range fetches only the part below what is now cached.
+        //Were the transport ever to carry calls concurrently, this would become the limiter and would want an in flight map keyed by range instead
+        synchronized(headerSyncLock) {
+            cached = verifiedHistoricalHeaders.get(height);
+            if(cached != null) {
+                return cached;
+            }
+
+            //A header whose hash chain reaches a verified hash is that hash's ancestor at the corresponding depth, so linkage is the whole proof. The
+            //anchor is the nearest header already verified this session, and the pin above the height where there is none, which keeps a second pass
+            //over an already fetched period from downloading it again
+            int pinnedHeight = checkpoints.getPinnedHeightAtOrAbove(height);
+            int anchorHeight = pinnedHeight;
+            Sha256Hash anchorHash = checkpoints.getHash(pinnedHeight);
+            for(int above = height + 1; above < pinnedHeight; above++) {
+                BlockHeader verified = verifiedHistoricalHeaders.get(above);
+                if(verified != null) {
+                    anchorHeight = above;
+                    anchorHash = verified.getHash();
+                    break;
+                }
+            }
+
+            int count = anchorHeight - height + 1;
+            BlockHeaders chunk;
+            try {
+                chunk = electrumServerRpc.getBlockHeadersChunk(getTransport(), height, count);
+            } catch(UnsupportedMethodException e) {
+                throw e;    //before the catch below, so the caller can disable verification for the session rather than reading a refusal
+            } catch(VerificationException e) {
+                return null;    //a short or malformed response is refusal class here as in the forward sync, never a session failure
+            } catch(ElectrumServerRpcException e) {
+                throw new ServerException(e.getMessage(), e.getCause());
+            }
+
+            List<BlockHeader> headers = getLinkedHeaders(chunk, count, anchorHash);
+            if(headers == null) {
+                return null;
+            }
+
+            for(int i = 0; i < count; i++) {
+                verifiedHistoricalHeaders.put(height + i, headers.get(i));
+            }
+
+            return headers.getFirst();
+        }
+    }
+
+    /**
+     * The headers of a requested range verified by hash linkage to the given anchor hash, which is the hash the last header of the range must have, or
+     * null where the response is short or malformed or the chain does not reach the anchor. No proof of work, difficulty or timestamp check is needed
+     * below a pinned header: descent from the pin is what places a header at its height.
+     */
+    static List<BlockHeader> getLinkedHeaders(BlockHeaders chunk, int count, Sha256Hash anchorHash) {
+        if(chunk.count != count) {
+            return null;
+        }
+
+        List<BlockHeader> headers;
+        try {
+            byte[] bytes = Utils.hexToBytes(chunk.hex);
+            headers = IntStream.range(0, count).mapToObj(i -> new BlockHeader(bytes, i * HeaderStore.HEADER_LENGTH)).toList();
+        } catch(ProtocolException | IllegalArgumentException e) {
+            return null;
+        }
+
+        if(!headers.getLast().getHash().equals(anchorHash)) {
+            return null;
+        }
+
+        for(int i = count - 2; i >= 0; i--) {
+            if(!headers.get(i + 1).getPrevBlockHash().equals(headers.get(i).getHash())) {
+                return null;
+            }
+        }
+
+        return headers;
+    }
+
+    /**
+     * Whether transactions are being verified against the connected server, which turns on the header sync and the inclusion proofs alike.
+     */
+    static boolean isVerifyingTransactions() {
+        return serverCapability != null && serverCapability.supportsMerkleProofs();
+    }
+
+    /**
+     * Whether the connected server must support transaction verification to be used at all, which is the case for the public server tier on mainnet.
+     */
+    static boolean isVerificationMandatory() {
+        return Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && Network.get() == Network.MAINNET;
     }
 
     public Map<Sha256Hash, BlockTransaction> getTransactions(Wallet wallet, Map<BlockTransactionHash, Transaction> references, Map<Integer, BlockHeader> blockHeaderMap) throws ServerException {
@@ -2153,10 +2520,6 @@ public class ElectrumServer {
             };
         }
 
-        private boolean isVerificationMandatory() {
-            return Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER && Network.get() == Network.MAINNET;
-        }
-
         private void checkTipStaleness() {
             if(subscribe && Network.get() == Network.MAINNET && lastTipReceivedAt > 0 && !staleTipWarned && System.currentTimeMillis() - lastTipReceivedAt > STALE_TIP_WARNING_AGE_MILLIS) {
                 staleTipWarned = true;
@@ -2305,6 +2668,81 @@ public class ElectrumServer {
                     log.debug("Error subscribing to recent mempool transaction outputs", e);
                 }
             }
+        }
+    }
+
+    /**
+     * Keeps the verified header store level with the chain tip. There is nothing to poll - the tip subscription pushes every new block - so this
+     * service is event driven: it is restarted whenever a tip is announced, cancels itself once a run succeeds, and is cancelled on disconnection so
+     * that a retry cannot open a transport of its own. Its period is therefore only the interval at which a failed run is retried.
+     */
+    public static class HeaderSyncService extends ScheduledService<Void> {
+        public static final int RETRY_PERIOD_SECS = 60;
+
+        //The pair from the event that last restarted this service: the height and the header of one announcement, never of two
+        private volatile ChainTip announcedTip;
+
+        @Override
+        protected Task<Void> createTask() {
+            return new Task<>() {
+                @Override
+                protected Void call() throws Exception {
+                    syncAnnouncedHeaders(announcedTip);
+                    return null;
+                }
+            };
+        }
+
+        /**
+         * The body of a run, which happens on a background thread: the connection check is therefore the transport level one, since AppServices reads
+         * a JavaFX Service and may only be called from the application thread. Without the check a retry firing after the connection closed would
+         * have getTransport() open a transport of its own, outside the connection lifecycle.
+         */
+        static void syncAnnouncedHeaders(ChainTip tip) throws ServerException {
+            if(!isConnected()) {
+                return;
+            }
+
+            ElectrumServer electrumServer = new ElectrumServer();
+            try {
+                electrumServer.syncHeaders(tip);
+            } catch(UnsupportedMethodException e) {
+                //Without this call the store can never advance, so verification would refuse every new confirmation for the rest of the session
+                if(isVerificationMandatory()) {
+                    //Leaving the capability on is what lets the next wallet history thread raise this and rotate the server, which this service cannot do
+                    log.warn("Server does not support " + e.getMethod() + ", which is required to verify transactions");
+                } else {
+                    log.warn("Server does not support " + e.getMethod() + ", disabling transaction verification for this session");
+                    serverCapability.withMerkleProofs(false);
+                }
+            }
+        }
+
+        @Subscribe
+        public void connected(ConnectionEvent event) {
+            if(!isVerifyingTransactions()) {
+                return;
+            }
+
+            announcedTip = new ChainTip(event.getBlockHeight(), event.getBlockHeader());
+            restart();
+        }
+
+        @Subscribe
+        public void newBlock(NewBlockEvent event) {
+            if(!isVerifyingTransactions()) {
+                return;
+            }
+
+            //A header that extends the store, one that leaves a gap, and one that conflicts with it are all handled by the sync itself, which appends
+            //an extending header without fetching anything, so there is nothing to classify here
+            announcedTip = new ChainTip(event.getHeight(), event.getBlockHeader());
+            restart();
+        }
+
+        @Subscribe
+        public void disconnection(DisconnectionEvent event) {
+            cancel();
         }
     }
 

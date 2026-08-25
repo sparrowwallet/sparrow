@@ -129,9 +129,7 @@ public class AppServices {
 
     private ScheduledService<Void> preventSleepService;
 
-    private static Integer currentBlockHeight;
-
-    private static BlockHeader latestBlockHeader;
+    private static volatile ChainTip announcedTip;
 
     private static final Map<Integer, BlockSummary> blockSummaries = new ConcurrentHashMap<>();
 
@@ -207,6 +205,7 @@ public class AppServices {
     public void start() {
         Config config = Config.get();
         connectionService = createConnectionService();
+        registerHeaderSyncService();
         feeRatesService = createFeeRatesService();
         ratesService = createRatesService(config.getExchangeSource(), config.getFiatCurrency());
         versionCheckService = createVersionCheckService();
@@ -393,6 +392,25 @@ public class AppServices {
         });
 
         return feeRatesService;
+    }
+
+    /**
+     * The header sync service is driven entirely by the events it subscribes to - started by an announced tip, cancelled on disconnection - so nothing
+     * here holds it or restarts it. Registering it with the event bus is what keeps it reachable for the life of the session.
+     */
+    private void registerHeaderSyncService() {
+        ElectrumServer.HeaderSyncService headerSyncService = new ElectrumServer.HeaderSyncService();
+        headerSyncService.setPeriod(Duration.seconds(ElectrumServer.HeaderSyncService.RETRY_PERIOD_SECS));
+        headerSyncService.setRestartOnFailure(true);
+        EventManager.get().register(headerSyncService);
+
+        //The service is started by the tip it is told about, so a successful run has nothing left to do until the next one
+        headerSyncService.setOnSucceeded(successEvent -> {
+            headerSyncService.cancel();
+        });
+        headerSyncService.setOnFailed(failEvent -> {
+            log.warn("Failed to sync block headers, retrying in " + ElectrumServer.HeaderSyncService.RETRY_PERIOD_SECS + "s", failEvent.getSource().getException());
+        });
     }
 
     private ExchangeSource.RatesService createRatesService(ExchangeSource exchangeSource, Currency currency) {
@@ -738,11 +756,25 @@ public class AppServices {
     }
 
     public static Integer getCurrentBlockHeight() {
-        return currentBlockHeight;
+        ChainTip tip = announcedTip;
+        return tip == null ? null : tip.height();
     }
 
     public static BlockHeader getLatestBlockHeader() {
-        return latestBlockHeader;
+        ChainTip tip = announcedTip;
+        return tip == null ? null : tip.header();
+    }
+
+    /**
+     * The chain tip as the connected server last announced it, whose height and header are written together. A reader needing both must take them from
+     * one of these, since the two accessors above read the tip separately and can straddle a new block, pairing a new height with the previous header.
+     */
+    public static ChainTip getAnnouncedTip() {
+        return announcedTip;
+    }
+
+    public static void setAnnouncedTip(ChainTip announcedTip) {
+        AppServices.announcedTip = announcedTip;
     }
 
     public static Map<Integer, BlockSummary> getBlockSummaries() {
@@ -1281,13 +1313,12 @@ public class AppServices {
 
     @Subscribe
     public void newConnection(ConnectionEvent event) {
-        currentBlockHeight = event.getBlockHeight();
-        System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
+        setAnnouncedTip(new ChainTip(event.getBlockHeight(), event.getBlockHeader()));
+        System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(event.getBlockHeight()));
         if(getConfiguredMinimumRelayFeeRate(Config.get()) == null) {
             minimumRelayFeeRate = event.getMinimumRelayFeeRate() == null ? Transaction.DEFAULT_MIN_RELAY_FEE : event.getMinimumRelayFeeRate();
         }
         serverMinimumRelayFeeRate = event.getMinimumRelayFeeRate();
-        latestBlockHeader = event.getBlockHeader();
         Config.get().addRecentServer();
 
         FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
@@ -1296,7 +1327,7 @@ public class AppServices {
             fetchFeeRates();
         }
 
-        if(!blockSummaries.containsKey(currentBlockHeight)) {
+        if(!blockSummaries.containsKey(getCurrentBlockHeight())) {
             fetchBlockSummaries(Collections.emptyList());
         }
     }
@@ -1308,9 +1339,8 @@ public class AppServices {
 
     @Subscribe
     public void newBlock(NewBlockEvent event) {
-        currentBlockHeight = event.getHeight();
-        System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(currentBlockHeight));
-        latestBlockHeader = event.getBlockHeader();
+        setAnnouncedTip(new ChainTip(event.getHeight(), event.getBlockHeader()));
+        System.setProperty(Network.BLOCK_HEIGHT_PROPERTY, Integer.toString(event.getHeight()));
         String status = "Updating to new block height " + event.getHeight();
         EventManager.get().post(new StatusEvent(status));
         newBlockSubject.onNext(event);
@@ -1319,8 +1349,9 @@ public class AppServices {
     @Subscribe
     public void blockSummary(BlockSummaryEvent event) {
         blockSummaries.putAll(event.getBlockSummaryMap());
-        if(AppServices.currentBlockHeight != null) {
-            blockSummaries.keySet().removeIf(height -> AppServices.currentBlockHeight - height > 5);
+        Integer currentBlockHeight = getCurrentBlockHeight();
+        if(currentBlockHeight != null) {
+            blockSummaries.keySet().removeIf(height -> currentBlockHeight - height > 5);
         }
         nextBlockMedianFeeRate = event.getNextBlockMedianFeeRate();
     }

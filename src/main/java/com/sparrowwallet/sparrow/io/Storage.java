@@ -44,6 +44,7 @@ public class Storage {
     public static final String WALLETS_DIR = "wallets";
     public static final String WALLETS_BACKUP_DIR = "backup";
     public static final String CERTS_DIR = "certs";
+    public static final String HEADERS_DIR = "headers";
     public static final List<String> RESERVED_WALLET_NAMES = List.of("temp");
 
     private Persistence persistence;
@@ -547,6 +548,18 @@ public class Storage {
         }
 
         return certsDir;
+    }
+
+    /**
+     * Returns the network specific directory containing the verified block headers, which are regenerable and so kept with the other caches.
+     */
+    public static File getHeadersDir() {
+        File headersDir = new File(getCacheDir(), HEADERS_DIR);
+        if(!headersDir.exists()) {
+            createOwnerOnlyDirectory(headersDir);
+        }
+
+        return headersDir;
     }
 
     /**

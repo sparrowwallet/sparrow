@@ -562,6 +562,20 @@ public class WalletForm {
     }
 
     @Subscribe
+    public void chainReorg(ChainReorgEvent event) {
+        if(wallet.isValid() && !wallet.isNested()) {
+            //Posted on the syncing thread, and invalidating must precede the refresh: a transaction re-included at the same height leaves the server
+            //reporting an unchanged status, and the node would not otherwise be revisited. A wallet holding nothing above the fork is left alone,
+            //since anything new to it still arrives on its script hash subscriptions
+            Platform.runLater(() -> {
+                if(ElectrumServer.invalidateScriptHashesForReorg(wallet, event.getForkHeight())) {
+                    refreshHistory(AppServices.getCurrentBlockHeight());
+                }
+            });
+        }
+    }
+
+    @Subscribe
     public void walletNodeHistoryChanged(WalletNodeHistoryChangedEvent event) {
         if(wallet.isValid() && !wallet.isNested()) {
             if(transactionMempoolService != null) {
