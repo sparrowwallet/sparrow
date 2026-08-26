@@ -151,6 +151,8 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private final ObjectProperty<DnsPayment> dnsPaymentProperty = new SimpleObjectProperty<>();
 
+    private final ObjectProperty<BitcoinURI> payjoinURIProperty = new SimpleObjectProperty<>();
+
     private static final Wallet payNymWallet = new Wallet() {
         @Override
         public String getFullDisplayName() {
@@ -184,6 +186,10 @@ public class PaymentController extends WalletFormController implements Initializ
 
             if(silentPaymentAddressProperty.get() != null && !newValue.equals(silentPaymentAddressProperty.get().getAddress())) {
                 silentPaymentAddressProperty.set(null);
+            }
+
+            if(payjoinURIProperty.get() != null && !newValue.equals(payjoinURIProperty.get().getAddress().toString())) {
+                payjoinURIProperty.set(null);
             }
 
             try {
@@ -685,6 +691,10 @@ public class PaymentController extends WalletFormController implements Initializ
         field.textProperty().addListener(listener);
     }
 
+    public BitcoinURI getPayjoinURI() {
+        return payjoinURIProperty.get();
+    }
+
     public boolean isValidPayment() {
         try {
             getPayment();
@@ -752,12 +762,6 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     public void clear() {
-        try {
-            AppServices.clearPayjoinURI(getRecipientAddress());
-        } catch(InvalidAddressException e) {
-            //ignore
-        }
-
         address.setText("");
         label.setText("");
 
@@ -773,6 +777,7 @@ public class PaymentController extends WalletFormController implements Initializ
         payNymProperty.set(null);
         dnsPaymentProperty.set(null);
         silentPaymentAddressProperty.set(null);
+        payjoinURIProperty.set(null);
     }
 
     public void setMaxInput(ActionEvent event) {
@@ -832,10 +837,14 @@ public class PaymentController extends WalletFormController implements Initializ
             setRecipientValueSats(bitcoinURI.getAmount());
             setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), bitcoinURI.getAmount());
         }
-        if(bitcoinURI.getAddress() != null && bitcoinURI.getPayjoinUrl() != null) {
-            AppServices.addPayjoinURI(bitcoinURI);
-        }
+        setPayjoinURI(bitcoinURI);
         sendController.updateTransaction();
+    }
+
+    public void setPayjoinURI(BitcoinURI bitcoinURI) {
+        if(bitcoinURI.getAddress() != null && bitcoinURI.getPayjoinUrl() != null) {
+            payjoinURIProperty.set(bitcoinURI);
+        }
     }
 
     private List<Address> getOtherAddresses() {

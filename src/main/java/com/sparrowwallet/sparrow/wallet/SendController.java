@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
+import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.*;
 import com.sparrowwallet.sparrow.control.*;
@@ -414,6 +415,7 @@ public class SendController extends WalletFormController implements Initializabl
                 setFeeRate(feeRate);
             }
 
+            transactionDiagram.setPayjoinURI(walletTransaction == null ? null : getPayjoinURI(walletTransaction.getPayments()));
             transactionDiagram.update(walletTransaction);
             updatePrivacyAnalysis(walletTransaction);
             createButton.setDisable(walletTransaction == null || isInsufficientFeeRate());
@@ -978,10 +980,33 @@ public class SendController extends WalletFormController implements Initializabl
 
     private boolean isPayjoinTx() {
         if(walletTransactionProperty.get() != null) {
-            return walletTransactionProperty.get().getPayments().stream().anyMatch(payment -> AppServices.getPayjoinURI(payment.getAddress()) != null);
+            return getPayjoinURI(walletTransactionProperty.get().getPayments()) != null;
         }
 
         return false;
+    }
+
+    private BitcoinURI getPayjoinURI(List<Payment> payments) {
+        for(Payment payment : payments) {
+            BitcoinURI payjoinURI = getPayjoinURI(payment.getAddress());
+            if(payjoinURI != null) {
+                return payjoinURI;
+            }
+        }
+
+        return null;
+    }
+
+    private BitcoinURI getPayjoinURI(Address address) {
+        for(Tab tab : paymentTabs.getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            BitcoinURI payjoinURI = controller.getPayjoinURI();
+            if(payjoinURI != null && payjoinURI.getAddress().equals(address)) {
+                return payjoinURI;
+            }
+        }
+
+        return null;
     }
 
     private Node getSliderThumb() {
@@ -1011,7 +1036,7 @@ public class SendController extends WalletFormController implements Initializabl
     private boolean isFakeMixPossible(List<Payment> payments) {
         return utxoSelectorProperty.get() == null && payments.size() == 1
                 && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getNode(KeyPurpose.RECEIVE).getAddress().getScriptType())
-                && AppServices.getPayjoinURI(payments.get(0).getAddress()) == null;
+                && getPayjoinURI(payments.get(0).getAddress()) == null;
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {
@@ -1170,6 +1195,10 @@ public class SendController extends WalletFormController implements Initializabl
         addWalletTransactionNodes();
         walletForm.setCreatedWalletTransaction(walletTransaction);
         PSBT psbt = walletTransaction.createPSBT();
+        BitcoinURI payjoinURI = getPayjoinURI(walletTransaction.getPayments());
+        if(payjoinURI != null) {
+            AppServices.addPayjoinURI(psbt, payjoinURI);
+        }
         EventManager.get().post(new ViewPSBTEvent(createButton.getScene().getWindow(), walletTransaction.getPayments().get(0).getLabel(), null, psbt));
     }
 
@@ -1511,6 +1540,10 @@ public class SendController extends WalletFormController implements Initializabl
                 clear(null);
                 Platform.runLater(() -> {
                     setPayments(event.getPayments());
+                    if(event.getBitcoinURI() != null) {
+                        PaymentController controller = (PaymentController)paymentTabs.getTabs().get(0).getUserData();
+                        controller.setPayjoinURI(event.getBitcoinURI());
+                    }
                     updateTransaction(event.getPayments() == null || event.getPayments().stream().anyMatch(Payment::isSendMax));
                 });
             }
@@ -1661,7 +1694,7 @@ public class SendController extends WalletFormController implements Initializabl
             boolean roundPaymentAmounts = userPayments.stream().anyMatch(payment -> payment.getAmount() % 100 == 0);
             boolean mixedAddressTypes = userPayments.stream().anyMatch(payment -> payment.getAddress().getScriptType() != getWalletForm().getWallet().getNode(KeyPurpose.RECEIVE).getAddress().getScriptType());
             boolean addressReuse = walletNodePayments.stream().anyMatch(walletNodePayment -> !walletNodePayment.getWalletNode().getTransactionOutputs().isEmpty());
-            boolean payjoinPresent = userPayments.stream().anyMatch(payment -> AppServices.getPayjoinURI(payment.getAddress()) != null);
+            boolean payjoinPresent = getPayjoinURI(userPayments) != null;
 
             if(optimizationStrategy == OptimizationStrategy.PRIVACY) {
                 if(fakeMixPresent) {

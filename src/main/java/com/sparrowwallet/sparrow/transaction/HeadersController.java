@@ -251,6 +251,8 @@ public class HeadersController extends TransactionFormController implements Init
 
     private ElectrumServer.TransactionMempoolService transactionMempoolService;
 
+    private BitcoinURI payjoinURI;
+
     private final Map<Integer, String> outputIndexLabels = new TreeMap<>();
 
     @Override
@@ -459,6 +461,9 @@ public class HeadersController extends TransactionFormController implements Init
             updateFee(feeAmt);
         }
 
+        payjoinURI = getPayjoinURI();
+        transactionDiagram.setPayjoinURI(payjoinURI);
+
         headersForm.walletTransactionProperty().addListener((observable, oldValue, walletTransaction) -> {
             transactionDiagram.update(walletTransaction);
         });
@@ -487,7 +492,6 @@ public class HeadersController extends TransactionFormController implements Init
         saveFinalButton.visibleProperty().bind(broadcastButton.visibleProperty().not());
         broadcastButton.visibleProperty().bind(AppServices.onlineProperty());
 
-        BitcoinURI payjoinURI = getPayjoinURI();
         boolean isPayjoinOriginalTx = payjoinURI != null && headersForm.getPsbt() != null && headersForm.getPsbt().getPsbtInputs().stream().noneMatch(PSBTInput::isFinalized);
         payjoinButton.managedProperty().bind(payjoinButton.visibleProperty());
         payjoinButton.visibleProperty().set(isPayjoinOriginalTx);
@@ -906,21 +910,13 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private BitcoinURI getPayjoinURI() {
-        if(headersForm.getPsbt() != null) {
-            for(TransactionOutput txOutput : headersForm.getPsbt().getTransaction().getOutputs()) {
-                try {
-                    Address address = txOutput.getScript().getToAddresses()[0];
-                    BitcoinURI bitcoinURI = AppServices.getPayjoinURI(address);
-                    if(bitcoinURI != null) {
-                        return bitcoinURI;
-                    }
-                } catch(Exception e) {
-                    //ignore
-                }
-            }
-        }
+        return AppServices.getPayjoinURI(headersForm.getPsbt());
+    }
 
-        return null;
+    private void registerPayjoinURI() {
+        if(payjoinURI != null) {
+            AppServices.addPayjoinURI(headersForm.getPsbt(), payjoinURI);
+        }
     }
 
     private static class BlockHeightContextMenu extends ContextMenu {
@@ -1283,6 +1279,9 @@ public class HeadersController extends TransactionFormController implements Init
 
         ElectrumServer.BroadcastTransactionService broadcastTransactionService = new ElectrumServer.BroadcastTransactionService(headersForm.getTransaction(), fee.getValue());
         broadcastTransactionService.setOnSucceeded(workerStateEvent -> {
+            AppServices.clearPayjoinURI(headersForm.getPsbt());
+            payjoinButton.setVisible(false);
+
             //Although we wait for WalletNodeHistoryChangedEvent to indicate tx is in mempool, start a scheduled service to check the script hashes should notifications fail
             if(headersForm.getSigningWallet() != null) {
                 if(transactionMempoolService != null) {
@@ -1438,12 +1437,12 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     public void getPayjoinTransaction(ActionEvent event) {
-        BitcoinURI payjoinURI = getPayjoinURI();
-        if(payjoinURI == null) {
+        BitcoinURI currentPayjoinURI = getPayjoinURI();
+        if(currentPayjoinURI == null) {
             throw new IllegalStateException("No valid Payjoin URI");
         }
 
-        Payjoin payjoin = new Payjoin(payjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
+        Payjoin payjoin = new Payjoin(currentPayjoinURI, headersForm.getSigningWallet(), headersForm.getPsbt());
         Payjoin.RequestPayjoinPSBTService requestPayjoinPSBTService = new Payjoin.RequestPayjoinPSBTService(payjoin, true);
         requestPayjoinPSBTService.setOnSucceeded(successEvent -> {
             PSBT proposalPsbt = requestPayjoinPSBTService.getValue();
@@ -1502,6 +1501,7 @@ public class HeadersController extends TransactionFormController implements Init
         if(headersForm.getTransaction().equals(event.getTransaction())) {
             updateTxId();
             updateEditable(headersForm.isEditable());
+            registerPayjoinURI();
         }
     }
 
@@ -1847,6 +1847,7 @@ public class HeadersController extends TransactionFormController implements Init
         if(event.getPsbt().equals(headersForm.getPsbt())) {
             updateTxId();
             headersForm.setWalletTransaction(getWalletTransaction(headersForm.getInputTransactions()));
+            registerPayjoinURI();
         }
     }
 

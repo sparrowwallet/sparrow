@@ -77,6 +77,7 @@ public class TransactionDiagram extends GridPane {
     private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
     private final ObjectProperty<TransactionDiagramLabel> labelProperty = new SimpleObjectProperty<>(null);
     private final ObjectProperty<OptimizationStrategy> optimizationStrategyProperty = new SimpleObjectProperty<>(OptimizationStrategy.EFFICIENCY);
+    private final ObjectProperty<BitcoinURI> payjoinURIProperty = new SimpleObjectProperty<>(null);
     private boolean expanded;
     private TransactionDiagram expandedDiagram;
     private ContextMenu contextMenu;
@@ -224,6 +225,7 @@ public class TransactionDiagram extends GridPane {
 
     private void updateDerivedDiagram(TransactionDiagram diagram) {
         diagram.setOptimizationStrategy(getOptimizationStrategy());
+        diagram.setPayjoinURI(getPayjoinURI());
         diagram.walletTx = walletTx;
 
         if(diagram.isExpanded()) {
@@ -342,20 +344,12 @@ public class TransactionDiagram extends GridPane {
         }
     }
 
-    private BitcoinURI getPayjoinURI() {
-        for(Payment payment : walletTx.getPayments()) {
-            try {
-                Address address = payment.getAddress();
-                BitcoinURI bitcoinURI = AppServices.getPayjoinURI(address);
-                if(bitcoinURI != null) {
-                    return bitcoinURI;
-                }
-            } catch(Exception e) {
-                //ignore
-            }
-        }
+    public BitcoinURI getPayjoinURI() {
+        return payjoinURIProperty.get();
+    }
 
-        return null;
+    public void setPayjoinURI(BitcoinURI payjoinURI) {
+        this.payjoinURIProperty.set(payjoinURI);
     }
 
     private Pane getInputsType(List<Map<BlockTransactionHashIndex, WalletNode>> displayedUtxoSets) {

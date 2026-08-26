@@ -19,6 +19,7 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -151,7 +152,7 @@ public class AppServices {
 
     private static final List<URI> argUris = new ArrayList<>();
 
-    private static final Map<Address, BitcoinURI> payjoinURIs = new HashMap<>();
+    private static final Map<Sha256Hash, BitcoinURI> payjoinURIs = new HashMap<>();
 
     private final ChangeListener<Boolean> onlineServicesListener = new ChangeListener<>() {
         @Override
@@ -870,19 +871,21 @@ public class AppServices {
         return devices == null ? new ArrayList<>() : devices;
     }
 
-    public static BitcoinURI getPayjoinURI(Address address) {
-        return payjoinURIs.get(address);
+    public static BitcoinURI getPayjoinURI(PSBT psbt) {
+        return psbt == null ? null : payjoinURIs.get(psbt.getTransaction().calculateTxId(false));
     }
 
-    public static void addPayjoinURI(BitcoinURI bitcoinURI) {
+    public static void addPayjoinURI(PSBT psbt, BitcoinURI bitcoinURI) {
         if(bitcoinURI.getPayjoinUrl() == null || bitcoinURI.getAddress() == null) {
             throw new IllegalArgumentException("Not a valid payjoin URI");
         }
-        payjoinURIs.put(bitcoinURI.getAddress(), bitcoinURI);
+        payjoinURIs.put(psbt.getTransaction().calculateTxId(false), bitcoinURI);
     }
 
-    public static void clearPayjoinURI(Address address) {
-        payjoinURIs.remove(address);
+    public static void clearPayjoinURI(PSBT psbt) {
+        if(psbt != null) {
+            payjoinURIs.remove(psbt.getTransaction().calculateTxId(false));
+        }
     }
 
     public static void clearTransactionHistoryCache(Wallet wallet) {
@@ -1123,7 +1126,7 @@ public class AppServices {
             if(wallet != null) {
                 final Wallet sendingWallet = wallet;
                 EventManager.get().post(new SendActionEvent(sendingWallet, new ArrayList<>(sendingWallet.getSpendableUtxos().keySet()), true));
-                Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(sendingWallet, List.of(bitcoinURI.toPayment()))));
+                Platform.runLater(() -> EventManager.get().post(new SendPaymentsEvent(sendingWallet, List.of(bitcoinURI.toPayment()), bitcoinURI)));
             }
         } catch(Exception e) {
             showErrorDialog("Not a valid bitcoin URI", e.getMessage());
