@@ -218,6 +218,15 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
             try {
                 PolicyAndScriptType type = comboBox.getValue();
                 Wallet wallet = getWallet(type.policyType(), type.scriptType(), type.scriptType().getDefaultDerivation());
+                if(passphraseProperty.get() != null && !passphraseProperty.get().isEmpty()) {
+                    KeystorePassphraseDialog keystorePassphraseDialog = new KeystorePassphraseDialog(null, wallet.getKeystores().getFirst(), true);
+                    keystorePassphraseDialog.initOwner(this.getScene().getWindow());
+                    Optional<String> optPassphrase = keystorePassphraseDialog.showAndWait();
+                    if(optPassphrase.isEmpty() || !optPassphrase.get().equals(passphraseProperty.get())) {
+                        throw new ImportException("Re-entered passphrase did not match");
+                    }
+                }
+
                 EventManager.get().post(new WalletImportEvent(wallet));
             } catch(ImportException e) {
                 log.error("Error importing mnemonic", e);

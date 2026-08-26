@@ -15,7 +15,11 @@ public class PassphraseDialog extends DialogWindow {
     private String result;
 
     public PassphraseDialog(String walletName, Keystore keystore) {
-        super("Passphrase for " + walletName);
+        this(walletName, keystore, false);
+    }
+
+    public PassphraseDialog(String walletName, Keystore keystore, boolean confirm) {
+        super((confirm ? "Confirm Passphrase for " : "Passphrase for ") + walletName);
 
         setHints(Collections.singleton(Window.Hint.CENTERED));
 
@@ -30,7 +34,7 @@ public class PassphraseDialog extends DialogWindow {
 
         Panel mainPanel = new Panel();
         mainPanel.setLayoutManager(new GridLayout(1).setLeftMarginSize(1).setRightMarginSize(1));
-        mainPanel.addComponent(new Label("Enter the BIP39 passphrase for keystore:\n" + keystore.getLabel()));
+        mainPanel.addComponent(new Label(confirm ? "Re-enter the BIP39 passphrase\nto confirm:" : "Enter the BIP39 passphrase for keystore:\n" + keystore.getLabel()));
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
         passphrase.setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.FILL, GridLayout.Alignment.CENTER, true, false)).addTo(mainPanel);
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));

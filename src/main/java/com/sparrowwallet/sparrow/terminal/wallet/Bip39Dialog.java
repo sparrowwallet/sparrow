@@ -12,6 +12,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.io.Bip39;
 import com.sparrowwallet.sparrow.io.ImportException;
+import com.sparrowwallet.sparrow.terminal.PassphraseDialog;
 import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
+import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
 public class Bip39Dialog extends NewWalletDialog {
     private static final Logger log = LoggerFactory.getLogger(Bip39Dialog.class);
@@ -98,6 +101,28 @@ public class Bip39Dialog extends NewWalletDialog {
                 }
             }
         });
+    }
+
+    @Override
+    protected void createWallet() {
+        if(!passphrase.getText().isEmpty()) {
+            try {
+                PolicyAndScriptType type = scriptType.getSelectedItem();
+                Keystore keystore = importer.getKeystore(type.policyType(), type.scriptType().getDefaultDerivation(), getWords(), passphrase.getText());
+                PassphraseDialog passphraseDialog = new PassphraseDialog(walletName, keystore, true);
+                String confirmation = passphraseDialog.showDialog(SparrowTerminal.get().getGui());
+                if(confirmation == null || !confirmation.equals(passphrase.getText())) {
+                    showErrorDialog("Error Creating Wallet", "Re-entered passphrase did not match.");
+                    return;
+                }
+            } catch(ImportException e) {
+                log.error("Cannot create keystore", e);
+                showErrorDialog("Error Creating Wallet", e.getMessage());
+                return;
+            }
+        }
+
+        super.createWallet();
     }
 
     private void generateNew() {
