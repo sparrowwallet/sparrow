@@ -72,7 +72,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('com.fasterxml.jackson.core:jackson-databind:2.21.1')
-    implementation('com.sparrowwallet:hummingbird:1.7.4')
+    implementation('com.sparrowwallet:hummingbird:1.7.5')
     implementation('co.nstant.in:cbor:0.9')
     implementation('io.github.doblon8:openpnp-capture-java:0.0.3')
     implementation("io.matthewnelson.kmp-tor:runtime:2.5.0")
