@@ -133,15 +133,24 @@ public class WebcamService extends ScheduledService<Image> {
                 try {
                     if(devices == null) {
                         devices = capture.getDevices();
-                        availableDevices = new ArrayList<>(devices);
+                        availableDevices = devices.stream().filter(d -> !d.getFormats().isEmpty()).collect(Collectors.toCollection(ArrayList::new));
+
+                        List<String> unsupportedDevices = devices.stream().filter(d -> d.getFormats().isEmpty()).map(CaptureDevice::getName).toList();
+                        if(!unsupportedDevices.isEmpty()) {
+                            log.warn("Ignoring cameras with no supported resolutions: " + String.join(", ", unsupportedDevices));
+                        }
 
                         if(devices.isEmpty()) {
                             throw new UnsupportedOperationException("No cameras available");
                         }
+
+                        if(availableDevices.isEmpty()) {
+                            throw new UnsupportedOperationException("No resolutions supported by cameras " + String.join(", ", unsupportedDevices));
+                        }
                     }
 
                     while(stream == null && !availableDevices.isEmpty()) {
-                        CaptureDevice selectedDevice = availableDevices.stream().filter(d -> !d.getFormats().isEmpty()).findFirst().orElse(availableDevices.getFirst());
+                        CaptureDevice selectedDevice = availableDevices.getFirst();
 
                         if(device != null) {
                             for(CaptureDevice webcam : availableDevices) {
@@ -164,10 +173,6 @@ public class WebcamService extends ScheduledService<Image> {
                         }
 
                         device = selectedDevice;
-
-                        if(device.getFormats().isEmpty()) {
-                            throw new UnsupportedOperationException("No resolutions supported by camera " + device.getName());
-                        }
 
                         List<CaptureFormat> deviceFormats = new ArrayList<>(device.getFormats());
 
@@ -206,23 +211,27 @@ public class WebcamService extends ScheduledService<Image> {
                             log.debug("Opening capture stream on " + device + " with format " + format.formatInfo().width() + "x" + format.formatInfo().height() + " (" + WebcamPixelFormat.fourCCToString(format.formatInfo().fourcc()) + ")");
                         }
 
-                        opening.set(true);
-                        stream = device.openStream(format);
-                        opening.set(false);
-
                         try {
-                            zoomLimits = stream.getPropertyLimits(CaptureProperty.ZOOM);
-                        } catch(Throwable e) {
-                            log.debug("Error getting zoom limits on " + device + ", assuming no zoom function");
+                            opening.set(true);
+                            stream = device.openStream(format);
+                        } catch(Exception e) {
+                            log.warn("Error opening capture stream on " + device.getName() + ", trying next available camera", e);
+                            availableDevices.remove(device);
+                        } finally {
+                            opening.set(false);
                         }
 
-                        if(stream == null) {
-                            availableDevices.remove(device);
+                        if(stream != null) {
+                            try {
+                                zoomLimits = stream.getPropertyLimits(CaptureProperty.ZOOM);
+                            } catch(Throwable e) {
+                                log.debug("Error getting zoom limits on " + device + ", assuming no zoom function");
+                            }
                         }
                     }
 
                     if(stream == null) {
-                        throw new UnsupportedOperationException("No usable cameras available, tried " + devices);
+                        throw new UnsupportedOperationException("No usable cameras available, tried " + devices.stream().map(CaptureDevice::getName).collect(Collectors.joining(", ")));
                     }
 
                     opened.set(true);

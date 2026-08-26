@@ -133,7 +133,6 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         List<CaptureDevice> newDevices = new ArrayList<>(webcamService.getAvailableDevices());
                         newDevices.removeAll(foundDevices);
                         foundDevices.addAll(newDevices);
-                        foundDevices.removeIf(device -> !webcamService.getDevices().contains(device));
 
                         if(webcamService.getDevice() != null) {
                             for(CaptureDevice device : foundDevices) {
@@ -142,6 +141,8 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                                 }
                             }
                         }
+
+                        foundDevices.removeIf(device -> !webcamService.getAvailableDevices().contains(device));
 
                         updateList(availableResolutions, webcamService.getResolutions());
                         webcamResolutionProperty.set(webcamService.getResolution());
@@ -189,10 +190,12 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
         });
         webcamDeviceProperty.addListener((_, _, newValue) -> {
-            Config.get().setWebcamDevice(newValue.getName());
-            Config.get().setWebcamDeviceId(newValue.getUniqueId());
-            if(!Objects.equals(webcamService.getDevice(), newValue)) {
-                webcamService.cancel();
+            if(newValue != null) {
+                Config.get().setWebcamDevice(newValue.getName());
+                Config.get().setWebcamDeviceId(newValue.getUniqueId());
+                if(!Objects.equals(webcamService.getDevice(), newValue)) {
+                    webcamService.cancel();
+                }
             }
         });
 
