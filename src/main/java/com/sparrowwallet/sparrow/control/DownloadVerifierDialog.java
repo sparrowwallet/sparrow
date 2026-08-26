@@ -50,6 +50,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
     private static final DateFormat signatureDateFormat = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy z");
 
     private static final long MAX_VALID_MANIFEST_SIZE = 100 * 1024;
+    private static final int MANIFEST_HEADER_LENGTH = 1024;
+    private static final Pattern MANIFEST_HASH_LINE = Pattern.compile("^[0-9a-fA-F]{64}\\s+\\S+.*");
+    private static final String CLEARSIGNED_HEADER = "-----BEGIN PGP SIGNED MESSAGE-----";
     private static final String SHA256SUMS_MANIFEST_PREFIX = "sha256sums";
 
     private static final List<String> SIGNATURE_EXTENSIONS = List.of("asc", "sig", "gpg");
@@ -216,8 +219,11 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                     log.debug("Error reading manifest file", e);
                     verify = false;
                 } catch(InvalidManifestException e) {
-                    release.set(manifestFile);
-                    verify = false;
+                    //A file too large to be a manifest is assumed to be a release file the signature signs directly, unless it still looks like a manifest
+                    if(!isManifestContent(manifestFile)) {
+                        release.set(manifestFile);
+                        verify = false;
+                    }
                 }
 
                 if(verify) {
@@ -466,7 +472,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
     public static Map<File, String> getManifest(File manifest) throws IOException, InvalidManifestException {
         if(manifest.length() > MAX_VALID_MANIFEST_SIZE) {
-            throw new InvalidManifestException();
+            throw new InvalidManifestException("Manifest file is larger than " + (MAX_VALID_MANIFEST_SIZE / 1024) + "KB");
         }
 
         try(InputStream manifestStream = new FileInputStream(manifest)) {
@@ -492,6 +498,16 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         return manifest;
+    }
+
+    private static boolean isManifestContent(File file) {
+        try(InputStream inputStream = new FileInputStream(file)) {
+            String header = new String(inputStream.readNBytes(MANIFEST_HEADER_LENGTH), StandardCharsets.UTF_8);
+            return header.lines().anyMatch(line -> line.startsWith(CLEARSIGNED_HEADER) || MANIFEST_HASH_LINE.matcher(line).matches());
+        } catch(IOException e) {
+            log.debug("Error reading manifest file", e);
+            return false;
+        }
     }
 
     private String getManifestHash(String contentFileName, Map<File, String> manifest) {
@@ -822,5 +838,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
     }
 
-    private static class InvalidManifestException extends Exception { }
+    private static class InvalidManifestException extends Exception {
+        public InvalidManifestException(String message) {
+            super(message);
+        }
+    }
 }
