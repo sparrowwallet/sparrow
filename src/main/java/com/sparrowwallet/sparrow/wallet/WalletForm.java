@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.*;
@@ -327,6 +328,7 @@ public class WalletForm {
         List<WalletNode> historyChangedNodes = new ArrayList<>();
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.RECEIVE).getChildren(), currentWallet.getNode(KeyPurpose.RECEIVE).getChildren()));
         historyChangedNodes.addAll(getHistoryChangedNodes(previousWallet.getNode(KeyPurpose.CHANGE).getChildren(), currentWallet.getNode(KeyPurpose.CHANGE).getChildren()));
+        addReprovenNodes(currentWallet, previousWallet, historyChangedNodes);
 
         boolean changed = false;
         if(!historyChangedNodes.isEmpty() || !nestedHistoryChangedNodes.isEmpty()) {
@@ -346,6 +348,35 @@ public class WalletForm {
         }
 
         return historyChangedNodes;
+    }
+
+    /**
+     * Adds the nodes holding a transaction proven against a different block at the height it was already held at. A block replaced by another
+     * containing the same transaction changes neither its height nor any output, so the comparison above cannot see it, yet its block hash and its
+     * date - that block's timestamp - are both stale until the nodes holding it are written again.
+     * <p>
+     * The height being unchanged is required, not merely typical: a block hash follows the height, so it changes on every ordinary confirmation,
+     * demotion and unfetchable transaction too, and in each of those the node already has an output at a new height and has been reported.
+     */
+    static void addReprovenNodes(Wallet currentWallet, Wallet previousWallet, List<WalletNode> historyChangedNodes) {
+        Set<Sha256Hash> reproven = new HashSet<>();
+        for(Map.Entry<Sha256Hash, BlockTransaction> entry : currentWallet.getTransactions().entrySet()) {
+            BlockTransaction previousTransaction = previousWallet.getTransactions().get(entry.getKey());
+            if(previousTransaction != null && previousTransaction.getHeight() == entry.getValue().getHeight()
+                    && !Objects.equals(previousTransaction.getBlockHash(), entry.getValue().getBlockHash())) {
+                reproven.add(entry.getKey());
+            }
+        }
+
+        if(!reproven.isEmpty()) {
+            Set<WalletNode> reportedNodes = new HashSet<>(historyChangedNodes);
+            for(Map.Entry<WalletNode, Set<BlockTransactionHashIndex>> entry : currentWallet.getWalletNodes().entrySet()) {
+                if(!reportedNodes.contains(entry.getKey()) && entry.getValue().stream()
+                        .anyMatch(txo -> reproven.contains(txo.getHash()) || (txo.isSpent() && reproven.contains(txo.getSpentBy().getHash())))) {
+                    historyChangedNodes.add(entry.getKey());
+                }
+            }
+        }
     }
 
     private List<WalletNode> getHistoryChangedNodes(Set<WalletNode> previousNodes, Set<WalletNode> currentNodes) {
@@ -572,6 +603,13 @@ public class WalletForm {
                     refreshHistory(AppServices.getCurrentBlockHeight());
                 }
             });
+        }
+    }
+
+    @Subscribe
+    public void requestWalletRefresh(RequestWalletRefreshEvent event) {
+        if(wallet.isValid() && !wallet.isNested() && wallet.equals(event.getWallet().resolveMasterWallet())) {
+            Platform.runLater(() -> refreshHistory(AppServices.getCurrentBlockHeight()));
         }
     }
 

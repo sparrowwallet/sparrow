@@ -97,6 +97,7 @@ public class HeaderSyncTest {
         ElectrumServer.headerStore = null;
         ElectrumServer.lastReorgForkHeight = Integer.MAX_VALUE;
         ElectrumServer.verifiedHistoricalHeaders.clear();
+        ElectrumServer.retrievedBlockHeaders.clear();
         previousElectrumServerRpc = ElectrumServer.electrumServerRpc;
         previousTransport = ElectrumServer.transport;
         //The fake answers without the transport, but getTransport() would otherwise build one from the configured server
@@ -113,8 +114,32 @@ public class HeaderSyncTest {
         ElectrumServer.headerStore = null;
         ElectrumServer.lastReorgForkHeight = Integer.MAX_VALUE;
         ElectrumServer.verifiedHistoricalHeaders.clear();
+        ElectrumServer.retrievedBlockHeaders.clear();
         AppServices.setAnnouncedTip(null);
         Network.set(null);
+    }
+
+    /**
+     * The cache of headers the server has announced as its tip is not the store, and nothing else rewinds it: above the fork it names blocks the chain
+     * no longer has, and only the current tip is replaced by the next announcement. Left there it would serve the replaced block's timestamp at any
+     * height that was once a tip, which is the height a transaction re-proven against its replacement is looked up at.
+     */
+    @Test
+    public void dropsAnnouncedHeadersAboveTheForkOnReorganising() throws Exception {
+        List<BlockHeader> chain = mineChain(Network.REGTEST.getGenesisHeader(), 10, CHAIN_TIME);
+        List<BlockHeader> branch = fork(chain, 9, 1);
+        seedStore(chain, 10);
+        serve(branch);
+        ElectrumServer.updateRetrievedBlockHeaders(8, chain.get(7));
+        ElectrumServer.updateRetrievedBlockHeaders(9, chain.get(8));
+        ElectrumServer.updateRetrievedBlockHeaders(10, chain.get(9));
+
+        new ElectrumServer().syncHeaders(new ChainTip(10, branch.getLast()));
+
+        assertEquals(9, listener.getForkHeight());
+        assertEquals(chain.get(7), ElectrumServer.retrievedBlockHeaders.get(8));      //below the fork, still the chain the store keeps
+        assertEquals(chain.get(8), ElectrumServer.retrievedBlockHeaders.get(9));
+        assertNull(ElectrumServer.retrievedBlockHeaders.get(10));                     //the replaced block, dropped with the header it came from
     }
 
     /**
@@ -580,6 +605,81 @@ public class HeaderSyncTest {
         assertEquals(32248, fake.getLastStartHeight());
         assertEquals(3, fake.getLastCount());
         assertEquals(2, fake.getChunkRequests());
+    }
+
+    /**
+     * The restore time prefetch: the heights a batch of proofs needs below the last pin are coalesced into one range per difficulty period, from the
+     * lowest height needed in it, so that every other height in the period is served from the cache without a request of its own.
+     */
+    @Test
+    public void prefetchesOneRangePerPeriodForTheHeightsBeingProven() throws Exception {
+        Network.set(Network.MAINNET);
+        FakeElectrumServerRpc fake = serveFrom(PERIOD_15_CLOSE, 32248);
+
+        new ElectrumServer().prefetchVerifiedHeaders(List.of(32252, 32249, 32249, 32255));
+
+        assertEquals(1, fake.getChunkRequests());
+        assertEquals(32249, fake.getLastStartHeight());
+        assertEquals(7, fake.getLastCount());       //from the lowest height needed up to the pin
+
+        assertEquals(PERIOD_15_CLOSE.get(4).getHash(), new ElectrumServer().getVerifiedHeader(32252).getHash());
+        assertEquals(PERIOD_15_CLOSE.get(1).getHash(), new ElectrumServer().getVerifiedHeader(32249).getHash());
+        assertEquals(1, fake.getChunkRequests());
+    }
+
+    /**
+     * A range reaches only as far as the nearest header already verified, so it does not necessarily cover the rest of its period: the heights above
+     * that header need a range of their own, which the coalescing must not skip because a lower range shares their period.
+     * <p>
+     * The cache is seeded directly, since nothing ordinary produces that gap - a range is cached whole and ends at a verified header or the pin, so a
+     * period's verified heights are always a run up to it. The coalescing should not have to rely on that.
+     */
+    @Test
+    public void prefetchesTheHeightsAboveAnAlreadyVerifiedHeaderInThePeriod() throws Exception {
+        Network.set(Network.MAINNET);
+        FakeElectrumServerRpc fake = serveFrom(PERIOD_15_CLOSE, 32248);
+        ElectrumServer.verifiedHistoricalHeaders.put(32253, PERIOD_15_CLOSE.get(5));
+
+        new ElectrumServer().prefetchVerifiedHeaders(List.of(32249, 32254));
+
+        //One range up to the verified header, and one for what it leaves above
+        assertEquals(2, fake.getChunkRequests());
+        assertEquals(PERIOD_15_CLOSE.get(1).getHash(), new ElectrumServer().getVerifiedHeader(32249).getHash());
+        assertEquals(PERIOD_15_CLOSE.get(6).getHash(), new ElectrumServer().getVerifiedHeader(32254).getHash());
+        assertEquals(2, fake.getChunkRequests());
+    }
+
+    /**
+     * A prefetched range that cannot be verified is simply not cached, which leaves the heights in it to be fetched singly and refused in the ordinary
+     * way. It is never a failure of the pass, and never a partial cache.
+     */
+    @Test
+    public void leavesAnUnverifiableRangeUncached() throws Exception {
+        Network.set(Network.MAINNET);
+        List<BlockHeader> tampered = new ArrayList<>(PERIOD_15_CLOSE);
+        BlockHeader original = tampered.get(4);
+        tampered.set(4, new BlockHeader(original.getVersion(), original.getPrevBlockHash(), original.getMerkleRoot(), null, original.getTime() + 1,
+                original.getDifficultyTarget(), original.getNonce()));
+        serveFrom(tampered, 32248);
+
+        new ElectrumServer().prefetchVerifiedHeaders(List.of(32250));
+
+        assertTrue(ElectrumServer.verifiedHistoricalHeaders.isEmpty());
+    }
+
+    /**
+     * Heights above the last pin are the store's business, so the prefetch leaves them alone rather than asking for ranges below a pin they do not sit
+     * under.
+     */
+    @Test
+    public void prefetchesNothingForHeightsAboveTheLastPin() throws Exception {
+        Network.set(Network.MAINNET);
+        FakeElectrumServerRpc fake = serveFrom(PERIOD_15_CLOSE, 32248);
+
+        int maxHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
+        new ElectrumServer().prefetchVerifiedHeaders(List.of(0, maxHeight + 1, maxHeight + 5000));
+
+        assertEquals(0, fake.getChunkRequests());
     }
 
     @Test

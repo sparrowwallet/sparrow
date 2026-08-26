@@ -15,10 +15,19 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.HeaderChainState;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.ChainTip;
+import com.sparrowwallet.sparrow.SparrowWallet;
+import com.sparrowwallet.sparrow.io.Config;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +40,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class ElectrumServerTest {
+    @TempDir
+    private static Path tempHome;
+
     //A plain BIP32 extended public key, since the wallet only needs to derive addresses to have script hashes
     private static final String TEST_XPUB = "xpub6BosfCnifzxcFwrSzQiqu2DBVTshkCXacvNsWGYJVVhhawA7d4R5WSWGFNbi8Aw6ZRc1brxMyWMzG3DSSSSoekkudhUd9yLb6qx39T9nMdj";
 
@@ -39,6 +51,18 @@ public class ElectrumServerTest {
 
     private static final String BLOCK_800000_HEADER_HEX = "00601d3455bb9fbd966b3ea2dc42d0c22722e4c0c1729fad17210100000000000000000055087fab0c8f3f89f8bcfd4df26c504d81b0a88e04907161838c0c53001af09135edbd64943805175e955e06";
     private static final long BLOCK_800000_TIME_SECS = 1690168629L;
+
+    @BeforeAll
+    public static void setUpAll() {
+        //Config.get() caches its instance for the life of the JVM but resolves the file to write on each flush, so a test changing a setting must
+        //never be able to reach the developer's own Sparrow home. The test task sets this too; this is here for a run that bypasses it
+        System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempHome.toString());
+    }
+
+    @AfterAll
+    public static void tearDownAll() {
+        System.clearProperty(SparrowWallet.APP_HOME_PROPERTY);
+    }
 
     @BeforeEach
     public void setUp() {
@@ -172,6 +196,90 @@ public class ElectrumServerTest {
         //The output itself is far below the fork, but the spend of it is not
         assertTrue(ElectrumServer.invalidateScriptHashesForReorg(wallet, 799999));
         assertFalse(ElectrumServer.invalidateScriptHashesForReorg(wallet, 800000));
+    }
+
+    /**
+     * A server that has not reached the last pinned header cannot substantiate any height: the forward sync has nothing to advance from and every
+     * range below a pin comes back short. Verification therefore does not run against it at all until it catches up, rather than refusing every new
+     * confirmation and raising a dialog for each. The public tier rejects such a server at connect instead; this is what a private one gets.
+     */
+    @Test
+    public void doesNotVerifyAgainstAServerBelowTheLastPin() {
+        ServerCapability previousCapability = ElectrumServer.serverCapability;
+        try {
+            ElectrumServer.serverCapability = new ServerCapability(false, false, false);
+            int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
+            BlockHeader header = Network.MAINNET.getGenesisHeader();
+
+            //A tip that has not been announced yet is not evidence of lagging, so the sync and the proofs are left to find out
+            AppServices.setAnnouncedTip(null);
+            assertTrue(ElectrumServer.isVerifyingTransactions());
+
+            AppServices.setAnnouncedTip(new ChainTip(maxCheckpointHeight - 1, header));
+            assertFalse(ElectrumServer.isVerifyingTransactions());
+
+            AppServices.setAnnouncedTip(new ChainTip(maxCheckpointHeight, header));
+            assertTrue(ElectrumServer.isVerifyingTransactions());
+
+            ElectrumServer.serverCapability.withMerkleProofs(false);
+            assertFalse(ElectrumServer.isVerifyingTransactions());
+        } finally {
+            ElectrumServer.serverCapability = previousCapability;
+            AppServices.setAnnouncedTip(null);
+        }
+    }
+
+    /**
+     * The escape hatch. It defaults on and has no user interface, and one answer has to cover the header sync, both write boundaries and the connect
+     * time enforcement - a public server rejected for lacking a call nothing is going to make would be no use.
+     */
+    @Test
+    public void stopsVerifyingWhereTheConfigTurnsItOff() {
+        ServerCapability previousCapability = ElectrumServer.serverCapability;
+        ServerType previousServerType = Config.get().getServerType();
+        try {
+            ElectrumServer.serverCapability = new ServerCapability(false, false, false);
+            Config.get().setServerType(ServerType.PUBLIC_ELECTRUM_SERVER);
+            assertTrue(Config.get().isVerifyTransactions());
+            assertTrue(ElectrumServer.isVerifyingTransactions());
+            assertTrue(ElectrumServer.isVerificationMandatory());
+
+            Config.get().setVerifyTransactions(false);
+            assertFalse(ElectrumServer.isVerifyingTransactions());
+            assertFalse(ElectrumServer.isVerificationMandatory());
+        } finally {
+            Config.get().setVerifyTransactions(true);
+            Config.get().setServerType(previousServerType);
+            ElectrumServer.serverCapability = previousCapability;
+            AppServices.setAnnouncedTip(null);
+        }
+    }
+
+    /**
+     * A Bitcoin Core connection is the user's own node, and a proof it built against headers it also supplied establishes nothing it has not already
+     * been trusted for. Asked of the server type rather than of the capability, because bwt takes over where cormorant cannot start - a legacy Core
+     * wallet, or an unsupported bitcoind - and it reaches getServerCapability under a version string of its own.
+     */
+    @Test
+    public void doesNotVerifyAgainstTheUsersOwnNode() {
+        ServerCapability previousCapability = ElectrumServer.serverCapability;
+        ServerType previousServerType = Config.get().getServerType();
+        try {
+            //The capability bwt falls through to, which unlike cormorant's says nothing about proofs
+            ElectrumServer.serverCapability = new ServerCapability(false, true, true);
+            assertTrue(ElectrumServer.serverCapability.supportsMerkleProofs());
+
+            Config.get().setServerType(ServerType.ELECTRUM_SERVER);
+            assertTrue(ElectrumServer.isVerifyingTransactions());
+
+            Config.get().setServerType(ServerType.BITCOIN_CORE);
+            assertFalse(ElectrumServer.isVerifyingTransactions());
+            assertFalse(ElectrumServer.isVerificationMandatory());
+        } finally {
+            Config.get().setServerType(previousServerType);
+            ElectrumServer.serverCapability = previousCapability;
+            AppServices.setAnnouncedTip(null);
+        }
     }
 
     private static Wallet testWallet() {

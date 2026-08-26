@@ -1529,6 +1529,43 @@ public class AppServices {
     }
 
     @Subscribe
+    public void transactionProofsFailed(TransactionProofsFailedEvent event) {
+        showProofsDialog(event, "Transaction Verification Failed", describeProofs(event.getReferences())
+                + (event.getReferences().size() == 1 ? " but the proof of inclusion it supplied does not match that block." : " but the proofs of inclusion it supplied do not match those blocks.")
+                + " This means the server is either faulty or dishonest, and what it reported may not have been confirmed at all.");
+    }
+
+    @Subscribe
+    public void transactionProofsRefused(TransactionProofsRefusedEvent event) {
+        showProofsDialog(event, "Transaction Verification Refused", describeProofs(event.getReferences())
+                + (event.getReferences().size() == 1 ? " which then declined to prove it at that height." : " which then declined to prove them at those heights.")
+                + " A server contradicting itself in this way may be faulty or overloaded, and what it reported cannot be taken as confirmed.");
+    }
+
+    private void showProofsDialog(TransactionProofsEvent event, String title, String content) {
+        Platform.runLater(() -> {
+            ButtonType refreshButton = new ButtonType("Refresh Wallet", ButtonBar.ButtonData.OK_DONE);
+            Optional<ButtonType> optType = showErrorDialog(title, content + (event.getReferences().size() == 1 ? " It is" : " They are")
+                    + " shown as unconfirmed until verified.\n\nConsider switching servers, and refreshing the wallet afterwards.",
+                    ButtonType.CANCEL, refreshButton);
+            if(optType.isPresent() && optType.get() == refreshButton) {
+                EventManager.get().post(new RequestWalletRefreshEvent(event.getWallet()));
+            }
+        });
+    }
+
+    private static String describeProofs(Set<BlockTransactionHash> references) {
+        BlockTransactionHash first = references.iterator().next();
+        String firstId = first.getHashAsString().substring(0, 8) + "..";
+        if(references.size() == 1) {
+            return "Transaction " + firstId + " was reported as confirmed in block " + first.getHeight() + " by the connected server,";
+        }
+
+        return references.size() + " transactions, the first being " + firstId + " in block " + first.getHeight()
+                + ", were reported as confirmed by the connected server,";
+    }
+
+    @Subscribe
     public void silentPaymentsUnsubscribe(SilentPaymentsUnsubscribeEvent event) {
         if(isConnected()) {
             ElectrumServer.SilentPaymentsUnsubscribeService unsubscribeService = new ElectrumServer.SilentPaymentsUnsubscribeService(event.getScanAddress());

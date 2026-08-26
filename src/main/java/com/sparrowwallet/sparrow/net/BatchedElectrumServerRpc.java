@@ -25,6 +25,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     static final int DEFAULT_MAX_ATTEMPTS = 5;
     static final int RETRY_DELAY_SECS = 1;
     static final int HEADERS_BATCH_PAGE_SIZE = 4; //Four difficulty periods of headers is ~1.3MB of hex, within every server's max response size
+    static final int MERKLE_BATCH_PAGE_SIZE = 250; //A proof is max MerkleBranch.MAX_DEPTH sibling hashes, so ~1.1KB of JSON: 250 of them is ~275KB
 
     private final AtomicLong idCounter;
     private final int maxTargetBlocks;
@@ -293,7 +294,8 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     @Override
     @SuppressWarnings("unchecked")
     public Map<String, TransactionMerkleProof> getTransactionMerkleProofs(Transport transport, Wallet wallet, Collection<BlockTransactionHash> references) {
-        PagedBatchRequestBuilder<String, TransactionMerkleProof> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(TransactionMerkleProof.class);
+        PagedBatchRequestBuilder<String, TransactionMerkleProof> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class)
+                .returnType(TransactionMerkleProof.class).pageSize(MERKLE_BATCH_PAGE_SIZE);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Verifying " + references.size() + " transactions"));
 
         for(BlockTransactionHash reference : references) {

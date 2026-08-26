@@ -56,6 +56,7 @@ public class Config {
     private boolean showDeprecatedImportExport = false;
     private boolean signBsmsExports = false;
     private boolean preventSleep = false;
+    private boolean verifyTransactions = true;
     private Boolean connectToBroadcast;
     private Boolean connectToResolve;
     private Boolean suggestSendToMany;
@@ -379,6 +380,15 @@ public class Config {
 
     public void setPreventSleep(boolean preventSleep) {
         this.preventSleep = preventSleep;
+        flush();
+    }
+
+    public boolean isVerifyTransactions() {
+        return verifyTransactions;
+    }
+
+    public void setVerifyTransactions(boolean verifyTransactions) {
+        this.verifyTransactions = verifyTransactions;
         flush();
     }
 

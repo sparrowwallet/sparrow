@@ -131,6 +131,7 @@ test {
         excludeTags 'checkpoint'
     }
     jvmArgs = ["--enable-native-access=ALL-UNNAMED"]
+    systemProperty 'sparrow.home', layout.buildDirectory.dir('test-home').get().asFile.absolutePath
 }
 
 tasks.register('verifyCheckpoint', Test) {
