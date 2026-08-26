@@ -378,11 +378,6 @@ public class DevicePane extends TitledDescriptionPane {
         });
         displayAddressButton.managedProperty().bind(displayAddressButton.visibleProperty());
         displayAddressButton.setVisible(false);
-
-        List<String> fingerprints = outputDescriptor.getExtendedPublicKeys().stream().map(extKey -> outputDescriptor.getKeyDerivation(extKey).getMasterFingerprint()).collect(Collectors.toList());
-        if(device.getFingerprint() != null && !fingerprints.contains(device.getFingerprint())) {
-            displayAddressButton.setDisable(true);
-        }
     }
 
     private void createSignMessageButton() {
@@ -394,10 +389,6 @@ public class DevicePane extends TitledDescriptionPane {
         });
         signMessageButton.managedProperty().bind(signMessageButton.visibleProperty());
         signMessageButton.setVisible(false);
-
-        if(device.getFingerprint() != null && !device.getFingerprint().equals(requiredDerivation.getMasterFingerprint())) {
-            signMessageButton.setDisable(true);
-        }
     }
 
     private void createDiscoverKeystoresButton() {
@@ -629,11 +620,26 @@ public class DevicePane extends TitledDescriptionPane {
                     setPassphraseButton.setDisable(true);
                     setContent(getPassphraseEntry());
                     setExpanded(true);
+                } else if(device.getFingerprint() == null && (deviceOperation.equals(DeviceOperation.DISPLAY_ADDRESS) || deviceOperation.equals(DeviceOperation.SIGN_MESSAGE)
+                        || deviceOperation.equals(DeviceOperation.DISCOVER_KEYSTORES))) {
+                    //A PIN protected device reports no fingerprint until it is unlocked, and these operations gate on it to avoid using the wrong device
+                    Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(passphrase.get());
+                    enumerateService.setOnSucceeded(enumerateEvent -> {
+                        for(Device freshDevice : enumerateService.getValue()) {
+                            if(device.getPath().equals(freshDevice.getPath()) && device.getModel().equals(freshDevice.getModel())) {
+                                device.setFingerprint(freshDevice.getFingerprint());
+                            }
+                        }
+
+                        showUnlockedOperation();
+                    });
+                    enumerateService.setOnFailed(enumerateEvent -> {
+                        showUnlockedOperation();
+                        setError("Error", enumerateService.getException().getMessage());
+                    });
+                    enumerateService.start();
                 } else {
-                    showOperationButton();
-                    if(!deviceOperation.equals(DeviceOperation.IMPORT)) {
-                        setContent(getTogglePassphraseOn());
-                    }
+                    showUnlockedOperation();
                 }
             } else {
                 setError("Incorrect PIN", null);
@@ -650,6 +656,13 @@ public class DevicePane extends TitledDescriptionPane {
         setDescription("Unlocking...");
         showHideLink.setVisible(false);
         sendPinService.start();
+    }
+
+    private void showUnlockedOperation() {
+        showOperationButton();
+        if(!deviceOperation.equals(DeviceOperation.IMPORT)) {
+            setContent(getTogglePassphraseOn());
+        }
     }
 
     private void sendPassphrase(String passphrase) {
@@ -1193,16 +1206,23 @@ public class DevicePane extends TitledDescriptionPane {
             signButton.setVisible(true);
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.DISPLAY_ADDRESS)) {
+            //A device which has not yet been unlocked reports no fingerprint, so this check is only meaningful once the operation button is shown
+            List<String> fingerprints = outputDescriptor.getExtendedPublicKeys().stream().map(extKey -> outputDescriptor.getKeyDerivation(extKey).getMasterFingerprint()).collect(Collectors.toList());
             displayAddressButton.setDefaultButton(defaultDevice);
             displayAddressButton.setVisible(true);
+            displayAddressButton.setDisable(device.getFingerprint() != null && !fingerprints.contains(device.getFingerprint()));
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.SIGN_MESSAGE)) {
             signMessageButton.setDefaultButton(defaultDevice);
             signMessageButton.setVisible(true);
+            signMessageButton.setDisable(device.getFingerprint() != null && !device.getFingerprint().equals(requiredDerivation.getMasterFingerprint()));
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.DISCOVER_KEYSTORES)) {
+            //Discovery stamps the wallet master fingerprint on keystores built from the device xpubs, so a mismatched device is silently persisted
             discoverKeystoresButton.setDefaultButton(defaultDevice);
             discoverKeystoresButton.setVisible(true);
+            discoverKeystoresButton.setDisable(device.getFingerprint() != null && wallet.getKeystores().size() == 1
+                    && !device.getFingerprint().equals(wallet.getKeystores().get(0).getKeyDerivation().getMasterFingerprint()));
             showHideLink.setVisible(false);
         } else if(deviceOperation.equals(DeviceOperation.GET_PRIVATE_KEY)) {
             if(defaultDevice) {
