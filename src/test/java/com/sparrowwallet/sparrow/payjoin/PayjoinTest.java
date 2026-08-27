@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.protocol.TransactionWitness;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.jupiter.api.Assertions;
@@ -23,6 +24,8 @@ public class PayjoinTest {
     private static final ECKey PAYMENT_KEY = ECKey.fromPrivate(BigInteger.valueOf(1003));
     private static final ECKey SUBSTITUTE_KEY = ECKey.fromPrivate(BigInteger.valueOf(1004));
     private static final ECKey RECEIVER_KEY = ECKey.fromPrivate(BigInteger.valueOf(1005));
+    private static final ECKey SCAN_KEY = ECKey.fromPrivate(BigInteger.valueOf(1006));
+    private static final ECKey SPEND_KEY = ECKey.fromPrivate(BigInteger.valueOf(1007));
 
     private static final Sha256Hash SENDER_UTXO_HASH = Sha256Hash.wrap("1111111111111111111111111111111111111111111111111111111111111111");
     private static final Sha256Hash RECEIVER_UTXO_HASH = Sha256Hash.wrap("2222222222222222222222222222222222222222222222222222222222222222");
@@ -100,6 +103,16 @@ public class PayjoinTest {
 
         //The same proposal is still accepted where it pays the requested minimum
         payjoin.checkProposal(original, getProposalPSBT(getPaymentScript(), PAYMENT_VALUE + RECEIVER_UTXO_VALUE, CHANGE_VALUE, 10000), CHANGE_OUTPUT_INDEX, MAX_ADDITIONAL_FEE_CONTRIBUTION, MIN_FEE_RATE, true);
+    }
+
+    @Test
+    public void originalWithSilentPaymentOutputIsRejected() throws Exception {
+        PSBT original = getOriginalPSBT();
+        //The silent payment output script is derived from the original inputs, so the receiver adding an input would leave it undetectable to its recipient
+        original.getPsbtOutputs().get(0).setSilentPaymentAddress(new SilentPaymentAddress(SCAN_KEY, SPEND_KEY));
+
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class, () -> getPayjoin(original));
+        Assertions.assertEquals("Original PSBT for payjoin transaction cannot contain silent payment outputs", e.getMessage());
     }
 
     private Payjoin getPayjoin(PSBT original) throws Exception {

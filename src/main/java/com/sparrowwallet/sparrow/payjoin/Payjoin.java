@@ -42,6 +42,10 @@ public class Payjoin {
             throw new IllegalArgumentException("Payjoin URI must have an address");
         }
 
+        if(psbt.getPsbtOutputs().stream().anyMatch(psbtOutput -> psbtOutput.getSilentPaymentAddress() != null)) {
+            throw new IllegalArgumentException("Original PSBT for payjoin transaction cannot contain silent payment outputs");
+        }
+
         for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
             if(psbtInput.getUtxo() == null) {
                 throw new IllegalArgumentException("Original PSBT for payjoin transaction must have non_witness_utxo or witness_utxo fields for all inputs");

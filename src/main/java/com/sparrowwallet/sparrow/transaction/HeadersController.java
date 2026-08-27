@@ -461,7 +461,8 @@ public class HeadersController extends TransactionFormController implements Init
             updateFee(feeAmt);
         }
 
-        payjoinURI = getPayjoinURI();
+        boolean silentPaymentOutput = headersForm.getPsbt() != null && headersForm.getPsbt().getPsbtOutputs().stream().anyMatch(o -> o.getSilentPaymentAddress() != null);
+        payjoinURI = silentPaymentOutput ? null : getPayjoinURI();
         transactionDiagram.setPayjoinURI(payjoinURI);
 
         headersForm.walletTransactionProperty().addListener((observable, oldValue, walletTransaction) -> {
@@ -529,7 +530,6 @@ public class HeadersController extends TransactionFormController implements Init
             noWalletsWarningLink.visibleProperty().bind(noWalletsWarning.visibleProperty());
 
             boolean taprootInput = psbt.getPsbtInputs().stream().anyMatch(PSBTInput::isTaproot);
-            boolean silentPaymentOutput = psbt.getPsbtOutputs().stream().anyMatch(o -> o.getSilentPaymentAddress() != null);
             SigHash requiredSigHash = taprootInput ? SigHash.DEFAULT : SigHash.ALL;
             SigHash psbtSigHash = silentPaymentOutput ? requiredSigHash : psbt.getPsbtInputs().stream().map(PSBTInput::getSigHash).filter(Objects::nonNull).findFirst().orElse(requiredSigHash);
             sigHash.setItems(FXCollections.observableList(silentPaymentOutput ? List.of(requiredSigHash) : (taprootInput ? SigHash.TAPROOT_SIGNING_TYPES : SigHash.LEGACY_SIGNING_TYPES)));

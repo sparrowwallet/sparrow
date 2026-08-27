@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.bip47.SecretPoint;
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
@@ -619,9 +620,9 @@ public class SendController extends WalletFormController implements Initializabl
                 boolean includeMempoolOutputs = Config.get().isIncludeMempoolOutputs();
                 BlockTransaction replacedTransaction = replacedTransactionProperty.get();
 
-                //Disable RBF for silent payments, as we can't guarantee RBF won't be attempted on another device without knowledge to recompute the address if necessary
+                //Disable RBF for silent payments (incl change), as we can't guarantee RBF won't be attempted on another device without knowledge to recompute the address if necessary
                 boolean allowRbf = (replacedTransaction == null || replacedTransaction.getTransaction().isReplaceByFee())
-                        && payments.stream().noneMatch(payment -> payment instanceof SilentPayment);
+                        && wallet.getPolicyType() != PolicyType.SINGLE_SP && payments.stream().noneMatch(payment -> payment instanceof SilentPayment);
 
                 TransactionParameters params = new TransactionParameters(getUtxoSelectors(payments), getTxoFilters(),
                         payments, opReturnsList, excludedChangeNodes,
@@ -987,6 +988,10 @@ public class SendController extends WalletFormController implements Initializabl
     }
 
     private BitcoinURI getPayjoinURI(List<Payment> payments) {
+        if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP || payments.stream().anyMatch(payment -> payment instanceof SilentPayment)) {
+            return null;
+        }
+
         for(Payment payment : payments) {
             BitcoinURI payjoinURI = getPayjoinURI(payment.getAddress());
             if(payjoinURI != null) {
@@ -1036,7 +1041,7 @@ public class SendController extends WalletFormController implements Initializabl
     private boolean isFakeMixPossible(List<Payment> payments) {
         return utxoSelectorProperty.get() == null && payments.size() == 1
                 && (payments.get(0).getAddress().getScriptType() == getWalletForm().getWallet().getNode(KeyPurpose.RECEIVE).getAddress().getScriptType())
-                && getPayjoinURI(payments.get(0).getAddress()) == null;
+                && getPayjoinURI(payments) == null;
     }
 
     private void updateOptimizationButtons(List<Payment> payments) {

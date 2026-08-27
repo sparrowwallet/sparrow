@@ -829,6 +829,8 @@ public class PaymentController extends WalletFormController implements Initializ
     private void updateFromURI(BitcoinURI bitcoinURI) {
         if(bitcoinURI.getAddress() != null) {
             address.setText(bitcoinURI.getAddress().toString());
+        } else if(bitcoinURI.getSilentPaymentAddress() != null) {
+            address.setText(bitcoinURI.getSilentPaymentAddress().getAddress());
         }
         if(bitcoinURI.getLabel() != null) {
             label.setText(bitcoinURI.getLabel());
