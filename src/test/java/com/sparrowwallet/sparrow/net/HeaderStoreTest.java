@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.net;
 
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.HeaderCheckpoints;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * The header store on regtest, whose trivial proof of work target is the only one a synthetic chain can be mined against, and whose empty checkpoints
@@ -244,6 +246,9 @@ public class HeaderStoreTest {
      */
     @Test
     public void loadsAStoreThatCannotBeDeleted() throws IOException {
+        //Windows has no way to deny the removal: setWritable(false) is refused on a directory, and the read only attribute would not stop a delete in any case
+        assumeFalse(OsType.getCurrent() == OsType.WINDOWS);
+
         BlockHeader foreign = new BlockHeader(1, Sha256Hash.wrap("00000000000000000000000000000000000000000000000000000000deadbeef"),
                 Sha256Hash.ZERO_HASH, null, 1600000000L, 0x207fffffL, 0);
         writeStoreFile("1", List.of(foreign));
