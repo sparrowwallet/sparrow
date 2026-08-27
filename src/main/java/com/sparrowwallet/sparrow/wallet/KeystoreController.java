@@ -327,8 +327,15 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.registerValidator(xpub, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is required", getWalletForm().getWallet().getPolicyType() != PolicyType.SINGLE_SP && newValue.trim().isEmpty()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is invalid", getWalletForm().getWallet().getPolicyType() != PolicyType.SINGLE_SP && !ExtendedKey.isValid(newValue)),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Extended key is not unique", ExtendedKey.isValid(newValue) && getWalletForm().getWallet().getPolicyType() != PolicyType.SINGLE_SP &&
-                        walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore && k.getExtendedPublicKey() != null).map(Keystore::getExtendedPublicKey).collect(Collectors.toList()).contains(ExtendedKey.fromDescriptor(newValue)))
+                (Control c, String newValue) -> {
+                    if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP || !ExtendedKey.isValid(newValue)) {
+                        return new ValidationResult();
+                    }
+
+                    ExtendedKey extendedPublicKey = ExtendedKey.fromDescriptor(newValue);
+                    return walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore && extendedPublicKey.equals(k.getExtendedPublicKey())).findFirst()
+                            .map(k -> ValidationResult.fromError(c, "Extended key matches " + k.getLabel())).orElseGet(ValidationResult::new);
+                }
         ));
 
         validationSupport.registerValidator(spScan, Validator.combine(
