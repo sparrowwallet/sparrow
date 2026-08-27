@@ -21,7 +21,7 @@ def headless = "true".equals(System.getProperty("java.awt.headless"))
 def skipInstallers = "true".equals(findProperty("skipInstallers"))
 
 group = 'com.sparrowwallet'
-version = '2.5.4'
+version = '2.5.5'
 
 repositories {
     mavenCentral()
