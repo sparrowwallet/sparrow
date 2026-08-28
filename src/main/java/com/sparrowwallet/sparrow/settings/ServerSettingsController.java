@@ -177,6 +177,8 @@ public class ServerSettingsController extends SettingsDetailController {
 
     private boolean coreServerWarningShown;
 
+    private String coreHttpsHost;
+
     @Override
     public void initializeView(Config config) {
         EventManager.get().register(this);
@@ -320,6 +322,7 @@ public class ServerSettingsController extends SettingsDetailController {
                     }
                 } else if(newValue.getHostAndPort() != null) {
                     HostAndPort hostAndPort = newValue.getHostAndPort();
+                    setCoreProtocol(newValue.getProtocol(), hostAndPort.getHost());
                     corePort.setText(hostAndPort.hasPort() ? Integer.toString(hostAndPort.getPort()) : "");
                     if(newValue.getAlias() != null) {
                         coreHost.setText(newValue.getAlias());
@@ -459,6 +462,7 @@ public class ServerSettingsController extends SettingsDetailController {
 
         Server coreServer = config.getCoreServer();
         if(coreServer != null) {
+            setCoreProtocol(coreServer.getProtocol(), coreServer.getHost());
             HostAndPort hostAndPort = coreServer.getHostAndPort();
             Server server = config.getRecentCoreServers().stream().filter(coreServer::equals).findFirst().orElse(null);
             if(server != null) {
@@ -788,6 +792,7 @@ public class ServerSettingsController extends SettingsDetailController {
                 if(Protocol.getProtocol(oldValue) == null) {
                     HostAndPort hostAndPort = protocol.getServerHostAndPort(newValue);
                     if(!hostAndPort.getHost().isEmpty()) {
+                        setCoreProtocol(protocol, hostAndPort.getHost());
                         coreHost.setText(hostAndPort.getHost());
                         corePort.setText(hostAndPort.hasPort() ? String.valueOf(hostAndPort.getPort()) : "");
                     }
@@ -810,13 +815,19 @@ public class ServerSettingsController extends SettingsDetailController {
         String hostAsString = getHost(coreHost.getText());
         Integer portAsInteger = getPort(corePort.getText());
         if(hostAsString != null && !hostAsString.isEmpty() && portAsInteger != null && isValidPort(portAsInteger)) {
-            Protocol protocol = portAsInteger == Protocol.HTTPS.getDefaultPort() ? Protocol.HTTPS : Protocol.HTTP;
+            Protocol protocol = portAsInteger == Protocol.HTTPS.getDefaultPort() || hostAsString.equalsIgnoreCase(coreHttpsHost) ? Protocol.HTTPS : Protocol.HTTP;
             config.setCoreServer(new Server(protocol.toUrlString(hostAsString, portAsInteger)));
         } else if(hostAsString != null && !hostAsString.isEmpty()) {
-            config.setCoreServer(new Server(Protocol.HTTP.toUrlString(hostAsString)));
+            Protocol protocol = hostAsString.equalsIgnoreCase(coreHttpsHost) ? Protocol.HTTPS : Protocol.HTTP;
+            config.setCoreServer(new Server(protocol.toUrlString(hostAsString)));
         } else {
             config.setCoreServer(null);
         }
+    }
+
+    //An entered https is retained for the host it was entered on only, so that editing the host to another server returns to http as a typed or scanned host without a scheme does
+    private void setCoreProtocol(Protocol protocol, String host) {
+        coreHttpsHost = protocol == Protocol.HTTPS ? host : null;
     }
 
     private void showRemoteCoreServerWarning(Config config) {

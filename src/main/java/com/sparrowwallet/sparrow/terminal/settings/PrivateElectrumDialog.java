@@ -98,7 +98,7 @@ public class PrivateElectrumDialog extends ServerUrlDialog {
         return (useSsl.getSelectedIndex() == 0 ? Protocol.SSL : Protocol.TCP);
     }
 
-    protected void setProtocol(Protocol protocol) {
+    protected void setProtocol(Protocol protocol, String host) {
         useSsl.setSelectedIndex(protocol == Protocol.SSL ? 0 : 1);
     }
 }

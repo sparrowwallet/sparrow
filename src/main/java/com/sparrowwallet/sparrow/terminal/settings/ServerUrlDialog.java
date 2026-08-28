@@ -53,9 +53,9 @@ public abstract class ServerUrlDialog extends ServerProxyDialog {
             Optional<Server> optServer = recentServers.stream().filter(server -> server.equals(host.getSelectedItem().getServer())).findFirst();
             if(optServer.isPresent()) {
                 Server server = optServer.get();
+                setProtocol(server.getProtocol(), server.getHost());
                 port.setText(server.getHostAndPort().hasPort() ? Integer.toString(server.getHostAndPort().getPort()) : "");
                 alias.setText(server.getAlias() == null ? "" : server.getAlias());
-                setProtocol(server.getProtocol());
             }
             setServerConfig();
         });
@@ -89,7 +89,7 @@ public abstract class ServerUrlDialog extends ServerProxyDialog {
 
     protected abstract Protocol getProtocol();
 
-    protected abstract void setProtocol(Protocol protocol);
+    protected abstract void setProtocol(Protocol protocol, String host);
 
     protected Server getCurrentServer() {
         String hostAsString = getHost(host.getText());
@@ -101,6 +101,10 @@ public abstract class ServerUrlDialog extends ServerProxyDialog {
         }
 
         return null;
+    }
+
+    protected String getServerHost() {
+        return getHost(host.getText());
     }
 
     protected Integer getServerPort() {

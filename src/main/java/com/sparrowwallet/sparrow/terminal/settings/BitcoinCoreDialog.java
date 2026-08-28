@@ -22,6 +22,8 @@ public class BitcoinCoreDialog extends ServerUrlDialog {
     private final TextBox user;
     private final TextBox pass;
 
+    private String httpsHost;
+
     public BitcoinCoreDialog() {
         super("Bitcoin Core");
 
@@ -31,7 +33,9 @@ public class BitcoinCoreDialog extends ServerUrlDialog {
         if(Config.get().getCoreServer() == null) {
             Config.get().setCoreServer(new Server("http://127.0.0.1:" + Network.get().getDefaultPort()));
         }
-        addUrlComponents(mainPanel, Config.get().getRecentCoreServers(), Config.get().getCoreServer());
+        Server coreServer = Config.get().getCoreServer();
+        setProtocol(coreServer.getProtocol(), coreServer.getHost());
+        addUrlComponents(mainPanel, Config.get().getRecentCoreServers(), coreServer);
         addLine(mainPanel);
 
         mainPanel.addComponent(new Label("Authentication"));
@@ -127,11 +131,13 @@ public class BitcoinCoreDialog extends ServerUrlDialog {
 
     protected Protocol getProtocol() {
         Integer portAsInteger = getServerPort();
-        return portAsInteger != null && portAsInteger == Protocol.HTTPS.getDefaultPort() ? Protocol.HTTPS : Protocol.HTTP;
+        boolean https = (portAsInteger != null && portAsInteger == Protocol.HTTPS.getDefaultPort()) || (httpsHost != null && httpsHost.equalsIgnoreCase(getServerHost()));
+        return https ? Protocol.HTTPS : Protocol.HTTP;
     }
 
-    protected void setProtocol(Protocol protocol) {
-        //empty
+    //An https is retained for the host it was entered on only, so that editing the URL to another server returns to http
+    protected void setProtocol(Protocol protocol, String host) {
+        httpsHost = protocol == Protocol.HTTPS ? host : null;
     }
 
     private void setCoreAuth() {
