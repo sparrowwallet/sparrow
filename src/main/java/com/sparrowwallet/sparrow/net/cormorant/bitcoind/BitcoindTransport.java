@@ -127,6 +127,8 @@ public class BitcoindTransport implements Transport {
 
         if(statusCode == 401) {
             throw new IOException((cookieFile == null ? "User/pass" : "Cookie file") + " authentication failed");
+        } else if(statusCode == 403) {
+            throw new IOException("Bitcoin Core at " + bitcoindUrl.getAuthority() + " refused RPC access from this computer, check its rpcallowip and rpcwhitelist settings");
         }
         InputStream inputStream = connection.getErrorStream() == null ? connection.getInputStream() : connection.getErrorStream();
 
@@ -134,7 +136,9 @@ public class BitcoindTransport implements Transport {
         try(BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String responseLine;
             while((responseLine = br.readLine()) != null) {
-                if(statusCode == 500) {
+                //Bitcoin Core returns a null result alongside the error on a failed call, which the client deserializes to a null return value instead of throwing the error.
+                //It answers 400 on an invalid request and 404 on an unknown method, so stripping the null result on 500 alone loses those errors and returns null to the caller.
+                if(statusCode >= 400) {
                     responseLine = responseLine.replace("\"result\":null,", "");
                 }
 
@@ -144,6 +148,12 @@ public class BitcoindTransport implements Transport {
 
         String response = res.toString();
         log.debug("< " + response);
+
+        //A response carrying neither a result nor an error leaves the client constructing a JsonRpcException from a null error message, which throws a NullPointerException naming nothing.
+        //Bitcoin Core always answers with a JSON-RPC object, so an empty or HTML body here comes from something else on the network path - typically a TLS terminating proxy sent a plain HTTP request.
+        if(!response.startsWith("{")) {
+            throw new IOException("Bitcoin Core at " + bitcoindUrl.getAuthority() + " did not return a JSON-RPC response to the " + bitcoindUrl.getProtocol() + " request (HTTP " + statusCode + ")");
+        }
 
         return response;
     }
