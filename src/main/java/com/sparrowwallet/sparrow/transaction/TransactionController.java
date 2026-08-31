@@ -389,12 +389,13 @@ public class TransactionController implements Initializable {
             }
         }
 
+        final BlockTransaction walletBlockTx = blockTx;
         if(inputReferences.isEmpty() && (getPSBT() != null || blockTx != null)) {
             allInputsFetchedFromWallet = true;
             transactionsFetched = true;
-            EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, inputTransactions, 0, getTransaction().getInputs().size()));
+            Platform.runLater(() -> EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), walletBlockTx, inputTransactions, 0, getTransaction().getInputs().size())));
         } else if(!AppServices.isConnected()) {
-            EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), blockTx, Collections.emptyMap(), 0, getTransaction().getInputs().size()));
+            Platform.runLater(() -> EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), walletBlockTx, Collections.emptyMap(), 0, getTransaction().getInputs().size())));
         } else if(AppServices.isConnected() && indexStart < getTransaction().getInputs().size()) {
             Set<Sha256Hash> references = new HashSet<>();
             if(getPSBT() == null) {
@@ -430,12 +431,16 @@ public class TransactionController implements Initializable {
                 }
 
                 references.remove(getTransaction().getTxId());
-                if (!references.isEmpty()) {
-                    log.warn("Failed to retrieve all referenced input transactions, aborting transaction fetch");
+                final BlockTransaction finalBlockTx = thisBlockTx;
+                if(!references.isEmpty()) {
+                    //Post what was retrieved over an empty range, since the inputs that are missing have not been fetched
+                    log.warn("Failed to retrieve all referenced input transactions");
+                    Platform.runLater(() -> {
+                        EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), finalBlockTx, retrievedInputTransactions, indexStart, indexStart));
+                    });
                     return;
                 }
 
-                final BlockTransaction finalBlockTx = thisBlockTx;
                 Platform.runLater(() -> {
                     EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), finalBlockTx, retrievedInputTransactions, indexStart, maxIndex));
                 });

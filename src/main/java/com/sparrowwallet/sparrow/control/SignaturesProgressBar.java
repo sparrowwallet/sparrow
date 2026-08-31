@@ -24,13 +24,13 @@ import java.util.List;
 
 public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.SignatureProgressSegment> {
     public SignaturesProgressBar() {
+        getStyleClass().add("signatures-progress-bar");
         setOrientation(Orientation.HORIZONTAL);
         setSegmentViewFactory(SignatureProgressSegmentView::new);
         setInfoNodeFactory(segment -> segment.getKeystore() == null ? null : new SignatureProgressSegmentLabel(segment.getKeystore().getLabel()));
     }
 
     public void initialize(ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap, int threshold) {
-        getStyleClass().add("signatures-progress-bar");
         getSegments().clear();
 
         List<Keystore> signedKeystores = new ArrayList<>(signatureKeystoreMap.values());

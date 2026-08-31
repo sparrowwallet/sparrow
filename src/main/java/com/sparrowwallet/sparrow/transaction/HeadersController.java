@@ -580,6 +580,11 @@ public class HeadersController extends TransactionFormController implements Init
         });
 
         blockchainForm.setDynamicUpdate(this);
+
+        //Offline there is no status to fetch, so derive the signed transaction form directly here
+        if(headersForm.getPsbt() == null && headersForm.getBlockTransaction() == null && !AppServices.isConnected()) {
+            updateSignedTransactionForm();
+        }
     }
 
     private void requestOpenWallets() {
@@ -827,7 +832,7 @@ public class HeadersController extends TransactionFormController implements Init
         blockchainForm.setVisible(true);
         updateEditable(false);
 
-        if(Sha256Hash.ZERO_HASH.equals(blockTransaction.getBlockHash()) && blockTransaction.getHeight() == 0 && headersForm.getSigningWallet() == null) {
+        if(Sha256Hash.ZERO_HASH.equals(blockTransaction.getBlockHash()) && blockTransaction.getHeight() == 0 && headersForm.getPsbt() == null) {
             //A zero block hash indicates that this blocktransaction is incomplete and the height is likely incorrect if we are not sending a tx
             blockStatus.setText("Unknown");
         } else if(currentHeight == null) {
@@ -1511,42 +1516,7 @@ public class HeadersController extends TransactionFormController implements Init
             if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || headersForm.getBlockTransaction() == null)) {
                 updateBlockchainForm(event.getBlockTransaction(), AppServices.getCurrentBlockHeight());
             } else if(headersForm.getPsbt() == null && headersForm.getBlockTransaction() == null) {
-                boolean isSigned = true;
-                ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap = FXCollections.observableMap(new LinkedHashMap<>());
-                for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
-                    List<TransactionSignature> signatures = txInput.hasWitness() ? txInput.getWitness().getSignatures() : txInput.getScriptSig().getSignatures();
-
-                    if(signatures.isEmpty()) {
-                        isSigned = false;
-                        break;
-                    }
-
-                    if(signatureKeystoreMap.isEmpty()) {
-                        for(int i = 0; i < signatures.size(); i++) {
-                            signatureKeystoreMap.put(signatures.get(i), new Keystore("Keystore " + (i+1)));
-                        }
-                    }
-                }
-
-                if(isSigned) {
-                    blockchainForm.setVisible(false);
-                    signaturesForm.setVisible(true);
-                    broadcastButtonBox.setVisible(true);
-                    viewFinalButton.setDisable(true);
-
-                    if(headersForm.getSigningWallet() == null) {
-                        for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
-                            if(wallet.canSign(headersForm.getTransaction())) {
-                                headersForm.setSigningWallet(wallet);
-                                break;
-                            }
-                        }
-                    }
-
-                    if(headersForm.getSigningWallet() == null) {
-                        signaturesProgressBar.initialize(signatureKeystoreMap, signatureKeystoreMap.size());
-                    }
-                }
+                updateSignedTransactionForm();
             }
 
             if(!event.getInputTransactions().isEmpty()) {
@@ -1560,6 +1530,45 @@ public class HeadersController extends TransactionFormController implements Init
                     allFetchedInputTransactions.putAll(headersForm.getInputTransactions());
                 }
                 headersForm.setWalletTransaction(getWalletTransaction(allFetchedInputTransactions));
+            }
+        }
+    }
+
+    private void updateSignedTransactionForm() {
+        boolean isSigned = true;
+        ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap = FXCollections.observableMap(new LinkedHashMap<>());
+        for(TransactionInput txInput : headersForm.getTransaction().getInputs()) {
+            List<TransactionSignature> signatures = txInput.hasWitness() ? txInput.getWitness().getSignatures() : txInput.getScriptSig().getSignatures();
+
+            if(signatures.isEmpty()) {
+                isSigned = false;
+                break;
+            }
+
+            if(signatureKeystoreMap.isEmpty()) {
+                for(int i = 0; i < signatures.size(); i++) {
+                    signatureKeystoreMap.put(signatures.get(i), new Keystore("Keystore " + (i+1)));
+                }
+            }
+        }
+
+        if(isSigned) {
+            blockchainForm.setVisible(false);
+            signaturesForm.setVisible(true);
+            broadcastButtonBox.setVisible(true);
+            viewFinalButton.setDisable(true);
+
+            if(headersForm.getSigningWallet() == null) {
+                for(Wallet wallet : AppServices.get().getOpenWallets().keySet()) {
+                    if(wallet.canSign(headersForm.getTransaction())) {
+                        headersForm.setSigningWallet(wallet);
+                        break;
+                    }
+                }
+            }
+
+            if(headersForm.getSigningWallet() == null) {
+                signaturesProgressBar.initialize(signatureKeystoreMap, signatureKeystoreMap.size());
             }
         }
     }
