@@ -7,6 +7,7 @@
 <?import javafx.scene.layout.*?>
 <?import com.sparrowwallet.sparrow.control.TabList?>
 <?import com.sparrowwallet.sparrow.control.TabToggleButton?>
+<?import com.sparrowwallet.sparrow.control.ViewStack?>
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import com.sparrowwallet.sparrow.wallet.Function?>
 
@@ -67,8 +68,8 @@
         </TabList>
     </left>
     <center>
-        <StackPane fx:id="walletPane" styleClass="wallet-pane">
+        <ViewStack fx:id="walletPane" styleClass="wallet-pane">
 
-        </StackPane>
+        </ViewStack>
     </center>
 </BorderPane>
