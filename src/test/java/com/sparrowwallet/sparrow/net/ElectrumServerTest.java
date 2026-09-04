@@ -206,8 +206,10 @@ public class ElectrumServerTest {
     @Test
     public void doesNotVerifyAgainstAServerBelowTheLastPin() {
         ServerCapability previousCapability = ElectrumServer.serverCapability;
+        ServerType previousServerType = Config.get().getServerType();
         try {
             ElectrumServer.serverCapability = new ServerCapability(false, false, false);
+            Config.get().setServerType(ServerType.ELECTRUM_SERVER);
             int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
             BlockHeader header = Network.MAINNET.getGenesisHeader();
 
@@ -224,7 +226,95 @@ public class ElectrumServerTest {
             ElectrumServer.serverCapability.withMerkleProofs(false);
             assertFalse(ElectrumServer.isVerifyingTransactions());
         } finally {
+            Config.get().setServerType(previousServerType);
             ElectrumServer.serverCapability = previousCapability;
+            AppServices.setAnnouncedTip(null);
+        }
+    }
+
+    /**
+     * The lagging server accommodation is not offered where verification is mandatory. A public server was already above the last pin when it was
+     * accepted at connect, so an announced tip below it is not a server catching up, and letting it stand would hand the tier that must verify a
+     * switch the server itself chooses.
+     */
+    @Test
+    public void verifiesAgainstAMandatoryServerHoweverLowItSaysItIs() {
+        ServerCapability previousCapability = ElectrumServer.serverCapability;
+        ServerType previousServerType = Config.get().getServerType();
+        try {
+            ElectrumServer.serverCapability = new ServerCapability(false, false, false);
+            Config.get().setServerType(ServerType.PUBLIC_ELECTRUM_SERVER);
+            assertTrue(ElectrumServer.isVerificationMandatory());
+
+            AppServices.setAnnouncedTip(new ChainTip(Network.MAINNET.getHeaderCheckpoints().getMaxHeight() - 1, Network.MAINNET.getGenesisHeader()));
+            assertTrue(ElectrumServer.isVerifyingTransactions());
+        } finally {
+            Config.get().setServerType(previousServerType);
+            ElectrumServer.serverCapability = previousCapability;
+            AppServices.setAnnouncedTip(null);
+        }
+    }
+
+    /**
+     * A chain does not rewind below a compiled in pin, so a server that has announced a tip at or above the last pinned header and then announces one
+     * below it is refused. Nothing else binds the announced height to the header it arrives with, and the height is what decides whether the session
+     * verifies at all.
+     */
+    @Test
+    public void rejectsAnAnnouncedTipRegressingBelowTheLastPin() {
+        int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
+        try {
+            ElectrumServer.updateTipReceived(maxCheckpointHeight);
+            assertNotNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 1, BLOCK_800000_HEADER_HEX)));
+
+            //The regression that would go unnoticed: a genuine current header paired with a height a couple of thousand blocks back
+            assertNotNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 2000, BLOCK_800000_HEADER_HEX)));
+        } finally {
+            ElectrumServer.tipReachedCheckpoints = false;
+        }
+    }
+
+    /**
+     * The path that must keep working: a private server catching up announces tip after tip below the last pin, and crosses it once. Only a tip below
+     * the pin from a server that has already announced one above it is a regression.
+     */
+    @Test
+    public void acceptsAnAnnouncedTipFromAServerStillCatchingUp() {
+        int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
+        try {
+            //Nothing announced yet, as at the first announcement of a session
+            ElectrumServer.tipReachedCheckpoints = false;
+            assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 2000, BLOCK_800000_HEADER_HEX)));
+
+            ElectrumServer.updateTipReceived(maxCheckpointHeight - 2000);
+            assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 1999, BLOCK_800000_HEADER_HEX)));
+            assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight, BLOCK_800000_HEADER_HEX)));
+
+            //An ordinary reorg above the pin is not a regression
+            ElectrumServer.updateTipReceived(maxCheckpointHeight + 2);
+            assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight + 1, BLOCK_800000_HEADER_HEX)));
+        } finally {
+            ElectrumServer.tipReachedCheckpoints = false;
+        }
+    }
+
+    /**
+     * What the previous server announced is not evidence about this one. The announced tip outlives the connection that set it and is only replaced
+     * when the FX thread handles the connection event, several round trips after the reading thread starts dispatching announcements, so a server
+     * still catching up would otherwise have its first headers refused for the height its predecessor reached.
+     */
+    @Test
+    public void acceptsAnAnnouncedTipFromANewServerBelowTheOneBefore() {
+        int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
+        try {
+            ElectrumServer.updateTipReceived(maxCheckpointHeight + 100);
+            AppServices.setAnnouncedTip(new ChainTip(maxCheckpointHeight + 100, Network.MAINNET.getGenesisHeader()));
+
+            //Connecting to a server still catching up, which clears the record where the reading thread is started
+            ElectrumServer.tipReachedCheckpoints = false;
+            assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 2000, BLOCK_800000_HEADER_HEX)));
+        } finally {
+            ElectrumServer.tipReachedCheckpoints = false;
             AppServices.setAnnouncedTip(null);
         }
     }

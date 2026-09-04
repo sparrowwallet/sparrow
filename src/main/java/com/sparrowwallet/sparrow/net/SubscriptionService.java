@@ -22,13 +22,13 @@ public class SubscriptionService {
 
     @JsonRpcMethod("blockchain.headers.subscribe")
     public void newBlockHeaderTip(@JsonRpcParam("header") final BlockHeaderTip header) {
-        String tipError = ElectrumServer.getTipValidationError(header);
+        String tipError = ElectrumServer.getAnnouncedTipValidationError(header);
         if(tipError != null) {
             ElectrumServer.warnInvalidTip(tipError);
             return;
         }
 
-        ElectrumServer.updateTipReceived();
+        ElectrumServer.updateTipReceived(header.height);
         ElectrumServer.updateRetrievedBlockHeaders(header.height, header.getBlockHeader());
         Platform.runLater(() -> EventManager.get().post(new NewBlockEvent(header.height, header.getBlockHeader())));
     }

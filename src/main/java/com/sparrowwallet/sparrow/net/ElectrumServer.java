@@ -129,6 +129,9 @@ public class ElectrumServer {
 
     private static volatile boolean invalidTipWarned;
 
+    //Whether the connected server has announced a tip at or above the last pinned header, which the chain cannot then rewind below
+    static volatile boolean tipReachedCheckpoints;
+
     private static volatile long lastTipWarningLoggedAt;
 
     //A server refusing for capacity recovers within these attempts, one that cannot substantiate a height never does. Not final so tests need not wait
@@ -1678,8 +1681,9 @@ public class ElectrumServer {
      * setting is asked here so one answer covers the sync, both write boundaries and the connect time enforcement.
      * <p>
      * A server below the last pinned header cannot substantiate any height, so asking would refuse every new confirmation and raise a dialog for it.
-     * The public tier rejects such a server at connect; a private one still catching up simply goes unverified until it arrives. A tip not yet
-     * announced is not evidence of lagging.
+     * That accommodation is for a private server still catching up, and is not offered where verification is mandatory: such a server was already
+     * above the last pin when it was accepted at connect, so a later claim to be below it is not a server catching up, and its confirmations belong
+     * in the wallet no more than any other the server cannot prove. A tip not yet announced is not evidence of lagging.
      * <p>
      * Not asked of a Bitcoin Core connection at all, whichever backend is fronting it: the node answering is the user's own, and a proof it built
      * against headers it also supplied establishes nothing it has not already been trusted for. Cormorant declares as much in its capability, but
@@ -1689,6 +1693,10 @@ public class ElectrumServer {
         if(!Config.get().isVerifyTransactions() || Config.get().getServerType() == ServerType.BITCOIN_CORE
                 || serverCapability == null || !serverCapability.supportsMerkleProofs()) {
             return false;
+        }
+
+        if(isVerificationMandatory()) {
+            return true;
         }
 
         ChainTip announced = AppServices.getAnnouncedTip();
@@ -2726,6 +2734,26 @@ public class ElectrumServer {
     }
 
     /**
+     * Sanity checks a tip announced during a session, being the connect time checks above plus the one thing only a session can establish: a chain
+     * does not rewind below a compiled in pin. A server that has announced a tip at or above the last pinned header and then announces one below it
+     * is not a server catching up, it is withdrawing the ground verification stands on, so the announcement is refused rather than acted on.
+     */
+    static String getAnnouncedTipValidationError(BlockHeaderTip tip) {
+        String tipError = getTipValidationError(tip);
+        if(tipError != null) {
+            return tipError;
+        }
+
+        int maxCheckpointHeight = Network.get().getHeaderCheckpoints().getMaxHeight();
+        if(tipReachedCheckpoints && tip.height < maxCheckpointHeight) {
+            return "Announced block header tip at height " + tip.height + " is below the last verified checkpoint at height " + maxCheckpointHeight
+                    + ", which the connected server has already announced a tip above";
+        }
+
+        return null;
+    }
+
+    /**
      * Logs and shows a status warning for an invalid tip. A hostile server can send invalid tips at any rate, so warnings are rate limited,
      * and the status warning is shown at most once per episode of invalid tips (reset on any valid tip).
      */
@@ -2743,17 +2771,20 @@ public class ElectrumServer {
     }
 
     private static void initializeTip(BlockHeaderTip tip) {
-        updateTipReceived();
+        updateTipReceived(tip.height);
         //Public servers are never mid-sync, so seed the staleness clock from the tip timestamp to warn promptly on an already stale server
         if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
             lastTipReceivedAt = Math.min(lastTipReceivedAt, tip.getBlockHeader().getTime() * 1000);
         }
     }
 
-    static void updateTipReceived() {
+    static void updateTipReceived(int height) {
         lastTipReceivedAt = System.currentTimeMillis();
         staleTipWarned = false;
         invalidTipWarned = false;
+        if(height >= Network.get().getHeaderCheckpoints().getMaxHeight()) {
+            tipReachedCheckpoints = true;
+        }
     }
 
     public static ServerCapability getServerCapability(List<String> serverVersion) {
@@ -2954,6 +2985,8 @@ public class ElectrumServer {
                     if(firstCall) {
                         electrumServer.connect();
 
+                        //What the last server announced says nothing about this one, and is cleared before the thread that dispatches announcements exists
+                        tipReachedCheckpoints = false;
                         reader = new Thread(new ReadRunnable(), "ElectrumServerReadThread");
                         reader.setDaemon(true);
                         reader.setUncaughtExceptionHandler(ConnectionService.this);
