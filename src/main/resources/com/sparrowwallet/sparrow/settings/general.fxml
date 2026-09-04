@@ -31,7 +31,7 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin" styleClass="wideLabelFieldSet">
             <Field text="Fee rates source:">
-                <ComboBox fx:id="feeRatesSource">
+                <ComboBox fx:id="feeRatesSource" accessibleText="Fee rates source">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <FeeRatesSource fx:constant="ELECTRUM_SERVER" />
@@ -45,16 +45,16 @@
                 <HelpLabel helpText="Recommended fee rates can be sourced from your connected Electrum server, or an external source."/>
             </Field>
             <Field text="Block explorer:">
-                <ComboBox fx:id="blockExplorers" />
+                <ComboBox fx:id="blockExplorers" accessibleText="Block explorer" />
                 <HelpLabel helpText="An external block explorer can be configured to open a transaction from any transaction tab."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Fiat" styleClass="wideLabelFieldSet">
             <Field text="Currency:">
-                <ComboBox fx:id="fiatCurrency" />
+                <ComboBox fx:id="fiatCurrency" accessibleText="Fiat currency" />
             </Field>
             <Field text="Exchange rate source:">
-                <ComboBox fx:id="exchangeSource" prefWidth="160">
+                <ComboBox fx:id="exchangeSource" prefWidth="160" accessibleText="Exchange rate source">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
                             <ExchangeSource fx:constant="NONE" />

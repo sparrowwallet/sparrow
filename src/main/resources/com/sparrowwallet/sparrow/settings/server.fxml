@@ -85,14 +85,14 @@
                 <CopyableLabel text="Using a public server means it can see your transactions."/>
             </Field>
             <Field text="URL:">
-                <ComboBox fx:id="publicElectrumServer" />
+                <ComboBox fx:id="publicElectrumServer" accessibleText="Public Electrum server URL" />
             </Field>
             <Field text="Use Proxy:">
                 <UnlabeledToggleSwitch fx:id="publicUseProxy" accessibleText="Use proxy for public Electrum server"/>
             </Field>
             <Field text="Proxy URL:">
-                <TextField fx:id="publicProxyHost" promptText="e.g. 127.0.0.1" />
-                <TextField fx:id="publicProxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+                <TextField fx:id="publicProxyHost" promptText="e.g. 127.0.0.1" accessibleText="Public server proxy host" />
+                <TextField fx:id="publicProxyPort" maxWidth="120" promptText="e.g. 9050/9150" accessibleText="Public server proxy port" />
             </Field>
         </Fieldset>
     </Form>
@@ -101,10 +101,10 @@
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin Core RPC">
             <Field text="URL:">
                 <StackPane>
-                    <ComboBox fx:id="recentCoreServers" />
-                    <ComboBoxTextField fx:id="coreHost" promptText="e.g. 127.0.0.1" comboProperty="$recentCoreServers" />
+                    <ComboBox fx:id="recentCoreServers" accessibleText="Recent Bitcoin Core servers" />
+                    <ComboBoxTextField fx:id="coreHost" promptText="e.g. 127.0.0.1" comboProperty="$recentCoreServers" accessibleText="Bitcoin Core host" />
                 </StackPane>
-                <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" />
+                <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" accessibleText="Bitcoin Core port" />
             </Field>
             <Field text="Authentication:">
                 <SegmentedButton accessibleText="Bitcoin Core authentication">
@@ -126,23 +126,23 @@
                 </SegmentedButton>
             </Field>
             <Field fx:id="coreDataDirField" text="Data Folder:" styleClass="label-button">
-                <TextField fx:id="coreDataDir"/>
-                <Button fx:id="coreDataDirSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
+                <TextField fx:id="coreDataDir" accessibleText="Bitcoin Core data folder"/>
+                <Button fx:id="coreDataDirSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35" accessibleText="Select Bitcoin Core data folder">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" fontSize="13" />
                     </graphic>
                 </Button>
             </Field>
             <Field fx:id="coreUserPassField" text="User / Pass:" styleClass="label-button">
-                <TextField fx:id="coreUser"/>
-                <PasswordField fx:id="corePass"/>
+                <TextField fx:id="coreUser" accessibleText="Bitcoin Core username"/>
+                <PasswordField fx:id="corePass" accessibleText="Bitcoin Core password"/>
             </Field>
             <Field text="Use Proxy:">
                 <UnlabeledToggleSwitch fx:id="coreUseProxy" accessibleText="Use proxy for Bitcoin Core"/><HelpLabel helpText="Bitcoin Core RPC onion URLs, and all other non-RPC external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
-                <TextField fx:id="coreProxyHost" promptText="e.g. 127.0.0.1" />
-                <TextField fx:id="coreProxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+                <TextField fx:id="coreProxyHost" promptText="e.g. 127.0.0.1" accessibleText="Bitcoin Core proxy host" />
+                <TextField fx:id="coreProxyPort" maxWidth="120" promptText="e.g. 9050/9150" accessibleText="Bitcoin Core proxy port" />
             </Field>
         </Fieldset>
     </Form>
@@ -151,17 +151,17 @@
         <Fieldset inputGrow="SOMETIMES" text="Private Electrum Server">
             <Field text="URL:">
                 <StackPane>
-                    <ComboBox fx:id="recentElectrumServers" />
-                    <ComboBoxTextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)" comboProperty="$recentElectrumServers" />
+                    <ComboBox fx:id="recentElectrumServers" accessibleText="Recent private Electrum servers" />
+                    <ComboBoxTextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)" comboProperty="$recentElectrumServers" accessibleText="Private Electrum server host" />
                 </StackPane>
-                <TextField fx:id="electrumPort" promptText="e.g. 50001" maxWidth="120" />
+                <TextField fx:id="electrumPort" promptText="e.g. 50001" maxWidth="120" accessibleText="Private Electrum server port" />
             </Field>
             <Field text="Use SSL:">
                 <UnlabeledToggleSwitch fx:id="electrumUseSsl" accessibleText="Use SSL for private Electrum server"/>
             </Field>
             <Field text="Certificate:" styleClass="label-button">
-                <TextField fx:id="electrumCertificate" promptText="Optional server certificate (.crt)"/>
-                <Button fx:id="electrumCertificateSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
+                <TextField fx:id="electrumCertificate" promptText="Optional server certificate (.crt)" accessibleText="Private Electrum server certificate"/>
+                <Button fx:id="electrumCertificateSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35" accessibleText="Select private Electrum server certificate">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" fontSize="13" />
                     </graphic>
@@ -171,8 +171,8 @@
                 <UnlabeledToggleSwitch fx:id="useProxy" accessibleText="Use proxy for private Electrum server"/><HelpLabel helpText="All external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
-                <TextField fx:id="proxyHost" promptText="e.g. 127.0.0.1" />
-                <TextField fx:id="proxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+                <TextField fx:id="proxyHost" promptText="e.g. 127.0.0.1" accessibleText="Private Electrum server proxy host" />
+                <TextField fx:id="proxyPort" maxWidth="120" promptText="e.g. 9050/9150" accessibleText="Private Electrum server proxy port" />
             </Field>
         </Fieldset>
     </Form>
@@ -194,7 +194,7 @@
         <padding>
             <Insets top="10.0" bottom="20.0"/>
         </padding>
-        <TextArea fx:id="testResults" editable="false" wrapText="true"/>
+        <TextArea fx:id="testResults" editable="false" wrapText="true" accessibleText="Connection test results"/>
     </StackPane>
 
 </GridPane>
