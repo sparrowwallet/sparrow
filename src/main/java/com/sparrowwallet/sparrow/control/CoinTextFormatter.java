@@ -52,7 +52,8 @@ public class CoinTextFormatter extends TextFormatter<String> {
             }
 
             Matcher matcher = coinValidation.matcher(noFractionCommaText);
-            if(!matcher.matches()) {
+            boolean validAmount = matcher.matches();
+            if(!validAmount) {
                 matcher.reset();
                 if(matcher.find()) {
                     noFractionCommaText = matcher.group();
@@ -90,7 +91,8 @@ public class CoinTextFormatter extends TextFormatter<String> {
                     return change;
                 }
 
-                if(value.doubleValue() == 0.0 && "0".equals(correct)) {
+                //A zero value is left as entered so the fractional part can still be typed out, but only where the entire text is a valid amount
+                if(validAmount && value.doubleValue() == 0.0 && "0".equals(correct)) {
                     return change;
                 }
 
