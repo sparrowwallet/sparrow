@@ -17,4 +17,9 @@ public class AccessibleField extends Field {
         Label label = (Label)getLabelContainer().getChildren().getFirst();
         label.setLabelFor(getInputs().isEmpty() ? null : getInputs().getFirst());
     }
+
+    public void setLabelFor(Node input) {
+        Label label = (Label)getLabelContainer().getChildren().getFirst();
+        label.setLabelFor(input);
+    }
 }
