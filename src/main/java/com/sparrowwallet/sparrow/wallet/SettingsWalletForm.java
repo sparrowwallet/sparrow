@@ -197,6 +197,10 @@ public class SettingsWalletForm extends WalletForm {
             if(!Objects.equals(originalKeystore.getExtendedPublicKey(), changedKeystore.getExtendedPublicKey())) {
                 return true;
             }
+
+            if(!Objects.equals(originalKeystore.getSilentPaymentScanAddress(), changedKeystore.getSilentPaymentScanAddress())) {
+                return true;
+            }
         }
 
         return false;
