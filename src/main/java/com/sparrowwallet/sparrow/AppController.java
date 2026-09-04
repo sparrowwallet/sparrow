@@ -25,6 +25,7 @@ import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.settings.SettingsGroup;
 import com.sparrowwallet.sparrow.settings.SettingsDialog;
 import com.sparrowwallet.sparrow.paynym.PayNymDialog;
+import com.sparrowwallet.sparrow.timelockrecovery.TimelockRecovery;
 import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
@@ -195,6 +196,9 @@ public class AppController implements Initializable {
     private MenuItem sendToMany;
 
     @FXML
+    private MenuItem timelockRecovery;
+
+    @FXML
     private MenuItem sweepPrivateKey;
 
     @FXML
@@ -231,6 +235,8 @@ public class AppController implements Initializable {
     private SearchWalletDialog searchWalletDialog;
 
     private SendToManyDialog sendToManyDialog;
+
+    private TimelockRecoveryDialog timelockRecoveryDialog;
 
     private DownloadVerifierDialog downloadVerifierDialog;
 
@@ -297,6 +303,9 @@ public class AppController implements Initializable {
             }
             if(sendToManyDialog != null && sendToManyDialog.isShowing()) {
                 sendToManyDialog.close();
+            }
+            if(timelockRecoveryDialog != null && timelockRecoveryDialog.isShowing()) {
+                timelockRecoveryDialog.close();
             }
         });
 
@@ -436,6 +445,7 @@ public class AppController implements Initializable {
         searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        timelockRecovery.disableProperty().bind(exportWallet.disableProperty());
         sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
         showPayNym.setDisable(true);
 
@@ -1510,6 +1520,35 @@ public class AppController implements Initializable {
 
     public void sendToMany(ActionEvent event) {
         sendToMany(Collections.emptyList());
+    }
+
+    public void timelockRecovery(ActionEvent event) {
+        if(timelockRecoveryDialog != null) {
+            Stage stage = (Stage)timelockRecoveryDialog.getDialogPane().getScene().getWindow();
+            stage.setAlwaysOnTop(true);
+            stage.setAlwaysOnTop(false);
+            return;
+        }
+
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm == null) {
+            return;
+        }
+        Wallet wallet = selectedWalletForm.getWallet();
+        if(!TimelockRecovery.isEligible(wallet)) {
+            AppServices.showErrorDialog("Timelock Recovery",
+                    "Timelock Recovery requires a native SegWit (P2WPKH or P2WSH) HD wallet.");
+            return;
+        }
+        if(wallet.getSpendableUtxos().isEmpty()) {
+            AppServices.showErrorDialog("Timelock Recovery", "The selected wallet has no spendable UTXOs.");
+            return;
+        }
+
+        timelockRecoveryDialog = new TimelockRecoveryDialog(selectedWalletForm);
+        timelockRecoveryDialog.initOwner(rootStack.getScene().getWindow());
+        timelockRecoveryDialog.showAndWait();
+        timelockRecoveryDialog = null;
     }
 
     private void sendToMany(List<Payment> initialPayments) {
