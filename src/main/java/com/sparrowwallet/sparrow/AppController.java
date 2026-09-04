@@ -445,9 +445,7 @@ public class AppController implements Initializable {
         serverToggle.setDisable(!Config.get().hasServer());
         onlineProperty().bindBidirectional(serverToggle.selectedProperty());
         onlineProperty().addListener(new WeakChangeListener<>(serverToggleOnlineListener));
-        serverToggle.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
-            Config.get().setMode(serverToggle.isSelected() ? Mode.ONLINE : Mode.OFFLINE);
-        });
+        serverToggle.addEventHandler(ActionEvent.ACTION, event -> Config.get().setMode(serverToggle.isSelected() ? Mode.ONLINE : Mode.OFFLINE));
 
         openTransactionIdItem.disableProperty().bind(onlineProperty().not());
         setNetworkLabel();

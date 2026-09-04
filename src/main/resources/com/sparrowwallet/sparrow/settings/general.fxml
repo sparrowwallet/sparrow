@@ -73,31 +73,31 @@
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Wallet" styleClass="wideLabelFieldSet">
             <Field text="Load recent wallets:">
-                <UnlabeledToggleSwitch fx:id="loadRecentWallets" />
+                <UnlabeledToggleSwitch fx:id="loadRecentWallets" accessibleText="Load recent wallets" />
                 <HelpLabel helpText="Keep a record of open wallets, and reopen them on startup."/>
             </Field>
             <Field text="Validate derivations:">
-                <UnlabeledToggleSwitch fx:id="validateDerivationPaths" />
+                <UnlabeledToggleSwitch fx:id="validateDerivationPaths" accessibleText="Validate derivation paths" />
                 <HelpLabel helpText="Disallow keystores to have derivation paths that match the defaults for other script types and networks."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Coin Selection" styleClass="wideLabelFieldSet">
             <Field text="Group by address:">
-                <UnlabeledToggleSwitch fx:id="groupByAddress" />
+                <UnlabeledToggleSwitch fx:id="groupByAddress" accessibleText="Group by address" />
                 <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once."/>
             </Field>
             <Field text="Allow unconfirmed:">
-                <UnlabeledToggleSwitch fx:id="includeMempoolOutputs" />
+                <UnlabeledToggleSwitch fx:id="includeMempoolOutputs" accessibleText="Allow unconfirmed" />
                 <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool."/>
             </Field>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Notifications" styleClass="wideLabelFieldSet">
             <Field text="New transactions:">
-                <UnlabeledToggleSwitch fx:id="notifyNewTransactions" />
+                <UnlabeledToggleSwitch fx:id="notifyNewTransactions" accessibleText="New transaction notifications" />
                 <HelpLabel helpText="Show system notifications on new wallet transactions?"/>
             </Field>
             <Field text="Software updates:">
-                <UnlabeledToggleSwitch fx:id="checkNewVersions" />
+                <UnlabeledToggleSwitch fx:id="checkNewVersions" accessibleText="Software update checks" />
                 <HelpLabel helpText="Check for updates to Sparrow?"/>
             </Field>
         </Fieldset>

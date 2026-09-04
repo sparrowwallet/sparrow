@@ -88,7 +88,7 @@
                 <ComboBox fx:id="publicElectrumServer" />
             </Field>
             <Field text="Use Proxy:">
-                <UnlabeledToggleSwitch fx:id="publicUseProxy"/>
+                <UnlabeledToggleSwitch fx:id="publicUseProxy" accessibleText="Use proxy for public Electrum server"/>
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="publicProxyHost" promptText="e.g. 127.0.0.1" />
@@ -138,7 +138,7 @@
                 <PasswordField fx:id="corePass"/>
             </Field>
             <Field text="Use Proxy:">
-                <UnlabeledToggleSwitch fx:id="coreUseProxy"/><HelpLabel helpText="Bitcoin Core RPC onion URLs, and all other non-RPC external addresses will be connected via this proxy if configured." />
+                <UnlabeledToggleSwitch fx:id="coreUseProxy" accessibleText="Use proxy for Bitcoin Core"/><HelpLabel helpText="Bitcoin Core RPC onion URLs, and all other non-RPC external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="coreProxyHost" promptText="e.g. 127.0.0.1" />
@@ -157,7 +157,7 @@
                 <TextField fx:id="electrumPort" promptText="e.g. 50001" maxWidth="120" />
             </Field>
             <Field text="Use SSL:">
-                <UnlabeledToggleSwitch fx:id="electrumUseSsl"/>
+                <UnlabeledToggleSwitch fx:id="electrumUseSsl" accessibleText="Use SSL for private Electrum server"/>
             </Field>
             <Field text="Certificate:" styleClass="label-button">
                 <TextField fx:id="electrumCertificate" promptText="Optional server certificate (.crt)"/>
@@ -168,7 +168,7 @@
                 </Button>
             </Field>
             <Field text="Use Proxy:">
-                <UnlabeledToggleSwitch fx:id="useProxy"/><HelpLabel helpText="All external addresses will be connected via this proxy if configured." />
+                <UnlabeledToggleSwitch fx:id="useProxy" accessibleText="Use proxy for private Electrum server"/><HelpLabel helpText="All external addresses will be connected via this proxy if configured." />
             </Field>
             <Field text="Proxy URL:">
                 <TextField fx:id="proxyHost" promptText="e.g. 127.0.0.1" />

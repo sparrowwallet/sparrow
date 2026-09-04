@@ -64,7 +64,7 @@
             <Region VBox.vgrow="ALWAYS" />
             <StatusBar fx:id="serverStatus">
                 <rightItems>
-                    <UnlabeledToggleSwitch fx:id="serverToggle" />
+                    <UnlabeledToggleSwitch fx:id="serverToggle" accessibleText="Demonstration server connection" />
                 </rightItems>
             </StatusBar>
         </VBox>
