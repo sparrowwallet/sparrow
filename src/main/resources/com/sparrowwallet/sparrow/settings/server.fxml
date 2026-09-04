@@ -33,12 +33,12 @@
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Server">
             <Field text="Type:">
-                <SegmentedButton fx:id="serverTypeSegmentedButton">
+                <SegmentedButton fx:id="serverTypeSegmentedButton" accessibleText="Server type">
                     <toggleGroup>
                         <ToggleGroup fx:id="serverTypeToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton fx:id="publicElectrumToggle" text="Public Server" toggleGroup="$serverTypeToggleGroup">
+                        <ToggleButton fx:id="publicElectrumToggle" text="Public Server" toggleGroup="$serverTypeToggleGroup" accessibleRole="RADIO_BUTTON">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="public-electrum" />
                             </graphic>
@@ -46,7 +46,7 @@
                                 <ServerType fx:constant="PUBLIC_ELECTRUM_SERVER"/>
                             </userData>
                         </ToggleButton>
-                        <ToggleButton text="Bitcoin Core" toggleGroup="$serverTypeToggleGroup">
+                        <ToggleButton text="Bitcoin Core" toggleGroup="$serverTypeToggleGroup" accessibleRole="RADIO_BUTTON">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="bitcoin-core" />
                             </graphic>
@@ -54,7 +54,7 @@
                                 <ServerType fx:constant="BITCOIN_CORE"/>
                             </userData>
                         </ToggleButton>
-                        <ToggleButton text="Private Electrum" toggleGroup="$serverTypeToggleGroup">
+                        <ToggleButton text="Private Electrum" toggleGroup="$serverTypeToggleGroup" accessibleRole="RADIO_BUTTON">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="TOGGLE_ON" styleClass="private-electrum" />
                             </graphic>
@@ -107,17 +107,17 @@
                 <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" />
             </Field>
             <Field text="Authentication:">
-                <SegmentedButton>
+                <SegmentedButton accessibleText="Bitcoin Core authentication">
                     <toggleGroup>
                         <ToggleGroup fx:id="coreAuthToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton text="Default" toggleGroup="$coreAuthToggleGroup">
+                        <ToggleButton text="Default" toggleGroup="$coreAuthToggleGroup" accessibleRole="RADIO_BUTTON">
                             <userData>
                                 <CoreAuthType fx:constant="COOKIE"/>
                             </userData>
                         </ToggleButton>
-                        <ToggleButton text="User / Pass" toggleGroup="$coreAuthToggleGroup">
+                        <ToggleButton text="User / Pass" toggleGroup="$coreAuthToggleGroup" accessibleRole="RADIO_BUTTON">
                             <userData>
                                 <CoreAuthType fx:constant="USERPASS"/>
                             </userData>
