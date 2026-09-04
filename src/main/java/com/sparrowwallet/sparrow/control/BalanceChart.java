@@ -9,6 +9,8 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
 import javafx.beans.NamedArg;
+import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
 
@@ -28,6 +30,9 @@ public class BalanceChart extends LineChart<Number, Number> {
 
     public BalanceChart(@NamedArg("xAxis") Axis<Number> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
+        setFocusTraversable(false);
+        xAxis.setFocusTraversable(false);
+        yAxis.setFocusTraversable(false);
     }
 
     public void initialize(WalletTransactionsEntry walletTransactionsEntry) {
@@ -77,6 +82,15 @@ public class BalanceChart extends LineChart<Number, Number> {
 
         if(selectedEntry != null) {
             select(selectedEntry);
+        }
+
+        Platform.runLater(() -> disableFocusTraversal(this));
+    }
+
+    private static void disableFocusTraversal(Node node) {
+        node.setFocusTraversable(false);
+        if(node instanceof Parent parent) {
+            parent.getChildrenUnmodifiable().forEach(BalanceChart::disableFocusTraversal);
         }
     }
 

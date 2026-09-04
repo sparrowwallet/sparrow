@@ -8,6 +8,8 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import com.sparrowwallet.sparrow.wallet.WalletUtxosEntry;
 import javafx.beans.NamedArg;
+import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
 import javafx.scene.control.Tooltip;
@@ -30,6 +32,9 @@ public class UtxosChart extends BarChart<String, Number> {
 
     public UtxosChart(@NamedArg("xAxis") Axis<String> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
+        setFocusTraversable(false);
+        xAxis.setFocusTraversable(false);
+        yAxis.setFocusTraversable(false);
     }
 
     public void initialize(WalletUtxosEntry walletUtxosEntry) {
@@ -76,6 +81,15 @@ public class UtxosChart extends BarChart<String, Number> {
 
         if(selectedEntries != null) {
             select(selectedEntries);
+        }
+
+        Platform.runLater(() -> disableFocusTraversal(this));
+    }
+
+    private static void disableFocusTraversal(Node node) {
+        node.setFocusTraversable(false);
+        if(node instanceof Parent parent) {
+            parent.getChildrenUnmodifiable().forEach(UtxosChart::disableFocusTraversal);
         }
     }
 
