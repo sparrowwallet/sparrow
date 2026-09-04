@@ -26,13 +26,19 @@ import io.reactivex.subjects.PublishSubject;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
+import javafx.scene.TraversalDirection;
 import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -46,12 +52,66 @@ public class CoinTreeTable extends TreeTableView<Entry> {
     private final PublishSubject<WalletTableChangedEvent> walletTableSubject = PublishSubject.create();
     private final Observable<WalletTableChangedEvent> walletTableEvents = walletTableSubject.debounce(1, TimeUnit.SECONDS);
 
+    public CoinTreeTable() {
+        setRowFactory(table -> new AccessibleTreeTableRow());
+        setAccessibleRoleDescription("table");
+        getSelectionModel().setCellSelectionEnabled(true);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::moveFocusedColumn);
+    }
+
+    private void moveFocusedColumn(KeyEvent event) {
+        if(event.getCode() == KeyCode.TAB) {
+            requestFocusTraversal(event.isShiftDown() ? TraversalDirection.PREVIOUS : TraversalDirection.NEXT);
+            event.consume();
+            return;
+        }
+
+        if(event.getCode() != KeyCode.LEFT && event.getCode() != KeyCode.RIGHT) {
+            return;
+        }
+
+        TreeTablePosition<Entry, ?> focusedCell = getFocusModel().getFocusedCell();
+        int row = focusedCell == null ? getSelectionModel().getSelectedIndex() : focusedCell.getRow();
+        int column = focusedCell == null || focusedCell.getTableColumn() == null ? 0 : getVisibleLeafIndex(focusedCell.getTableColumn());
+        int nextColumn = column + (event.getCode() == KeyCode.RIGHT ? 1 : -1);
+        if(row >= 0 && nextColumn >= 0 && nextColumn < getVisibleLeafColumns().size()) {
+            TreeTableColumn<Entry, ?> tableColumn = getVisibleLeafColumn(nextColumn);
+            getSelectionModel().clearAndSelect(row, tableColumn);
+            getFocusModel().focus(row, tableColumn);
+
+            Object rowNode = queryAccessibleAttribute(AccessibleAttribute.ROW_AT_INDEX, row);
+            if(rowNode instanceof TreeTableRow<?> tableRow) {
+                tableRow.notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+            }
+            notifyAccessibleAttributeChanged(AccessibleAttribute.FOCUS_ITEM);
+        }
+        event.consume();
+    }
+
+    public static <T> List<T> getSelectedRows(TreeTableView<T> treeTableView) {
+        return treeTableView.getSelectionModel().getSelectedCells().stream()
+                .map(TreeTablePosition::getTreeItem)
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(TreeItem::getValue)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
     public TableType getTableType() {
         return tableType;
     }
 
     public void setTableType(TableType tableType) {
         this.tableType = tableType;
+        setAccessibleText(switch(tableType) {
+            case TRANSACTIONS -> "Transactions";
+            case RECEIVE_ADDRESSES -> "Receive addresses";
+            case CHANGE_ADDRESSES -> "Change addresses";
+            case UTXOS -> "Unspent transaction outputs";
+            case SEARCH_WALLET -> "Wallet search results";
+            case WALLET_SUMMARY -> "Wallet summary";
+        });
     }
 
     public BitcoinUnit getBitcoinUnit() {

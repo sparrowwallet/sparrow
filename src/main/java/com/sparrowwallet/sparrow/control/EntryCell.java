@@ -98,6 +98,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 HBox actionBox = new HBox();
                 actionBox.getStyleClass().add("cell-actions");
                 Button viewTransactionButton = new Button("");
+                viewTransactionButton.setFocusTraversable(false);
                 viewTransactionButton.setGraphic(getViewTransactionGlyph());
                 viewTransactionButton.setOnAction(event -> {
                     EventManager.get().post(new ViewTransactionEvent(this.getScene().getWindow(), transactionEntry.getBlockTransaction()));
@@ -108,6 +109,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 if(blockTransaction.getHeight() <= 0 && canRBF(blockTransaction, transactionEntry.getWallet()) &&
                         Config.get().isIncludeMempoolOutputs() && transactionEntry.getWallet().allInputsFromWallet(blockTransaction.getHash())) {
                     Button increaseFeeButton = new Button("");
+                    increaseFeeButton.setFocusTraversable(false);
                     increaseFeeButton.setGraphic(getIncreaseFeeRBFGlyph());
                     increaseFeeButton.setOnAction(event -> {
                         increaseFee(transactionEntry, false);
@@ -117,6 +119,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
                 if(blockTransaction.getHeight() <= 0 && containsWalletOutputs(transactionEntry)) {
                     Button cpfpButton = new Button("");
+                    cpfpButton.setFocusTraversable(false);
                     cpfpButton.setGraphic(getIncreaseFeeCPFPGlyph());
                     cpfpButton.setOnAction(event -> {
                         createCpfp(transactionEntry);
@@ -140,6 +143,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
                 if(!nodeEntry.getNode().getWallet().isBip47() && nodeEntry.getNode().getWallet().getPolicyType() != PolicyType.SINGLE_SP) {
                     Button receiveButton = new Button("");
+                    receiveButton.setFocusTraversable(false);
                     receiveButton.setGraphic(getReceiveGlyph());
                     receiveButton.setOnAction(event -> {
                         EventManager.get().post(new ReceiveActionEvent(nodeEntry));
@@ -150,6 +154,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
                 if(canSignMessage(nodeEntry.getNode())) {
                     Button signMessageButton = new Button("");
+                    signMessageButton.setFocusTraversable(false);
                     signMessageButton.setGraphic(getSignMessageGlyph());
                     signMessageButton.setOnAction(event -> {
                         MessageSignDialog messageSignDialog = new MessageSignDialog(nodeEntry.getWallet(), nodeEntry.getNode());
@@ -177,6 +182,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 HBox actionBox = new HBox();
                 actionBox.getStyleClass().add("cell-actions");
                 Button viewTransactionButton = new Button("");
+                viewTransactionButton.setFocusTraversable(false);
                 viewTransactionButton.setGraphic(getViewTransactionGlyph());
                 viewTransactionButton.setOnAction(event -> {
                     EventManager.get().post(new ViewTransactionEvent(this.getScene().getWindow(), hashIndexEntry.getBlockTransaction(), hashIndexEntry));
@@ -185,6 +191,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
                 if(hashIndexEntry.getType().equals(HashIndexEntry.Type.OUTPUT) && hashIndexEntry.isSpendable() && !hashIndexEntry.getHashIndex().isSpent()) {
                     Button spendUtxoButton = new Button("");
+                    spendUtxoButton.setFocusTraversable(false);
                     spendUtxoButton.setGraphic(getSendGlyph());
                     spendUtxoButton.setOnAction(event -> {
                         sendSelectedUtxos(getTreeTableView(), hashIndexEntry);
@@ -428,8 +435,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     }
 
     private static void sendSelectedUtxos(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<HashIndexEntry> utxoEntries = treeTableView.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
+        List<HashIndexEntry> utxoEntries = CoinTreeTable.getSelectedRows(treeTableView).stream()
                 .filter(e -> e instanceof HashIndexEntry)
                 .map(e -> (HashIndexEntry)e)
                 .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
@@ -445,8 +451,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     }
 
     private static void freezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<BlockTransactionHashIndex> utxos = treeTableView.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
+        List<BlockTransactionHashIndex> utxos = CoinTreeTable.getSelectedRows(treeTableView).stream()
                 .filter(e -> e instanceof HashIndexEntry && ((HashIndexEntry)e).getType().equals(HashIndexEntry.Type.OUTPUT))
                 .map(e -> ((HashIndexEntry)e).getHashIndex())
                 .filter(ref -> ref.getStatus() != Status.FROZEN)
@@ -457,8 +462,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     }
 
     private static void unfreezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<BlockTransactionHashIndex> utxos = treeTableView.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
+        List<BlockTransactionHashIndex> utxos = CoinTreeTable.getSelectedRows(treeTableView).stream()
                 .filter(e -> e instanceof HashIndexEntry && ((HashIndexEntry)e).getType().equals(HashIndexEntry.Type.OUTPUT))
                 .map(e -> ((HashIndexEntry)e).getHashIndex())
                 .filter(ref -> ref.getStatus() == Status.FROZEN)
