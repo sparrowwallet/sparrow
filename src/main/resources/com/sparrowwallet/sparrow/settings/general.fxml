@@ -14,6 +14,7 @@
 <?import com.sparrowwallet.sparrow.net.ExchangeSource?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import com.sparrowwallet.sparrow.control.HelpLabel?>
+<?import com.sparrowwallet.sparrow.control.AccessibleField?>
 <?import com.sparrowwallet.sparrow.net.FeeRatesSource?>
 <?import org.controlsfx.glyphfont.Glyph?>
 
@@ -30,7 +31,7 @@
 
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin" styleClass="wideLabelFieldSet">
-            <Field text="Fee rates source:">
+            <AccessibleField text="Fee rates source:">
                 <ComboBox fx:id="feeRatesSource">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
@@ -43,17 +44,17 @@
                     </items>
                 </ComboBox>
                 <HelpLabel helpText="Recommended fee rates can be sourced from your connected Electrum server, or an external source."/>
-            </Field>
-            <Field text="Block explorer:">
+            </AccessibleField>
+            <AccessibleField text="Block explorer:">
                 <ComboBox fx:id="blockExplorers" />
                 <HelpLabel helpText="An external block explorer can be configured to open a transaction from any transaction tab."/>
-            </Field>
+            </AccessibleField>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Fiat" styleClass="wideLabelFieldSet">
-            <Field text="Currency:">
+            <AccessibleField text="Currency:">
                 <ComboBox fx:id="fiatCurrency" />
-            </Field>
-            <Field text="Exchange rate source:">
+            </AccessibleField>
+            <AccessibleField text="Exchange rate source:">
                 <ComboBox fx:id="exchangeSource" prefWidth="160">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
@@ -69,37 +70,37 @@
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" styleClass="field-warning" />
                     </graphic>
                 </Label>
-            </Field>
+            </AccessibleField>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Wallet" styleClass="wideLabelFieldSet">
-            <Field text="Load recent wallets:">
+            <AccessibleField text="Load recent wallets:">
                 <UnlabeledToggleSwitch fx:id="loadRecentWallets" accessibleText="Load recent wallets" />
                 <HelpLabel helpText="Keep a record of open wallets, and reopen them on startup."/>
-            </Field>
-            <Field text="Validate derivations:">
+            </AccessibleField>
+            <AccessibleField text="Validate derivations:">
                 <UnlabeledToggleSwitch fx:id="validateDerivationPaths" accessibleText="Validate derivation paths" />
                 <HelpLabel helpText="Disallow keystores to have derivation paths that match the defaults for other script types and networks."/>
-            </Field>
+            </AccessibleField>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Coin Selection" styleClass="wideLabelFieldSet">
-            <Field text="Group by address:">
+            <AccessibleField text="Group by address:">
                 <UnlabeledToggleSwitch fx:id="groupByAddress" accessibleText="Group by address" />
                 <HelpLabel helpText="Group UTXOs by address when sending to improve privacy by only sending from an address once."/>
-            </Field>
-            <Field text="Allow unconfirmed:">
+            </AccessibleField>
+            <AccessibleField text="Allow unconfirmed:">
                 <UnlabeledToggleSwitch fx:id="includeMempoolOutputs" accessibleText="Allow unconfirmed" />
                 <HelpLabel helpText="Allow a wallet to spend UTXOs that are still in the mempool."/>
-            </Field>
+            </AccessibleField>
         </Fieldset>
         <Fieldset inputGrow="SOMETIMES" text="Notifications" styleClass="wideLabelFieldSet">
-            <Field text="New transactions:">
+            <AccessibleField text="New transactions:">
                 <UnlabeledToggleSwitch fx:id="notifyNewTransactions" accessibleText="New transaction notifications" />
                 <HelpLabel helpText="Show system notifications on new wallet transactions?"/>
-            </Field>
-            <Field text="Software updates:">
+            </AccessibleField>
+            <AccessibleField text="Software updates:">
                 <UnlabeledToggleSwitch fx:id="checkNewVersions" accessibleText="Software update checks" />
                 <HelpLabel helpText="Check for updates to Sparrow?"/>
-            </Field>
+            </AccessibleField>
         </Fieldset>
     </Form>
 </GridPane>
