@@ -560,7 +560,7 @@ public class HeadersController extends TransactionFormController implements Init
                     Optional<ButtonType> optType = AppServices.showWarningDialog("Confirm Sighash None",
                             "A sighash value of none means the signature does not commit to any of the outputs, and can be reused on a transaction with different outputs.\n\nAre you sure?",
                             ButtonType.NO, ButtonType.YES);
-                    if(optType.isPresent() && optType.get() == ButtonType.NO) {
+                    if(optType.isEmpty() || optType.get() != ButtonType.YES) {
                         Platform.runLater(() -> sigHash.getSelectionModel().select(oldValue));
                         return;
                     }
