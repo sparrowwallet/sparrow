@@ -76,7 +76,6 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
 
         final VBox content = new VBox(20);
         name = (CustomTextField)TextFields.createClearableTextField();
-        name.setAccessibleText("Wallet name");
         name.setText(initialName);
         name.setTextFormatter(new TextFormatter<>((change) -> {
             change.setText(change.getText().replaceAll("[\\\\/:*?\"<>|;`]", "_"));
