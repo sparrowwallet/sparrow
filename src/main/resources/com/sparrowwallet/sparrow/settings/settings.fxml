@@ -7,12 +7,14 @@
 <?import javafx.scene.layout.*?>
 
 <?import javafx.geometry.Insets?>
+<?import com.sparrowwallet.sparrow.control.TabList?>
+<?import com.sparrowwallet.sparrow.control.TabToggleButton?>
 <?import com.sparrowwallet.sparrow.settings.SettingsGroup?>
 <?import org.controlsfx.glyphfont.Glyph?>
 <BorderPane stylesheets="@../general.css, @settings.css" styleClass="line-border" xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="com.sparrowwallet.sparrow.settings.SettingsController">
     <left>
-        <VBox styleClass="list-menu">
-            <ToggleButton VBox.vgrow="ALWAYS" text="General" wrapText="true" textAlignment="CENTER" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$settingsMenu">
+        <TabList styleClass="list-menu" accessibleText="Settings sections">
+            <TabToggleButton VBox.vgrow="ALWAYS" text="General" wrapText="true" textAlignment="CENTER" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$settingsMenu">
                 <toggleGroup>
                     <ToggleGroup fx:id="settingsMenu" />
                 </toggleGroup>
@@ -22,16 +24,16 @@
                 <userData>
                     <SettingsGroup fx:constant="GENERAL"/>
                 </userData>
-            </ToggleButton>
-            <ToggleButton VBox.vgrow="ALWAYS" text="Server" wrapText="true" textAlignment="CENTER" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$settingsMenu">
+            </TabToggleButton>
+            <TabToggleButton VBox.vgrow="ALWAYS" text="Server" wrapText="true" textAlignment="CENTER" contentDisplay="TOP" styleClass="list-item" maxHeight="Infinity" toggleGroup="$settingsMenu">
                 <graphic>
                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SERVER" />
                 </graphic>
                 <userData>
                     <SettingsGroup fx:constant="SERVER"/>
                 </userData>
-            </ToggleButton>
-        </VBox>
+            </TabToggleButton>
+        </TabList>
     </left>
     <center>
         <StackPane fx:id="settingsPane">

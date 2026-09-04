@@ -40,6 +40,7 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -951,12 +952,24 @@ public class AppServices {
         stage.getIcons().add(getWindowIcon());
 
         if(stage.getScene() != null) {
+            configureDialogAccessibility(stage.getScene().getRoot(), OsType.getCurrent());
             if(Config.get().getTheme() == Theme.DARK) {
                 stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
             }
             if(Config.get().isChunkAddresses()) {
                 stage.getScene().getRoot().getStyleClass().add("chunk-addresses");
             }
+        }
+    }
+
+    static void configureDialogAccessibility(Parent root, OsType osType) {
+        /*
+         * JavaFX assigns DialogPane the DIALOG role to support Windows screen readers, but the macOS
+         * accessibility bridge does not map that role to a native accessibility element. Restoring
+         * Parent's default role allows VoiceOver to discover and navigate the dialog's children.
+         */
+        if(osType == OsType.MACOS && root.getAccessibleRole() == AccessibleRole.DIALOG) {
+            root.setAccessibleRole(AccessibleRole.PARENT);
         }
     }
 

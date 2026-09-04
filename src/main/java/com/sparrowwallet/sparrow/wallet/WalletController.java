@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.ViewPasswordField;
+import com.sparrowwallet.sparrow.control.ViewStack;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
@@ -41,7 +42,7 @@ public class WalletController extends WalletFormController implements Initializa
     private static final Logger log = LoggerFactory.getLogger(WalletController.class);
 
     @FXML
-    private StackPane walletPane;
+    private ViewStack walletPane;
 
     @FXML
     private VBox walletMenuBox;
@@ -78,18 +79,16 @@ public class WalletController extends WalletFormController implements Initializa
 
             Function function = (Function)selectedToggle.getUserData();
 
-            boolean existing = false;
+            Node selectedWalletFunction = null;
             for(Node walletFunction : walletPane.getChildren()) {
                 if(walletFunction.getUserData().equals(function)) {
-                    existing = true;
-                    walletFunction.setViewOrder(0);
-                } else if(function != Function.LOCK) {
-                    walletFunction.setViewOrder(1);
+                    selectedWalletFunction = walletFunction;
+                    break;
                 }
             }
 
             try {
-                if(!existing) {
+                if(selectedWalletFunction == null) {
                     URL url = AppServices.class.getResource("wallet/" + function.toString().toLowerCase(Locale.ROOT) + ".fxml");
                     if(url == null) {
                         throw new IllegalStateException("Cannot find wallet/" + function.toString().toLowerCase(Locale.ROOT) + ".fxml");
@@ -107,9 +106,10 @@ public class WalletController extends WalletFormController implements Initializa
                     }
 
                     controller.setWalletForm(walletForm);
-                    walletFunction.setViewOrder(1);
-                    walletPane.getChildren().add(walletFunction);
+                    selectedWalletFunction = walletFunction;
                 }
+
+                walletPane.show(selectedWalletFunction);
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
             }
@@ -184,6 +184,7 @@ public class WalletController extends WalletFormController implements Initializa
         StackPane stackPane = new StackPane();
         stackPane.getChildren().add(vBox);
         lockPane.setCenter(stackPane);
+        lockPane.setVisible(false);
         walletPane.getChildren().add(lockPane);
 
         walletPane.getScene().getWindow().focusedProperty().addListener(new WeakChangeListener<>(lockFocusListener));
@@ -258,7 +259,7 @@ public class WalletController extends WalletFormController implements Initializa
             }
 
             getWalletForm().setLocked(true);
-            lockPane.setViewOrder(-1);
+            walletPane.show(lockPane);
         }
     }
 
@@ -267,7 +268,11 @@ public class WalletController extends WalletFormController implements Initializa
         if(event.getWallet().equals(walletForm.getMasterWallet())) {
             getWalletForm().setLocked(false);
             if(lockPane != null) {
-                lockPane.setViewOrder(2);
+                Function selectedFunction = (Function)walletMenu.getSelectedToggle().getUserData();
+                walletPane.getChildren().stream()
+                        .filter(node -> node.getUserData().equals(selectedFunction))
+                        .findFirst()
+                        .ifPresent(walletPane::show);
             }
         }
     }
