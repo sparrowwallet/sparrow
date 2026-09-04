@@ -2,7 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.controlsfx.control.StatusBar?>
+<?import com.sparrowwallet.sparrow.control.AccessibleStatusBar?>
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.shape.Rectangle?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
@@ -178,7 +178,7 @@
             <TabPane fx:id="tabs" />
         </DecorationPane>
 
-        <StatusBar fx:id="statusBar" text="" minHeight="36">
+        <AccessibleStatusBar fx:id="statusBar" text="" minHeight="36" accessibleText="Application status">
             <rightItems>
                 <UnlabeledToggleSwitch fx:id="serverToggle" accessibleText="Server connection">
                     <tooltip>
@@ -186,6 +186,6 @@
                     </tooltip>
                 </UnlabeledToggleSwitch>
             </rightItems>
-        </StatusBar>
+        </AccessibleStatusBar>
     </children>
 </VBox>

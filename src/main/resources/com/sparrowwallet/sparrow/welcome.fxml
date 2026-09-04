@@ -6,7 +6,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<?import org.controlsfx.control.StatusBar?>
+<?import com.sparrowwallet.sparrow.control.AccessibleStatusBar?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import com.sparrowwallet.sparrow.control.DialogImage?>
@@ -62,11 +62,11 @@
                 <Label text="A blue toggle means you are connected to a private Electrum server. You're now ready to configure a server and start using Sparrow!" wrapText="true" styleClass="content-text" />
             </VBox>
             <Region VBox.vgrow="ALWAYS" />
-            <StatusBar fx:id="serverStatus">
+            <AccessibleStatusBar fx:id="serverStatus" accessibleText="Demonstration connection status">
                 <rightItems>
                     <UnlabeledToggleSwitch fx:id="serverToggle" accessibleText="Demonstration server connection" />
                 </rightItems>
-            </StatusBar>
+            </AccessibleStatusBar>
         </VBox>
     </VBox>
 </StackPane>
