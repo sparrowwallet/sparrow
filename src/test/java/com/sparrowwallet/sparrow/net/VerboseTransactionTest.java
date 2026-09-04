@@ -1,10 +1,12 @@
 package com.sparrowwallet.sparrow.net;
 
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class VerboseTransactionTest {
@@ -34,6 +36,36 @@ public class VerboseTransactionTest {
         assertEquals(SEGWIT_TXID, blockTransaction.getHashAsString());
         assertEquals(SEGWIT_WTXID, blockTransaction.getTransaction().getWTxId().toString());
         assertNotEquals(blockTransaction.getTransaction().getTxId(), blockTransaction.getTransaction().getWTxId());
+    }
+
+    /**
+     * The server's own block hash is not evidence that the transaction is in that block, and everywhere a block hash is read it is read as the block
+     * the transaction was proven to be in. Dropped here, so the transaction tab can tell a proven height from a reported one.
+     */
+    @Test
+    public void dropsTheServersUnprovenBlockHash() {
+        VerboseTransaction verboseTransaction = verboseTransaction(LEGACY_TXID, LEGACY_HEX);
+        verboseTransaction.blockhash = "00000000000000000002a7c4c1e48d76c5a37902165a270156b7a8d72728a054";
+        verboseTransaction.confirmations = 6;
+
+        BlockTransaction blockTransaction = verboseTransaction.getBlockTransaction();
+
+        assertNull(blockTransaction.getBlockHash());
+    }
+
+    /**
+     * The one block hash that survives says nothing about a block: it marks a response that could not carry a height at all, which the transaction tab
+     * shows as an unknown status rather than as a confirmation.
+     */
+    @Test
+    public void keepsTheMarkerForAnIncompleteResponse() {
+        VerboseTransaction verboseTransaction = verboseTransaction(LEGACY_TXID, LEGACY_HEX);
+        verboseTransaction.blockhash = Sha256Hash.ZERO_HASH.toString();
+
+        BlockTransaction blockTransaction = verboseTransaction.getBlockTransaction();
+
+        assertEquals(Sha256Hash.ZERO_HASH, blockTransaction.getBlockHash());
+        assertEquals(0, blockTransaction.getHeight());
     }
 
     @Test

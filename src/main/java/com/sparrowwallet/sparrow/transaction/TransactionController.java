@@ -398,7 +398,9 @@ public class TransactionController implements Initializable {
             Platform.runLater(() -> EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), walletBlockTx, Collections.emptyMap(), 0, getTransaction().getInputs().size())));
         } else if(AppServices.isConnected() && indexStart < getTransaction().getInputs().size()) {
             Set<Sha256Hash> references = new HashSet<>();
-            if(getPSBT() == null) {
+            //Asked for with the first page alone, since a later page cannot learn anything about it that the first did not, and would replace what has
+            //been proven since with the server's unproven word. A confirmed wallet transaction is not asked for at all, being proven at its height already
+            if(getPSBT() == null && indexStart == 0 && (walletBlockTx == null || walletBlockTx.getHeight() <= 0)) {
                 references.add(getTransaction().getTxId());
             }
 
@@ -411,14 +413,24 @@ public class TransactionController implements Initializable {
             }
 
             if(references.isEmpty()) {
+                //A coinbase transaction the wallet already holds proven: there is no input to fetch and no reason to ask about the transaction itself,
+                //but the form is still waiting to be told what the wallet has
+                transactionsFetched = true;
+                Platform.runLater(() -> EventManager.get().post(new BlockTransactionFetchedEvent(getTransaction(), walletBlockTx, Collections.emptyMap(), indexStart, maxIndex)));
                 return;
             }
 
             ElectrumServer.TransactionReferenceService transactionReferenceService = new ElectrumServer.TransactionReferenceService(references);
             transactionReferenceService.setOnSucceeded(successEvent -> {
-                transactionsFetched = true;
+                //The first page is the one that asks about the transaction itself, so only it settles whether a reconnect need fetch again: a later
+                //page succeeding says nothing about a first page that failed, and would otherwise stand in for it
+                if(indexStart == 0) {
+                    transactionsFetched = true;
+                }
                 Map<Sha256Hash, BlockTransaction> transactionMap = transactionReferenceService.getValue();
-                BlockTransaction thisBlockTx = null;
+                //Only the page that asks about the transaction reports it, since a page that did not ask has nothing of its own to say and would
+                //otherwise answer with what the wallet holds over what the first page was told
+                BlockTransaction thisBlockTx = indexStart == 0 ? walletBlockTx : null;
                 Map<Sha256Hash, BlockTransaction> retrievedInputTransactions = new HashMap<>();
                 for(Sha256Hash txid : transactionMap.keySet()) {
                     BlockTransaction retrievedBlockTx = transactionMap.get(txid);

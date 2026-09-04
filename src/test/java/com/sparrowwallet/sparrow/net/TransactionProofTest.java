@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -60,6 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -123,6 +125,7 @@ public class TransactionProofTest {
         ElectrumServer.headerStore = null;
         ElectrumServer.lastReorgForkHeight = Integer.MAX_VALUE;
         ElectrumServer.verifiedHistoricalHeaders.clear();
+        ElectrumServer.provenTransactionHeaders.clear();
         ElectrumServer.clearPreviousServerState();
         ElectrumServer.getSubscribedScriptHashes().clear();
         previousElectrumServerRpc = ElectrumServer.electrumServerRpc;
@@ -155,6 +158,7 @@ public class TransactionProofTest {
         ElectrumServer.headerStore = null;
         ElectrumServer.lastReorgForkHeight = Integer.MAX_VALUE;
         ElectrumServer.verifiedHistoricalHeaders.clear();
+        ElectrumServer.provenTransactionHeaders.clear();
         //Every wallet here derives from the same key, so one test's cached script hash state is the next one's, and the caches are keyed by script hash
         ElectrumServer.clearPreviousServerState();
         ElectrumServer.getSubscribedScriptHashes().clear();
@@ -184,6 +188,137 @@ public class TransactionProofTest {
         assertEquals(chain.get(PROVEN_HEIGHT - 1).getHash(), written.getBlockHash());
         assertEquals(1, server.getProofRequests());
         assertEquals(0, server.getBlockHeaderRequests());
+        assertTrue(listener.isEmpty());
+    }
+
+    /**
+     * The same proof asked for a transaction that reached the transaction tab rather than a wallet, where there is no history to demote: the header it
+     * was proven against is returned for the tab to show the block by, and nothing is reported per wallet.
+     */
+    @Test
+    public void provesATransactionOutsideAWallet() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+
+        BlockHeader provenHeader = new ElectrumServer().getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT);
+
+        assertNotNull(provenHeader);
+        assertEquals(chain.get(PROVEN_HEIGHT - 1).getHash(), provenHeader.getHash());
+        assertTrue(listener.isEmpty());
+    }
+
+    /**
+     * The three ways the answer is no, each of which leaves the tab showing the height as the server's word alone: a proof declined, one answered for
+     * a different block than the one asked about, and one whose branch does not reconstruct.
+     */
+    @Test
+    public void doesNotProveATransactionTheServerWillNotSubstantiate() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        ElectrumServer electrumServer = new ElectrumServer();
+
+        //Declined: nothing served for this pair at all
+        assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        //Answered for another block, which substantiates nothing about the height asked for
+        TransactionMerkleProof otherBlock = server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        otherBlock.block_height = PROVEN_HEIGHT + 1;
+        assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        //Tampered: the branch does not reconstruct the merkle root of the header at that height
+        TransactionMerkleProof tampered = server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        tampered.merkle.set(0, Sha256Hash.ZERO_HASH.toString());
+        assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        assertTrue(listener.isEmpty());
+    }
+
+    /**
+     * A proof answered once is answered for the session. A transaction reopened, or open in a second tab, does not put the same question again, which
+     * is what keeps history predating the proofs from costing a round trip every time one of it is looked at.
+     */
+    @Test
+    public void provesATransactionOutsideAWalletOnce() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        ElectrumServer electrumServer = new ElectrumServer();
+
+        assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        assertEquals(1, server.getProofRequests());
+    }
+
+    /**
+     * A proof obtained across a reorg is returned but not remembered: the clear a reorg performs holds the sync lock, and the proof would otherwise be
+     * written behind it and left proven against a header the chain no longer holds. A later proof, with no reorg under it, is remembered as usual.
+     */
+    @Test
+    public void doesNotRememberAProofObtainedAcrossAReorg() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        server.reorgWhileProving();
+        ElectrumServer electrumServer = new ElectrumServer();
+
+        assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertEquals(2, server.getProofRequests());
+
+        //Nothing rewound under this one, so the session remembers it and the third request is not made
+        assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertEquals(2, server.getProofRequests());
+    }
+
+    /**
+     * What a proof established is carried onto a transaction built without it, which is how a form reads the same whichever of the objects handed
+     * around for one transaction it is redrawn from. A transaction not proven this session is returned as it is.
+     */
+    @Test
+    public void carriesAProofOntoATransactionBuiltWithoutIt() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        BlockTransaction reported = new BlockTransaction(transaction.getTxId(), PROVEN_HEIGHT, new Date(0), 0L, transaction);
+
+        assertSame(reported, ElectrumServer.getProvenTransaction(reported));
+
+        assertNotNull(new ElectrumServer().getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        BlockTransaction proven = ElectrumServer.getProvenTransaction(reported);
+        assertEquals(chain.get(PROVEN_HEIGHT - 1).getHash(), proven.getBlockHash());
+        assertEquals(chain.get(PROVEN_HEIGHT - 1).getTimeAsDate(), proven.getDate());
+        assertEquals(PROVEN_HEIGHT, proven.getHeight());
+    }
+
+    /**
+     * Only what was proven is remembered. A server that would not prove it is not necessarily the server that will be asked next, and caching the
+     * refusal would outlast the connection that earned it.
+     */
+    @Test
+    public void doesNotRememberARefusal() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        server.refuseFirstAttempts(transaction, PROVEN_HEIGHT, 1);
+        ElectrumServer electrumServer = new ElectrumServer();
+
+        assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        assertEquals(2, server.getProofRequests());
+    }
+
+    /**
+     * A server that does not implement the call is settled for the session rather than answered per transaction. Nothing else would settle it where
+     * the tab is the only caller, and every transaction would then be shown unverified against a server that had not refused anything.
+     */
+    @Test
+    public void disablesVerificationWhereTheServerLacksTheProofCall() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        server.setProofFailure(new UnsupportedMethodException("blockchain.transaction.get_merkle", null));
+
+        assertNull(new ElectrumServer().getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        assertFalse(ElectrumServer.serverCapability.supportsMerkleProofs());
+        assertFalse(ElectrumServer.isVerifyingTransactions());
         assertTrue(listener.isEmpty());
     }
 
@@ -1093,6 +1228,7 @@ public class TransactionProofTest {
         private volatile int proofFailureAfter;
         private volatile int proofFailureUntil = Integer.MAX_VALUE;
         private volatile RuntimeException headersFailure;
+        private volatile boolean reorgWhileProving;
 
         public FakeProofServer(List<BlockHeader> chain) {
             this.chain = List.copyOf(chain);
@@ -1102,6 +1238,10 @@ public class TransactionProofTest {
         @Override
         public Map<String, TransactionMerkleProof> getTransactionMerkleProofs(Transport transport, Wallet wallet, Collection<BlockTransactionHash> references) {
             int request = proofRequests.incrementAndGet();
+            if(reorgWhileProving) {
+                reorgWhileProving = false;
+                ElectrumServer.reorgCount++;
+            }
             proofRequestKeys.add(references.stream().map(FakeProofServer::key).collect(Collectors.toCollection(LinkedHashSet::new)));
             if(proofFailure != null && request > proofFailureAfter && request <= proofFailureUntil) {
                 throw proofFailure;
@@ -1210,6 +1350,13 @@ public class TransactionProofTest {
             proofs.put(transaction.getTxId() + ":" + height, proof);
 
             return proof;
+        }
+
+        /**
+         * Rewinds the header store while the next proof is in flight, which is a reorg landing between a proof being verified and being remembered.
+         */
+        public void reorgWhileProving() {
+            this.reorgWhileProving = true;
         }
 
         public void serveProof(Sha256Hash txid, int height, TransactionMerkleProof proof) {

@@ -50,6 +50,9 @@ public class VerboseTransaction {
             throw new IllegalStateException("Server returned transaction " + transaction.getTxId() + " for declared txid " + declaredTxid);
         }
 
-        return new BlockTransaction(declaredTxid, getHeight(), getDate(), 0L, transaction, blockhash == null ? null : Sha256Hash.wrap(blockhash));
+        //A block hash records the block a transaction was proven to be in, and nothing here is proven: the server's own is dropped, and only the marker
+        //for a response that could not carry one is passed on, that being a statement about the response rather than about the block
+        boolean incomplete = Sha256Hash.ZERO_HASH.toString().equals(blockhash);
+        return new BlockTransaction(declaredTxid, getHeight(), getDate(), 0L, transaction, incomplete ? Sha256Hash.ZERO_HASH : null);
     }
 }
