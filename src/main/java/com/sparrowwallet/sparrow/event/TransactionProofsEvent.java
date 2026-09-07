@@ -6,8 +6,8 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.util.Set;
 
 /**
- * The transactions of one wallet whose confirmed heights the connected server did not prove in a single history pass, aggregated so that a pass
- * surfacing many of them raises one dialog rather than one per transaction.
+ * The transactions whose confirmed heights the connected server did not prove, aggregated per wallet so that a history pass surfacing many of them
+ * raises one dialog rather than one per transaction. A transaction reached outside any wallet is raised on its own, under a null wallet.
  */
 public abstract class TransactionProofsEvent {
     private final Wallet wallet;
@@ -18,12 +18,16 @@ public abstract class TransactionProofsEvent {
         this.references = references;
     }
 
+    /**
+     * The wallet whose history holds these transactions, or null for one reached outside any wallet, where there is no history to refresh.
+     */
     public Wallet getWallet() {
         return wallet;
     }
 
     /**
-     * The transactions with the heights the server reported them at, which are no longer the heights they are held at.
+     * The transactions with the heights the server reported them at. A wallet no longer holds them at those heights, having demoted them; one reached
+     * outside a wallet is still shown at its, marked as unproven.
      */
     public Set<BlockTransactionHash> getReferences() {
         return references;

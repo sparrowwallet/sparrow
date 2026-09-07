@@ -1186,10 +1186,11 @@ public class ElectrumServer {
     /**
      * The header the given transaction is proven to be included in at the given height, or null where the connected server did not substantiate it,
      * whether by declining the proof, answering for another block, or supplying a branch that does not reconstruct. For a transaction reached outside
-     * a wallet, where there is no history to demote and nothing to report per wallet: the caller has only the header to show, or its absence.
+     * a wallet, where there is no history to demote: the caller has only the header to show, or its absence.
      * <p>
-     * A server that does not implement the call at all disables verification for the session here as it does on the wallet paths, since a server
-     * lacking it substantiates nothing and marking every transaction against it unverified says something about the server that is not true.
+     * What the server would not substantiate is raised with the user on the terms a wallet's is, a server refusing to stand behind a height it
+     * reported saying the same thing whether or not a wallet happens to hold the transaction. A server that does not implement the call at all has
+     * refused nothing, and disables verification for the session here as it does on the wallet paths.
      */
     public BlockHeader getProvenHeader(Sha256Hash txid, int height) throws ServerException {
         String pair = txid + ":" + height;
@@ -1200,36 +1201,37 @@ public class ElectrumServer {
 
         BlockTransactionHash reference = new BlockTransaction(txid, height, null, null, null);
         int reorgsBefore = reorgCount;
+        BlockHeader header;
         try {
-            Map<String, TransactionMerkleProof> proofs = electrumServerRpc.getTransactionMerkleProofs(getTransport(), null, List.of(reference));
-            TransactionMerkleProof proof = proofs.get(pair);
-            if(proof == null || proof == TransactionMerkleProof.ERROR_PROOF || proof.block_height != height) {
-                return null;
-            }
-
-            BlockHeader header = getVerifiedHeader(height);
-            if(header == null || !verifyProof(txid, proof, header)) {
-                return null;    //only what was proven is cached: a server that will not prove it now is not the server that will be asked next
-            }
-
-            //Remembered only where no reorg intervened, under the lock reconcile holds while it clears: a proof resolving across one would otherwise
-            //be written behind that clear, leaving an entry proven against a header the chain no longer holds. The proof itself still stands or falls
-            //on the header it reconstructed, so it is returned either way
-            synchronized(headerSyncLock) {
-                if(reorgCount == reorgsBefore) {
-                    provenTransactionHeaders.put(pair, header);
-                }
-            }
-
-            return header;
+            //The wallet paths' own verification, so that the retries telling a server momentarily unable to answer from one that cannot substantiate
+            //the height are spent here too: without them a single refused call would report an overloaded server as contradicting itself
+            header = verifyMerkleProofs(null, Set.of(reference)).get(reference);
         } catch(UnsupportedMethodException e) {
             //Before the catch below, as elsewhere: a property of the server rather than of this transaction, so it is settled for the session on the
             //same terms the wallet paths settle it, and raised rather than recorded where verification is mandatory
             disableVerification(e);
             return null;
-        } catch(ElectrumServerRpcException e) {
-            throw new ServerException(e.getMessage(), e.getCause());     //the server said nothing about this transaction, so it is a failed call
+        } catch(ProofsUnavailableException e) {
+            disableVerification(e);     //never answered at all, which is the server unable to serve the call rather than unwilling to prove this
+            return null;
+        } finally {
+            postProofEvents(null);
         }
+
+        if(header == null) {
+            return null;    //only what was proven is cached: a server that will not prove it now is not the server that will be asked next
+        }
+
+        //Remembered only where no reorg intervened, under the lock reconcile holds while it clears: a proof resolving across one would otherwise
+        //be written behind that clear, leaving an entry proven against a header the chain no longer holds. The proof itself still stands or falls
+        //on the header it reconstructed, so it is returned either way
+        synchronized(headerSyncLock) {
+            if(reorgCount == reorgsBefore) {
+                provenTransactionHeaders.put(pair, header);
+            }
+        }
+
+        return header;
     }
 
     /**
@@ -1337,8 +1339,9 @@ public class ElectrumServer {
     }
 
     /**
-     * Raises one dialog per wallet for what this task could not prove, from a finally so that a later failure in the pass cannot bury a finding whose
-     * demotion has already been written. Each pair is reported once per session, since the passes that follow a refusal re-attempt it.
+     * Raises one dialog for what this task could not prove, per wallet or, for a transaction reached outside any wallet, under a null one. Called from
+     * a finally so that a later failure in the pass cannot bury a finding whose demotion has already been written. Each pair is reported once per
+     * session, since the passes that follow a refusal re-attempt it.
      */
     void postProofEvents(Wallet wallet) {
         postProofEvents(wallet, wallet);

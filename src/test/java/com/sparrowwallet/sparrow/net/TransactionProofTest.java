@@ -208,8 +208,9 @@ public class TransactionProofTest {
     }
 
     /**
-     * The three ways the answer is no, each of which leaves the tab showing the height as the server's word alone: a proof declined, one answered for
-     * a different block than the one asked about, and one whose branch does not reconstruct.
+     * The three ways the answer is no, each of which leaves the tab showing the height as the server's word alone, and each raised with the user on the
+     * terms a wallet's would be: a proof declined, one answered for a different block than the one asked about, and one whose branch does not
+     * reconstruct. The pair is the same throughout, so the second refusal says nothing the first did not; being proven wrong is a different claim.
      */
     @Test
     public void doesNotProveATransactionTheServerWillNotSubstantiate() throws Exception {
@@ -218,17 +219,54 @@ public class TransactionProofTest {
 
         //Declined: nothing served for this pair at all
         assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertEquals(1, listener.getRefusedEvents());
+        assertEquals(Set.of(reference(transaction, PROVEN_HEIGHT)), listener.getRefused());
+        assertNull(listener.getReportedWallet());       //reached outside any wallet, so there is no history to demote or to offer to refresh
 
         //Answered for another block, which substantiates nothing about the height asked for
         TransactionMerkleProof otherBlock = server.serveProof(transaction, PROVEN_HEIGHT, 0);
         otherBlock.block_height = PROVEN_HEIGHT + 1;
         assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertEquals(1, listener.getRefusedEvents());
 
         //Tampered: the branch does not reconstruct the merkle root of the header at that height
         TransactionMerkleProof tampered = server.serveProof(transaction, PROVEN_HEIGHT, 0);
         tampered.merkle.set(0, Sha256Hash.ZERO_HASH.toString());
         assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertEquals(1, listener.getFailedEvents());
+        assertEquals(Set.of(reference(transaction, PROVEN_HEIGHT)), listener.getFailed());
+    }
 
+    /**
+     * A server that refuses once and proves on a retry is one momentarily unable to answer rather than one contradicting itself. The tab spends the
+     * retry budget a wallet pass spends, so what recovers within it is never put to the user at all.
+     */
+    @Test
+    public void provesATransactionOutsideAWalletAfterARetry() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        server.refuseFirstAttempts(transaction, PROVEN_HEIGHT, 1);
+
+        assertNotNull(new ElectrumServer().getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        assertEquals(2, server.getProofRequests());
+        assertTrue(listener.isEmpty());
+    }
+
+    /**
+     * A server that never answers the call has refused nothing, so the session goes unverified rather than the transaction being reported against it.
+     * The tab then has no grounds to mark anything, verification being off for every transaction it shows.
+     */
+    @Test
+    public void doesNotReportATransactionAgainstAServerThatCannotSupplyProofs() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        server.setProofFailure(new ElectrumServerRpcException("Batch too large"));
+
+        assertNull(new ElectrumServer().getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+
+        assertFalse(ElectrumServer.isVerifyingTransactions());
+        assertEquals(ElectrumServer.proofAttempts, server.getProofRequests());       //only after the retries are spent
         assertTrue(listener.isEmpty());
     }
 
@@ -290,19 +328,19 @@ public class TransactionProofTest {
 
     /**
      * Only what was proven is remembered. A server that would not prove it is not necessarily the server that will be asked next, and caching the
-     * refusal would outlast the connection that earned it.
+     * refusal would outlast the connection that earned it. Refused for a whole budget here, since anything less is recovered from within one call.
      */
     @Test
     public void doesNotRememberARefusal() throws Exception {
         Transaction transaction = blockTransactions.getFirst();
         server.serveProof(transaction, PROVEN_HEIGHT, 0);
-        server.refuseFirstAttempts(transaction, PROVEN_HEIGHT, 1);
+        server.refuseFirstAttempts(transaction, PROVEN_HEIGHT, ElectrumServer.proofAttempts);
         ElectrumServer electrumServer = new ElectrumServer();
 
         assertNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
         assertNotNull(electrumServer.getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
 
-        assertEquals(2, server.getProofRequests());
+        assertEquals(ElectrumServer.proofAttempts + 1, server.getProofRequests());
     }
 
     /**
@@ -1418,19 +1456,26 @@ public class TransactionProofTest {
     public static class ProofListener {
         private final Set<BlockTransactionHash> failed = new LinkedHashSet<>();
         private final Set<BlockTransactionHash> refused = new LinkedHashSet<>();
+        private Wallet reportedWallet;
         private int failedEvents;
         private int refusedEvents;
 
         @Subscribe
         public void transactionProofsFailed(TransactionProofsFailedEvent event) {
             failedEvents++;
+            reportedWallet = event.getWallet();
             failed.addAll(event.getReferences());
         }
 
         @Subscribe
         public void transactionProofsRefused(TransactionProofsRefusedEvent event) {
             refusedEvents++;
+            reportedWallet = event.getWallet();
             refused.addAll(event.getReferences());
+        }
+
+        public Wallet getReportedWallet() {
+            return reportedWallet;
         }
 
         public Set<BlockTransactionHash> getFailed() {
@@ -1456,6 +1501,7 @@ public class TransactionProofTest {
         public void reset() {
             failed.clear();
             refused.clear();
+            reportedWallet = null;
             failedEvents = 0;
             refusedEvents = 0;
         }

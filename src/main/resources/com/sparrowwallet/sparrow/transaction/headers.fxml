@@ -189,6 +189,14 @@
             <Fieldset text="Blockchain" inputGrow="SOMETIMES">
                 <Field text="Status:">
                     <Label fx:id="blockStatus" contentDisplay="RIGHT" graphicTextGap="5" />
+                    <Label fx:id="unverifiedWarning" text="Unverified" contentDisplay="LEFT" graphicTextGap="5">
+                        <graphic>
+                            <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="EXCLAMATION_TRIANGLE" />
+                        </graphic>
+                        <tooltip>
+                            <Tooltip text="The connected server reported this height and would not prove the transaction was included in that block"/>
+                        </tooltip>
+                    </Label>
                 </Field>
                 <Field fx:id="blockHeightField" text="Block Height:">
                     <CopyableLabel fx:id="blockHeight" />

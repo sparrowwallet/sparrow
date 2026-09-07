@@ -6,10 +6,11 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import java.util.Set;
 
 /**
- * Posted once per wallet history pass where the server supplied a proof that did not reconstruct the merkle root of the verified header at the height
- * it reported - the server proven wrong rather than merely unhelpful. The transactions carry the reported heights, and are already written unconfirmed.
+ * Posted where the server supplied a proof that did not reconstruct the merkle root of the verified header at the height it reported - the server
+ * proven wrong rather than merely unhelpful. Once per wallet history pass, or once for a transaction the transaction tab asked about. The transactions
+ * carry the reported heights, and what a wallet holds is already written unconfirmed.
  * <p>
- * Dispatched on the wallet history thread, so a handler must hop to the application thread itself.
+ * Dispatched on the thread that asked for the proof, so a handler must hop to the application thread itself.
  */
 public class TransactionProofsFailedEvent extends TransactionProofsEvent {
     public TransactionProofsFailedEvent(Wallet wallet, Set<BlockTransactionHash> references) {

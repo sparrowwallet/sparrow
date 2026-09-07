@@ -1547,12 +1547,18 @@ public class AppServices {
 
     private void showProofsDialog(TransactionProofsEvent event, String title, String content) {
         Platform.runLater(() -> {
-            ButtonType refreshButton = new ButtonType("Refresh Wallet", ButtonBar.ButtonData.OK_DONE);
-            Optional<ButtonType> optType = showErrorDialog(title, content + (event.getReferences().size() == 1 ? " It is" : " They are")
-                    + " shown as unconfirmed until verified.\n\nConsider switching servers, and refreshing the wallet afterwards.",
-                    ButtonType.CANCEL, refreshButton);
-            if(optType.isPresent() && optType.get() == refreshButton) {
-                EventManager.get().post(new RequestWalletRefreshEvent(event.getWallet()));
+            if(event.getWallet() == null) {
+                //Reached outside any wallet, so there is no history holding it and nothing to refresh: it is shown at the height the server reported,
+                //marked as unproven, and switching servers is the only thing that puts the question to anyone else
+                showErrorDialog(title, content + " It is shown at that height marked unverified.\n\nConsider switching servers.");
+            } else {
+                ButtonType refreshButton = new ButtonType("Refresh Wallet", ButtonBar.ButtonData.OK_DONE);
+                Optional<ButtonType> optType = showErrorDialog(title, content + (event.getReferences().size() == 1 ? " It is" : " They are")
+                        + " shown as unconfirmed until verified.\n\nConsider switching servers, and refreshing the wallet afterwards.",
+                        ButtonType.CANCEL, refreshButton);
+                if(optType.isPresent() && optType.get() == refreshButton) {
+                    EventManager.get().post(new RequestWalletRefreshEvent(event.getWallet()));
+                }
             }
         });
     }

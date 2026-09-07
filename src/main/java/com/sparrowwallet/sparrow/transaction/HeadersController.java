@@ -93,6 +93,10 @@ public class HeadersController extends TransactionFormController implements Init
     //The txid:height last asked about, so that a redraw does not ask again, and the request that asked it
     private String verificationRequestedPair;
 
+    //The txid:height the connected server answered without proving. Only an answer marks the form, so the wait for one is not itself an accusation,
+    //and only this connection's: what one server would not prove is not something the next has been asked, still less refused
+    private String verificationUnprovenPair;
+
     private ElectrumServer.TransactionVerificationService verificationService;
 
     @FXML
@@ -175,6 +179,9 @@ public class HeadersController extends TransactionFormController implements Init
 
     @FXML
     private Label blockStatus;
+
+    @FXML
+    private Label unverifiedWarning;
 
     @FXML
     private Field blockHeightField;
@@ -354,6 +361,8 @@ public class HeadersController extends TransactionFormController implements Init
         futureBlockWarning.setVisible(false);
         futureDateWarning.managedProperty().bind(futureDateWarning.visibleProperty());
         futureDateWarning.setVisible(false);
+        unverifiedWarning.managedProperty().bind(unverifiedWarning.visibleProperty());
+        unverifiedWarning.setVisible(false);
 
         locktimeNone.setValueFactory(new IntegerSpinner.ValueFactory(0, (int)Transaction.MAX_BLOCK_LOCKTIME-1, 0));
         if(tx.getLocktime() < Transaction.MAX_BLOCK_LOCKTIME) {
@@ -841,26 +850,28 @@ public class HeadersController extends TransactionFormController implements Init
         //the wallet's own transaction and the one an input fetch reports are both handed over without what a proof has since established
         BlockTransaction blockTransaction = ElectrumServer.getProvenTransaction(reportedTransaction);
 
-        //A block hash is recorded only where the transaction was proven to be in that block, so a confirmed height without one is the server's word
-        //alone. Asked of what is shown rather than of the wallets: a height a wallet refused and demoted is fetched from the server again, and the
-        //server's answer is what reaches this form
-        boolean unverified = blockTransaction.getHeight() > 0 && !ElectrumServer.isProven(blockTransaction) && ElectrumServer.isVerifyingTransactions();
-        String unverifiedSuffix = unverified ? " (Unverified)" : "";
-        blockStatus.setTooltip(unverified ? new Tooltip("The server reported this height but has not proven the transaction was included in that block") : null);
+        //A block hash is recorded only where the transaction was proven to be in that block, and a wallet's own transaction normally arrives carrying
+        //one. What is left is a height this tab took from the server: a transaction no wallet holds, and one a wallet refused and demoted, which is
+        //fetched from the server again and reaches this form as its answer rather than as the wallet's
+        boolean unproven = blockTransaction.getHeight() > 0 && !ElectrumServer.isProven(blockTransaction) && ElectrumServer.isVerifyingTransactions();
+
+        //Marked where the server was asked and did not prove it, and not while it is still being asked: a proof is the ordinary outcome, so marking
+        //the wait for one would put a warning on almost every transaction opened and leave the user nothing to read in the one case it means something
+        unverifiedWarning.setVisible(unproven && (blockTransaction.getHashAsString() + ":" + blockTransaction.getHeight()).equals(verificationUnprovenPair));
 
         if(Sha256Hash.ZERO_HASH.equals(blockTransaction.getBlockHash()) && blockTransaction.getHeight() == 0 && headersForm.getPsbt() == null) {
             //A zero block hash indicates that this blocktransaction is incomplete and the height is likely incorrect if we are not sending a tx
             blockStatus.setText("Unknown");
         } else if(currentHeight == null) {
-            blockStatus.setText(blockTransaction.getHeight() > 0 ? "Confirmed" + unverifiedSuffix : "Unconfirmed");
+            blockStatus.setText(blockTransaction.getHeight() > 0 ? "Confirmed" : "Unconfirmed");
         } else {
             int confirmations = blockTransaction.getHeight() > 0 ? currentHeight - blockTransaction.getHeight() + 1 : 0;
             if(confirmations == 0) {
                 blockStatus.setText("Unconfirmed");
             } else if(confirmations == 1) {
-                blockStatus.setText(confirmations + " Confirmation" + unverifiedSuffix);
+                blockStatus.setText(confirmations + " Confirmation");
             } else {
-                blockStatus.setText(confirmations + " Confirmations" + unverifiedSuffix);
+                blockStatus.setText(confirmations + " Confirmations");
             }
 
             if(confirmations <= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
@@ -911,7 +922,7 @@ public class HeadersController extends TransactionFormController implements Init
             signedByField.setVisible(false);
         }
 
-        if(unverified) {
+        if(unproven) {
             verifyBlockTransaction(blockTransaction);
         }
     }
@@ -919,12 +930,12 @@ public class HeadersController extends TransactionFormController implements Init
     /**
      * Asks the server to prove the height it reported for a transaction that did not arrive proven, whether or not a wallet holds it: what a wallet
      * proved is carried on the transaction it holds, and a height fetched from the server again is the server's however familiar the txid. Started
-     * from the form rather than from the fetch so that the transaction is shown while this runs, and shown unverified until it returns a header: a
-     * server that declines the proof leaves the claim standing as its own.
+     * from the form rather than from the fetch so that the transaction is shown while this runs, the height standing unqualified until the server has
+     * had its chance to substantiate it. ElectrumServer raises the dialog for a server that will not; the form marks what the dialog was raised about.
      * <p>
      * The pair records what this server has answered, so only an answer records it. Asked while offline, or cut off partway, nothing has been
      * answered and the next redraw asks again - the capability that decides whether to ask at all is settled at connect and outlives the connection,
-     * so without this an offline redraw would leave the tab reading unverified on a question no server was ever put.
+     * so without this an offline redraw would settle the pair on a question no server was ever put, and no later redraw would ask it.
      */
     private void verifyBlockTransaction(BlockTransaction blockTransaction) {
         String pair = blockTransaction.getHashAsString() + ":" + blockTransaction.getHeight();
@@ -945,6 +956,10 @@ public class HeadersController extends TransactionFormController implements Init
                 //was verified against rather than looked up, so what is shown does not rest on the proof having been remembered
                 if(provenHeader != null) {
                     headersForm.setBlockTransaction(ElectrumServer.getProvenTransaction(blockTransaction, provenHeader));
+                } else if(ElectrumServer.isVerifyingTransactions()) {
+                    //The server had its retries and did not substantiate the height, which is now the tab's to show. Asked of the capability rather
+                    //than of the answer, since a server turning out not to implement the call at all returns the same nothing and has refused nothing
+                    verificationUnprovenPair = pair;
                 }
 
                 //Redrawn whatever the answer, since a server turning out not to implement the call turns verification off, and the form would else be
@@ -1944,8 +1959,10 @@ public class HeadersController extends TransactionFormController implements Init
                 BlockTransaction reorganised = new BlockTransaction(blockTransaction.getHash(), blockTransaction.getHeight(), null,
                         blockTransaction.getFee(), blockTransaction.getTransaction(), null);
                 headersForm.setBlockTransaction(reorganised);
-                //Both dropped, so that the proof is asked again and an answer already on its way is not applied to a chain it was not asked of
+                //All dropped, so that the proof is asked again, an answer already on its way is not applied to a chain it was not asked of, and a
+                //refusal to prove the block that was there is not shown against the block that replaced it
                 verificationRequestedPair = null;
+                verificationUnprovenPair = null;
                 verificationService = null;
                 updateBlockchainForm(reorganised, AppServices.getCurrentBlockHeight());
             }
@@ -1963,6 +1980,7 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void disconnection(DisconnectionEvent event) {
         verificationRequestedPair = null;
+        verificationUnprovenPair = null;
         broadcastProgressBar.setDisable(true);
         if(broadcastProgressBar.getProgress() < 0) {
             broadcastProgressBar.setProgress(0);
