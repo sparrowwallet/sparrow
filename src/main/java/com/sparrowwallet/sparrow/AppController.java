@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.dns.DnsPaymentCache;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.*;
+import com.sparrowwallet.drongo.silentpayments.InvalidSilentPaymentException;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.hummingbird.UR;
@@ -821,6 +822,9 @@ public class AppController implements Initializable {
         TabData tabData = (TabData)selectedTab.getUserData();
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
+            if(!verifyPSBT(transactionTabData.getTransactionData().getSigningWallet(), transactionTabData.getPsbt())) {
+                return;
+            }
 
             Stage window = new Stage();
             FileChooser fileChooser = new FileChooser();
@@ -876,6 +880,10 @@ public class AppController implements Initializable {
         TabData tabData = (TabData)selectedTab.getUserData();
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
+            if(!verifyPSBT(transactionTabData.getTransactionData().getSigningWallet(), transactionTabData.getPsbt())) {
+                return;
+            }
+
             String data = asBase64 ? transactionTabData.getPsbt().getForExport().toBase64String() : transactionTabData.getPsbt().getForExport().toString();
 
             ClipboardContent content = new ClipboardContent();
@@ -889,6 +897,9 @@ public class AppController implements Initializable {
         TabData tabData = (TabData)selectedTab.getUserData();
         if(tabData.getType() == TabData.TabType.TRANSACTION) {
             TransactionTabData transactionTabData = (TransactionTabData)tabData;
+            if(!verifyPSBT(transactionTabData.getTransactionData().getSigningWallet(), transactionTabData.getPsbt())) {
+                return;
+            }
 
             byte[] psbtBytes = transactionTabData.getPsbt().getForExport().serialize();
             CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
@@ -2185,12 +2196,16 @@ public class AppController implements Initializable {
             if(!psbt.isFinalized()) {
                 //As per BIP174, combine PSBTs with matching transactions so long as they are not yet finalized
                 try {
-                    currentPsbt.verifyCombinedSignatures(psbt);
+                    PSBT combinedPsbt = currentPsbt.verifyCombinedSignatures(psbt);
+                    //A combine can resolve a silent payment output script, which is only valid if the metadata provided with it proves the claimed address
+                    verifySilentPaymentScripts(transactionTabData.getTransactionData().getSigningWallet(), combinedPsbt);
                     currentPsbt.combine(psbt);
                     setTabName(tab, name);
                     EventManager.get().post(new PSBTCombinedEvent(currentPsbt));
                 } catch(PSBTSignatureException e) {
                     AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+                } catch(InvalidSilentPaymentException e) {
+                    AppServices.showErrorDialog("Unverified Silent Payment Outputs", e.getMessage());
                 }
             } else {
                 //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
@@ -2201,6 +2216,23 @@ public class AppController implements Initializable {
         }
 
         tabs.getSelectionModel().select(tab);
+    }
+
+    private boolean verifyPSBT(Wallet signingWallet, PSBT psbt) {
+        try {
+            verifySilentPaymentScripts(signingWallet, psbt);
+        } catch(InvalidSilentPaymentException e) {
+            showErrorDialog("Unverified Silent Payment Outputs", e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    private void verifySilentPaymentScripts(Wallet signingWallet, PSBT psbt) throws InvalidSilentPaymentException {
+        if(signingWallet != null) {
+            signingWallet.verifySilentPaymentScripts(psbt);
+        }
     }
 
     private boolean verifyTransactionContext(PSBT contextPsbt, Transaction transaction, PSBT psbt, String source) {

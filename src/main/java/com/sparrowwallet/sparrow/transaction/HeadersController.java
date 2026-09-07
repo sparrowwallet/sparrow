@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.*;
+import com.sparrowwallet.drongo.silentpayments.InvalidSilentPaymentException;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
@@ -1098,6 +1099,10 @@ public class HeadersController extends TransactionFormController implements Init
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
 
+        if(!verifyPSBT(headersForm.getSigningWallet(), headersForm.getPsbt())) {
+            return;
+        }
+
         //TODO: Remove once Cobo Vault support has been removed
         boolean addLegacyEncodingOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showLegacyQR());
         boolean addBbqrOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
@@ -1170,6 +1175,10 @@ public class HeadersController extends TransactionFormController implements Init
     public void savePSBT(ActionEvent event) {
         ToggleButton toggleButton = (ToggleButton)event.getSource();
         toggleButton.setSelected(false);
+
+        if(!verifyPSBT(headersForm.getSigningWallet(), headersForm.getPsbt())) {
+            return;
+        }
 
         Stage window = new Stage();
 
@@ -1276,6 +1285,11 @@ public class HeadersController extends TransactionFormController implements Init
             return;
         }
 
+        //Software signing verifies the silent payment outputs it does not compute, so do the same before the PSBT is sent to a device
+        if(!verifyPSBT(headersForm.getSigningWallet(), headersForm.getPsbt())) {
+            return;
+        }
+
         DeviceSignDialog dlg = new DeviceSignDialog(headersForm.getSigningWallet(), fingerprints, headersForm.getPsbt());
         dlg.initOwner(signButton.getScene().getWindow());
         dlg.initModality(Modality.NONE);
@@ -1286,12 +1300,33 @@ public class HeadersController extends TransactionFormController implements Init
         if(optionalSignedPsbt.isPresent()) {
             PSBT signedPsbt = optionalSignedPsbt.get();
             try {
-                headersForm.getPsbt().verifyCombinedSignatures(signedPsbt);
+                PSBT combinedPsbt = headersForm.getPsbt().verifyCombinedSignatures(signedPsbt);
+                //A device can resolve a silent payment output script, which is only valid if the metadata provided with it proves the claimed address
+                verifySilentPaymentScripts(headersForm.getSigningWallet(), combinedPsbt);
                 headersForm.getPsbt().combine(signedPsbt);
                 EventManager.get().post(new PSBTCombinedEvent(headersForm.getPsbt()));
             } catch(PSBTSignatureException e) {
                 AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+            } catch(InvalidSilentPaymentException e) {
+                AppServices.showErrorDialog("Unverified Silent Payment Outputs", e.getMessage());
             }
+        }
+    }
+
+    private boolean verifyPSBT(Wallet signingWallet, PSBT psbt) {
+        try {
+            verifySilentPaymentScripts(signingWallet, psbt);
+        } catch(InvalidSilentPaymentException e) {
+            showErrorDialog("Unverified Silent Payment Outputs", e.getMessage());
+            return false;
+        }
+
+        return true;
+    }
+
+    private void verifySilentPaymentScripts(Wallet signingWallet, PSBT psbt) throws InvalidSilentPaymentException {
+        if(signingWallet != null) {
+            signingWallet.verifySilentPaymentScripts(psbt);
         }
     }
 
