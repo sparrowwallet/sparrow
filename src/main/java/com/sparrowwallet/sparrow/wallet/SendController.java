@@ -1229,11 +1229,11 @@ public class SendController extends WalletFormController implements Initializabl
         Wallet wallet = getWalletForm().getWallet();
         Storage storage = AppServices.get().getOpenWallets().get(wallet);
         if(wallet.isEncrypted()) {
-            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
             dlg.initOwner(paymentTabs.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
-                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get(), storage);
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
