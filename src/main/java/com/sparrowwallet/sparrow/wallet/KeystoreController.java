@@ -203,11 +203,11 @@ public class KeystoreController extends WalletFormController implements Initiali
             }
         });
         xpub.textProperty().addListener((observable, oldValue, newValue) -> {
-            boolean valid = ExtendedKey.isValid(newValue);
+            ExtendedKey extendedKey = ExtendedKey.isValid(newValue) ? ExtendedKey.fromDescriptor(newValue) : null;
+            boolean valid = extendedKey != null && extendedKey.getKey().isPubKeyOnly();
             if(valid) {
-                ExtendedKey extendedKey = ExtendedKey.fromDescriptor(newValue);
                 setXpubContext(extendedKey);
-                if(!extendedKey.equals(keystore.getExtendedPublicKey()) && extendedKey.getKey().isPubKeyOnly()) {
+                if(!extendedKey.equals(keystore.getExtendedPublicKey())) {
                     keystore.setExtendedPublicKey(extendedKey);
                     EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_XPUB));
 
@@ -234,6 +234,8 @@ public class KeystoreController extends WalletFormController implements Initiali
                     keystore.setSilentPaymentScanAddress(silentPaymentScanAddress);
                     EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.KEYSTORE_SP_SCAN));
                 }
+            } else {
+                spScan.setContextMenu(null);
             }
         });
 
@@ -327,6 +329,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         validationSupport.registerValidator(xpub, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is required", getWalletForm().getWallet().getPolicyType() != PolicyType.SINGLE_SP && newValue.trim().isEmpty()),
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, Network.get().getXpubHeader().getDisplayName() + " is invalid", getWalletForm().getWallet().getPolicyType() != PolicyType.SINGLE_SP && !ExtendedKey.isValid(newValue)),
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "An extended private key cannot be used in a watch only wallet", getWalletForm().getWallet().getPolicyType() != PolicyType.SINGLE_SP && ExtendedKey.isValid(newValue) && !ExtendedKey.fromDescriptor(newValue).getKey().isPubKeyOnly()),
                 (Control c, String newValue) -> {
                     if(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP || !ExtendedKey.isValid(newValue)) {
                         return new ValidationResult();
