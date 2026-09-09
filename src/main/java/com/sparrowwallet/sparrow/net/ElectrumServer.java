@@ -73,7 +73,7 @@ public class ElectrumServer {
 
     static CloseableTransport transport;
 
-    private static final Map<String, List<String>> subscribedScriptHashes = new ConcurrentHashMap<>();
+    private static final Map<String, String> subscribedScriptHashes = Collections.synchronizedMap(new HashMap<>());
 
     private static Server previousServer;
 
@@ -699,9 +699,9 @@ public class ElectrumServer {
             for(Map.Entry<WalletNode, ScriptHashTx[]> entry : nodeHashHistory.entrySet()) {
                 WalletNode node = entry.getKey();
                 String scriptHash = pathScriptHashes.get(node.getDerivationPath());
-                List<String> statuses = subscribedScriptHashes.get(scriptHash);
+                String subscribedStatus = getSubscribedScriptHashStatus(scriptHash);
 
-                if(statuses != null && !statuses.isEmpty()) {
+                if(subscribedStatus != null) {
                     //Optimize for txs that are already known (broadcasted or mempool-persisted)
                     for(Sha256Hash txid : candidateTxs.keySet()) {
                         BlockTransaction blkTx = candidateTxs.get(txid);
@@ -712,7 +712,7 @@ public class ElectrumServer {
                             scriptHashTxes.add(new ScriptHashTx(candidateHeights.get(txid), txid.toString(), blkTx.getFee() == null ? 0 : blkTx.getFee()));
 
                             String status = getScriptHashStatus(scriptHashTxes);
-                            if(Objects.equals(status, statuses.getLast())) {
+                            if(Objects.equals(status, subscribedStatus)) {
                                 entry.setValue(scriptHashTxes.toArray(new ScriptHashTx[0]));
                                 pathScriptHashes.remove(node.getDerivationPath());
                             }
@@ -732,7 +732,7 @@ public class ElectrumServer {
                         }
 
                         String status = getScriptHashStatus(scriptHashTxes);
-                        if(Objects.equals(status, statuses.getLast())) {
+                        if(Objects.equals(status, subscribedStatus)) {
                             entry.setValue(scriptHashTxes.toArray(new ScriptHashTx[0]));
                             pathScriptHashes.remove(node.getDerivationPath());
                         }
@@ -2396,7 +2396,7 @@ public class ElectrumServer {
         return Utils.bytesToHex(reversed);
     }
 
-    public static Map<String, List<String>> getSubscribedScriptHashes() {
+    public static Map<String, String> getSubscribedScriptHashes() {
         return subscribedScriptHashes;
     }
 
@@ -2784,17 +2784,11 @@ public class ElectrumServer {
     }
 
     public static String getSubscribedScriptHashStatus(String scriptHash) {
-        List<String> existingStatuses = subscribedScriptHashes.get(scriptHash);
-        if(existingStatuses != null && !existingStatuses.isEmpty()) {
-            return existingStatuses.get(existingStatuses.size() - 1);
-        }
-
-        return null;
+        return subscribedScriptHashes.get(scriptHash);
     }
 
     public static void updateSubscribedScriptHashStatus(String scriptHash, String status) {
-        List<String> existingStatuses = subscribedScriptHashes.computeIfAbsent(scriptHash, k -> new ArrayList<>());
-        existingStatuses.add(status);
+        subscribedScriptHashes.put(scriptHash, status);
     }
 
     public static void updateRetrievedBlockHeaders(Integer blockHeight, BlockHeader blockHeader) {
