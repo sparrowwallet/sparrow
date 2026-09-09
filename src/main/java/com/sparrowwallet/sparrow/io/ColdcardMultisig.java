@@ -121,7 +121,8 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         Wallet wallet = new Wallet();
         wallet.setPolicyType(PolicyType.MULTI_HD);
 
-        int threshold = 2;
+        int threshold = 0;
+        int cosigners = 0;
         ScriptType scriptType = ScriptType.P2SH;
         String derivation = null;
 
@@ -143,7 +144,12 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
                             wallet.setName(value.trim());
                             break;
                         case "Policy":
-                            threshold = Integer.parseInt(value.split(" ")[0]);
+                            String[] policy = value.split("\\s+");
+                            if(policy.length != 3) {
+                                throw new IllegalStateException("Could not determine the multisig policy from \"" + line + "\"");
+                            }
+                            threshold = Integer.parseInt(policy[0]);
+                            cosigners = Integer.parseInt(policy[2]);
                             break;
                         case "Derivation":
                         case "# derivation":
@@ -167,8 +173,16 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             }
 
 
-            Policy policy = Policy.getPolicy(PolicyType.MULTI_HD, scriptType, wallet.getKeystores(), threshold);
-            wallet.setDefaultPolicy(policy);
+            if(threshold == 0) {
+                throw new IllegalStateException("This file does not specify the multisig policy");
+            }
+
+            if(cosigners != wallet.getKeystores().size()) {
+                throw new IllegalStateException("This file specifies a policy of " + threshold + " of " + cosigners + ", but contains " + wallet.getKeystores().size() + " cosigner key" + (wallet.getKeystores().size() == 1 ? "" : "s"));
+            }
+
+            Policy walletPolicy = Policy.getPolicy(PolicyType.MULTI_HD, scriptType, wallet.getKeystores(), threshold);
+            wallet.setDefaultPolicy(walletPolicy);
             wallet.setScriptType(scriptType);
 
             try {

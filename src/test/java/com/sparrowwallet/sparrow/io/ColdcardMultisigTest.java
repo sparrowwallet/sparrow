@@ -100,6 +100,18 @@ public class ColdcardMultisigTest extends IoTest {
     }
 
     @Test
+    public void importWalletMissingPolicy() {
+        ColdcardMultisig ccMultisig = new ColdcardMultisig();
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.importWallet(getInputStream("cc-multisig-export-nopolicy.txt"), null));
+    }
+
+    @Test
+    public void importWalletMissingCosigner() {
+        ColdcardMultisig ccMultisig = new ColdcardMultisig();
+        Assertions.assertThrows(ImportException.class, () -> ccMultisig.importWallet(getInputStream("cc-multisig-export-missingkey.txt"), null));
+    }
+
+    @Test
     public void exportWallet1() throws ImportException, ExportException, IOException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         byte[] walletBytes = ByteStreams.toByteArray(getInputStream("cc-multisig-export-1.txt"));
