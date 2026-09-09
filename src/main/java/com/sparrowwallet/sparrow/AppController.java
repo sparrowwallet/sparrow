@@ -2209,9 +2209,15 @@ public class AppController implements Initializable {
                 }
             } else {
                 //If the new PSBT is finalized, copy the finalized fields to the existing unfinalized PSBT
-                currentPsbt.copyFinalizedFields(psbt);
-                setTabName(tab, name);
-                EventManager.get().post(new PSBTFinalizedEvent(currentPsbt));
+                try {
+                    //A finalized PSBT is copied rather than combined, so the signatures it provides are verified here before they replace those already collected
+                    currentPsbt.verifyFinalizedSignatures(psbt);
+                    currentPsbt.copyFinalizedFields(psbt);
+                    setTabName(tab, name);
+                    EventManager.get().post(new PSBTFinalizedEvent(currentPsbt));
+                } catch(PSBTSignatureException e) {
+                    AppServices.showErrorDialog("Invalid PSBT", e.getMessage());
+                }
             }
         }
 
