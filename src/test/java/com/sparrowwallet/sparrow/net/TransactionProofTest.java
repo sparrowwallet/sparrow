@@ -969,8 +969,8 @@ public class TransactionProofTest {
 
         //The server has not changed its mind, and still will not prove it
         String scriptHash = ElectrumServer.getScriptHash(node);
-        server.serveHistory(node.getDerivationPath(), new ScriptHashTx(PROVEN_HEIGHT, transaction.getTxId().toString(), 0));
-        server.serveScriptHashStatus(scriptHash, ElectrumServer.getScriptHashStatus(List.of(new ScriptHashTx(PROVEN_HEIGHT, transaction.getTxId().toString(), 0))));
+        server.serveHistory(node.getDerivationPath(), new ScriptHashTx(PROVEN_HEIGHT, transaction.getTxId().toString(), null));
+        server.serveScriptHashStatus(scriptHash, ElectrumServer.getScriptHashStatus(List.of(new ScriptHashTx(PROVEN_HEIGHT, transaction.getTxId().toString(), null))));
 
         ElectrumServer electrumServer = new ElectrumServer();
         assertTrue(electrumServer.fetchAndCalculateHistory(wallet, null, null));
@@ -1034,7 +1034,7 @@ public class TransactionProofTest {
                 chain.get(PROVEN_HEIGHT - 1).getHash())));
         node.getTransactionOutputs().add(new BlockTransactionHashIndex(transaction.getTxId(), PROVEN_HEIGHT, null, 0L, 0, 10000));
 
-        ScriptHashTx confirmed = new ScriptHashTx(PROVEN_HEIGHT, transaction.getTxId().toString(), 0);
+        ScriptHashTx confirmed = new ScriptHashTx(PROVEN_HEIGHT, transaction.getTxId().toString(), null);
         server.serveHistory(node.getDerivationPath(), confirmed);
         server.serveScriptHashStatus(ElectrumServer.getScriptHash(node), ElectrumServer.getScriptHashStatus(List.of(confirmed)));
 

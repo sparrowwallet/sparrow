@@ -14,11 +14,11 @@ public class ScriptHashTx {
 
     public int height;
     public String tx_hash;
-    public long fee;
+    public Long fee;
 
     public ScriptHashTx() {}
 
-    public ScriptHashTx(int height, String tx_hash, long fee) {
+    public ScriptHashTx(int height, String tx_hash, Long fee) {
         this.height = height;
         this.tx_hash = tx_hash;
         this.fee = fee;

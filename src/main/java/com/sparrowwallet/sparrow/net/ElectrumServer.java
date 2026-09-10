@@ -46,6 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -374,7 +375,7 @@ public class ElectrumServer {
             return 0;
         });
 
-        return txos.stream().map(txo -> new ScriptHashTx(txo.getHeight(), txo.getHashAsString(), txo.getFee() == null ? 0 : txo.getFee())).toList();
+        return txos.stream().map(txo -> new ScriptHashTx(txo.getHeight(), txo.getHashAsString(), txo.getFee())).toList();
     }
 
     static String getScriptHashStatus(List<ScriptHashTx> scriptHashTxes) {
@@ -709,7 +710,7 @@ public class ElectrumServer {
                             blkTx.getTransaction().getInputs().stream().map(txInput -> getPrevOutput(wallet, txInput))
                                     .filter(Objects::nonNull).map(ElectrumServer::getScriptHash).anyMatch(scriptHash::equals)) {
                             List<ScriptHashTx> scriptHashTxes = new ArrayList<>(getScriptHashes(scriptHash, node));
-                            scriptHashTxes.add(new ScriptHashTx(candidateHeights.get(txid), txid.toString(), blkTx.getFee() == null ? 0 : blkTx.getFee()));
+                            scriptHashTxes.add(new ScriptHashTx(candidateHeights.get(txid), txid.toString(), blkTx.getFee()));
 
                             String status = getScriptHashStatus(scriptHashTxes);
                             if(Objects.equals(status, subscribedStatus)) {
@@ -727,7 +728,7 @@ public class ElectrumServer {
                         for(ScriptHashTx scriptHashTx : scriptHashTxes) {
                             if(scriptHashTx.height <= 0) {
                                 scriptHashTx.height = AppServices.getCurrentBlockHeight();
-                                scriptHashTx.fee = 0;
+                                scriptHashTx.fee = null;
                             }
                         }
 
@@ -1870,6 +1871,25 @@ public class ElectrumServer {
                 }
             }
 
+            //A fee is the one thing a transaction does not carry and the txid re-hash above cannot test, so where every transaction funding the inputs
+            //is known it is worked out from them, and the fee the server reported is used only where it cannot be. A transaction of this pass reaches
+            //the wallet only once this method returns, so the references are keyed by hash to be asked alongside it
+            Map<Sha256Hash, Transaction> referencedTransactions = new HashMap<>(references.size());
+            for(Map.Entry<BlockTransactionHash, Transaction> entry : references.entrySet()) {
+                if(entry.getValue() != null) {
+                    referencedTransactions.put(entry.getKey().getHash(), entry.getValue());
+                }
+            }
+            Function<Sha256Hash, Transaction> inputTransactions = txid -> {
+                Transaction referenced = referencedTransactions.get(txid);
+                if(referenced != null) {
+                    return referenced;
+                }
+
+                BlockTransaction walletTransaction = wallet == null ? null : wallet.getWalletTransaction(txid);
+                return walletTransaction == null ? null : walletTransaction.getTransaction();
+            };
+
             for(BlockTransactionHash reference : references.keySet()) {
                 Transaction transaction = references.get(reference);
                 if(transaction == null) {
@@ -1890,7 +1910,10 @@ public class ElectrumServer {
                 }
 
                 BlockTransaction cached = wallet == null ? null : wallet.getWalletTransaction(reference.getHash());
-                Long fee = reference.getFee();
+                Long fee = transaction.getFee(inputTransactions);
+                if(fee == null) {
+                    fee = reference.getFee();
+                }
                 if(fee == null && cached != null && cached.getFee() != null) {
                     fee = cached.getFee();
                 }
@@ -1953,7 +1976,7 @@ public class ElectrumServer {
             for(int outputIndex = 0; outputIndex < transaction.getOutputs().size(); outputIndex++) {
                 TransactionOutput output = transaction.getOutputs().get(outputIndex);
                 if (output.getScript().equals(nodeScript)) {
-                    BlockTransactionHashIndex receivingTXO = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), reference.getFee(), output.getIndex(), output.getValue());
+                    BlockTransactionHashIndex receivingTXO = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), blockTransaction.getFee(), output.getIndex(), output.getValue());
                     transactionOutputs.add(receivingTXO);
                 }
             }
@@ -1989,8 +2012,8 @@ public class ElectrumServer {
 
                 TransactionOutput spentOutput = previousTransaction.getTransaction().getOutputs().get((int)input.getOutpoint().getIndex());
                 if(spentOutput.getScript().equals(nodeScript)) {
-                    BlockTransactionHashIndex spendingTXI = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), reference.getFee(), inputIndex, spentOutput.getValue());
-                    BlockTransactionHashIndex spentTXO = new BlockTransactionHashIndex(spentTxHash.getHash(), spentTxHash.getHeight(), previousTransaction.getDate(), spentTxHash.getFee(), spentOutput.getIndex(), spentOutput.getValue(), spendingTXI);
+                    BlockTransactionHashIndex spendingTXI = new BlockTransactionHashIndex(reference.getHash(), reference.getHeight(), blockTransaction.getDate(), blockTransaction.getFee(), inputIndex, spentOutput.getValue());
+                    BlockTransactionHashIndex spentTXO = new BlockTransactionHashIndex(spentTxHash.getHash(), spentTxHash.getHeight(), previousTransaction.getDate(), previousTransaction.getFee(), spentOutput.getIndex(), spentOutput.getValue(), spendingTXI);
 
                     Optional<BlockTransactionHashIndex> optionalReference = transactionOutputs.stream().filter(receivedTXO -> receivedTXO.getHash().equals(spentTXO.getHash()) && receivedTXO.getIndex() == spentTXO.getIndex()).findFirst();
                     if(optionalReference.isEmpty()) {
