@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -14,6 +15,7 @@ import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
@@ -39,6 +41,10 @@ public class WalletLabelsTest {
     private static final String XPUB = "xpub6CatWdiZiodmUeTDp8LT5or8nmbKNcuyvz7WyksVFkKB4RHwCD3XyuvPEbvqAQY3rAPshWcMLoP2fMFMKHPJ4ZeZXYVUhLv1VMrjPC7PW6V";
     private static final String MASTER_FINGERPRINT = "73c5da0a";
     private static final String ORIGIN = "wpkh([73c5da0a/84h/0h/0h])";
+    //Silent payments scan address at m/352'/0'/0' of the BIP39 mnemonic with fingerprint 60bcd3a7
+    private static final String SP_SCAN_ADDRESS = "spscan1qu6d9s9lfd3a99nckpjw7as602lg0950wvcfwg7g4kakhsp32r57qx4853d0ylm42uewydgx6xgz0v20hgthsk2kr84f96jls3q0jywktrv8us5";
+    private static final String SP_MASTER_FINGERPRINT = "60bcd3a7";
+    private static final byte[] SP_TWEAK = Utils.hexToBytes("1111111111111111111111111111111111111111111111111111111111111111");
 
     @TempDir
     private static Path tempHome;
@@ -145,6 +151,46 @@ public class WalletLabelsTest {
     }
 
     @Test
+    public void testImportSilentPayments() throws Exception {
+        SpTestWallet testWallet = createSpTestWallet();
+
+        String fundingTxid = testWallet.fundingBlkTx.getHashAsString();
+        String jsonl = String.join("\n",
+                "{\"type\":\"tx\",\"ref\":\"" + fundingTxid + "\",\"label\":\"Funding transaction\",\"origin\":\"sp([60bcd3a7/352h/0h/0h])\"}",
+                "{\"type\":\"addr\",\"ref\":\"" + testWallet.receiveNode.getAddress() + "\",\"label\":\"Primary address\",\"origin\":\"sp([60BCD3A7/352'/0'/0'])\"}",
+                "{\"type\":\"output\",\"ref\":\"" + fundingTxid + ":0\",\"label\":\"Received coins\",\"origin\":\"sp([00000001/352h/0h/0h])\"}");
+
+        WalletLabels walletLabels = new WalletLabels(List.of(testWallet.walletForm));
+        walletLabels.importWallet(new ByteArrayInputStream(jsonl.getBytes(StandardCharsets.UTF_8)), null);
+
+        Assertions.assertEquals("Funding transaction", testWallet.fundingBlkTx.getLabel());
+        Assertions.assertEquals("Primary address", testWallet.receiveNode.getLabel());
+        Assertions.assertNull(testWallet.fundingTxo.getLabel(), "Mismatched fingerprint should not apply");
+    }
+
+    @Test
+    public void testSilentPaymentsRoundTrip() throws Exception {
+        SpTestWallet sourceWallet = createSpTestWallet();
+        sourceWallet.fundingBlkTx.setLabel("Funding transaction");
+        sourceWallet.receiveNode.setLabel("Primary address");
+        sourceWallet.fundingTxo.setLabel("Received coins");
+
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        new WalletLabels(List.of(sourceWallet.walletForm)).exportWallet(sourceWallet.wallet, outputStream, null);
+
+        //Importing a keystore label requires the AppServices singleton, which is not available outside the UI
+        String exported = outputStream.toString(StandardCharsets.UTF_8).lines().filter(line -> !line.contains("\"type\":\"spscan\"")).collect(Collectors.joining("\n"));
+        Assertions.assertTrue(exported.contains("\"origin\":\"sp([60bcd3a7/352h/0h/0h])\""), "Exported labels should carry the silent payments origin");
+
+        SpTestWallet destinationWallet = createSpTestWallet();
+        new WalletLabels(List.of(destinationWallet.walletForm)).importWallet(new ByteArrayInputStream(exported.getBytes(StandardCharsets.UTF_8)), null);
+
+        Assertions.assertEquals("Funding transaction", destinationWallet.fundingBlkTx.getLabel());
+        Assertions.assertEquals("Primary address", destinationWallet.receiveNode.getLabel());
+        Assertions.assertEquals("Received coins", destinationWallet.fundingTxo.getLabel());
+    }
+
+    @Test
     public void testRoundTrip() throws Exception {
         TestWallet sourceWallet = createTestWallet();
         applyLabels(sourceWallet);
@@ -233,6 +279,43 @@ public class WalletLabelsTest {
         WalletForm walletForm = new WalletForm(storage, wallet);
 
         return new TestWallet(walletForm, wallet, receiveNode0, receiveNode1, fundingBlkTx, spendingBlkTx, fundingTxo0, fundingTxo1, spendingTxi);
+    }
+
+    private SpTestWallet createSpTestWallet() throws Exception {
+        Wallet wallet = new Wallet("SP Labels Test");
+        wallet.setPolicyType(PolicyType.SINGLE_SP);
+        wallet.setScriptType(ScriptType.P2TR);
+
+        Keystore keystore = new Keystore("Test Keystore");
+        keystore.setSource(KeystoreSource.SW_WATCH);
+        keystore.setWalletModel(WalletModel.SPARROW);
+        //Use hardened notation to ensure origin matching normalizes the wallet-side derivation
+        keystore.setKeyDerivation(new KeyDerivation(SP_MASTER_FINGERPRINT, "m/352h/0h/0h"));
+        keystore.setSilentPaymentScanAddress(SilentPaymentScanAddress.fromKeyString(SP_SCAN_ADDRESS));
+        wallet.getKeystores().add(keystore);
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_SP, ScriptType.P2TR, wallet.getKeystores(), null));
+        wallet.setStoredBlockHeight(850010);
+        Assertions.assertTrue(wallet.isValid());
+
+        WalletNode receiveNode = wallet.getNode(KeyPurpose.RECEIVE).addSilentPaymentChild(wallet, 0, SP_TWEAK);
+
+        Date fundingDate = new Date(1700000000000L);
+        Transaction fundingTx = new Transaction();
+        fundingTx.addInput(Sha256Hash.wrap("0000000000000000000000000000000000000000000000000000000000000001"), 0, new Script(new byte[0]));
+        fundingTx.addOutput(100000L, receiveNode.getAddress());
+        BlockTransaction fundingBlkTx = new BlockTransaction(fundingTx.getTxId(), 850000, fundingDate, null, fundingTx);
+        wallet.updateTransactions(Map.of(fundingTx.getTxId(), fundingBlkTx));
+
+        BlockTransactionHashIndex fundingTxo = new BlockTransactionHashIndex(fundingTx.getTxId(), 850000, fundingDate, null, 0, 100000L);
+        receiveNode.getTransactionOutputs().add(fundingTxo);
+
+        Storage storage = new Storage(PersistenceType.JSON, new File(tempHome.toFile(), "sp-labels-test.json"));
+        WalletForm walletForm = new WalletForm(storage, wallet);
+
+        return new SpTestWallet(walletForm, wallet, receiveNode, fundingBlkTx, fundingTxo);
+    }
+
+    private record SpTestWallet(WalletForm walletForm, Wallet wallet, WalletNode receiveNode, BlockTransaction fundingBlkTx, BlockTransactionHashIndex fundingTxo) {
     }
 
     private static class TestWallet {

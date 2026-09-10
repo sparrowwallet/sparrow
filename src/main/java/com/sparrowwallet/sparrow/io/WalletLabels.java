@@ -577,7 +577,7 @@ public class WalletLabels implements WalletImport, WalletExport {
         public static Origin fromOutputDescriptor(OutputDescriptor outputDescriptor) {
             Origin origin = new Origin();
             origin.scriptType = outputDescriptor.getScriptType();
-            origin.keyDerivations = outputDescriptor.getExtendedPublicKeysMap().values().stream()
+            origin.keyDerivations = Stream.concat(outputDescriptor.getExtendedPublicKeysMap().values().stream(), outputDescriptor.getSilentPaymentScanAddresses().values().stream())
                     .map(keyDerivation -> new KeyDerivation(keyDerivation.getMasterFingerprint(), KeyDerivation.writePath(keyDerivation.getDerivation())))
                     .collect(Collectors.toCollection(HashSet::new));
             return origin;
@@ -585,7 +585,7 @@ public class WalletLabels implements WalletImport, WalletExport {
 
         public static Origin fromString(String strOrigin) {
             Origin origin = new Origin();
-            origin.scriptType = ScriptType.fromDescriptor(strOrigin);
+            origin.scriptType = OutputDescriptor.isSilentPaymentDescriptor(strOrigin) ? ScriptType.P2TR : ScriptType.fromDescriptor(strOrigin);
             origin.keyDerivations = new HashSet<>();
             Matcher keyOriginMatcher = KEY_ORIGIN_PATTERN.matcher(strOrigin);
             while(keyOriginMatcher.find()) {

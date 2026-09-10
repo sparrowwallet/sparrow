@@ -104,7 +104,7 @@ public class PdfUtils {
                 String line = scanner.nextLine().trim();
                 if(descriptor != null) {
                     descriptor += line;
-                } else if(ScriptType.fromDescriptor(line) != null) {
+                } else if(ScriptType.fromDescriptor(line) != null || OutputDescriptor.isSilentPaymentDescriptor(line)) {
                     descriptor = line;
                 }
             }
