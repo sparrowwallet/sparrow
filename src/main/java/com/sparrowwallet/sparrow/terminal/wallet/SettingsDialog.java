@@ -140,6 +140,13 @@ public class SettingsDialog extends WalletDialog {
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(getWalletForm().getStorage(), new SecureString(password), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
+
+                        //Key derivation takes long enough to lock the wallet while it runs, and a locked wallet is one the password entered before it must no longer open
+                        if(SparrowTerminal.get().isLocked(getWalletForm().getStorage())) {
+                            showErrorDialog("Wallet Locked", "The wallet was locked before the seed could be displayed.");
+                            return;
+                        }
+
                         ECKey encryptionFullKey = keyDerivationService.getValue();
                         Key key = null;
 
