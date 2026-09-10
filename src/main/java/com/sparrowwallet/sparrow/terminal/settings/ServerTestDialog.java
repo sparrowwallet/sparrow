@@ -134,6 +134,8 @@ public class ServerTestDialog extends DialogWindow {
             connectionService.cancel();
         }
 
+        AppServices.cancelConnection();
+
         connectionService = new ElectrumServer.ConnectionService(false);
         connectionService.setPeriod(Duration.hours(1));
         connectionService.setRestartOnFailure(false);

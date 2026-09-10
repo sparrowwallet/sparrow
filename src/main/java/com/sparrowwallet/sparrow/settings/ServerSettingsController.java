@@ -560,6 +560,10 @@ public class ServerSettingsController extends SettingsDetailController {
             connectionService.cancel();
         }
 
+        if(AppServices.cancelConnection()) {
+            getMasterController().reconnectOnClosingProperty().set(true);
+        }
+
         connectionService = new ElectrumServer.ConnectionService(false);
         connectionService.setPeriod(Duration.hours(1));
         connectionService.setRestartOnFailure(false);

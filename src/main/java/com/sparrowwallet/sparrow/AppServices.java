@@ -752,6 +752,16 @@ public class AppServices {
         return onlineProperty.get() && get().connectionService != null && get().connectionService.isConnected();
     }
 
+    public static boolean cancelConnection() {
+        if(get().connectionService != null && get().connectionService.isRunning()) {
+            onlineProperty.set(false);
+            get().connectionService.cancel();
+            return true;
+        }
+
+        return false;
+    }
+
     public static BooleanProperty onlineProperty() {
         return onlineProperty;
     }
