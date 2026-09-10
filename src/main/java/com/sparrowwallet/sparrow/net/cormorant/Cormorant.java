@@ -68,6 +68,11 @@ public class Cormorant {
     }
 
     public boolean checkWalletImport(Wallet wallet) {
+        if(!useWallets) {
+            log.warn("Attempting to check if " + wallet.getMasterName() + " is imported, but Cormorant was started to test a server connection");
+            return false;
+        }
+
         if(bitcoindClient == null) {
             log.warn("Attempting to check if " + wallet.getMasterName() + " is imported, but Cormorant is not started");
             return false;
