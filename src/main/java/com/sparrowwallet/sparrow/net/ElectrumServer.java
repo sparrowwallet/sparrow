@@ -435,6 +435,26 @@ public class ElectrumServer {
         return invalidated;
     }
 
+    /**
+     * Returns whether any node of the given wallet, or of a nested child wallet, is still holding the exemption a reorg invalidation gave it. Only a
+     * fetch of every node revisits those nodes and clears the exemption, so a refresh that would otherwise fetch a subset must be widened to one.
+     */
+    private static boolean hasReorgInvalidatedScriptHashes(Wallet wallet) {
+        if(reorgInvalidatedScriptHashes.isEmpty()) {
+            return false;
+        }
+
+        List<Wallet> wallets = new ArrayList<>();
+        wallets.add(wallet);
+        for(Wallet childWallet : new ArrayList<>(wallet.getChildWallets())) {
+            if(childWallet.isNested()) {
+                wallets.add(childWallet);
+            }
+        }
+
+        return wallets.stream().flatMap(w -> w.getWalletNodes().keySet().stream()).map(ElectrumServer::getScriptHash).anyMatch(reorgInvalidatedScriptHashes::contains);
+    }
+
     public boolean fetchAndCalculateHistory(Wallet mainWallet, List<Wallet> filterToWallets, Set<WalletNode> filterToNodes) throws ServerException {
         boolean historyFetched = fetchAndCalculateWalletHistory(mainWallet, filterToWallets, filterToNodes);
         for(Wallet childWallet : new ArrayList<>(mainWallet.getChildWallets())) {
@@ -3529,7 +3549,9 @@ public class ElectrumServer {
 
                         //First refresh (acquired): fetch all nodes to re-subscribe scripthashes the server forgot.
                         //Live delta: only the affected ones (newly-discovered SP nodes + nodes spent by the batch).
-                        Set<WalletNode> nodesToFetch = acquired ? null : affectedNodes;
+                        //A reorg needs all nodes as well: a transaction re-included at the same height is already in the wallet, so the batch reports
+                        //nothing affected, while the nodes proving it against the discarded block are revisited only by a fetch of every node.
+                        Set<WalletNode> nodesToFetch = acquired || hasReorgInvalidatedScriptHashes(wallet) ? null : affectedNodes;
                         if(nodesToFetch != null && nodesToFetch.isEmpty()) {
                             return true;
                         }
