@@ -317,11 +317,15 @@ public class WalletForm {
             currentWallet.setBirthHeight(min.getAsInt());
         }
 
-        if(blockHeight != null) {
-            currentWallet.setStoredBlockHeight(blockHeight);
+        //The stored block height is where a silent payments wallet begins its next scan, so it can only follow the chain once a scan has covered it
+        boolean scanned = wallet.getPolicyType() != PolicyType.SINGLE_SP || (spSubscriptionHeld && !spScanInProgress);
+        Integer scannedBlockHeight = scanned ? blockHeight : null;
+
+        if(scannedBlockHeight != null) {
+            currentWallet.setStoredBlockHeight(scannedBlockHeight);
         }
 
-        return notifyIfChanged(blockHeight, currentWallet, previousWallet, nestedHistoryChangedNodes);
+        return notifyIfChanged(scannedBlockHeight, currentWallet, previousWallet, nestedHistoryChangedNodes);
     }
 
     private List<WalletNode> notifyIfChanged(Integer blockHeight, Wallet currentWallet, Wallet previousWallet, List<WalletNode> nestedHistoryChangedNodes) {
