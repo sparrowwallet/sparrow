@@ -326,7 +326,8 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
         }
 
         if(OutputDescriptor.LEGACY_MULTI_PATTERN.matcher(descriptor).find()) {
-            throw new IllegalStateException("The first address in this BSMS record (" + recordAddress + ") does not match the first address of " + firstAddress + " derived by sorting the provided keys");
+            throw new IllegalStateException("This file describes a multi() quorum, which Sparrow imports as the BIP67 sortedmulti() equivalent, and the first address in it (" + recordAddress + ") does not match the first address of " +
+                    firstAddress + " derived by sorting the provided keys. The addresses of this wallet would not match those of the other signers in the quorum unless they sort the keys in the same way.");
         } else {
             throw new IllegalStateException("The first address in this file (" + recordAddress + ") does not match the first address of the provided descriptor (" + firstAddress + "). " +
                     "The coordinator may be providing a different set of keys to each signer in the quorum.");
