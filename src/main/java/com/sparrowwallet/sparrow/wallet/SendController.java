@@ -909,7 +909,7 @@ public class SendController extends WalletFormController implements Initializabl
             long utxoTxFee = unconfirmedUtxoTxs.stream().mapToLong(BlockTransaction::getFee).sum();
             double utxoTxSize = unconfirmedUtxoTxs.stream().mapToDouble(blkTx -> blkTx.getTransaction().getVirtualSize()).sum();
             long thisFee = walletTransaction.getFee();
-            double thisSize = walletTransaction.getTransaction().getVirtualSize();
+            double thisSize = walletTransaction.getVirtualSize();
             double thisRate = thisFee / thisSize;
             double effectiveRate = (utxoTxFee + thisFee) / (utxoTxSize + thisSize);
             if(thisRate > effectiveRate) {

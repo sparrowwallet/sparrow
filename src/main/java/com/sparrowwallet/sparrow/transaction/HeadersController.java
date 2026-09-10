@@ -620,7 +620,27 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateSize() {
         size.setText(headersForm.getTransaction().getSize() + " B");
-        virtualSize.setText(String.format("%.2f", headersForm.getTransaction().getVirtualSize()) + " vB");
+        virtualSize.setText(String.format("%.2f", getVirtualSize()) + " vB");
+    }
+
+    /**
+     * Returns the virtual size the transaction will have once broadcast. Until a silent payments transaction is signed its output scripts have not
+     * been computed, so the transaction is short of the P2TR outputs they become, and the size the send tab derived the fee from is the larger one.
+     */
+    private double getVirtualSize() {
+        double virtualSize = headersForm.getTransaction().getVirtualSize();
+        if(headersForm.getPsbt() != null) {
+            //Signing computes the output scripts on the PSBT outputs alone, so whether one is still to be added is asked of the transaction being sized
+            List<TransactionOutput> txOutputs = headersForm.getTransaction().getOutputs();
+            List<PSBTOutput> psbtOutputs = headersForm.getPsbt().getPsbtOutputs();
+            for(int i = 0; i < txOutputs.size(); i++) {
+                if(psbtOutputs.get(i).getSilentPaymentAddress() != null && txOutputs.get(i).getScriptBytes().length == 0) {
+                    virtualSize += SilentPayment.OUTPUT_SCRIPT_LENGTH;
+                }
+            }
+        }
+
+        return virtualSize;
     }
 
     private Long calculateFee(Map<Sha256Hash, BlockTransaction> inputTransactions) {
@@ -657,7 +677,7 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateFee(Long feeAmt) {
         fee.setValue(feeAmt);
-        double feeRateAmt = feeAmt.doubleValue() / headersForm.getTransaction().getVirtualSize();
+        double feeRateAmt = feeAmt.doubleValue() / getVirtualSize();
         feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vB" + (headersForm.isTransactionFinalized() ? "" : " (non-final)"));
     }
 
@@ -1380,7 +1400,7 @@ public class HeadersController extends TransactionFormController implements Init
         }
 
         if(fee.getValue() > 0) {
-            double feeRateAmt = fee.getValue() / headersForm.getTransaction().getVirtualSize();
+            double feeRateAmt = fee.getValue() / getVirtualSize();
             if(feeRateAmt > AppServices.getLongFeeRatesRange().getLast() || (AppServices.getTargetBlockFeeRates() != null && feeRateAmt > AppServices.getDefaultFeeRate() * FEE_MULTIPLE_LIMIT)) {
                 Optional<ButtonType> optType = AppServices.showWarningDialog("Very high fee rate!",
                         "This transaction pays a very high fee rate of " + String.format("%.0f", feeRateAmt) + " sats/vB.\n\nBroadcast this transaction?", ButtonType.YES, ButtonType.NO);
