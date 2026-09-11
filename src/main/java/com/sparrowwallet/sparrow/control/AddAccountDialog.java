@@ -68,7 +68,8 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
         }
 
         final ButtonType discoverButtonType = new javafx.scene.control.ButtonType("Discover", ButtonBar.ButtonData.LEFT);
-        if(!availableAccounts.isEmpty() && (masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)
+        if(!availableAccounts.isEmpty() && masterWallet.getPolicyType() != PolicyType.SINGLE_SP
+                && (masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)
                         || (masterWallet.getPolicyType() == PolicyType.SINGLE_HD && masterWallet.getKeystores().stream().allMatch(ks -> ks.getSource() == KeystoreSource.HW_USB)))) {
             dialogPane.getButtonTypes().add(discoverButtonType);
             Button discoverButton = (Button)dialogPane.lookupButton(discoverButtonType);
