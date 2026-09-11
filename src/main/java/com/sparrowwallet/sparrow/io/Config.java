@@ -85,6 +85,7 @@ public class Config {
     private boolean legacyServer;
     private Server electrumServer;
     private List<Server> recentElectrumServers;
+    private List<Server> recentIrohServers;
     private File electrumServerCert;
     private boolean useProxy;
     private String proxyServer;
@@ -673,12 +674,17 @@ public class Config {
     public List<Server> getRecentElectrumServers() {
         return recentElectrumServers == null ? new ArrayList<>() : recentElectrumServers;
     }
+    public List<Server> getRecentIrohServers() {
+        return recentIrohServers == null ? new ArrayList<>() : recentIrohServers;
+    }
 
     public boolean addRecentServer() {
         if(serverType == ServerType.BITCOIN_CORE && coreServer != null) {
             return addRecentCoreServer(coreServer);
         } else if(serverType == ServerType.ELECTRUM_SERVER && electrumServer != null) {
             return addRecentElectrumServer(electrumServer);
+        } else if(serverType == ServerType.IROH_SERVER && electrumServer != null) {
+            return addRecentIrohServer(electrumServer);
         }
 
         return false;
@@ -698,6 +704,18 @@ public class Config {
             return true;
         }
 
+        return false;
+    }
+
+    public boolean addRecentIrohServer(Server irohServer) {
+        if(recentIrohServers == null) {
+            recentIrohServers = new ArrayList<>();
+        }
+        if(!recentIrohServers.contains(irohServer)) {
+            recentIrohServers.add(irohServer);
+            flush();
+            return true;
+        }
         return false;
     }
 
