@@ -6,8 +6,6 @@ import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcService;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.NewBlockEvent;
-import com.sparrowwallet.sparrow.event.SilentPaymentsHistoryUpdatedEvent;
-import com.sparrowwallet.sparrow.event.SilentPaymentsScanProgressEvent;
 import com.sparrowwallet.sparrow.event.WalletNodeHistoryChangedEvent;
 import javafx.application.Platform;
 import org.slf4j.Logger;
@@ -59,27 +57,14 @@ public class SubscriptionService {
             return;
         }
 
-        boolean justCompleted = false;
+        //A notification can reach the read thread before the subscribe response has been recorded, so the cache decides
+        //whether to apply it now, hold it until the canonical start height is known, or drop it as being from a prior subscribe
         cache.lock();
         try {
-            //Stale-notification filter: filter out notifications from a prior subscribe
-            Integer canonical = cache.getServerStart();
-            if(canonical == null || subscription.start_height != canonical) {
-                return;
-            }
-            cache.addEntries(history);
-            if(progress >= 1.0 && cache.isScanning()) {
-                cache.complete();
-                justCompleted = true;
-            }
+            ElectrumServer.postSilentPaymentsNotified(silentPaymentAddress,
+                    cache.applyOrHold(subscription.start_height, TcpTransport.getDeliveredResponses(), progress, history));
         } finally {
             cache.unlock();
-        }
-
-        Platform.runLater(() -> EventManager.get().post(new SilentPaymentsScanProgressEvent(silentPaymentAddress, progress)));
-
-        if(progress >= 1.0 && !justCompleted && !history.isEmpty()) {
-            Platform.runLater(() -> EventManager.get().post(new SilentPaymentsHistoryUpdatedEvent(silentPaymentAddress)));
         }
     }
 }

@@ -24,6 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
@@ -41,6 +42,9 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
     private static final Pattern ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
+
+    private static final AtomicLong deliveredResponses = new AtomicLong(); //Counts the responses delivered to callers ordering notifications with responses
+    private static final ThreadLocal<Long> lastResponseSequence = new ThreadLocal<>(); //Sequence of the response this thread's last RPC received
 
     protected final HostAndPort server;
     protected final SocketFactory socketFactory;
@@ -191,6 +195,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
                 throw new IOException("Transport closed");
             }
 
+            lastResponseSequence.set(deliveredResponses.get());
             reading = true;
 
             readingCondition.signal();
@@ -266,6 +271,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         readLock.lock();
         try {
             response = received;
+            deliveredResponses.incrementAndGet();
             reading = false;
             readingCondition.signal();
             while(!reading && running) {
@@ -365,6 +371,15 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     @Override
     public int getTimeoutCount() {
         return readTimeoutIndex;
+    }
+
+    static long getDeliveredResponses() {
+        return deliveredResponses.get();
+    }
+
+    static long getLastResponseSequence() {
+        Long sequence = lastResponseSequence.get();
+        return sequence == null ? 0L : sequence;
     }
 
     private static boolean isNotification(String json) {

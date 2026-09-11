@@ -2557,7 +2557,7 @@ public class ElectrumServer {
                 SilentPaymentsSubscription response = electrumServerRpc.subscribeSilentPayments(getTransport(), wallet, scanPrivHex, spendPubHex, neededStart, NO_LABELS);
                 cache.lock();
                 try {
-                    cache.setServerStart(response.start_height);
+                    postSilentPaymentsNotified(spAddress, cache.setServerStart(response.start_height, TcpTransport.getLastResponseSequence()));
                 } finally {
                     cache.unlock();
                 }
@@ -2565,7 +2565,7 @@ public class ElectrumServer {
                 cache.lock();
                 try {
                     if(rollbackSnapshot != null && cache.hasMultipleHolders()) {
-                        cache.restoreFromSnapshot(rollbackSnapshot);
+                        postSilentPaymentsNotified(spAddress, cache.restoreFromSnapshot(rollbackSnapshot));
                     } else {
                         cache.cancel();
                     }
@@ -2576,6 +2576,22 @@ public class ElectrumServer {
                     cache.unlock();
                 }
                 throw e;
+            }
+        }
+    }
+
+    /**
+     * Posts the events for notifications the cache has applied. Called while its lock is still held, so that events
+     * reach the application thread in the order the notifications were applied rather than the order their posting
+     * threads happen to be scheduled in, which a replay racing a live notification would otherwise invert. Posting
+     * only enqueues, so it cannot block on the application thread. Shared by the live notification path and the
+     * replay of notifications held while the subscribe response was still in flight.
+     */
+    static void postSilentPaymentsNotified(String spAddress, List<SilentPaymentsScanCache.Notified> notifiedList) {
+        for(SilentPaymentsScanCache.Notified notified : notifiedList) {
+            Platform.runLater(() -> EventManager.get().post(new SilentPaymentsScanProgressEvent(spAddress, notified.progress())));
+            if(notified.historyUpdated()) {
+                Platform.runLater(() -> EventManager.get().post(new SilentPaymentsHistoryUpdatedEvent(spAddress)));
             }
         }
     }

@@ -1,17 +1,34 @@
 package com.sparrowwallet.sparrow.net;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 class SilentPaymentsScanCache {
+    private static final Logger log = LoggerFactory.getLogger(SilentPaymentsScanCache.class);
+
     private enum State { SCANNING, COMPLETED, CANCELLED }
+
+    //The specification has the server send the subscribe response before any notification for it, so only a stalled
+    //subscribe RPC can hold more than the one or two this leaves room for. The completion notification is the last to
+    //arrive and so the first that a cap would lose, which would leave the scan waiting for a completion that can no
+    //longer come, so reaching this cancels the scan instead of dropping anything
+    private static final int MAX_PENDING_NOTIFICATIONS = 1000;
 
     private Integer serverStart;
     private int refCount;
     private State state = State.SCANNING;
     private final List<SilentPaymentsTx> entries = new ArrayList<>();
+
+    //The subscribe response naming the canonical start height is recorded only once the RPC returns, while the read
+    //thread that delivered it is free to dispatch a notification for the same subscription first. One arriving that
+    //early is held here until setServerStart can say whether it belongs to the subscription being established
+    private final List<PendingNotification> pendingNotifications = new ArrayList<>();
 
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition subscriptionComplete = lock.newCondition();
@@ -51,6 +68,7 @@ class SilentPaymentsScanCache {
         assert lock.isHeldByCurrentThread();
         if(state == State.SCANNING) {
             state = State.CANCELLED;
+            pendingNotifications.clear();
             subscriptionComplete.signalAll();
             scanComplete.signalAll();
         }
@@ -90,6 +108,7 @@ class SilentPaymentsScanCache {
         assert lock.isHeldByCurrentThread();
         serverStart = null;
         entries.clear();
+        pendingNotifications.clear();
         state = State.SCANNING;
     }
 
@@ -98,10 +117,85 @@ class SilentPaymentsScanCache {
         return serverStart;
     }
 
-    void setServerStart(int height) {
+    /**
+     * Records the canonical start height the subscribe response named, and applies the notifications held while it was
+     * unknown that this subscription produced: those naming the same height that the server wrote after the response
+     * establishing it, at or above the given sequence. Returns what the caller should post once it has released the lock.
+     */
+    List<Notified> setServerStart(int height, long responseSequence) {
         assert lock.isHeldByCurrentThread();
         serverStart = height;
         subscriptionComplete.signalAll();
+
+        return applyPendingNotifications(responseSequence);
+    }
+
+    /**
+     * Applies a notification to this cache, or holds it where the subscribe response naming the canonical start height
+     * has not been recorded yet. Returns what the caller should post once it has released the lock, which is nothing
+     * for a notification that was held or that names the start height of a subscription this cache has moved on from.
+     */
+    List<Notified> applyOrHold(int startHeight, long responseSequence, double progress, List<SilentPaymentsTx> history) {
+        assert lock.isHeldByCurrentThread();
+        //Tested against CANCELLED rather than SCANNING because a completed scan still applies the history deltas that
+        //follow it. A cancelled one applies nothing, and holding for it would refill the list cancelling just emptied
+        if(state == State.CANCELLED) {
+            return Collections.emptyList();
+        }
+
+        if(serverStart == null) {
+            if(pendingNotifications.size() >= MAX_PENDING_NOTIFICATIONS) {
+                log.warn("Cancelling silent payments scan: " + pendingNotifications.size() + " notifications held while the subscribe response is outstanding");
+                cancel();
+                return Collections.emptyList();
+            }
+
+            pendingNotifications.add(new PendingNotification(startHeight, responseSequence, progress, history));
+            return Collections.emptyList();
+        }
+
+        if(startHeight != serverStart) {
+            return Collections.emptyList();
+        }
+
+        return List.of(apply(progress, history));
+    }
+
+    /**
+     * Applies the held notifications the subscription now established produced, which are those naming its start
+     * height that the server wrote after the response establishing it. The rest are from the subscription it replaced:
+     * a server replaces a subscription for the same keys silently, so a re-subscribe at an unchanged start height
+     * leaves the two indistinguishable by anything the notification itself carries.
+     */
+    private List<Notified> applyPendingNotifications(long responseSequence) {
+        assert lock.isHeldByCurrentThread();
+        if(serverStart == null) {
+            //Still not established, so the held notifications cannot be matched yet and must keep waiting
+            return Collections.emptyList();
+        }
+
+        List<Notified> notified = new ArrayList<>();
+        for(PendingNotification pending : pendingNotifications) {
+            if(pending.startHeight() == serverStart && pending.responseSequence() >= responseSequence) {
+                notified.add(apply(pending.progress(), pending.history()));
+            }
+        }
+        pendingNotifications.clear();
+
+        return notified;
+    }
+
+    private Notified apply(double progress, List<SilentPaymentsTx> history) {
+        assert lock.isHeldByCurrentThread();
+        entries.addAll(history);
+
+        boolean justCompleted = false;
+        if(progress >= 1.0 && state == State.SCANNING) {
+            complete();
+            justCompleted = true;
+        }
+
+        return new Notified(progress, progress >= 1.0 && !justCompleted && !history.isEmpty());
     }
 
     int incrementRefCount() {
@@ -117,11 +211,6 @@ class SilentPaymentsScanCache {
     boolean hasMultipleHolders() {
         assert lock.isHeldByCurrentThread();
         return refCount > 1;
-    }
-
-    void addEntries(List<SilentPaymentsTx> newEntries) {
-        assert lock.isHeldByCurrentThread();
-        entries.addAll(newEntries);
     }
 
     List<SilentPaymentsTx> snapshotEntries() {
@@ -144,14 +233,14 @@ class SilentPaymentsScanCache {
      * waiters whose conditions may have become re-evaluable. Used by the widening-failure recovery path
      * to restore an in-progress scan when the widening RPC fails but other holders still depend on the cache.
      */
-    void restoreFromSnapshot(Snapshot snapshot) {
+    List<Notified> restoreFromSnapshot(Snapshot snapshot) {
         assert lock.isHeldByCurrentThread();
         //If the cache was cancelled between captureSnapshot and now (e.g., a server disconnect ran
         //cancelSilentPaymentScans during the widening RPC), preserve the cancellation rather than
         //resurrecting a CANCELLED cache to its pre-widening state. Cancel already signalled both
         //conditions, so no further signal is needed here.
         if(state == State.CANCELLED) {
-            return;
+            return Collections.emptyList();
         }
         state = snapshot.state;
         serverStart = snapshot.serverStart;
@@ -161,6 +250,20 @@ class SilentPaymentsScanCache {
         //scanComplete waiters whose state-condition was unchanged during the widening don't need a signal,
         //but signalling is harmless (they re-check isScanning() and re-await if still scanning).
         subscriptionComplete.signalAll();
+
+        //A notification held while the widening RPC was in flight belongs to the subscription just restored, that RPC
+        //having established nothing, so there is no response for the server to have written them before
+        return applyPendingNotifications(0L);
+    }
+
+    private record PendingNotification(int startHeight, long responseSequence, double progress, List<SilentPaymentsTx> history) {
+    }
+
+    /**
+     * What the caller should post for an applied notification once it has released the lock, kept separate so that
+     * this cache has no dependency on the event bus.
+     */
+    record Notified(double progress, boolean historyUpdated) {
     }
 
     static final class Snapshot {
