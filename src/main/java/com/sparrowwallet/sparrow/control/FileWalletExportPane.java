@@ -120,13 +120,14 @@ public class FileWalletExportPane extends TitledDescriptionPane {
     private void exportWallet(File file) {
         if(wallet.isEncrypted() && exporter.walletExportRequiresDecryption()) {
             Wallet copy = wallet.copy();
-            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            Storage storage = AppServices.get().getOpenWallets().get(wallet);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
             dlg.initOwner(buttonBox.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
-                final String walletId = AppServices.get().getOpenWallets().get(wallet).getWalletId(wallet);
+                final String walletId = storage.getWalletId(wallet);
                 String walletPassword = password.get().asString();
-                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get(), storage);
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();
