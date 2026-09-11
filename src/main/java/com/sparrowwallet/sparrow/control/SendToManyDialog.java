@@ -13,6 +13,7 @@ import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURIParseException;
 import com.sparrowwallet.drongo.wallet.Payment;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.UnitFormat;
@@ -47,13 +48,15 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SendToManyDialog extends Dialog<List<Payment>> {
+    private final Wallet wallet;
     private final BitcoinUnit bitcoinUnit;
     private final UnitFormat unitFormat;
     private final UnitFormatDoubleCellType amountCellType;
     private final SpreadsheetView spreadsheetView;
     public static final SendToAddressCellType SEND_TO_ADDRESS = new SendToAddressCellType();
 
-    public SendToManyDialog(BitcoinUnit bitcoinUnit, UnitFormat unitFormat, List<Payment> payments) {
+    public SendToManyDialog(Wallet wallet, BitcoinUnit bitcoinUnit, UnitFormat unitFormat, List<Payment> payments) {
+        this.wallet = wallet;
         this.bitcoinUnit = bitcoinUnit;
         this.unitFormat = unitFormat == null ? UnitFormat.DOT : unitFormat;
         this.amountCellType = new UnitFormatDoubleCellType(this.unitFormat);
@@ -557,26 +560,29 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             return payment instanceof SilentPayment ? new SendToAddress(((SilentPayment)payment).getSilentPaymentAddress()) : new SendToAddress(payment.getAddress());
         }
 
-        public Payment toPayment(String label, long value, boolean sendMax) throws DnsPaymentValidationException, IOException, ExecutionException, InterruptedException, BitcoinURIParseException {
+        public Payment toPayment(Wallet wallet, String label, long value, boolean sendMax) throws DnsPaymentValidationException, IOException, ExecutionException, InterruptedException, BitcoinURIParseException {
             if(hrn != null) {
                 DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(hrn);
                 if(dnsPayment == null) {
                     DnsPaymentResolver resolver = new DnsPaymentResolver(hrn);
                     Optional<DnsPayment> optDnsPayment = resolver.resolve(AppServices.getProxy());
-                    if(optDnsPayment.isPresent()) {
-                        dnsPayment = optDnsPayment.get();
-                        if(dnsPayment.hasAddress()) {
-                            DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
-                        } else if(dnsPayment.hasSilentPaymentAddress()) {
-                            DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getSilentPaymentAddress(), dnsPayment);
-                        }
-                        return getPayment(optDnsPayment.get(), label, value, sendMax);
-                    } else {
+                    if(optDnsPayment.isEmpty()) {
                         throw new IllegalArgumentException("Payment to " + hrn + " could not be resolved.");
                     }
-                } else {
-                    return getPayment(dnsPayment, label, value, sendMax);
+
+                    dnsPayment = optDnsPayment.get();
                 }
+
+                //Cached under the address this payment will be looked up by, which is how its proof chain reaches the PSBT output. A name found by
+                //hrn alone can be held under the other address, having been resolved for a wallet of the other silent payments capability
+                Payment payment = getPayment(wallet, dnsPayment, label, value, sendMax);
+                if(payment instanceof SilentPayment silentPayment) {
+                    DnsPaymentCache.putDnsPayment(silentPayment.getSilentPaymentAddress(), dnsPayment);
+                } else {
+                    DnsPaymentCache.putDnsPayment(payment.getAddress(), dnsPayment);
+                }
+
+                return payment;
             }
 
             if(silentPaymentAddress != null) {
@@ -586,11 +592,11 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             }
         }
 
-        private static Payment getPayment(DnsPayment dnsPayment, String label, long value, boolean sendMax) {
-            if(dnsPayment.hasAddress()) {
-                return new Payment(dnsPayment.bitcoinURI().getAddress(), label, value, sendMax);
-            } else if(dnsPayment.hasSilentPaymentAddress()) {
+        private static Payment getPayment(Wallet wallet, DnsPayment dnsPayment, String label, long value, boolean sendMax) {
+            if(dnsPayment.hasSilentPaymentAddress() && (!dnsPayment.hasAddress() || wallet.canSendSilentPayments())) {
                 return new SilentPayment(dnsPayment.bitcoinURI().getSilentPaymentAddress(), label, value, sendMax);
+            } else if(dnsPayment.hasAddress()) {
+                return new Payment(dnsPayment.bitcoinURI().getAddress(), label, value, sendMax);
             } else {
                 throw new IllegalArgumentException("Payment to " + dnsPayment + " has no associated address.");
             }
@@ -650,7 +656,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                 }
 
                 if(sendToAddress != null && value != null) {
-                    payments.add(sendToAddress.toPayment(label, bitcoinUnit.getSatsValue(value), false));
+                    payments.add(sendToAddress.toPayment(wallet, label, bitcoinUnit.getSatsValue(value), false));
                 }
             }
 

@@ -467,11 +467,11 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     public void setDnsPayment(DnsPayment dnsPayment) {
-        if(dnsPayment.hasAddress()) {
-            DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
-        } else if(dnsPayment.hasSilentPaymentAddress()) {
+        if(dnsPayment.hasSilentPaymentAddress() && (!dnsPayment.hasAddress() || sendController.getWalletForm().getWallet().canSendSilentPayments())) {
             DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getSilentPaymentAddress(), dnsPayment);
             setSilentPaymentAddress(dnsPayment.bitcoinURI().getSilentPaymentAddress());
+        } else if(dnsPayment.hasAddress()) {
+            DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
         } else {
             AppServices.showWarningDialog("No Address Provided", "The DNS payment instruction for " + dnsPayment.hrn() + " resolved correctly but did not contain a bitcoin address.");
             return;
@@ -827,10 +827,11 @@ public class PaymentController extends WalletFormController implements Initializ
     }
 
     private void updateFromURI(BitcoinURI bitcoinURI) {
-        if(bitcoinURI.getAddress() != null) {
-            address.setText(bitcoinURI.getAddress().toString());
-        } else if(bitcoinURI.getSilentPaymentAddress() != null) {
+        //A URI carrying both publishes the address in its body as a fallback for a sender which cannot pay the silent payment address in its query
+        if(bitcoinURI.getSilentPaymentAddress() != null && (bitcoinURI.getAddress() == null || sendController.getWalletForm().getWallet().canSendSilentPayments())) {
             address.setText(bitcoinURI.getSilentPaymentAddress().getAddress());
+        } else if(bitcoinURI.getAddress() != null) {
+            address.setText(bitcoinURI.getAddress().toString());
         }
         if(bitcoinURI.getLabel() != null) {
             label.setText(bitcoinURI.getLabel());
