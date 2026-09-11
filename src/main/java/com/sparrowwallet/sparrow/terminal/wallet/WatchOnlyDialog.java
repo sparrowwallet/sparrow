@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.terminal.wallet;
 import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
+import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.OutputDescriptor;
@@ -18,10 +19,14 @@ import com.sparrowwallet.sparrow.terminal.SparrowTerminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class WatchOnlyDialog extends NewWalletDialog {
     private static final Logger log = LoggerFactory.getLogger(WatchOnlyDialog.class);
+
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
     private final TextBox descriptor;
     private final Button importWallet;
@@ -143,7 +148,29 @@ public class WatchOnlyDialog extends NewWalletDialog {
         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(text);
         Wallet wallet = outputDescriptor.toWallet();
         wallet.setName(walletName);
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.getBirthDate() == null && wallet.getBirthHeight() == null) {
+            wallet.setBirthDate(requestBirthDate());
+        }
+
         return List.of(wallet);
+    }
+
+    private Date requestBirthDate() {
+        TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Birth Date");
+        builder.setDescription("Silent payments are scanned for from this date onwards." + System.lineSeparator() + "Enter the date this wallet was created as " + DATE_FORMAT.toPattern() + ".");
+        builder.setInitialContent(DATE_FORMAT.format(new Date()));
+
+        String enteredDate = builder.build().showDialog(SparrowTerminal.get().getGui());
+        if(enteredDate == null || enteredDate.isBlank()) {
+            return null;
+        }
+
+        try {
+            return DATE_FORMAT.parse(enteredDate.trim());
+        } catch(ParseException e) {
+            log.warn("Could not parse the birth date entered for " + walletName);
+            return null;
+        }
     }
 
     private List<String> splitString(String stringToSplit, int maxLength) {

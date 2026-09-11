@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.terminal.wallet;
 
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.*;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
@@ -39,9 +40,14 @@ public class AdvancedDialog extends WalletDialog {
         birthDate = new TextBox().setValidationPattern(Pattern.compile("[0-9\\-/]*"));
         mainPanel.addComponent(birthDate);
 
-        mainPanel.addComponent(new Label("Gap limit"));
-        gapLimit = new TextBox().setValidationPattern(Pattern.compile("[0-9]*"));
-        mainPanel.addComponent(gapLimit);
+        //A silent payments wallet derives no addresses to look ahead over, and getGapLimit() returns zero whatever is stored
+        if(wallet.getPolicyType() == PolicyType.SINGLE_SP) {
+            gapLimit = null;
+        } else {
+            mainPanel.addComponent(new Label("Gap limit"));
+            gapLimit = new TextBox().setValidationPattern(Pattern.compile("[0-9]*"));
+            mainPanel.addComponent(gapLimit);
+        }
 
         Panel buttonPanel = new Panel();
         buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
@@ -60,7 +66,9 @@ public class AdvancedDialog extends WalletDialog {
             birthDate.setText(DATE_FORMAT.format(wallet.getBirthDate()));
         }
 
-        gapLimit.setText(Integer.toString(wallet.getGapLimit()));
+        if(gapLimit != null) {
+            gapLimit.setText(Integer.toString(wallet.getGapLimit()));
+        }
 
         birthDate.setTextChangeListener((newText, changedByUserInteraction) -> {
             try {
@@ -73,19 +81,21 @@ public class AdvancedDialog extends WalletDialog {
             }
         });
 
-        gapLimit.setTextChangeListener((newText, changedByUserInteraction) -> {
-            try {
-                int newValue = Integer.parseInt(newText);
-                if(newValue < 0 || newValue > 1000000) {
+        if(gapLimit != null) {
+            gapLimit.setTextChangeListener((newText, changedByUserInteraction) -> {
+                try {
+                    int newValue = Integer.parseInt(newText);
+                    if(newValue < 0 || newValue > 1000000) {
+                        return;
+                    }
+
+                    wallet.setGapLimit(newValue);
+                    apply.setEnabled(true);
+                } catch(NumberFormatException e) {
                     return;
                 }
-
-                wallet.setGapLimit(newValue);
-                apply.setEnabled(true);
-            } catch(NumberFormatException e) {
-                return;
-            }
-        });
+            });
+        }
     }
 
     private void onChangePassword() {
