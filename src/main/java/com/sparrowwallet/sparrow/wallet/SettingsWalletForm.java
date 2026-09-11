@@ -121,7 +121,7 @@ public class SettingsWalletForm extends WalletForm {
     }
 
     //Returns true for any change, other than a keystore label change, to trigger a full wallet refresh
-    //Even though this is not strictly necessary for some changes, it it better to refresh on saving so background transaction history updates on the old wallet have no effect/are not lost
+    //Even though this is not strictly necessary for some changes, it is better to refresh on saving so background transaction history updates on the old wallet have no effect/are not lost
     private boolean isRefreshNecessary(Wallet original, Wallet changed) {
         if(!original.isValid() || !changed.isValid()) {
             return true;
