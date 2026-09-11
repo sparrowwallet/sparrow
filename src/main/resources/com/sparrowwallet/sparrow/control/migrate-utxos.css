@@ -1,0 +1,48 @@
+.migrate-utxos .table-view .column-header .label {
+    -fx-alignment: CENTER;
+}
+
+.migrate-utxos .default-button {
+    -fx-font-weight: bold;
+}
+
+.migrate-utxos .summary-label {
+    -fx-font-weight: bold;
+}
+
+.migrate-utxos .setup-pane,
+.migrate-utxos .manage-pane {
+    -fx-padding: 10;
+}
+
+.migrate-utxos .fee-text-field {
+    -fx-alignment: CENTER-RIGHT;
+}
+
+.migrate-utxos .button-bar {
+    -fx-padding: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+}
+
+.migrate-utxos .status-unsigned {
+    -fx-alignment: CENTER;
+}
+
+.migrate-utxos .status-signed {
+    -fx-alignment: CENTER;
+    -fx-font-weight: bold;
+}
+
+.migrate-utxos .status-failed {
+    -fx-alignment: CENTER;
+}
+
+.migrate-utxos .status-scheduled {
+    -fx-font-weight: bold;
+}
+
+.migrate-utxos .status-confirmed {
+    -fx-text-fill: -fx-default-button;
+    -fx-font-weight: bold;
+}
