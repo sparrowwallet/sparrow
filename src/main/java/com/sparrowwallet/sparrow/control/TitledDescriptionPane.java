@@ -18,6 +18,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class TitledDescriptionPane extends TitledPane {
+    private static final String COLDCARD_SEED_WARNING_URL = "https://blog.coinkite.com/coldcard-mk3-seed-generation-warning/";
+    private static final String COLDCARD_SEED_WARNING = "\u26A0 Security warning: Coldcard Mk2/Mk3 (firmware 4.0.1-4.1.9) and Mk4/Mk5/Q before their fixed firmware generated seeds with reduced entropy. If your seed was generated on-device with fewer than 50 independent dice rolls, update firmware, generate a new seed and move your funds:";
+
     private Label mainLabel;
     private Label descriptionLabel;
     protected Hyperlink showHideLink;
@@ -74,6 +77,15 @@ public class TitledDescriptionPane extends TitledPane {
             }
         });
         descriptionBox.getChildren().addAll(descriptionLabel, showHideLink);
+
+        if(walletModel == WalletModel.COLDCARD) {
+            Label warningLabel = createWrappedLabel(COLDCARD_SEED_WARNING);
+            warningLabel.getStyleClass().add("description-error");
+            Hyperlink warningLink = createHyperlink(COLDCARD_SEED_WARNING_URL);
+            VBox warningBox = new VBox(warningLabel, warningLink);
+            warningBox.setSpacing(2);
+            labelsBox.getChildren().add(warningBox);
+        }
 
         listItem.getChildren().add(labelsBox);
         HBox.setHgrow(labelsBox, Priority.ALWAYS);
