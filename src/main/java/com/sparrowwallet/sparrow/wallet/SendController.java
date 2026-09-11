@@ -114,7 +114,13 @@ public class SendController extends WalletFormController implements Initializabl
     private ComboBox<BitcoinUnit> feeAmountUnit;
 
     @FXML
+    private Label feeAmountUnitLabel;
+
+    @FXML
     private FiatLabel fiatFeeAmount;
+
+    @FXML
+    private Label fiatFeeAmountLabel;
 
     @FXML
     private BlockTargetFeeRatesChart blockTargetFeeRatesChart;
@@ -246,6 +252,8 @@ public class SendController extends WalletFormController implements Initializabl
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
+        feeAmountUnitLabel.setLabelFor(feeAmountUnit);
+        fiatFeeAmountLabel.setLabelFor(fiatFeeAmount);
     }
 
     @Override

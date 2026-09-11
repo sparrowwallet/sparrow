@@ -27,11 +27,20 @@ public class FiatLabel extends CopyableLabel {
 
     public FiatLabel(String text) {
         super(text);
+        updatePresence(text);
+        textProperty().addListener((observable, oldValue, newValue) -> updatePresence(newValue));
         valueProperty().addListener((observable, oldValue, newValue) -> setValueAsText((Long)newValue, Config.get().getUnitFormat()));
         btcRateProperty().addListener((observable, oldValue, newValue) -> setValueAsText(getValue(), Config.get().getUnitFormat()));
         currencyProperty().addListener((observable, oldValue, newValue) -> setValueAsText(getValue(), Config.get().getUnitFormat()));
         tooltip = new Tooltip();
         contextMenu = new FiatContextMenu();
+    }
+
+    private void updatePresence(String text) {
+        boolean present = text != null && !text.isEmpty();
+        setManaged(present);
+        setVisible(present);
+        setFocusTraversable(present);
     }
 
     public final LongProperty valueProperty() {

@@ -11,6 +11,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.TransactionTabData;
 import com.sparrowwallet.sparrow.control.TransactionHexArea;
+import com.sparrowwallet.sparrow.control.ViewStack;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
@@ -51,7 +52,7 @@ public class TransactionController implements Initializable {
     private TreeView<TransactionForm> txtree;
 
     @FXML
-    private Pane txpane;
+    private ViewStack txpane;
 
     @FXML
     private TransactionHexArea txhex;
@@ -261,21 +262,19 @@ public class TransactionController implements Initializable {
                     TransactionForm childForm = (TransactionForm)txdetail.getUserData();
                     if(transactionForm == childForm) {
                         detailPane = txdetail;
-                        txdetail.setViewOrder(0);
-                    } else {
-                        txdetail.setViewOrder(1);
+                        break;
                     }
                 }
 
                 try {
                     if(detailPane == null) {
                         detailPane = transactionForm.getContents();
-                        detailPane.setViewOrder(0);
-                        txpane.getChildren().add(detailPane);
                     }
                 } catch (IOException e) {
                     throw new IllegalStateException("Can't find pane", e);
                 }
+
+                txpane.show(detailPane);
 
                 if(detailPane instanceof Parent) {
                     Parent parent = (Parent)detailPane;

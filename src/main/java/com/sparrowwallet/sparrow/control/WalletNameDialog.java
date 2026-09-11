@@ -89,6 +89,7 @@ public class WalletNameDialog extends Dialog<WalletNameDialog.NameAndBirthDate> 
         existingBox.getChildren().add(existingCheck);
 
         existingPicker = new DatePicker();
+        existingPicker.setAccessibleText("Existing transactions start date");
         existingPicker.setConverter(new DateStringConverter());
         existingPicker.setEditable(false);
         existingPicker.setPrefWidth(130);

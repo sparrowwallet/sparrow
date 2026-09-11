@@ -15,6 +15,7 @@
 <?import org.controlsfx.glyphfont.Glyph?>
 <?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.ComboBoxTextField?>
+<?import com.sparrowwallet.sparrow.control.AccessibleField?>
 
 <GridPane styleClass="send-form" hgap="10.0" vgap="10.0" stylesheets="@payment.css, @send.css, @wallet.css, @../script.css, @../general.css" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.PaymentController">
     <padding>
@@ -30,7 +31,8 @@
     </rowConstraints>
     <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
         <Fieldset inputGrow="ALWAYS">
-            <Field text="Pay to:">
+            <AccessibleField fx:id="payToField" text="Pay to:">
+                <Label fx:id="recipientWalletLabel" text="Recipient wallet:" managed="false" visible="false" />
                 <StackPane>
                     <ComboBox fx:id="openWallets" />
                     <ComboBoxTextField fx:id="address" styleClass="address-text-field" comboProperty="$openWallets">
@@ -39,16 +41,17 @@
                         </tooltip>
                     </ComboBoxTextField>
                 </StackPane>
-            </Field>
-            <Field text="Label:">
+            </AccessibleField>
+            <AccessibleField text="Label:">
                 <TextField fx:id="label" promptText="Required">
                     <tooltip>
                         <Tooltip text="Required to label the transaction (privately in this wallet)"/>
                     </tooltip>
                 </TextField>
-            </Field>
-            <Field text="Amount:">
+            </AccessibleField>
+            <AccessibleField text="Amount:">
                 <TextField fx:id="amount" styleClass="amount-field" />
+                <Label fx:id="amountUnitLabel" text="Payment unit:" managed="false" visible="false" />
                 <ComboBox fx:id="amountUnit" styleClass="amount-unit">
                     <items>
                         <FXCollections fx:factory="observableArrayList">
@@ -58,6 +61,7 @@
                     </items>
                 </ComboBox>
                 <Label style="-fx-pref-width: 15" />
+                <Label fx:id="fiatAmountLabel" text="Fiat amount:" managed="false" visible="false" />
                 <FiatLabel fx:id="fiatAmount" />
                 <Group managed="false" translateY="38">
                     <Label fx:id="amountStatus" text="Insufficient funds">
@@ -79,13 +83,13 @@
                 </Group>
                 <Region style="-fx-pref-width: 5" />
                 <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
-            </Field>
+            </AccessibleField>
         </Fieldset>
     </Form>
     <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
         <Fieldset inputGrow="ALWAYS" style="-fx-padding: 5 0 0 0">
             <HBox>
-                <Button text="" fx:id="scanQrButton" onAction="#scanQrAddress" prefHeight="30">
+                <Button text="" fx:id="scanQrButton" accessibleText="Scan QR code" onAction="#scanQrAddress" prefHeight="30">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                     </graphic>

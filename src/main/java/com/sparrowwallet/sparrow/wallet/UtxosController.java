@@ -93,7 +93,7 @@ public class UtxosController extends WalletFormController implements Initializab
         sendSelected.setTooltip(new Tooltip("Send selected UTXOs. Use " + (OsType.getCurrent() == OsType.MACOS ? "Cmd" : "Ctrl") + "+click to select multiple." ));
 
         utxosTable.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
-            List<Entry> selectedEntries = utxosTable.getSelectionModel().getSelectedCells().stream().filter(tp -> tp.getTreeItem() != null).map(tp -> tp.getTreeItem().getValue()).collect(Collectors.toList());
+            List<Entry> selectedEntries = getSelectedRows();
             utxosChart.select(selectedEntries);
             updateButtons(Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
             updateUtxoCount(getWalletForm().getWalletUtxosEntry());
@@ -108,14 +108,14 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private void updateUtxoCount(WalletUtxosEntry walletUtxosEntry) {
-        int selectedCount = utxosTable.getSelectionModel().getSelectedCells().size();
+        int selectedCount = getSelectedRows().size();
         utxoCount.setText((selectedCount > 0 ? selectedCount + "/" : "") + (walletUtxosEntry.getChildren() != null ? Integer.toString(walletUtxosEntry.getChildren().size()) : "0"));
     }
 
     private void updateButtons(UnitFormat format, BitcoinUnit unit) {
         List<Entry> selectedEntries = getSelectedEntries();
 
-        selectAll.setDisable(utxosTable.getRoot().getChildren().size() == utxosTable.getSelectionModel().getSelectedCells().size());
+        selectAll.setDisable(utxosTable.getRoot().getChildren().size() == getSelectedRows().size());
         clear.setDisable(selectedEntries.isEmpty());
         sendSelected.setDisable(selectedEntries.isEmpty());
 
@@ -144,11 +144,14 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private List<Entry> getSelectedEntries() {
-        return utxosTable.getSelectionModel().getSelectedCells().stream()
-                .filter(tp -> tp.getTreeItem() != null)
-                .map(tp -> (UtxoEntry)tp.getTreeItem().getValue())
+        return getSelectedRows().stream()
+                .map(entry -> (UtxoEntry)entry)
                 .filter(HashIndexEntry::isSpendable)
                 .collect(Collectors.toList());
+    }
+
+    private List<Entry> getSelectedRows() {
+        return CoinTreeTable.getSelectedRows(utxosTable);
     }
 
     public void sendSelected(ActionEvent event) {
@@ -159,8 +162,7 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     private List<UtxoEntry> getSelectedUtxos() {
-        return utxosTable.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
+        return getSelectedRows().stream()
                 .filter(e -> e instanceof HashIndexEntry)
                 .map(e -> (UtxoEntry)e)
                 .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
