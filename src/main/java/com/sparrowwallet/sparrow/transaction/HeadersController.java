@@ -1655,6 +1655,8 @@ public class HeadersController extends TransactionFormController implements Init
     public void blockTransactionFetched(BlockTransactionFetchedEvent event) {
         if(event.getTxId().equals(headersForm.getTransaction().getTxId())) {
             if(event.getBlockTransaction() != null && (!Sha256Hash.ZERO_HASH.equals(event.getBlockTransaction().getBlockHash()) || headersForm.getBlockTransaction() == null)) {
+                //Kept as well as shown, including where no input transaction could be fetched, so that the confirmation count follows new blocks
+                headersForm.setBlockTransaction(event.getBlockTransaction());
                 updateBlockchainForm(event.getBlockTransaction(), AppServices.getCurrentBlockHeight());
             } else if(headersForm.getPsbt() == null && headersForm.getBlockTransaction() == null && event.getPageStart() == 0) {
                 //Only the first page asks about the transaction itself, so only its silence says the transaction is not on chain
