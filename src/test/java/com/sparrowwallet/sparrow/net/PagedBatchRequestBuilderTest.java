@@ -130,10 +130,29 @@ public class PagedBatchRequestBuilderTest {
         assertEquals(2, transport.requests.size(), "pageSize set before keysType and returnType must be carried onto the copies they return");
     }
 
-    @SuppressWarnings("unchecked")
+    /**
+     * A timeout halves the page size, and a page size of one halved to zero, which Lists.partition rejects - failing every paged request for the rest of
+     * the session on a configured maximum of one. One request is as small as a page can be, and a larger size is still halved.
+     */
+    @Test
+    public void pageSizeHalvedAfterATimeoutIsNeverBelowOne() throws Exception {
+        FakeBatchTransport transport = new TimingOutBatchTransport();
+        builder(transport, 1).executeTolerant(1, "ERROR", e -> {});
+        assertEquals(6, transport.requests.size());
+
+        FakeBatchTransport halved = new TimingOutBatchTransport();
+        builder(halved, 4).executeTolerant(1, "ERROR", e -> {});
+        assertEquals(3, halved.requests.size());
+    }
+
     private PagedBatchRequestBuilder<String, String> builder(Transport transport) {
+        return builder(transport, 2);
+    }
+
+    @SuppressWarnings("unchecked")
+    private PagedBatchRequestBuilder<String, String> builder(Transport transport, int pageSize) {
         PagedBatchRequestBuilder<String, String> batchRequest =
-                (PagedBatchRequestBuilder<String, String>)PagedBatchRequestBuilder.create(transport, new AtomicLong()).keysType(String.class).returnType(String.class).pageSize(2);
+                (PagedBatchRequestBuilder<String, String>)PagedBatchRequestBuilder.create(transport, new AtomicLong()).keysType(String.class).returnType(String.class).pageSize(pageSize);
         for(String id : List.of("a", "b", "c", "d", "e", "f")) {
             batchRequest.add(id, "test.method", id);
         }
@@ -180,6 +199,20 @@ public class PagedBatchRequestBuilderTest {
             }
 
             return MAPPER.writeValueAsString(responses);
+        }
+    }
+
+    /**
+     * A transport that has seen a timeout, which is what the page size is halved on.
+     */
+    private static class TimingOutBatchTransport extends FakeBatchTransport implements TimeoutCounter {
+        TimingOutBatchTransport() {
+            super(Set.of(), 0);
+        }
+
+        @Override
+        public int getTimeoutCount() {
+            return 1;
         }
     }
 }

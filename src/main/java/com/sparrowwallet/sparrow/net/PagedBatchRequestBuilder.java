@@ -229,11 +229,11 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
             pageSize = DEFAULT_PAGE_SIZE;
         }
 
-        //Halve the page size if there have been timeouts
+        //Halve the page size if there have been timeouts, but never below one request, which is as small as a page can be
         if(transport instanceof TimeoutCounter timeoutCounter) {
             int timeouts = timeoutCounter.getTimeoutCount();
             if(timeouts > 0) {
-                return pageSize / 2;
+                return Math.max(1, pageSize / 2);
             }
         }
 
