@@ -52,6 +52,7 @@ public class BitcoindClient {
     private static final long PRUNED_RESCAN_TIMEGAP_MILLIS = 7200*1000;
 
     //Error codes from https://github.com/bitcoin/bitcoin/blob/master/src/rpc/protocol.h
+    public static final int RPC_INVALID_PARAMETER = -8;
     public static final int RPC_WALLET_NOT_FOUND = -18;
 
     public static final String WALLET_ALREADY_LOADING_MESSAGE = "Wallet already loading.";
@@ -721,10 +722,20 @@ public class BitcoindClient {
                 }
 
                 if(lastBlock != null && tip != null) {
-                    String blockhash = getBitcoindService().getBlockHash(tip.height());
-                    if(!lastBlock.equals(blockhash)) {
-                        log.warn("Reorg detected, block height " + tip.height() + " was " + lastBlock + " and now is " + blockhash);
-                        lastBlock = null;
+                    try {
+                        String blockhash = getBitcoindService().getBlockHash(tip.height());
+                        if(!lastBlock.equals(blockhash)) {
+                            log.warn("Reorg detected, block height " + tip.height() + " was " + lastBlock + " and now is " + blockhash);
+                            lastBlock = null;
+                        }
+                    } catch(JsonRpcException e) {
+                        //The active chain no longer reaches the last seen tip height, so the block has been disconnected
+                        if(e.getErrorMessage() != null && e.getErrorMessage().getCode() == RPC_INVALID_PARAMETER) {
+                            log.warn("Reorg detected, block height " + tip.height() + " was " + lastBlock + " and is now above the chain tip");
+                            lastBlock = null;
+                        } else {
+                            throw e;
+                        }
                     }
                 }
 
