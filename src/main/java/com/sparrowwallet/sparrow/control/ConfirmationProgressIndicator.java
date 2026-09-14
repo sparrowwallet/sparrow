@@ -18,6 +18,7 @@ public class ConfirmationProgressIndicator extends StackPane {
     private final Arc arc;
     private final Line downTickLine;
     private final Line upTickLine;
+    private SequentialTransition confirmationSequence;
 
     public ConfirmationProgressIndicator(int confirmations) {
         Circle circle = new Circle(7, 7, 7);
@@ -37,6 +38,18 @@ public class ConfirmationProgressIndicator extends StackPane {
         upTickLine.setOpacity(0);
         upTickLine.getStyleClass().add("confirmation-progress-tick");
 
+        if(confirmations >= BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+            //A transaction already confirmed when shown is drawn as the tick the confirming animation ends with
+            arc.setRadiusX(0);
+            arc.setRadiusY(0);
+            downTickLine.setEndX(6);
+            downTickLine.setEndY(10);
+            downTickLine.setOpacity(1);
+            upTickLine.setEndX(10);
+            upTickLine.setEndY(4);
+            upTickLine.setOpacity(1);
+        }
+
         confirmationGroup = new Group(circle, arc, downTickLine, upTickLine);
         getStyleClass().add("confirmation-progress");
 
@@ -46,7 +59,25 @@ public class ConfirmationProgressIndicator extends StackPane {
         confirmationsProperty().set(confirmations);
         confirmationsProperty().addListener((observable, oldValue, newValue) -> {
             if(!oldValue.equals(newValue)) {
+                if(confirmationSequence != null) {
+                    confirmationSequence.stop();
+                }
+
+                if(newValue.intValue() < BlockTransactionHash.BLOCKS_TO_CONFIRM) {
+                    //A reorg can return a confirmed transaction below the threshold, so restore the progress circle in place of the tick
+                    arc.setRadiusX(7);
+                    arc.setRadiusY(7);
+                    downTickLine.setOpacity(0);
+                    downTickLine.setEndX(4);
+                    downTickLine.setEndY(8);
+                    upTickLine.setOpacity(0);
+                    upTickLine.setEndX(6);
+                    upTickLine.setEndY(10);
+                    confirmationGroup.setOpacity(1.0);
+                }
+
                 SequentialTransition sequence = new SequentialTransition();
+                confirmationSequence = sequence;
 
                 Timeline arcLengthTimeline = new Timeline();
                 KeyValue arcLengthValue = new KeyValue(arc.lengthProperty(), getDegrees(newValue.intValue()));

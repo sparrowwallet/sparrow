@@ -886,7 +886,7 @@ public class HeadersController extends TransactionFormController implements Init
         } else if(currentHeight == null) {
             blockStatus.setText(blockTransaction.getHeight() > 0 ? "Confirmed" : "Unconfirmed");
         } else {
-            int confirmations = blockTransaction.getHeight() > 0 ? currentHeight - blockTransaction.getHeight() + 1 : 0;
+            int confirmations = blockTransaction.getConfirmations(currentHeight);
             if(confirmations == 0) {
                 blockStatus.setText("Unconfirmed");
             } else if(confirmations == 1) {
