@@ -13,6 +13,7 @@ import com.sparrowwallet.sparrow.ChainTip;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.ChainReorgEvent;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.google.common.eventbus.Subscribe;
 import org.junit.jupiter.api.AfterAll;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -739,6 +741,55 @@ public class HeaderSyncTest {
 
         assertEquals(10, store.getTipHeight());
         assertEquals(0, fake.getChunkRequests());
+    }
+
+    /**
+     * An announced header need only meet the target it claims for itself, which at the minimum difficulty costs nothing to produce, so a server can
+     * announce a height the chain has not reached. The sync refuses such a tip, and the store tip it leaves behind - holding the honest headers the
+     * server did serve - is the verified height the chain tip is set back to. An empty store has no header to set it back to.
+     */
+    @Test
+    public void refusesAnAnnouncedTipAboveTheChainTheServerServes() throws Exception {
+        List<BlockHeader> chain = mineChain(Network.REGTEST.getGenesisHeader(), 12, CHAIN_TIME);
+        BlockHeader unlinked = mineChain(Network.REGTEST.getGenesisHeader(), 1, BRANCH_TIME).getFirst();
+        assertNull(ElectrumServer.getStoreTip().header());
+
+        seedStore(chain, 10);
+        serve(chain);
+        assertThrows(VerificationException.class, () -> ElectrumServer.HeaderSyncService.syncAnnouncedHeaders(new ChainTip(5000, unlinked)));
+
+        ChainTip storeTip = ElectrumServer.getStoreTip();
+        assertEquals(12, storeTip.height());
+        assertEquals(chain.getLast().getHash(), storeTip.header().getHash());
+    }
+
+    /**
+     * Where verification is mandatory, a server answering that it has no block.headers has not substantiated the tip it announced, so the failure must
+     * reach the service as itself for the tip to be refused - with the capability still on, which is what lets a history pass rotate the server. A
+     * private server answering the same has verification turned off for the session instead, and is never refused.
+     */
+    @Test
+    public void refusesATipFromAMandatoryServerWithoutTheHeadersCall() throws Exception {
+        Network.set(Network.MAINNET);
+        ServerCapability previousCapability = ElectrumServer.serverCapability;
+        ServerType previousServerType = Config.get().getServerType();
+        try {
+            FakeElectrumServerRpc fake = serve(List.of());
+            fake.setFailure(new UnsupportedMethodException("blockchain.block.headers", new IllegalStateException()));
+            ChainTip tip = new ChainTip(Network.MAINNET.getHeaderCheckpoints().getMaxHeight() + 10, Network.MAINNET.getGenesisHeader());
+
+            ElectrumServer.serverCapability = new ServerCapability(false, false, false);
+            Config.get().setServerType(ServerType.PUBLIC_ELECTRUM_SERVER);
+            assertThrows(UnsupportedMethodException.class, () -> ElectrumServer.HeaderSyncService.syncAnnouncedHeaders(tip));
+            assertTrue(ElectrumServer.serverCapability.supportsMerkleProofs());
+
+            Config.get().setServerType(ServerType.ELECTRUM_SERVER);
+            ElectrumServer.HeaderSyncService.syncAnnouncedHeaders(tip);
+            assertFalse(ElectrumServer.serverCapability.supportsMerkleProofs());
+        } finally {
+            Config.get().setServerType(previousServerType);
+            ElectrumServer.serverCapability = previousCapability;
+        }
     }
 
     private static void runOffThread(Callable<Void> task) throws Exception {

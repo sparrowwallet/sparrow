@@ -1664,6 +1664,22 @@ public class ElectrumServer {
     }
 
     /**
+     * The tip of the verified header store, whose header is null while the store holds nothing above the last pin.
+     */
+    static ChainTip getStoreTip() throws ServerException {
+        HeaderStore store = getHeaderStore();
+        try {
+            //The store's monitor, so that a reorg cannot truncate it between reading the tip height and the header at that height
+            synchronized(store) {
+                int tipHeight = store.getTipHeight();
+                return new ChainTip(tipHeight, store.getHeader(tipHeight));
+            }
+        } catch(IOException e) {
+            throw new ServerException("Could not read the block header store", e);
+        }
+    }
+
+    /**
      * The header at the given height verified against the compiled-in checkpoints, or null where the connected server cannot substantiate it, which is
      * reported as a refusal. Heights above the last pin are served from the store, and those below it by hash linkage to a pin.
      */
@@ -3407,15 +3423,55 @@ public class ElectrumServer {
         //The pair from the event that last restarted this service: the height and the header of one announcement, never of two
         private volatile ChainTip announcedTip;
 
+        //The announcement whose run last failed, so that one still unsubstantiated when its retry fails too is refused rather than retried indefinitely.
+        //Held as the tip rather than a count, since a run cancelled by a later announcement can still fail after it and would spend that one's retry
+        private volatile ChainTip failedTip;
+
         @Override
         protected Task<Void> createTask() {
             return new Task<>() {
                 @Override
                 protected Void call() throws Exception {
-                    syncAnnouncedHeaders(announcedTip);
+                    ChainTip tip = announcedTip;
+                    try {
+                        syncAnnouncedHeaders(tip);
+                    } catch(VerificationException | UnsupportedMethodException e) {
+                        refuseAnnouncedTip(tip, e);
+                    } catch(ServerException | ElectrumServerRpcException e) {
+                        //A failed call says nothing about the chain on its own, but a server answering every request for these headers with an error
+                        //has not substantiated the tip any more than one serving the wrong headers
+                        if(failedTip != tip || !isConnected()) {
+                            failedTip = tip;
+                            throw e;
+                        }
+
+                        refuseAnnouncedTip(tip, e);
+                    }
+
                     return null;
                 }
             };
+        }
+
+        /**
+         * Warns of an announced tip the header sync could not substantiate, and sets the chain tip back to the verified store tip where the store holds a
+         * header to set it back to, an empty store leaving only the warning. An announced header need
+         * only meet the target it claims for itself, which at the minimum difficulty costs nothing to produce, so until it links into the chain the height
+         * it arrived with is only the server's claim, as is every confirmation count taken from it.
+         */
+        private void refuseAnnouncedTip(ChainTip tip, Exception e) throws ServerException {
+            ChainTip storeTip = getStoreTip();
+            Platform.runLater(() -> {
+                //A run overtaken by a later announcement has nothing left to correct
+                if(tip != announcedTip) {
+                    return;
+                }
+
+                if(storeTip.header() != null) {
+                    EventManager.get().post(new NewBlockEvent(storeTip.height(), storeTip.header()));
+                }
+                warnInvalidTip("Could not verify the block header chain to the tip announced at height " + tip.height() + ": " + e.getMessage());
+            });
         }
 
         /**
@@ -3434,8 +3490,9 @@ public class ElectrumServer {
             } catch(UnsupportedMethodException e) {
                 //Without this call the store can never advance, so verification would refuse every new confirmation for the rest of the session
                 if(isVerificationMandatory()) {
-                    //Leaving the capability on is what lets the next wallet history thread raise this and rotate the server, which this service cannot do
-                    log.warn("Server does not support " + e.getMethod() + ", which is required to verify transactions");
+                    //Leaving the capability on is what lets the next wallet history thread raise this and rotate the server, which this service cannot do.
+                    //Rethrown so the tip is refused: where verification is mandatory, a server without the call has not substantiated the height it announced
+                    throw e;
                 } else {
                     log.warn("Server does not support " + e.getMethod() + ", disabling transaction verification for this session");
                     serverCapability.withMerkleProofs(false);
