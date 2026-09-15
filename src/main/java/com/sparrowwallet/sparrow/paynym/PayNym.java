@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static com.sparrowwallet.drongo.bip47.PaymentCode.SEGWIT_SCRIPT_TYPES;
 import static com.sparrowwallet.drongo.bip47.PaymentCode.V1_SCRIPT_TYPES;
@@ -70,16 +71,13 @@ public class PayNym {
         return V1_SCRIPT_TYPES;
     }
 
-    public static PayNym fromString(String strPaymentCode, String nymId, String nymName, boolean segwit, List<PayNym> following, List<PayNym> followers) {
-        PaymentCode paymentCode;
+    public static Optional<PayNym> fromString(String strPaymentCode, String nymId, String nymName, boolean segwit, List<PayNym> following, List<PayNym> followers) {
         try {
-            paymentCode = new PaymentCode(strPaymentCode);
+            return Optional.of(new PayNym(new PaymentCode(strPaymentCode), nymId, nymName, segwit, following, followers));
         } catch(InvalidPaymentCodeException e) {
             log.error("Error creating PayNym from payment code " + strPaymentCode, e);
-            paymentCode = null;
+            return Optional.empty();
         }
-
-        return new PayNym(paymentCode, nymId, nymName, segwit, following, followers);
     }
 
     public static PayNym fromWallet(Wallet bip47Wallet) {
