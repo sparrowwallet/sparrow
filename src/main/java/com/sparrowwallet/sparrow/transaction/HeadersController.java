@@ -655,6 +655,11 @@ public class HeadersController extends TransactionFormController implements Init
                 inputTx = headersForm.getInputTransactions().get(input.getOutpoint().getHash());
             }
 
+            if(inputTx != null && inputTx.getTransaction() == null) {
+                fee.setText("Unknown");
+                return null;
+            }
+
             if(inputTx == null) {
                 if(headersForm.allInputsFetched()) {
                     throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());
@@ -818,7 +823,7 @@ public class HeadersController extends TransactionFormController implements Init
     private BlockTransactionHashIndex getBlockTransactionInput(Map<Sha256Hash, BlockTransaction> inputTransactions, TransactionInput txInput) {
         if(inputTransactions != null) {
             BlockTransaction blockTransaction = inputTransactions.get(txInput.getOutpoint().getHash());
-            if(blockTransaction != null) {
+            if(blockTransaction != null && blockTransaction.getTransaction() != null) {
                 TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int) txInput.getOutpoint().getIndex());
                 return new BlockTransactionHashIndex(blockTransaction.getHash(), blockTransaction.getHeight(), blockTransaction.getDate(), blockTransaction.getFee(), txInput.getOutpoint().getIndex(), txOutput.getValue());
             }

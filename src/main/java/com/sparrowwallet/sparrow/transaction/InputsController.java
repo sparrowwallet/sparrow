@@ -133,6 +133,11 @@ public class InputsController extends TransactionFormController implements Initi
                     inputTx = inputsForm.getInputTransactions().get(input.getOutpoint().getHash());
                 }
 
+                if(inputTx != null && inputTx.getTransaction() == null) {
+                    total.setText("Unknown");
+                    return;
+                }
+
                 if(inputTx == null) {
                     if(inputsForm.allInputsFetched()) {
                         throw new IllegalStateException("Cannot find transaction for hash " + input.getOutpoint().getHash());

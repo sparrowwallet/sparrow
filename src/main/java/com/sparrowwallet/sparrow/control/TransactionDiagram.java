@@ -504,8 +504,8 @@ public class TransactionDiagram extends GridPane {
                     } else if(input instanceof InvisibleBlockTransactionHashIndex) {
                         tooltip.setText("");
                     } else {
-                        if(walletTx.getInputTransactions() != null && walletTx.getInputTransactions().get(input.getHash()) != null) {
-                            BlockTransaction blockTransaction = walletTx.getInputTransactions().get(input.getHash());
+                        BlockTransaction blockTransaction = walletTx.getInputTransactions() == null ? null : walletTx.getInputTransactions().get(input.getHash());
+                        if(blockTransaction != null && blockTransaction.getTransaction() != null) {
                             TransactionOutput txOutput = blockTransaction.getTransaction().getOutputs().get((int) input.getIndex());
                             Address fromAddress = txOutput.getScript().getToAddress();
                             inputValue = txOutput.getValue();

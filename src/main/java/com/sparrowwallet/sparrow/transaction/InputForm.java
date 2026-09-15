@@ -61,10 +61,9 @@ public class InputForm extends IndexedTransactionForm {
     @Override
     public Address getAddress() {
         TransactionInput txInput = getTransactionInput();
-        if(txInput != null && !txInput.isCoinBase() && getInputTransactions() != null) {
-            BlockTransaction blockTransaction = getInputTransactions().get(txInput.getOutpoint().getHash());
-            if(blockTransaction != null) {
-                TransactionOutput output = blockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
+        if(txInput != null && !txInput.isCoinBase()) {
+            TransactionOutput output = getReferencedTransactionOutput();
+            if(output != null) {
                 return output.getScript().getToAddress();
             }
         }
