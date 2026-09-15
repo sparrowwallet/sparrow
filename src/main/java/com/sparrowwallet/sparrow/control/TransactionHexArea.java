@@ -155,20 +155,19 @@ public class TransactionHexArea extends CodeArea {
             cursor = addSegment(segments, cursor, (int) scriptLen.value * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"));
         }
 
-        if(transaction.hasWitnesses()) {
+        if(transaction.isSegwit()) {
             for (int i = 0; i < transaction.getInputs().size(); i++) {
                 TransactionInput input = transaction.getInputs().get(i);
-                if (input.hasWitness()) {
-                    TransactionWitness witness = input.getWitness();
-                    VarInt witnessCount = new VarInt(witness.getPushCount());
-                    cursor = addSegment(segments, cursor, witnessCount.getSizeInBytes() * 2, i, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
-                    for(int j = 0; j < witness.getPushes().size(); j++) {
-                        byte[] push = witness.getPushes().get(j);
-                        VarInt witnessLen = new VarInt(push.length);
-                        boolean isSignature = isSignature(push);
-                        cursor = addSegment(segments, cursor, witnessLen.getSizeInBytes() * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
-                        cursor = addSegment(segments, cursor, (int) witnessLen.value * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data" + (isSignature ? "-signature" : "")));
-                    }
+                //Per BIP141 all txins have a witness, serialized as an empty one where the input has none
+                List<byte[]> pushes = input.hasWitness() ? input.getWitness().getPushes() : Collections.emptyList();
+                VarInt witnessCount = new VarInt(pushes.size());
+                cursor = addSegment(segments, cursor, witnessCount.getSizeInBytes() * 2, i, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "count"));
+                for(int j = 0; j < pushes.size(); j++) {
+                    byte[] push = pushes.get(j);
+                    VarInt witnessLen = new VarInt(push.length);
+                    boolean isSignature = isSignature(push);
+                    cursor = addSegment(segments, cursor, witnessLen.getSizeInBytes() * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "length"));
+                    cursor = addSegment(segments, cursor, (int) witnessLen.value * 2, i, j, "witness-" + getIndexedStyleClass(i, selectedInputIndex, "data" + (isSignature ? "-signature" : "")));
                 }
             }
         }
