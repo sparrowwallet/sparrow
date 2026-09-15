@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 
 import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.Sets;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
@@ -40,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class BitcoindClient {
@@ -481,9 +483,10 @@ public class BitcoindClient {
 
         List<ListTransaction> sentTransactions = new ArrayList<>();
         Map<String, Boolean> conflictCache = new HashMap<>();
+        Supplier<Boolean> mempoolLoaded = Suppliers.memoize(() -> getBitcoindService().getMempoolInfo().loaded());
 
         for(ListTransaction listTransaction : listSinceBlock.transactions()) {
-            if(isConflicted(listTransaction, conflictCache)) {
+            if(isConflicted(listTransaction, conflictCache, mempoolLoaded)) {
                 updatedScriptHashes.addAll(store.purgeTransaction(listTransaction.txid()));
                 continue;
             }
@@ -563,14 +566,16 @@ public class BitcoindClient {
         }
     }
 
-    private boolean isConflicted(ListTransaction listTransaction, Map<String, Boolean> conflictCache) {
-        if(listTransaction.confirmations() == 0 && !listTransaction.walletconflicts().isEmpty()) {
+    private boolean isConflicted(ListTransaction listTransaction, Map<String, Boolean> conflictCache, Supplier<Boolean> mempoolLoaded) {
+        //A transaction replaced by one outside the wallet, or depending on a replaced parent, has mempool conflicts and no wallet conflicts (Bitcoin Core v28+)
+        if(listTransaction.confirmations() == 0 && (!listTransaction.walletconflicts().isEmpty() || (listTransaction.mempoolconflicts() != null && !listTransaction.mempoolconflicts().isEmpty()))) {
             Boolean active = conflictCache.computeIfAbsent(listTransaction.txid(), txid -> {
                 try {
                     getBitcoindService().getMempoolEntry(txid);
                     return true;
                 } catch(JsonRpcException e) {
-                    return false;
+                    //A block can confirm the transaction after it was listed, which leaves it for the next poll to record as confirmed
+                    return getBitcoindService().getTransaction(txid, true, false).get("confirmations") instanceof Number confirmations && confirmations.intValue() > 0;
                 }
             });
 
@@ -578,9 +583,12 @@ public class BitcoindClient {
                 for(String conflictedTxid : listTransaction.walletconflicts()) {
                     conflictCache.put(conflictedTxid, false);
                 }
+
+                return false;
             }
 
-            return !active;
+            //A restarted node lists its unconfirmed transactions before it has loaded its mempool, so none can be judged absent until it has
+            return mempoolLoaded.get();
         } else {
             return listTransaction.confirmations() < 0;
         }
