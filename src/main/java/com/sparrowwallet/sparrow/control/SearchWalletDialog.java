@@ -324,7 +324,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         if(file != null) {
             try(FileOutputStream outputStream = new FileOutputStream(file)) {
                 CsvWriter writer = new CsvWriter(outputStream, ',', StandardCharsets.UTF_8);
-                List<String> headers = new ArrayList<>(List.of("Wallet", "Account", "Type", "Date", "Txid / Address / Output", "Label", "Value"));
+                List<String> headers = new ArrayList<>(List.of("Wallet", "Account", "Type", "Date", "Txid / Address / Output", "Label", "Value (" + results.getBitcoinUnit().getLabel() + ")"));
                 if(!showWallet) {
                     headers.remove(0);
                 }

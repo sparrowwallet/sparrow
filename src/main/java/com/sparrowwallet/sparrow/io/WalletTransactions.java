@@ -78,9 +78,9 @@ public class WalletTransactions implements WalletExport {
 
             writer.write("Date (UTC)");
             writer.write("Label");
-            writer.write("Value");
-            writer.write("Balance");
-            writer.write("Fee");
+            writer.write("Value (" + bitcoinUnit.getLabel() + ")");
+            writer.write("Balance (" + bitcoinUnit.getLabel() + ")");
+            writer.write("Fee (" + bitcoinUnit.getLabel() + ")");
             if(fiatCurrency != null) {
                 writer.write("Value (" + fiatCurrency.getCurrencyCode() + ")");
             }
