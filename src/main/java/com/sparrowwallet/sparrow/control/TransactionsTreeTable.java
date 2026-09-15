@@ -64,6 +64,8 @@ public class TransactionsTreeTable extends CoinTreeTable {
     }
 
     public void updateHistory() {
+        setUnitFormat(getRoot().getValue().getWallet());
+
         //Transaction entries should have already been updated using WalletTransactionsEntry.updateHistory, so only a resort required
         sort();
         resetSortColumn();

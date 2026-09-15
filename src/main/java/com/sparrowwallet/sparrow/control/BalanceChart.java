@@ -35,11 +35,10 @@ public class BalanceChart extends LineChart<Number, Number> {
         balanceSeries = new XYChart.Series<>();
         getData().add(balanceSeries);
         update(walletTransactionsEntry);
-
-        setUnitFormat(walletTransactionsEntry.getWallet(), Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
     }
 
     public void update(WalletTransactionsEntry walletTransactionsEntry) {
+        setUnitFormat(walletTransactionsEntry.getWallet(), Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
         setVisible(!walletTransactionsEntry.getChildren().isEmpty());
         balanceSeries.getData().clear();
 

@@ -103,6 +103,8 @@ public class UtxosTreeTable extends CoinTreeTable {
     }
 
     public void updateHistory() {
+        setUnitFormat(getRoot().getValue().getWallet());
+
         //Utxo entries should have already been updated, so only a resort required
         if(!getRoot().getChildren().isEmpty()) {
             sort();

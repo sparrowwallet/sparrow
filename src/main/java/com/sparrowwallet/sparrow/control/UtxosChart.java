@@ -36,11 +36,11 @@ public class UtxosChart extends BarChart<String, Number> {
         utxoSeries = new XYChart.Series<>();
         getData().add(utxoSeries);
         update(walletUtxosEntry);
-
-        setUnitFormat(walletUtxosEntry.getWallet(), Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
     }
 
     public void update(WalletUtxosEntry walletUtxosEntry) {
+        setUnitFormat(walletUtxosEntry.getWallet(), Config.get().getUnitFormat(), Config.get().getBitcoinUnit());
+
         List<Data<String, Number>> utxoDataList = walletUtxosEntry.getChildren().stream()
                 .map(entry -> new XYChart.Data<>(getCategoryName(entry), (Number)entry.getValue(), entry))
                 .sorted((o1, o2) -> Long.compare(o2.getYValue().longValue(), o1.getYValue().longValue()))
