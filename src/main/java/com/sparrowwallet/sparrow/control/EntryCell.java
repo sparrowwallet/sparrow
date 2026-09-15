@@ -241,7 +241,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         List<TransactionOutput> consolidationOutputs = transactionEntry.getChildren().stream()
                 .filter(e -> e instanceof HashIndexEntry)
                 .map(e -> (HashIndexEntry)e)
-                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.getKeyPurpose() == KeyPurpose.RECEIVE)
+                //A single output back to the wallet is a consolidation on either chain, a CPFP child sweeping to a change address included
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && (e.getKeyPurpose() == KeyPurpose.RECEIVE || blockTransaction.getTransaction().getOutputs().size() == 1))
                 .map(e -> blockTransaction.getTransaction().getOutputs().get((int)e.getHashIndex().getIndex()))
                 .collect(Collectors.toList());
 
@@ -261,7 +262,10 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         List<OutputGroup> outputGroups = transactionEntry.getWallet().getGroupedUtxos(txoFilters, feeRate, AppServices.getMinimumRelayFeeRate(), Config.get().isGroupByAddress())
                 .stream().filter(outputGroup -> outputGroup.getEffectiveValue() >= 0).collect(Collectors.toList());
         Collections.shuffle(outputGroups, SECURE_RANDOM);
-        while((double)changeTotal / vSize < getMaxFeeRate() && !outputGroups.isEmpty() && !cancelTransaction && !consolidationTransaction && safeToAddInputsOrOutputs) {
+
+        //Replacement tx fees must also cover the fees of the unconfirmed wallet transactions spending its outputs, which are replaced along with it
+        long descendantFees = getUnconfirmedDescendantFees(transactionEntry.getWallet(), walletTxos.keySet(), blockTransaction.getHash(), new HashSet<>());
+        while((double)(changeTotal - descendantFees) / vSize < getMaxFeeRate() && !outputGroups.isEmpty() && !cancelTransaction && !consolidationTransaction && safeToAddInputsOrOutputs) {
             //If there is insufficient change output, include another random output group so the fee can be increased
             OutputGroup outputGroup = outputGroups.remove(0);
             for(BlockTransactionHashIndex utxo : outputGroup.getUtxos()) {
@@ -273,6 +277,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
 
         Long fee = blockTransaction.getFee();
         if(fee != null) {
+            fee += descendantFees;
+
             //Replacement tx fees must be greater than the original tx fees by its minimum relay cost
             fee += (long)Math.ceil(vSize * AppServices.getMinimumRelayFeeRate());
         }
@@ -356,6 +362,25 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
         }
 
         return AppServices.getTargetBlockFeeRates().values().iterator().next();
+    }
+
+    private static long getUnconfirmedDescendantFees(Wallet wallet, Collection<BlockTransactionHashIndex> walletTxos, Sha256Hash txid, Set<Sha256Hash> visited) {
+        long fees = 0;
+        for(BlockTransactionHashIndex txo : walletTxos) {
+            if(txo.getHash().equals(txid) && txo.getSpentBy() != null && visited.add(txo.getSpentBy().getHash())) {
+                BlockTransaction child = wallet.getWalletTransaction(txo.getSpentBy().getHash());
+                if(child == null || child.getHeight() <= 0) {
+                    //A descendant whose fee is unknown adds nothing, so the total is a lower bound, but the descendants spending it are replaced all the same
+                    if(child != null && child.getFee() != null) {
+                        fees += child.getFee();
+                    }
+
+                    fees += getUnconfirmedDescendantFees(wallet, walletTxos, txo.getSpentBy().getHash(), visited);
+                }
+            }
+        }
+
+        return fees;
     }
 
     private static void createCpfp(TransactionEntry transactionEntry) {

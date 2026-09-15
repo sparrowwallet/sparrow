@@ -1515,9 +1515,13 @@ public class HeadersController extends TransactionFormController implements Init
                 Matcher feeMatcher = RBF_INSUFFICIENT_FEE.matcher(failMessage);
                 Matcher feeRateMatcher = RBF_INSUFFICIENT_FEE_RATE.matcher(failMessage);
                 if(feeMatcher.matches() && fee.getValue() > 0) {
-                    long currentAdditionalFee = (long)(Double.parseDouble(feeMatcher.group(1)) * Transaction.SATOSHIS_PER_BITCOIN);
-                    long requiredAdditionalFee = (long)(Double.parseDouble(feeMatcher.group(2)) * Transaction.SATOSHIS_PER_BITCOIN);
+                    long currentAdditionalFee = Math.round(Double.parseDouble(feeMatcher.group(1)) * Transaction.SATOSHIS_PER_BITCOIN);
+                    long requiredAdditionalFee = Math.round(Double.parseDouble(feeMatcher.group(2)) * Transaction.SATOSHIS_PER_BITCOIN);
                     long requiredFee = fee.getValue() - currentAdditionalFee + requiredAdditionalFee;
+                    if(failMessage.contains("less fees than conflicting txs")) {
+                        //Reported against the fees of the replaced transactions alone, which the replacement must also exceed by its own relay cost
+                        requiredFee = requiredAdditionalFee + (long)Math.ceil(getVirtualSize() * AppServices.getMinimumRelayFeeRate());
+                    }
                     AppServices.showErrorDialog("Error broadcasting transaction", "The fee for the replacement transaction was insufficient. Increase the fee to at least " + requiredFee + " sats to try again.");
                 } else if(feeRateMatcher.matches()) {
                     double requiredFeeRate = Double.parseDouble(feeRateMatcher.group(2)) * Transaction.SATOSHIS_PER_BITCOIN / 1000;
