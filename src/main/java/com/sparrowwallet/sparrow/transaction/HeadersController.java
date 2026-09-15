@@ -1133,8 +1133,9 @@ public class HeadersController extends TransactionFormController implements Init
         boolean addBbqrOption = headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().showBbqr());
         QREncoding encoding = headersForm.getSigningWallet().getKeystores().stream().allMatch(keystore -> keystore.getWalletModel().selectBbqr()) ? QREncoding.BBQR : QREncoding.UR;
 
-        //Don't include non witness utxo fields for segwit wallets when displaying the PSBT as a QR - it can add greatly to the time required for scanning
-        boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType());
+        //Don't include non witness utxo fields for segwit wallets when displaying the PSBT as a QR unless required - it can add greatly to the time required for scanning
+        boolean includeNonWitnessUtxos = !Arrays.asList(ScriptType.WITNESS_TYPES).contains(headersForm.getSigningWallet().getScriptType())
+                || (headersForm.getPsbt().getPsbtInputs().size() > 1 && headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getWalletModel().includeNonWitnessUtxoForQR()));
         byte[] psbtBytes = headersForm.getPsbt().getForExport().serialize(true, includeNonWitnessUtxos);
 
         CryptoPSBT cryptoPSBT = new CryptoPSBT(psbtBytes);
