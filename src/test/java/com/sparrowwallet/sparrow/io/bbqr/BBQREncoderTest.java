@@ -31,4 +31,25 @@ public class BBQREncoderTest {
             }
         }
     }
+
+    @Test
+    public void testEncodingBeyondMaxParts() {
+        //At 1000 character fragments this data needs 1440 parts, more than two base36 header characters can number
+        byte[] data = new byte[900000];
+        new Random().nextBytes(data);
+
+        BBQREncoder encoder = new BBQREncoder(BBQRType.BINARY, BBQREncoding.BASE32, data, QRDensity.LOW.getMaxBbqrFragmentLength(), 0);
+        Assertions.assertTrue(encoder.getNumParts() <= 1295, "Encoded " + encoder.getNumParts() + " parts");
+
+        BBQRDecoder decoder = new BBQRDecoder();
+        for(int i = 0; i < encoder.getNumParts(); i++) {
+            String part = encoder.nextPart();
+            Assertions.assertEquals(encoder.getNumParts(), BBQRHeader.fromString(part).seqTotal());
+            Assertions.assertTrue(part.length() > 8);
+            decoder.receivePart(part);
+        }
+
+        Assertions.assertEquals(BBQRDecoder.ResultType.SUCCESS, decoder.getResult().getResultType());
+        Assertions.assertArrayEquals(data, decoder.getResult().getData());
+    }
 }

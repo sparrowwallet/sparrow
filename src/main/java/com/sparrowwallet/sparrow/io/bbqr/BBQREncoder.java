@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BBQREncoder {
+    private static final int MAX_PARTS = 36 * 36 - 1;
+
     private final String[] parts;
     private int partIndex;
 
@@ -48,13 +50,16 @@ public class BBQREncoder {
         }
 
         int inputLength = encoded.length();
-        int numChunks = (inputLength + desiredChunkSize - 1) / desiredChunkSize;
+        //The header numbers parts with two base36 characters, so data needing more parts is split into larger ones
+        int numChunks = Math.min((inputLength + desiredChunkSize - 1) / desiredChunkSize, MAX_PARTS);
         int chunkSize = numChunks == 1 ? desiredChunkSize : (int)Math.ceil((double)inputLength / numChunks);
 
         int modulo = chunkSize % encoding.getPartModulo();
         if(modulo > 0) {
             chunkSize += (encoding.getPartModulo() - modulo);
         }
+
+        numChunks = (inputLength + chunkSize - 1) / chunkSize;
 
         List<String> chunks = new ArrayList<>();
         int startIndex = 0;
