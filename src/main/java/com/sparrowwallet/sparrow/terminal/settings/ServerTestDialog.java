@@ -168,8 +168,8 @@ public class ServerTestDialog extends DialogWindow {
 
     private void showConnectionSuccess(List<String> serverVersion, String serverBanner) {
         testStatus.setText("Success");
-        if(serverVersion != null) {
-            testResults.setText("Connected to " + serverVersion.get(0) + " on protocol version " + serverVersion.get(1));
+        if(serverVersion != null && !serverVersion.isEmpty()) {
+            testResults.setText("Connected to " + serverVersion.getFirst() + (serverVersion.size() > 1 ? " on protocol version " + serverVersion.get(1) : ""));
             ServerCapability serverCapability = ElectrumServer.getServerCapability(serverVersion);
             if(serverCapability.supportsBatching()) {
                 testResults.setText(testResults.getText() + "\nBatched RPC enabled.");
