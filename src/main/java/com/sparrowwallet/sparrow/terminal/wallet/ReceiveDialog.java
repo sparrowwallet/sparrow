@@ -59,7 +59,7 @@ public class ReceiveDialog extends WalletDialog {
         buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
         buttonPanel.addComponent(new Button("Back", () -> onBack(Function.RECEIVE)));
         if(!isSilentPayments) {
-            buttonPanel.addComponent(new Button("Get Fresh Address", this::refreshAddress).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
+            buttonPanel.addComponent(new Button("Get Fresh Address", this::getNewAddress).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false)));
         }
 
         mainPanel.addComponent(new Button("Show QR", this::showQR));
@@ -87,6 +87,15 @@ public class ReceiveDialog extends WalletDialog {
             log.error("Error creating QR", e);
             AppServices.showErrorDialog("Error creating QR", e.getMessage());
         }
+    }
+
+    public void getNewAddress() {
+        refreshAddress();
+        SparrowTerminal.get().getGuiThread().invokeLater(() -> {
+            if(currentEntry != null) {
+                getWalletForm().ensureSufficientGapLimit(currentEntry);
+            }
+        });
     }
 
     public void refreshAddress() {

@@ -462,6 +462,16 @@ public class WalletForm {
     }
 
     public NodeEntry getFreshNodeEntry(KeyPurpose keyPurpose, NodeEntry currentEntry) {
+        NodeEntry freshEntry = getUnusedNodeEntry(keyPurpose, currentEntry);
+        //A label marks an address already given out to a payer, even though nothing has been received to it yet
+        while(freshEntry.getLabel() != null && !freshEntry.getLabel().isEmpty()) {
+            freshEntry = getUnusedNodeEntry(keyPurpose, freshEntry);
+        }
+
+        return freshEntry;
+    }
+
+    private NodeEntry getUnusedNodeEntry(KeyPurpose keyPurpose, NodeEntry currentEntry) {
         NodeEntry rootEntry = getNodeEntry(keyPurpose);
         WalletNode freshNode = getWallet().getFreshNode(keyPurpose, currentEntry == null ? null : currentEntry.getNode());
 
@@ -475,6 +485,17 @@ public class WalletForm {
         NodeEntry freshEntry = new NodeEntry(getWallet(), freshNode);
         rootEntry.getChildren().add(freshEntry);
         return freshEntry;
+    }
+
+    public void ensureSufficientGapLimit(NodeEntry nodeEntry) {
+        WalletNode node = nodeEntry.getNode();
+        Integer highestIndex = wallet.getNode(node.getKeyPurpose()).getHighestUsedIndex();
+        int highestUsedIndex = highestIndex == null ? -1 : highestIndex;
+        int existingGapLimit = wallet.getGapLimit();
+        if(node.getIndex() > highestUsedIndex + existingGapLimit) {
+            wallet.setGapLimit(Math.max(wallet.getGapLimit(), node.getIndex() - highestUsedIndex));
+            EventManager.get().post(new WalletGapLimitChangedEvent(getWalletId(), wallet, existingGapLimit));
+        }
     }
 
     public WalletTransactionsEntry getWalletTransactionsEntry() {

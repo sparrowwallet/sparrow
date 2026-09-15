@@ -164,6 +164,59 @@ public class WalletFormTest {
         assertEquals(List.of(node), changedNodes);
     }
 
+    /**
+     * A labelled address with no history has already been given out, so the desktop and terminal receive views both pass over it rather than handing it to
+     * a second payer.
+     */
+    @Test
+    public void freshEntrySkipsLabelledAddresses() {
+        Wallet wallet = testWallet();
+        receiveNode(wallet, 0).setLabel("Invoice 1");
+        receiveNode(wallet, 1).setLabel("Invoice 2");
+        WalletForm walletForm = new WalletForm(null, wallet);
+
+        NodeEntry freshEntry = walletForm.getFreshNodeEntry(KeyPurpose.RECEIVE, null);
+        assertEquals(2, freshEntry.getNode().getIndex());
+        assertEquals(3, walletForm.getFreshNodeEntry(KeyPurpose.RECEIVE, freshEntry).getNode().getIndex());
+
+        //An empty label does not allocate
+        receiveNode(wallet, 3).setLabel("");
+        assertEquals(3, walletForm.getFreshNodeEntry(KeyPurpose.RECEIVE, freshEntry).getNode().getIndex());
+    }
+
+    /**
+     * Stepping past the gap limit widens it, so that a recovery with the persisted limit still reaches the address that was issued. An address within the
+     * limit leaves it unchanged.
+     */
+    @Test
+    public void issuingAnAddressPastTheGapLimitWidensIt() {
+        Wallet wallet = testWallet();
+        WalletForm walletForm = new WalletForm(null, wallet) {
+            @Override
+            public String getWalletId() {
+                return "test";
+            }
+        };
+
+        int gapLimit = wallet.getGapLimit();
+        walletForm.ensureSufficientGapLimit(walletForm.getFreshNodeEntry(KeyPurpose.RECEIVE, entryAt(walletForm, gapLimit - 2)));
+        assertEquals(gapLimit, wallet.getGapLimit());
+
+        walletForm.ensureSufficientGapLimit(walletForm.getFreshNodeEntry(KeyPurpose.RECEIVE, entryAt(walletForm, gapLimit + 4)));
+        assertEquals(gapLimit + 6, wallet.getGapLimit());
+
+        //Measured from the highest used address rather than from the first: index 29 is past the limit from nothing used, and within it from index 10
+        receiveNode(wallet, 10).getTransactionOutputs().add(new BlockTransactionHashIndex(TXID, HEIGHT, new Date(1600000000000L), 0L, 0, 10000));
+        walletForm.ensureSufficientGapLimit(walletForm.getFreshNodeEntry(KeyPurpose.RECEIVE, entryAt(walletForm, 28)));
+        assertEquals(gapLimit + 6, wallet.getGapLimit());
+    }
+
+    private static NodeEntry entryAt(WalletForm walletForm, int index) {
+        Wallet wallet = walletForm.getWallet();
+        wallet.getNode(KeyPurpose.RECEIVE).fillToIndex(wallet, index);
+        return new NodeEntry(wallet, receiveNode(wallet, index));
+    }
+
     private static BlockTransaction blockTransaction(Date date, Sha256Hash blockHash) {
         return new BlockTransaction(TXID, HEIGHT, date, 0L, null, blockHash);
     }
