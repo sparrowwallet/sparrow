@@ -57,6 +57,7 @@ final class AddAccountDialog extends DialogWindow {
         buttonPanel.setLayoutManager(new GridLayout(2).setHorizontalSpacing(1));
         buttonPanel.addComponent(new Button("Cancel", this::onCancel));
         Button okButton = new Button("Add Account", this::addAccount).setLayoutData(GridLayout.createLayoutData(GridLayout.Alignment.CENTER, GridLayout.Alignment.CENTER, true, false));
+        okButton.setEnabled(!availableAccounts.isEmpty());
         buttonPanel.addComponent(okButton);
 
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
