@@ -29,6 +29,7 @@ public class SettingsWalletForm extends WalletForm {
         this.walletCopy = currentWallet.copy();
         this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
         this.appWalletForm = appWalletForm;
+        disposeRefreshNodes();
     }
 
     @Override

@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.io.StorageException;
 import com.sparrowwallet.sparrow.net.AllHistoryChangedException;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.io.Storage;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.subjects.PublishSubject;
 import javafx.application.Platform;
@@ -61,12 +62,14 @@ public class WalletForm {
 
     private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
 
+    private final Disposable refreshNodesDisposable;
+
     public WalletForm(Storage storage, Wallet currentWallet) {
         this.storage = storage;
         this.wallet = currentWallet;
 
         refreshNodesSubject = PublishSubject.create();
-        refreshNodesSubject.buffer(1, TimeUnit.SECONDS)
+        refreshNodesDisposable = refreshNodesSubject.buffer(1, TimeUnit.SECONDS)
                 .filter(walletNodes -> !walletNodes.isEmpty())
                 .observeOn(JavaFxScheduler.platform())
                 .subscribe(walletNodes -> {
@@ -506,6 +509,10 @@ public class WalletForm {
         return accountEntries;
     }
 
+    void disposeRefreshNodes() {
+        refreshNodesDisposable.dispose();
+    }
+
     @Subscribe
     public void silentPaymentsScanProgress(SilentPaymentsScanProgressEvent event) {
         if(wallet.getPolicyType() != PolicyType.SINGLE_SP || !wallet.isValid() || !event.getSpAddress().equals(wallet.getSilentPaymentScanAddress().getAddress())) {
@@ -817,8 +824,10 @@ public class WalletForm {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {
                 EventManager.get().unregister(this);
+                disposeRefreshNodes();
                 for(WalletForm nestedWalletForm : nestedWalletForms) {
                     EventManager.get().unregister(nestedWalletForm);
+                    nestedWalletForm.disposeRefreshNodes();
                 }
                 if(wallet.isValid()) {
                     AppServices.clearTransactionHistoryCache(wallet);
