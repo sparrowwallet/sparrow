@@ -95,14 +95,17 @@ class SilentPaymentsScanCache {
      *       {@link #setServerStart} call (after the widening RPC returns) will signal them.</li>
      *   <li><b>scanComplete</b> waiters require {@code isScanning()}. After restartScan, isScanning is still true
      *       (transitioning {@code SCANNING → SCANNING} for mid-scan widening, or {@code COMPLETED → SCANNING} for
-     *       post-scan widening — and in the latter case no scanComplete waiters can exist because they would have
-     *       returned when the prior {@link #complete} signalled them). Existing waiters should keep waiting; they'll
-     *       wake when the new scan reaches a terminal state via {@link #complete} or {@link #cancel}.</li>
+     *       post-scan widening — and in the latter case no scanComplete waiters from before the restart can exist because
+     *       they would have returned when the prior {@link #complete} signalled them). Existing waiters should keep waiting;
+     *       they'll wake when the new scan reaches a terminal state via {@link #complete} or {@link #cancel}. Waiters can
+     *       also arrive after the restart, since a post-scan widening makes a completed scan look in progress again while
+     *       the widening RPC is outstanding; they wait on the same terms, and are woken as below if the RPC fails.</li>
      * </ul>
      * <b>Maintenance note:</b> if a future change adds a new wait condition that depends on state-not-being-SCANNING,
      * serverStart-being-non-null, or entries being non-empty, this method must be updated to signal the new condition.
-     * The widening RPC's failure path is covered separately — {@link #cancel} fires both signals — so callers do not
-     * rely on restartScan having signalled.
+     * The widening RPC's failure path is covered separately, so callers do not rely on restartScan having signalled:
+     * where no other holder remains {@link #cancel} fires both signals, and where others do {@link #restoreFromSnapshot}
+     * fires both, which is what wakes a scanComplete waiter that arrived after the restart of a completed scan.
      */
     void restartScan() {
         assert lock.isHeldByCurrentThread();
@@ -231,7 +234,9 @@ class SilentPaymentsScanCache {
     /**
      * Restores the cache's state from a previously captured {@link Snapshot} and signals condition
      * waiters whose conditions may have become re-evaluable. Used by the widening-failure recovery path
-     * to restore an in-progress scan when the widening RPC fails but other holders still depend on the cache.
+     * to restore the scan the widening replaced, whether still in progress or completed, when the widening RPC fails
+     * but other holders still depend on the cache. Restoring a completed scan finishes it again for any waiter that
+     * arrived while the widening was outstanding, so both conditions are signalled.
      */
     List<Notified> restoreFromSnapshot(Snapshot snapshot) {
         assert lock.isHeldByCurrentThread();
@@ -246,10 +251,11 @@ class SilentPaymentsScanCache {
         serverStart = snapshot.serverStart;
         entries.clear();
         entries.addAll(snapshot.entries);
-        //Wake hold-side waiters who may have been blocked on serverStart==null during the failed widening.
-        //scanComplete waiters whose state-condition was unchanged during the widening don't need a signal,
-        //but signalling is harmless (they re-check isScanning() and re-await if still scanning).
+        //Wake hold-side waiters who may have been blocked on serverStart==null during the failed widening, and history
+        //waiters who began waiting after the widening reset a completed scan: restoring that scan finishes it again, and
+        //nothing else will. Waiters on a scan still in progress re-check isScanning() and keep waiting for its completion
         subscriptionComplete.signalAll();
+        scanComplete.signalAll();
 
         //A notification held while the widening RPC was in flight belongs to the subscription just restored, that RPC
         //having established nothing, so there is no response for the server to have written them before

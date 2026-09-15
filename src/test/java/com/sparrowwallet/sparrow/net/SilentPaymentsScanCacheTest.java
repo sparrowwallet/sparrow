@@ -4,10 +4,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class SilentPaymentsScanCacheTest {
     private static final int SERVER_START = 800000;
@@ -244,6 +243,89 @@ public class SilentPaymentsScanCacheTest {
         assertTrue(cache.isCompleted());
         assertEquals(1, replayed.size());
         assertTrue(replayed.getFirst().historyUpdated(), "History arriving after the restored scan completed must be reported");
+    }
+
+    private Future<List<SilentPaymentsTx>> awaitScan(ExecutorService executor, SilentPaymentsScanCache cache) throws InterruptedException {
+        CountDownLatch waiting = new CountDownLatch(1);
+        Future<List<SilentPaymentsTx>> result = executor.submit(() -> {
+            cache.lock();
+            try {
+                while(cache.isScanning()) {
+                    waiting.countDown();
+                    cache.awaitScanComplete();
+                }
+                return cache.snapshotEntries();
+            } finally {
+                cache.unlock();
+            }
+        });
+
+        //The waiter counts down while holding the lock, so taking the lock after this returns means it is inside the await
+        assertTrue(waiting.await(5, TimeUnit.SECONDS), "The waiter must reach the scan wait");
+        return result;
+    }
+
+    private SilentPaymentsScanCache.Snapshot widen(SilentPaymentsScanCache cache) {
+        cache.lock();
+        try {
+            SilentPaymentsScanCache.Snapshot snapshot = cache.captureSnapshot();
+            cache.restartScan();
+            return snapshot;
+        } finally {
+            cache.unlock();
+        }
+    }
+
+    private void restore(SilentPaymentsScanCache cache, SilentPaymentsScanCache.Snapshot snapshot) {
+        cache.lock();
+        try {
+            cache.restoreFromSnapshot(snapshot);
+        } finally {
+            cache.unlock();
+        }
+    }
+
+    @Test
+    public void testWideningFailureWakesHistoryWaiterOnRestoredCompletedScan() throws Exception {
+        SilentPaymentsScanCache cache = new SilentPaymentsScanCache();
+        setServerStart(cache, SERVER_START);
+        applyOrHold(cache, SERVER_START, 1.0, history("scanned"));
+        assertTrue(cache.isCompleted());
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            SilentPaymentsScanCache.Snapshot snapshot = widen(cache);
+
+            //A history request made while the widening RPC is outstanding sees the reset scan and waits for it
+            Future<List<SilentPaymentsTx>> result = awaitScan(executor, cache);
+            restore(cache, snapshot);
+
+            assertEquals(List.of("scanned"), result.get(5, TimeUnit.SECONDS).stream().map(tx -> tx.tx_hash).toList(),
+                    "Restoring a completed scan must wake a waiter that began waiting after the widening reset it");
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    @Test
+    public void testWideningFailureLeavesHistoryWaiterOnRestoredScanInProgress() throws Exception {
+        SilentPaymentsScanCache cache = new SilentPaymentsScanCache();
+        setServerStart(cache, SERVER_START);
+        applyOrHold(cache, SERVER_START, 0.5, history("scanned"));
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            SilentPaymentsScanCache.Snapshot snapshot = widen(cache);
+            Future<List<SilentPaymentsTx>> result = awaitScan(executor, cache);
+            restore(cache, snapshot);
+
+            assertThrows(TimeoutException.class, () -> result.get(200, TimeUnit.MILLISECONDS), "A waiter on a scan still in progress must keep waiting");
+
+            applyOrHold(cache, SERVER_START, 1.0, history("completed"));
+            assertEquals(List.of("scanned", "completed"), result.get(5, TimeUnit.SECONDS).stream().map(tx -> tx.tx_hash).toList());
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test
