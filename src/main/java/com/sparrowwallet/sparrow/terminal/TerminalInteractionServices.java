@@ -35,6 +35,12 @@ public class TerminalInteractionServices implements InteractionServices {
     private Optional<ButtonType> showMessageDialog(String title, String content, ButtonType[] buttons) {
         String formattedContent = formatLines(content, 50);
 
+        //A button carrying text of its own cannot be shown by MessageDialog, and is the only description of what it does, so those alerts get a
+        //dialog built from the supplied buttons directly. Keeping MessageDialog for the rest also keeps getButton injective over the buttons it maps
+        if(Arrays.stream(buttons).anyMatch(TerminalInteractionServices::isCustomButton)) {
+            return Optional.ofNullable(new ButtonTypeDialog(title, formattedContent, buttons).showDialog(SparrowTerminal.get().getGui()));
+        }
+
         MessageDialogBuilder builder = new MessageDialogBuilder().setTitle(title).setText("\n" + formattedContent);
         for(ButtonType buttonType : buttons) {
             builder.addButton(getButton(buttonType));
@@ -42,6 +48,11 @@ public class TerminalInteractionServices implements InteractionServices {
 
         MessageDialogButton button = builder.build().showDialog(SparrowTerminal.get().getGui());
         return Arrays.stream(buttons).filter(buttonType -> button.equals(getButton(buttonType))).findFirst();
+    }
+
+    private static boolean isCustomButton(ButtonType buttonType) {
+        return !ButtonType.OK.equals(buttonType) && !ButtonType.CANCEL.equals(buttonType) && !ButtonType.YES.equals(buttonType)
+                && !ButtonType.NO.equals(buttonType) && !ButtonType.CLOSE.equals(buttonType);
     }
 
     private String formatLines(String input, int maxLength) {
