@@ -86,6 +86,7 @@ public class WalletTransactionsEntry extends Entry {
 
         Set<Entry> entriesRemoved = Sets.difference(previous, current);
         getChildren().removeAll(entriesRemoved);
+        entriesRemoved.forEach(entry -> ((TransactionEntry)entry).unregisterForConfirmations());
 
         calculateBalances(true);
 
@@ -104,6 +105,16 @@ public class WalletTransactionsEntry extends Entry {
                         + " children " + entry.getChildren().stream().map(e -> e.getEntryType() + " " + ((HashIndexEntry)e).getHashIndex()).collect(Collectors.toList()));
             }
         }
+
+        entriesComplete.forEach(entry -> ((TransactionEntry)entry).registerForConfirmations());
+    }
+
+    public void registerForConfirmations() {
+        getChildren().forEach(entry -> ((TransactionEntry)entry).registerForConfirmations());
+    }
+
+    public void unregisterForConfirmations() {
+        getChildren().forEach(entry -> ((TransactionEntry)entry).unregisterForConfirmations());
     }
 
     private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet, boolean includeAllChildWallets) {

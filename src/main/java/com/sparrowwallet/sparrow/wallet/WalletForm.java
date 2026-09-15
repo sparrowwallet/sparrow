@@ -480,6 +480,7 @@ public class WalletForm {
     public WalletTransactionsEntry getWalletTransactionsEntry() {
         if(walletTransactionsEntry == null) {
             walletTransactionsEntry = new WalletTransactionsEntry(wallet);
+            walletTransactionsEntry.registerForConfirmations();
         }
 
         return walletTransactionsEntry;
@@ -550,6 +551,10 @@ public class WalletForm {
             //Replacing the WalletForm's wallet here is only possible because we immediately clear all derived structures and do a full wallet refresh
             wallet = event.getWallet();
 
+            //Entries bound to the replaced wallet would otherwise match neither a block height event nor a tab close for the new one
+            if(walletTransactionsEntry != null) {
+                walletTransactionsEntry.unregisterForConfirmations();
+            }
             walletTransactionsEntry = null;
             walletUtxosEntry = null;
             accountEntries.clear();
@@ -825,9 +830,15 @@ public class WalletForm {
             if(tabData.getWalletForm() == this) {
                 EventManager.get().unregister(this);
                 disposeRefreshNodes();
+                if(walletTransactionsEntry != null) {
+                    walletTransactionsEntry.unregisterForConfirmations();
+                }
                 for(WalletForm nestedWalletForm : nestedWalletForms) {
                     EventManager.get().unregister(nestedWalletForm);
                     nestedWalletForm.disposeRefreshNodes();
+                    if(nestedWalletForm.walletTransactionsEntry != null) {
+                        nestedWalletForm.walletTransactionsEntry.unregisterForConfirmations();
+                    }
                 }
                 if(wallet.isValid()) {
                     AppServices.clearTransactionHistoryCache(wallet);

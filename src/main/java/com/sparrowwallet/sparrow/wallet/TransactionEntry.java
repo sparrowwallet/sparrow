@@ -8,10 +8,8 @@ import com.sparrowwallet.drongo.protocol.TransactionOutput;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
-import com.sparrowwallet.sparrow.WalletTabData;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelsChangedEvent;
-import com.sparrowwallet.sparrow.event.WalletTabsClosedEvent;
 import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.IntegerPropertyBase;
@@ -50,10 +48,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
                 return "confirmations";
             }
         };
-
-        if(isFullyConfirming()) {
-            EventManager.get().register(this);
-        }
     }
 
     public BlockTransaction getBlockTransaction() {
@@ -256,6 +250,24 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
         return null;
     }
 
+    /**
+     * Only an entry held in a wallet's transactions model is shown, so only that entry follows the chain tip. Entries built to carry a label change, or
+     * built during a refresh and then found to match one already held, are never registered.
+     */
+    public void registerForConfirmations() {
+        if(isFullyConfirming()) {
+            EventManager.get().register(this);
+        }
+    }
+
+    public void unregisterForConfirmations() {
+        try {
+            EventManager.get().unregister(this);
+        } catch(IllegalArgumentException e) {
+            //Already unregistered once fully confirmed, or never registered because it was fully confirmed when adopted
+        }
+    }
+
     @Subscribe
     public void blockHeightChanged(WalletBlockHeightChangedEvent event) {
         if(event.getWallet().equals(getWallet())) {
@@ -263,19 +275,6 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
 
             if(!isFullyConfirming()) {
                 EventManager.get().unregister(this);
-            }
-        }
-    }
-
-    @Subscribe
-    public void walletTabsClosed(WalletTabsClosedEvent event) {
-        for(WalletTabData tabData : event.getClosedWalletTabData()) {
-            if(tabData.getWalletForm().getWallet() == getWallet()) {
-                try {
-                    EventManager.get().unregister(this);
-                } catch(IllegalArgumentException e) {
-                    //Safe to ignore
-                }
             }
         }
     }
