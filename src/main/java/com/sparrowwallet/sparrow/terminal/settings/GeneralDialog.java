@@ -5,6 +5,7 @@ import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.event.BitcoinUnitChangedEvent;
 import com.sparrowwallet.sparrow.event.FiatCurrencySelectedEvent;
@@ -116,6 +117,12 @@ public class GeneralDialog extends DialogWindow {
     }
 
     private void updateCurrencies(ExchangeSource exchangeSource) {
+        if(Config.get().getMode() == Mode.OFFLINE) {
+            Currency configCurrency = Config.get().getFiatCurrency();
+            updateCurrencies(configCurrency == null || exchangeSource == ExchangeSource.NONE ? List.of() : List.of(configCurrency));
+            return;
+        }
+
         Platform.runLater(() -> {
             ExchangeSource.CurrenciesService currenciesService = new ExchangeSource.CurrenciesService(exchangeSource);
             currenciesService.setOnSucceeded(event -> {
