@@ -127,6 +127,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                     setExpanded(true);
                 } else {
                     try(InputStream inputStream = new BufferedInputStream(new FileInputStream(file))) {
+                        wallets = null;
                         importFile(file.getName(), inputStream, password);
                     };
                 }
@@ -172,6 +173,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 }
             } else if(result.payload != null) {
                 try {
+                    wallets = null;
                     importFile(importer.getName(), new ByteArrayInputStream(result.payload.getBytes(StandardCharsets.UTF_8)), null);
                 } catch(Exception e) {
                     log.error("Error importing QR", e);
@@ -188,8 +190,8 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 log.error("Error importing QR", result.exception);
                 setError("Import Error", result.exception.getMessage());
             } else {
-                setError("Import Error", null);
-                setExpanded(true);
+                wallets = null;
+                setError("Import Error", "The scanned QR code does not contain a wallet or key.");
             }
         }
     }
