@@ -64,8 +64,10 @@ public class DbPersistenceTest {
     @Test
     public void linkedTableRejectedWithoutExecuting() throws Exception {
         File marker = tempDir.resolve("output.csv").toFile();
-        String target = "jdbc:h2:" + tempDir.resolve("external") + ";INIT=CREATE TABLE IF NOT EXISTS PUB(ID INT)\\;CALL CSVWRITE('" + marker.getAbsolutePath() + "','SELECT 1')";
+        //H2 treats a backslash in a URL setting as an escape, so a Windows marker path must use forward slashes
+        String target = "jdbc:h2:" + tempDir.resolve("external") + ";INIT=CREATE TABLE IF NOT EXISTS PUB(ID INT)\\;CALL CSVWRITE('" + marker.getAbsolutePath().replace('\\', '/') + "','SELECT 1')";
         File walletFile = buildWalletFile("create force linked table wallet_master.remote('','" + target.replace("'", "''") + "','sa','','PUB')");
+        Assertions.assertTrue(marker.exists(), "fixture did not write the marker");
         marker.delete();
 
         assertRejected(walletFile);
