@@ -11,17 +11,18 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RequestHandler implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(RequestHandler.class);
     private final Socket clientSocket;
     private final ElectrumServerService electrumServerService;
     private final JsonRpcServer rpcServer = new JsonRpcServer();
+    private volatile PrintWriter out;
 
-    private boolean headersSubscribed;
-    private final Set<String> scriptHashesSubscribed = new HashSet<>();
+    private volatile boolean headersSubscribed;
+    private final Set<String> scriptHashesSubscribed = ConcurrentHashMap.newKeySet();
 
     public RequestHandler(Socket clientSocket, BitcoindClient bitcoindClient, int electrumPort) {
         this.clientSocket = clientSocket;
@@ -29,30 +30,34 @@ public class RequestHandler implements Runnable {
     }
 
     public void run() {
-        Cormorant.getEventBus().register(this);
-
         try {
             InputStream input  = clientSocket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
 
             OutputStream output = clientSocket.getOutputStream();
-            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8)));
+            out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8)));
 
-            while(true) {
-                String request = reader.readLine();
-                if(request == null) {
-                    break;
+            Cormorant.getEventBus().register(this);
+            try {
+                while(true) {
+                    String request = reader.readLine();
+                    if(request == null) {
+                        break;
+                    }
+
+                    send(rpcServer.handle(request, electrumServerService));
                 }
-
-                String response = rpcServer.handle(request, electrumServerService);
-                out.println(response);
-                out.flush();
+            } finally {
+                Cormorant.getEventBus().unregister(this);
             }
         } catch(IOException e) {
             log.error("Could not communicate with client socket", e);
         }
+    }
 
-        Cormorant.getEventBus().unregister(this);
+    synchronized void send(String message) {
+        out.println(message);
+        out.flush();
     }
 
     public void setHeadersSubscribed(boolean headersSubscribed) {
@@ -70,7 +75,7 @@ public class RequestHandler implements Runnable {
     @Subscribe
     public void newBlock(ElectrumBlockHeader electrumBlockHeader) {
         if(headersSubscribed) {
-            ElectrumNotificationTransport electrumNotificationTransport = new ElectrumNotificationTransport(clientSocket);
+            ElectrumNotificationTransport electrumNotificationTransport = new ElectrumNotificationTransport(this);
             JsonRpcClient jsonRpcClient = new JsonRpcClient(electrumNotificationTransport);
             jsonRpcClient.onDemand(ElectrumNotificationService.class).notifyHeaders(electrumBlockHeader);
         }
@@ -79,7 +84,7 @@ public class RequestHandler implements Runnable {
     @Subscribe
     public void scriptHashStatus(ScriptHashStatus scriptHashStatus) {
         if(isScriptHashSubscribed(scriptHashStatus.scriptHash())) {
-            ElectrumNotificationTransport electrumNotificationTransport = new ElectrumNotificationTransport(clientSocket);
+            ElectrumNotificationTransport electrumNotificationTransport = new ElectrumNotificationTransport(this);
             JsonRpcClient jsonRpcClient = new JsonRpcClient(electrumNotificationTransport);
             jsonRpcClient.onDemand(ElectrumNotificationService.class).notifyScriptHash(scriptHashStatus.scriptHash(), scriptHashStatus.status());
         }

@@ -2,24 +2,16 @@ package com.sparrowwallet.sparrow.net.cormorant.electrum;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
 
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-
 public class ElectrumNotificationTransport implements Transport {
-    private final Socket clientSocket;
+    private final RequestHandler requestHandler;
 
-    public ElectrumNotificationTransport(Socket clientSocket) {
-        this.clientSocket = clientSocket;
+    public ElectrumNotificationTransport(RequestHandler requestHandler) {
+        this.requestHandler = requestHandler;
     }
 
     @Override
-    public String pass(String request) throws IOException {
-        PrintWriter out = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_8));
-        out.println(request);
-        out.flush();
+    public String pass(String request) {
+        requestHandler.send(request);
 
         return "{\"result\":{},\"error\":null,\"id\":1}";
     }
