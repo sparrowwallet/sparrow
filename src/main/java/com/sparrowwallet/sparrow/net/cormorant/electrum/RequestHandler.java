@@ -52,6 +52,12 @@ public class RequestHandler implements Runnable {
             }
         } catch(IOException e) {
             log.error("Could not communicate with client socket", e);
+        } finally {
+            try {
+                clientSocket.close();
+            } catch(IOException e) {
+                log.debug("Error closing client socket", e);
+            }
         }
     }
 

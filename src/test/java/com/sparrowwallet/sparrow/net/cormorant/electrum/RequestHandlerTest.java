@@ -104,6 +104,7 @@ public class RequestHandlerTest {
 
             endOfInput.countDown();
             handler.get(5, TimeUnit.SECONDS);
+            assertTrue(socket.isClosed(), "The handler must close the client socket when it exits");
 
             List<String> lines = written.toString(StandardCharsets.UTF_8).lines().toList();
             assertEquals(2, lines.size(), "The response and the notification must each arrive as one whole line");

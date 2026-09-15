@@ -18,7 +18,7 @@ public class Store {
     private final Map<Integer, String> blockHeightHashes = new HashMap<>();
     private final Map<String, MempoolEntry> mempoolEntries = new HashMap<>();
 
-    public String addAddressTransaction(Address address, ListTransaction listTransaction) {
+    public synchronized String addAddressTransaction(Address address, ListTransaction listTransaction) {
         if(listTransaction.category() == Category.receive || listTransaction.category() == Category.immature || listTransaction.category() == Category.generate) {
             fundingAddresses.put(new HashIndex(Sha256Hash.wrap(listTransaction.txid()), listTransaction.vout()), address);
         }
@@ -49,7 +49,7 @@ public class Store {
         return null;
     }
 
-    public Set<String> updateMempoolTransactions() {
+    public synchronized Set<String> updateMempoolTransactions() {
         Set<String> updatedScriptHashes = new HashSet<>();
 
         for(Map.Entry<String, Set<TxEntry>> scriptHashEntry : scriptHashEntries.entrySet()) {
@@ -80,7 +80,7 @@ public class Store {
         return updatedScriptHashes;
     }
 
-    public Set<String> purgeTransaction(String txid) {
+    public synchronized Set<String> purgeTransaction(String txid) {
         Set<String> updatedScriptHashes = new HashSet<>();
 
         for(Map.Entry<String, Set<TxEntry>> scriptHashEntry : scriptHashEntries.entrySet()) {
@@ -98,7 +98,7 @@ public class Store {
         return updatedScriptHashes;
     }
 
-    public String getStatus(String scriptHash) {
+    public synchronized String getStatus(String scriptHash) {
         Set<TxEntry> entries = scriptHashEntries.get(scriptHash);
         if(entries == null || entries.isEmpty()) {
             return null;
@@ -112,7 +112,7 @@ public class Store {
         return Utils.bytesToHex(Sha256Hash.hash(scriptHashStatus.toString().getBytes(StandardCharsets.UTF_8)));
     }
 
-    public Address getFundingAddress(HashIndex spentOutput) {
+    public synchronized Address getFundingAddress(HashIndex spentOutput) {
         return fundingAddresses.get(spentOutput);
     }
 
@@ -124,16 +124,16 @@ public class Store {
         return mempoolEntries;
     }
 
-    public Set<TxEntry> getHistory(String scriptHash) {
+    public synchronized List<TxEntry> getHistory(String scriptHash) {
         Set<TxEntry> entries = scriptHashEntries.get(scriptHash);
         if(entries == null) {
-            return Collections.emptySet();
+            return Collections.emptyList();
         }
 
-        return entries;
+        return new ArrayList<>(entries);
     }
 
-    public String getBlockHash(int height) {
+    public synchronized String getBlockHash(int height) {
         return blockHeightHashes.get(height);
     }
 
