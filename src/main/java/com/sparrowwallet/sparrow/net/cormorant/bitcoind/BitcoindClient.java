@@ -361,7 +361,10 @@ public class BitcoindClient {
 
     private Set<String> addDescriptors(Map<String, ScanDate> descriptors) throws ScanDateBeforePruneException, ImportFailedException {
         boolean forceRescan = descriptors.values().stream().anyMatch(scanDate -> scanDate.forceRescan);
-        if(!initialized || forceRescan) {
+        //Bitcoin Core extends the range of a descriptor as its addresses are used, so a wanted range beyond the one last seen is compared against its current range
+        boolean extending = initialized && descriptors.entrySet().stream().anyMatch(entry -> entry.getValue().range != null && importedDescriptors.containsKey(entry.getKey())
+                && importedDescriptors.get(entry.getKey()).range != null && entry.getValue().range > importedDescriptors.get(entry.getKey()).range);
+        if(!initialized || forceRescan || extending) {
             ListDescriptorsResult listDescriptorsResult = getBitcoindService().listDescriptors(false);
             for(ListDescriptorResult result : listDescriptorsResult.descriptors()) {
                 String descriptor = OutputDescriptor.normalize(result.desc());
