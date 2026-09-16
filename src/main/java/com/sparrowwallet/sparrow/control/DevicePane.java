@@ -993,6 +993,7 @@ public class DevicePane extends TitledDescriptionPane {
         List<Wallet> wallets = new ArrayList<>();
 
         RangeInputDialog rangeInputDialog = new RangeInputDialog(StandardAccount.ACCOUNT_0.getAccountNumber(), StandardAccount.ACCOUNT_30.getAccountNumber(), StandardAccount.ACCOUNT_10.getAccountNumber());
+        rangeInputDialog.initOwner(this.getScene().getWindow());
         rangeInputDialog.setTitle("Choose number of accounts");
         rangeInputDialog.setHeaderText("Enter the number of additional accounts to scan for existing funds.\n\nThis may take a few minutes depending on how many accounts are selected.");
         Optional<Integer> optRange = rangeInputDialog.showAndWait();

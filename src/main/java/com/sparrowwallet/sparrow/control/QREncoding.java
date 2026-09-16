@@ -1,9 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.Theme;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
-import com.sparrowwallet.sparrow.io.Config;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import org.controlsfx.glyphfont.Glyph;
@@ -31,7 +29,7 @@ public enum QREncoding {
 
     public Node getSVGImage() {
         try {
-            URL url = AppServices.class.getResource("/image/qrencoding/" + getName().toLowerCase(Locale.ROOT) + "-icon" + (Config.get().getTheme() == Theme.DARK ? "-invert" : "") + ".svg");
+            URL url = AppServices.class.getResource("/image/qrencoding/" + getName().toLowerCase(Locale.ROOT) + "-icon" + (AppServices.isDarkTheme() ? "-invert" : "") + ".svg");
             if(url != null) {
                 return SVGLoader.load(url);
             } else {

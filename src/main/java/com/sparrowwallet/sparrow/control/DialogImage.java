@@ -1,8 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.AppServices;
-import com.sparrowwallet.sparrow.Theme;
-import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.NamedArg;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -43,7 +41,7 @@ public class DialogImage extends StackPane {
 
     protected void refresh(Type type) {
         SVGImage svgImage;
-        if(Config.get().getTheme() == Theme.DARK) {
+        if(AppServices.isDarkTheme()) {
             svgImage = loadSVGImage("/image/dialog/" + type.name().toLowerCase(Locale.ROOT) + "-invert.svg");
         } else {
             svgImage = loadSVGImage("/image/dialog/" + type.name().toLowerCase(Locale.ROOT) + ".svg");

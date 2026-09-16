@@ -98,7 +98,7 @@ public class TransactionDiagram extends GridPane {
                 }
 
                 scenePane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
-                if(Config.get().getTheme() == Theme.DARK) {
+                if(AppServices.isDarkTheme()) {
                     scenePane.getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
                 }
                 scenePane.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
@@ -998,7 +998,7 @@ public class TransactionDiagram extends GridPane {
             transactionDiagram.setFinal(true);
             transactionDiagram.setExpanded(isExpanded());
             transactionDiagram.setBackground(new Background(new BackgroundFill(Color.TRANSPARENT, null, null)));
-            transactionDiagram.setStyle("-fx-text-background-color: " + (Config.get().getTheme() == Theme.DARK ? "#ffffff" : "#000000"));
+            transactionDiagram.setStyle("-fx-text-background-color: " + (AppServices.isDarkTheme() ? "#ffffff" : "#000000"));
             updateDerivedDiagram(transactionDiagram);
             Scene scene = new Scene(transactionDiagram);
             scene.setFill(Color.TRANSPARENT);

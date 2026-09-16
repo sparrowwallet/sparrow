@@ -903,7 +903,7 @@ public class PaymentController extends WalletFormController implements Initializ
     public static Node getBitcoinCharacter() {
         try {
             URL url;
-            if(Config.get().getTheme() == Theme.DARK) {
+            if(AppServices.isDarkTheme()) {
                 url = AppServices.class.getResource("/image/bitcoin-character-invert.svg");
             } else {
                 url = AppServices.class.getResource("/image/bitcoin-character.svg");

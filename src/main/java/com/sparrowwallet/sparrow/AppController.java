@@ -388,8 +388,8 @@ public class AppController implements Initializable {
 
         Theme configTheme = Config.get().getTheme();
         if(configTheme == null) {
-            configTheme = Theme.LIGHT;
-            Config.get().setTheme(Theme.LIGHT);
+            configTheme = Theme.SYSTEM;
+            Config.get().setTheme(Theme.SYSTEM);
         }
         final Theme selectedTheme = configTheme;
         Optional<Toggle> selectedThemeToggle = theme.getToggles().stream().filter(toggle -> selectedTheme.equals(toggle.getUserData())).findFirst();
@@ -578,6 +578,8 @@ public class AppController implements Initializable {
             controller.initializeView();
             setStageIcon(stage);
             stage.setOnShowing(event -> {
+                //The macOS application menu reuses a single About stage, so the theme may have changed since it was created
+                controller.refreshTheme();
                 AppServices.moveToActiveWindowScreen(stage, 600, 460);
             });
 
@@ -1374,6 +1376,7 @@ public class AppController implements Initializable {
         File walletFile = Storage.getExistingWallet(wallet.getName());
         if(walletFile != null) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.initOwner(rootStack.getScene().getWindow());
             AppServices.setStageIcon(alert.getDialogPane().getScene().getWindow());
             alert.setTitle("Existing wallet found");
             alert.setHeaderText("Replace existing wallet?");
@@ -2643,7 +2646,7 @@ public class AppController implements Initializable {
             Config.get().setTheme(selectedTheme);
         }
 
-        EventManager.get().post(new ThemeChangedEvent(selectedTheme));
+        EventManager.get().post(new ThemeChangedEvent(AppServices.getActiveTheme()));
     }
 
     private void serverToggleStartAnimation() {
@@ -2747,13 +2750,24 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void themeChanged(ThemeChangedEvent event) {
+        //Owned dialogs follow the main window stylesheets, but these non-modal dialogs have no owner
+        List<Scene> scenes = new ArrayList<>(List.of(tabs.getScene()));
+        if(sendToManyDialog != null) {
+            scenes.add(sendToManyDialog.getDialogPane().getScene());
+        }
+        if(searchWalletDialog != null) {
+            scenes.add(searchWalletDialog.getDialogPane().getScene());
+        }
+
         String darkCss = getClass().getResource("darktheme.css").toExternalForm();
-        if(event.getTheme() == Theme.DARK) {
-            if(!tabs.getScene().getStylesheets().contains(darkCss)) {
-                tabs.getScene().getStylesheets().add(darkCss);
+        for(Scene scene : scenes) {
+            if(event.getTheme() == Theme.DARK) {
+                if(!scene.getStylesheets().contains(darkCss)) {
+                    scene.getStylesheets().add(darkCss);
+                }
+            } else {
+                scene.getStylesheets().remove(darkCss);
             }
-        } else {
-            tabs.getScene().getStylesheets().remove(darkCss);
         }
 
         for(Tab tab : tabs.getTabs()) {

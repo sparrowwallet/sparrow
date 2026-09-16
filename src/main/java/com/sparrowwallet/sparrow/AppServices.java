@@ -30,6 +30,7 @@ import com.sparrowwallet.sparrow.net.*;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.subjects.PublishSubject;
 import javafx.application.Application;
+import javafx.application.ColorScheme;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -131,6 +132,8 @@ public class AppServices {
     private ScheduledService<Void> preventSleepService;
 
     private static volatile ChainTip announcedTip;
+
+    private static volatile boolean systemDarkTheme;
 
     private static final Map<Integer, BlockSummary> blockSummaries = new ConcurrentHashMap<>();
 
@@ -956,13 +959,42 @@ public class AppServices {
         return getInteractionServices().showAlert(title, content, alertType, graphic, buttons);
     }
 
+    public static void monitorSystemTheme() {
+        try {
+            Platform.Preferences preferences = Platform.getPreferences();
+            systemDarkTheme = preferences.getColorScheme() == ColorScheme.DARK;
+            preferences.colorSchemeProperty().addListener((observable, oldValue, colorScheme) -> {
+                systemDarkTheme = colorScheme == ColorScheme.DARK;
+                if(Config.get().getTheme() == null || Config.get().getTheme() == Theme.SYSTEM) {
+                    EventManager.get().post(new ThemeChangedEvent(getActiveTheme()));
+                }
+            });
+        } catch(Exception e) {
+            log.warn("Could not read the system color scheme", e);
+        }
+    }
+
+    public static Theme getActiveTheme() {
+        Theme theme = Config.get().getTheme();
+        if(theme == null || theme == Theme.SYSTEM) {
+            return systemDarkTheme ? Theme.DARK : Theme.LIGHT;
+        }
+
+        return theme;
+    }
+
+    public static boolean isDarkTheme() {
+        return getActiveTheme() == Theme.DARK;
+    }
+
     public static void setStageIcon(Window window) {
         Stage stage = (Stage)window;
         stage.getIcons().add(getWindowIcon());
 
         if(stage.getScene() != null) {
-            if(Config.get().getTheme() == Theme.DARK) {
-                stage.getScene().getStylesheets().add(AppServices.class.getResource("darktheme.css").toExternalForm());
+            String darkCss = AppServices.class.getResource("darktheme.css").toExternalForm();
+            if(isDarkTheme() && !stage.getScene().getStylesheets().contains(darkCss)) {
+                stage.getScene().getStylesheets().add(darkCss);
             }
             if(Config.get().isChunkAddresses()) {
                 stage.getScene().getRoot().getStyleClass().add("chunk-addresses");
