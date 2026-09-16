@@ -367,11 +367,11 @@ public class PayNymController {
                 requestingPassword = true;
                 Optional<ButtonType> optButtonType = AppServices.showAlertDialog("Link contacts?", "Some contacts were found that may be already linked. Link these contacts? Your password is required to check.", Alert.AlertType.CONFIRMATION, ButtonType.NO, ButtonType.YES);
                 if(optButtonType.isPresent() && optButtonType.get() == ButtonType.YES) {
-                    WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
                     dlg.initOwner(payNymName.getScene().getWindow());
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {
-                        Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+                        Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get(), storage);
                         decryptWalletService.setOnSucceeded(workerStateEvent -> {
                             EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                             Wallet decryptedWallet = decryptWalletService.getValue();
@@ -509,11 +509,11 @@ public class PayNymController {
         Wallet wallet = walletTransaction.getWallet();
         Storage storage = AppServices.get().getOpenWallets().get(wallet);
         if(wallet.isEncrypted()) {
-            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+            WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
             dlg.initOwner(payNymName.getScene().getWindow());
             Optional<SecureString> password = dlg.showAndWait();
             if(password.isPresent()) {
-                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get());
+                Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(wallet.copy(), password.get(), storage);
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                     Wallet decryptedWallet = decryptWalletService.getValue();

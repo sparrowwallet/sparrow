@@ -32,10 +32,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.regex.Pattern;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class Storage {
     private static final Logger log = LoggerFactory.getLogger(Storage.class);
+    private static volatile Supplier<ChallengeResponseProvider> challengeResponseProviderFactory;
+
     public static final ECKey NO_PASSWORD_KEY = ECKey.fromPublicOnly(ECKey.fromPrivate(Utils.hexToBytes("885e5a09708a167ea356a252387aa7c4893d138d632e296df8fbf5c12798bd28")));
 
     private static final DateTimeFormatter BACKUP_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
@@ -356,6 +359,24 @@ public class Storage {
 
     void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
         persistence.setKeyDeriver(keyDeriver);
+    }
+
+    public boolean isChallengeResponseEnabled() {
+        return persistence.isChallengeResponseEnabled();
+    }
+
+    public void setChallengeResponseEnabled(boolean enabled) {
+        persistence.setChallengeResponseEnabled(enabled);
+    }
+
+    public static void setChallengeResponseProviderFactory(Supplier<ChallengeResponseProvider> factory) {
+        challengeResponseProviderFactory = factory;
+    }
+
+    //Returns a fresh provider for a single derivation, or null if no provider is registered
+    public static ChallengeResponseProvider createChallengeResponseProvider() {
+        Supplier<ChallengeResponseProvider> factory = challengeResponseProviderFactory;
+        return factory == null ? null : factory.get();
     }
 
     public PersistenceType getType() {
@@ -845,10 +866,12 @@ public class Storage {
     public static class DecryptWalletService extends Service<Wallet> {
         private final Wallet wallet;
         private final SecureString password;
+        private final Storage storage;
 
-        public DecryptWalletService(Wallet wallet, SecureString password) {
+        public DecryptWalletService(Wallet wallet, SecureString password, Storage storage) {
             this.wallet = wallet;
             this.password = password;
+            this.storage = storage;
         }
 
         @Override
@@ -856,7 +879,24 @@ public class Storage {
             return new Task<>() {
                 protected Wallet call() throws IOException, StorageException {
                     try {
-                        wallet.decrypt(password);
+                        if(storage != null && storage.isChallengeResponseEnabled()) {
+                            ECKey encryptionFullKey = storage.getEncryptionKey(password);
+                            if(!ECKey.fromPublicOnly(encryptionFullKey).equals(storage.getEncryptionPubKey())) {
+                                throw new InvalidPasswordException("Incorrect password for wallet " + wallet.getName());
+                            }
+
+                            Key key = null;
+                            try {
+                                key = new Key(encryptionFullKey.getPrivKeyBytes(), storage.getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
+                                wallet.decrypt(key);
+                            } finally {
+                                if(key != null) {
+                                    key.clear();
+                                }
+                            }
+                        } else {
+                            wallet.decrypt(password);
+                        }
                         return wallet;
                     } finally {
                         password.clear();

@@ -755,11 +755,11 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
             return;
         }
 
-        WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+        WalletPasswordDialog dlg = new WalletPasswordDialog(wallet.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
         dlg.initOwner(getDialogPane().getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(walletNode.getWallet().copy(), password.get());
+            Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(walletNode.getWallet().copy(), password.get(), storage);
             decryptWalletService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Done"));
                 Wallet decryptedWallet = decryptWalletService.getValue();

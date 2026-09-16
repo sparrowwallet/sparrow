@@ -5,11 +5,15 @@ import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.AsymmetricKeyDeriver;
+import com.sparrowwallet.drongo.crypto.ChallengeResponseKeyDeriver;
+import com.sparrowwallet.drongo.crypto.ChallengeResponseProvider;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
+import com.sparrowwallet.drongo.crypto.KeyCrypterException;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.SparrowWallet;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.wallet.*;
@@ -64,6 +68,8 @@ public class DbPersistence implements Persistence {
     private static final int H2_ENCRYPT_SALT_LENGTH_BYTES = 8;
     private static final int SALT_LENGTH_BYTES = 16;
     public static final byte[] HEADER_MAGIC_1 = "SPRW1\n".getBytes(StandardCharsets.UTF_8);
+    public static final byte[] HEADER_MAGIC_2 = "SPRW2\n".getBytes(StandardCharsets.UTF_8);
+    private static final byte FLAG_CHALLENGE_RESPONSE = 0x01;
     private static final String H2_USER = "sa";
     private static final String H2_PASSWORD = "";
     public static final String MIGRATION_RESOURCES_DIR = "com/sparrowwallet/sparrow/sql/";
@@ -84,6 +90,7 @@ public class DbPersistence implements Persistence {
 
     private HikariDataSource dataSource;
     private AsymmetricKeyDeriver keyDeriver;
+    private Boolean challengeResponseEnabled;
 
     private Wallet masterWallet;
     private final Map<Wallet, DirtyPersistables> dirtyPersistablesMap = new HashMap<>();
@@ -628,8 +635,21 @@ public class DbPersistence implements Persistence {
             dataSource.close();
         }
 
-        ByteBuffer header = ByteBuffer.allocate(HEADER_MAGIC_1.length + SALT_LENGTH_BYTES);
-        header.put(HEADER_MAGIC_1);
+        boolean challengeResponse = isChallengeResponseEnabled();
+        byte[] magic;
+        int extraBytes = 0;
+        if(challengeResponse) {
+            magic = HEADER_MAGIC_2;
+            extraBytes = 1;
+        } else {
+            magic = HEADER_MAGIC_1;
+        }
+
+        ByteBuffer header = ByteBuffer.allocate(magic.length + extraBytes + SALT_LENGTH_BYTES);
+        header.put(magic);
+        if(challengeResponse) {
+            header.put(FLAG_CHALLENGE_RESPONSE);
+        }
         header.put(keyDeriver.getSalt());
         header.flip();
 
@@ -738,12 +758,19 @@ public class DbPersistence implements Persistence {
             return alreadyDerivedKey;
         } else if(password == null) {
             return null;
-        } else if(password.equals("")) {
+        } else if(password.equals("") && !requiresChallengeResponse(walletFile)) {
             return Storage.NO_PASSWORD_KEY;
         }
 
-        AsymmetricKeyDeriver keyDeriver = getKeyDeriver(walletFile);
-        return keyDeriver.deriveECKey(password);
+        AsymmetricKeyDeriver deriver = getKeyDeriver(walletFile);
+        if(requiresChallengeResponse(walletFile)) {
+            ChallengeResponseProvider provider = Storage.createChallengeResponseProvider();
+            if(provider == null) {
+                throw new KeyCrypterException("This wallet requires a challenge-response device, which is not available here.");
+            }
+            deriver = new ChallengeResponseKeyDeriver(deriver, provider);
+        }
+        return deriver.deriveECKey(password);
     }
 
     @Override
@@ -754,6 +781,28 @@ public class DbPersistence implements Persistence {
     @Override
     public void setKeyDeriver(AsymmetricKeyDeriver keyDeriver) {
         this.keyDeriver = keyDeriver;
+    }
+
+    //Reads the wallet header if the requirement is not yet known, so derivation never depends on an earlier isEncrypted call
+    private boolean requiresChallengeResponse(File walletFile) throws IOException {
+        if(challengeResponseEnabled == null && walletFile != null && walletFile.exists() && hasEncryptHeader(walletFile)) {
+            try(InputStream inputStream = new FileInputStream(walletFile)) {
+                inputStream.skipNBytes(H2_ENCRYPT_HEADER.length + H2_ENCRYPT_SALT_LENGTH_BYTES);
+                challengeResponseEnabled = readChallengeResponseFlag(inputStream, walletFile);
+            }
+        }
+
+        return isChallengeResponseEnabled();
+    }
+
+    @Override
+    public boolean isChallengeResponseEnabled() {
+        return Boolean.TRUE.equals(challengeResponseEnabled);
+    }
+
+    @Override
+    public void setChallengeResponseEnabled(boolean enabled) {
+        this.challengeResponseEnabled = enabled;
     }
 
     private AsymmetricKeyDeriver getKeyDeriver(File walletFile) throws IOException {
@@ -770,8 +819,11 @@ public class DbPersistence implements Persistence {
 
             if(walletFile != null && walletFile.exists()) {
                 try(InputStream inputStream = new FileInputStream(walletFile)) {
-                    inputStream.skip(H2_ENCRYPT_HEADER.length + H2_ENCRYPT_SALT_LENGTH_BYTES + HEADER_MAGIC_1.length);
-                    inputStream.read(salt, 0, salt.length);
+                    inputStream.skipNBytes(H2_ENCRYPT_HEADER.length + H2_ENCRYPT_SALT_LENGTH_BYTES);
+                    challengeResponseEnabled = readChallengeResponseFlag(inputStream, walletFile);
+                    if(inputStream.readNBytes(salt, 0, salt.length) < salt.length) {
+                        throw new EOFException("Truncated header in wallet file " + walletFile.getName());
+                    }
                 }
             } else {
                 SecureRandom secureRandom = new SecureRandom();
@@ -790,15 +842,43 @@ public class DbPersistence implements Persistence {
             return getDatasourcePassword() != null;
         }
 
-        return hasEncryptHeader(walletFile);
+        if(!hasEncryptHeader(walletFile)) {
+            return false;
+        }
+
+        //Read here so the challenge-response requirement is known before the password prompt
+        try(InputStream inputStream = new FileInputStream(walletFile)) {
+            inputStream.skipNBytes(H2_ENCRYPT_HEADER.length + H2_ENCRYPT_SALT_LENGTH_BYTES);
+            challengeResponseEnabled = readChallengeResponseFlag(inputStream, walletFile);
+        }
+
+        return true;
     }
 
+    //Does not modify any state, so it is safe to call on a file that has been re-encrypted but not yet given a wallet header
     private boolean hasEncryptHeader(File walletFile) throws IOException {
-        byte[] header = new byte[H2_ENCRYPT_HEADER.length];
         try(InputStream inputStream = new FileInputStream(walletFile)) {
-            inputStream.read(header, 0, H2_ENCRYPT_HEADER.length);
-            return Arrays.equals(H2_ENCRYPT_HEADER, header);
+            return Arrays.equals(H2_ENCRYPT_HEADER, inputStream.readNBytes(H2_ENCRYPT_HEADER.length));
         }
+    }
+
+    //Reads the wallet header magic from a stream positioned at it, leaving the stream positioned at the salt
+    boolean readChallengeResponseFlag(InputStream inputStream, File walletFile) throws IOException {
+        if(!Arrays.equals(HEADER_MAGIC_2, inputStream.readNBytes(HEADER_MAGIC_1.length))) {
+            return false;
+        }
+
+        int flags = inputStream.read();
+        if(flags < 0) {
+            throw new EOFException("Truncated header in wallet file " + walletFile.getName());
+        }
+
+        //Fail rather than ignore a flag this version does not understand, so a later requirement cannot be silently dropped
+        if((flags & ~FLAG_CHALLENGE_RESPONSE) != 0) {
+            throw new IOException("Wallet file " + walletFile.getName() + " requires a newer version of " + SparrowWallet.APP_NAME);
+        }
+
+        return (flags & FLAG_CHALLENGE_RESPONSE) != 0;
     }
 
     @Override

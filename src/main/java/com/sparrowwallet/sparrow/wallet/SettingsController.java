@@ -575,11 +575,11 @@ public class SettingsController extends WalletFormController implements Initiali
     }
 
     private void rederiveAndReplaceEncryptedWallet(Wallet editedWallet) {
-        WalletPasswordDialog dlg = new WalletPasswordDialog(walletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+        Storage storage = walletForm.getStorage();
+        WalletPasswordDialog dlg = new WalletPasswordDialog(walletForm.getWallet().getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
         dlg.initOwner(apply.getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
-            Storage storage = walletForm.getStorage();
             Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, password.get(), true);
             keyDerivationService.setOnSucceeded(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Done"));
@@ -689,7 +689,7 @@ public class SettingsController extends WalletFormController implements Initiali
         if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() == KeystoreSource.SW_SEED)) {
             if(masterWallet.isEncrypted()) {
                 String walletId = walletForm.getWalletId();
-                WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                WalletPasswordDialog dlg = new WalletPasswordDialog(masterWallet.getName(), WalletPasswordDialog.PasswordRequirement.LOAD, walletForm.getStorage());
                 dlg.initOwner(addAccount.getScene().getWindow());
                 Optional<SecureString> password = dlg.showAndWait();
                 if(password.isPresent()) {
@@ -1022,6 +1022,12 @@ public class SettingsController extends WalletFormController implements Initiali
 
     //Returns true if the wallet save was initiated, and false if it was abandoned without any change to the wallet or its storage
     private boolean saveWallet(boolean changePassword, boolean suggestChangePassword) {
+        return saveWallet(changePassword, suggestChangePassword, null);
+    }
+
+    //onDerivationFailed runs if the key derivation fails after this method has already returned true, which a
+    //challenge-response device makes routine since the user can cancel the touch or let it time out
+    private boolean saveWallet(boolean changePassword, boolean suggestChangePassword, Runnable onDerivationFailed) {
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         WalletPasswordDialog.PasswordRequirement requirement;
@@ -1044,10 +1050,25 @@ public class SettingsController extends WalletFormController implements Initiali
             }
         }
 
+        boolean challengeResponseWasEnabled = walletForm.getStorage().isChallengeResponseEnabled();
         WalletPasswordDialog dlg = new WalletPasswordDialog(null, requirement, suggestChangePassword);
+        dlg.setYubikeyEnabled(challengeResponseWasEnabled);
         dlg.initOwner(apply.getScene().getWindow());
         Optional<SecureString> password = dlg.showAndWait();
         if(password.isPresent()) {
+            if(requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET && challengeResponseWasEnabled != dlg.isYubikeyEnabled()) {
+                String title = dlg.isYubikeyEnabled() ? "Require Challenge-Response?" : "Remove Challenge-Response?";
+                String message = dlg.isYubikeyEnabled() ?
+                        "This wallet file will only open with this security key. If it is lost, reset or reprogrammed, the wallet cannot be recovered from this file. Ok to proceed?" :
+                        "This wallet will no longer require a security key to open, and the password alone will be enough. Ok to proceed?";
+                Optional<ButtonType> optChallengeResponse = AppServices.showWarningDialog(title, message, ButtonType.CANCEL, ButtonType.OK);
+                if(optChallengeResponse.isEmpty() || optChallengeResponse.get().equals(ButtonType.CANCEL)) {
+                    password.get().clear();
+                    revert.setDisable(false);
+                    apply.setDisable(false);
+                    return false;
+                }
+            }
             if(dlg.isBackupExisting()) {
                 try {
                     walletForm.saveBackup();
@@ -1060,9 +1081,11 @@ public class SettingsController extends WalletFormController implements Initiali
                 }
             }
 
-            if(password.get().length() == 0 && requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
+            if(password.get().length() == 0 && !dlg.isYubikeyEnabled() && requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
                 try {
                     walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+                    //An unencrypted wallet has no challenge-response requirement, so the flag must not stay set
+                    walletForm.getStorage().setChallengeResponseEnabled(false);
                     walletForm.saveAndRefresh();
                     EventManager.get().post(new RequestOpenWalletsEvent());
                 } catch (IOException | StorageException e) {
@@ -1072,6 +1095,10 @@ public class SettingsController extends WalletFormController implements Initiali
                     apply.setDisable(false);
                 }
             } else {
+                //UPDATE_SET only verifies the existing password, so the current challenge-response setting is retained
+                if(requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
+                    walletForm.getStorage().setChallengeResponseEnabled(dlg.isYubikeyEnabled());
+                }
                 Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password.get());
                 keyDerivationService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.END, "Done"));
@@ -1104,14 +1131,26 @@ public class SettingsController extends WalletFormController implements Initiali
                                 }
                             }
 
-                            //If a new password is not provided, re-encrypt with the existing key rather than leaving the wallet decrypted for the session
-                            if(!saveWallet(true, false)) {
-                                masterWallet.encrypt(key);
-                                for(Wallet childWallet : masterWallet.getChildWallets()) {
-                                    if(!childWallet.isNested()) {
-                                        childWallet.encrypt(key);
+                            //If a new password is not provided, or deriving it fails, re-encrypt with the existing
+                            //key rather than leaving the wallet decrypted for the session
+                            byte[] existingKeyBytes = encryptionFullKey.getPrivKeyBytes();
+                            byte[] existingSalt = walletForm.getStorage().getKeyDeriver().getSalt();
+                            Runnable reEncrypt = () -> {
+                                Key existingKey = new Key(Arrays.copyOf(existingKeyBytes, existingKeyBytes.length), existingSalt, EncryptionType.Deriver.ARGON2);
+                                try {
+                                    masterWallet.encrypt(existingKey);
+                                    for(Wallet childWallet : masterWallet.getChildWallets()) {
+                                        if(!childWallet.isNested()) {
+                                            childWallet.encrypt(existingKey);
+                                        }
                                     }
+                                } finally {
+                                    existingKey.clear();
                                 }
+                            };
+
+                            if(!saveWallet(true, false, reEncrypt)) {
+                                reEncrypt.run();
                             }
                             return;
                         }
@@ -1142,6 +1181,11 @@ public class SettingsController extends WalletFormController implements Initiali
                 });
                 keyDerivationService.setOnFailed(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(walletForm.getWalletId(), TimedEvent.Action.END, "Failed"));
+                    //The wallet file was not rewritten, so the in memory setting must go back to what the file says
+                    walletForm.getStorage().setChallengeResponseEnabled(challengeResponseWasEnabled);
+                    if(onDerivationFailed != null) {
+                        onDerivationFailed.run();
+                    }
                     AppServices.showErrorDialog("Error saving wallet", keyDerivationService.getException().getMessage());
                     revert.setDisable(false);
                     apply.setDisable(false);

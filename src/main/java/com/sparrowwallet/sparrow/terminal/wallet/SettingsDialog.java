@@ -127,6 +127,11 @@ public class SettingsDialog extends WalletDialog {
     private void showSeed() {
         Wallet wallet = getWalletForm().getWallet().copy();
         if(wallet.isEncrypted()) {
+            if(getWalletForm().getStorage().isChallengeResponseEnabled()) {
+                showErrorDialog("Challenge-Response Required", "This wallet requires a challenge-response device for authentication, which is not supported in terminal mode.");
+                return;
+            }
+
             Wallet copy = wallet.copy();
             String walletId = getWalletForm().getWalletId();
 
@@ -180,6 +185,11 @@ public class SettingsDialog extends WalletDialog {
     //Returns true if the wallet save was initiated, and false if it was abandoned without any change to the wallet or its storage
     private boolean saveWallet(boolean changePassword, boolean suggestChangePassword) {
         WalletForm walletForm = getWalletForm();
+        if(walletForm.getStorage().isChallengeResponseEnabled()) {
+            showErrorDialog("Challenge-Response Required", "This wallet requires a challenge-response device for authentication, which is not supported in terminal mode.");
+            return false;
+        }
+
         ECKey existingPubKey = walletForm.getStorage().getEncryptionPubKey();
 
         PasswordRequirement requirement;

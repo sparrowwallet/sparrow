@@ -16,6 +16,7 @@ import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.control.DialogImage;
 import com.sparrowwallet.sparrow.control.WalletPasswordDialog;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.lark.yubikey.YubiKeyHmacProvider;
 import com.sparrowwallet.sparrow.net.Auth47;
 import com.sparrowwallet.drongo.protocol.BlockHeader;
 import com.sparrowwallet.drongo.protocol.ScriptType;
@@ -71,6 +72,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -576,6 +578,9 @@ public class AppServices {
 
     public static void initialize(Application application) {
         INSTANCE = new AppServices(application, new DefaultInteractionServices());
+        //Registered once so every wallet unlock path derives with challenge-response when the wallet requires it.
+        //Only for the desktop UI, since the prompt is a JavaFX dialog.
+        Storage.setChallengeResponseProviderFactory(AppServices::createYubiKeyProvider);
     }
 
     public static void initialize(Application application, InteractionServices interactionServices) {
@@ -956,6 +961,44 @@ public class AppServices {
         return getInteractionServices().showAlert(title, content, alertType, graphic, buttons);
     }
 
+    public static YubiKeyHmacProvider createYubiKeyProvider() {
+        YubiKeyHmacProvider provider = new YubiKeyHmacProvider();
+        Alert[] touchAlert = new Alert[1];
+        AtomicBoolean completed = new AtomicBoolean();
+        provider.setOnWaitingForTouch(() -> {
+            Platform.runLater(() -> {
+                if(completed.get()) {
+                    return;
+                }
+
+                touchAlert[0] = new Alert(Alert.AlertType.INFORMATION);
+                touchAlert[0].setTitle("Challenge-Response");
+                touchAlert[0].setHeaderText("Touch your security key");
+                touchAlert[0].setContentText("Waiting for security key touch to complete authentication...");
+                touchAlert[0].getButtonTypes().setAll(ButtonType.CANCEL);
+                //Closing the prompt aborts the wait rather than leaving the user until the device times out
+                touchAlert[0].setOnHidden(event -> {
+                    if(!completed.get()) {
+                        provider.cancel();
+                    }
+                });
+                touchAlert[0].getDialogPane().getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
+                setStageIcon(touchAlert[0].getDialogPane().getScene().getWindow());
+                moveToActiveWindowScreen(touchAlert[0]);
+                touchAlert[0].show();
+            });
+        });
+        provider.setOnComplete(() -> {
+            completed.set(true);
+            Platform.runLater(() -> {
+                if(touchAlert[0] != null) {
+                    touchAlert[0].close();
+                }
+            });
+        });
+        return provider;
+    }
+
     public static void setStageIcon(Window window) {
         Stage stage = (Stage)window;
         stage.getIcons().add(getWindowIcon());
@@ -1174,7 +1217,7 @@ public class AppServices {
                 if(wallet.isEncrypted()) {
                     Storage storage = AppServices.get().getOpenWallets().get(wallet);
                     Wallet copy = wallet.copy();
-                    WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD);
+                    WalletPasswordDialog dlg = new WalletPasswordDialog(copy.getMasterName(), WalletPasswordDialog.PasswordRequirement.LOAD, storage);
                     dlg.initOwner(getActiveWindow());
                     Optional<SecureString> password = dlg.showAndWait();
                     if(password.isPresent()) {

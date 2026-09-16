@@ -50,6 +50,7 @@ public class WalletController extends WalletFormController implements Initializa
     private ToggleGroup walletMenu;
 
     private BorderPane lockPane;
+    private Label lockLabel;
 
     private CustomPasswordField passwordField;
 
@@ -156,6 +157,13 @@ public class WalletController extends WalletFormController implements Initializa
         });
     }
 
+    private void updateLockLabel() {
+        if(lockLabel != null) {
+            lockLabel.setText(walletForm.getStorage().isChallengeResponseEnabled() ?
+                    "Enter password to unlock (leave empty if none).\nSecurity key touch will be required." : "Enter password to unlock:");
+        }
+    }
+
     private void initializeLockScreen() {
         lockPane = new BorderPane();
         lockPane.setUserData(Function.LOCK);
@@ -165,7 +173,9 @@ public class WalletController extends WalletFormController implements Initializa
         Glyph lock = new Glyph("FontAwesome", FontAwesome.Glyph.LOCK);
         lock.setFontSize(80);
         vBox.getChildren().add(lock);
-        Label label = new Label("Enter password to unlock:");
+        Label label = new Label();
+        lockLabel = label;
+        updateLockLabel();
         label.managedProperty().bind(label.visibleProperty());
         label.visibleProperty().bind(walletEncryptedProperty);
         passwordField = new ViewPasswordField();
@@ -257,6 +267,8 @@ public class WalletController extends WalletFormController implements Initializa
                 initializeLockScreen();
             }
 
+            //Re-read here, since the setting may have changed since the lock screen was built
+            updateLockLabel();
             getWalletForm().setLocked(true);
             lockPane.setViewOrder(-1);
         }
