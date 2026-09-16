@@ -1,8 +1,11 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.lark.HardwareClient;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 public class Device {
@@ -15,6 +18,7 @@ public class Device {
     private boolean card;
     private String[][] warnings;
     private String error;
+    private List<ScriptType> supportedScriptTypes;
 
     public String getType() {
         return type;
@@ -94,6 +98,10 @@ public class Device {
         return false;
     }
 
+    public boolean supportsScriptType(ScriptType scriptType) {
+        return supportedScriptTypes == null || supportedScriptTypes.contains(scriptType);
+    }
+
     public String getError() {
         return error;
     }
@@ -135,6 +143,7 @@ public class Device {
         device.card = hardwareClient.card();
         device.warnings = hardwareClient.warnings();
         device.error = hardwareClient.error();
+        device.supportedScriptTypes = Arrays.stream(ScriptType.values()).filter(hardwareClient::supportsScriptType).toList();
         return device;
     }
 }

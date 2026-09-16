@@ -309,7 +309,9 @@ public class DevicePane extends TitledDescriptionPane {
                     List<PolicyAndScriptType> types = new ArrayList<>();
                     for(PolicyType policyType : List.of(PolicyType.SINGLE_HD, PolicyType.SINGLE_SP)) {
                         for(ScriptType scriptType : ScriptType.getAddressableScriptTypes(policyType)) {
-                            types.add(new PolicyAndScriptType(policyType, scriptType));
+                            if(device.supportsScriptType(scriptType)) {
+                                types.add(new PolicyAndScriptType(policyType, scriptType));
+                            }
                         }
                     }
                     for(PolicyAndScriptType type : types) {
@@ -323,7 +325,7 @@ public class DevicePane extends TitledDescriptionPane {
                         importMenuButton.getItems().add(item);
                     }
                 } else {
-                    List<ScriptType> scriptTypes = ScriptType.getScriptTypesForPolicyType(wallet.getPolicyType());
+                    List<ScriptType> scriptTypes = ScriptType.getScriptTypesForPolicyType(wallet.getPolicyType()).stream().filter(device::supportsScriptType).toList();
                     for(ScriptType scriptType : scriptTypes) {
                         MenuItem item = new MenuItem(scriptType.getDescription());
                         final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
@@ -753,6 +755,9 @@ public class DevicePane extends TitledDescriptionPane {
                 setError("Import Error", e.getMessage());
                 importButton.setDisable(false);
             }
+        } else if(wallet.getScriptType() != null && !device.supportsScriptType(wallet.getScriptType())) {
+            setError("Unsupported script type", "The " + device.getModel().toDisplayString() + " cannot sign for " + wallet.getScriptType().getDescription() + " wallets.");
+            importButton.setDisable(false);
         } else if(device.getFingerprint() == null) {
             Hwi.EnumerateService enumerateService = new Hwi.EnumerateService(passphrase.get());
             enumerateService.setOnSucceeded(workerStateEvent -> {
@@ -997,10 +1002,7 @@ public class DevicePane extends TitledDescriptionPane {
 
         List<StandardAccount> discoveryAccounts = new ArrayList<>(Arrays.asList(StandardAccount.values()).subList(0, optRange.get() + 1));
         Map<Hwi.WalletType, String> derivationPaths = new LinkedHashMap<>();
-        List<ScriptType> scriptTypes = new ArrayList<>(ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD));
-        if(device.getModel() == WalletModel.BITBOX_02) {
-            scriptTypes.remove(ScriptType.P2PKH);
-        }
+        List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD).stream().filter(device::supportsScriptType).toList();
         for(ScriptType scriptType : scriptTypes) {
             for(StandardAccount discoveryAccount : discoveryAccounts) {
                 derivationPaths.put(new Hwi.WalletType(scriptType, discoveryAccount), KeyDerivation.writePath(scriptType.getDefaultDerivation(discoveryAccount.getAccountNumber())));
@@ -1080,6 +1082,11 @@ public class DevicePane extends TitledDescriptionPane {
     private void discoverKeystores() {
         if(wallet.getKeystores().size() != 1) {
             setError("Could not discover keystores", "Only single signature wallets are supported for keystore discovery");
+            return;
+        }
+
+        if(!device.supportsScriptType(wallet.getScriptType())) {
+            setError("Unsupported script type", "The " + device.getModel().toDisplayString() + " cannot sign for " + wallet.getScriptType().getDescription() + " wallets.");
             return;
         }
 
