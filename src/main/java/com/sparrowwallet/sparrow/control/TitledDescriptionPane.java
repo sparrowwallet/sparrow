@@ -5,9 +5,13 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -26,11 +30,22 @@ public class TitledDescriptionPane extends TitledPane {
     public TitledDescriptionPane(String title, String description, String content, WalletModel walletModel) {
         getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         getStyleClass().add("titled-description-pane");
+
+        //This control is a card with independent header actions and optional details. Exposing the
+        //whole card as a TitledPane makes those descendants unavailable to some accessibility bridges.
+        setAccessibleRole(AccessibleRole.PARENT);
         setAccessibleText(title);
 
         setPadding(Insets.EMPTY);
         setGraphic(getTitle(title, description, walletModel));
         setContent(getContentBox(content));
+        graphicProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN));
+        contentProperty().addListener((observable, oldValue, newValue) -> notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN));
+        expandedProperty().addListener((observable, oldValue, newValue) -> {
+            showHideLink.setText(newValue ? "Hide details" : "Show details");
+            notifyAccessibleAttributeChanged(AccessibleAttribute.CHILDREN);
+        });
+        showHideLink.setText(isExpanded() ? "Hide details" : "Show details");
         removeArrow();
     }
 
@@ -61,17 +76,11 @@ public class TitledDescriptionPane extends TitledPane {
 
         descriptionLabel = new Label(description);
         descriptionLabel.getStyleClass().add("description-label");
-        showHideLink = new Hyperlink("Details...");
+        showHideLink = new Hyperlink();
+        showHideLink.setAccessibleRole(AccessibleRole.BUTTON);
         showHideLink.managedProperty().bind(showHideLink.visibleProperty());
         showHideLink.setOnAction(event -> {
             setExpanded(!this.isExpanded());
-        });
-        this.expandedProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue) {
-                showHideLink.setText(showHideLink.getText().replace("Show", "Hide"));
-            } else {
-                showHideLink.setText(showHideLink.getText().replace("Hide", "Show"));
-            }
         });
         descriptionBox.getChildren().addAll(descriptionLabel, showHideLink);
 
@@ -92,6 +101,27 @@ public class TitledDescriptionPane extends TitledPane {
         });
 
         return listItem;
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.CHILDREN) {
+            //Do not expose collapsed content, but always expose the title, description and header actions.
+            return createAccessibleChildren(getGraphic(), getContent(), isExpanded());
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
+    }
+
+    static ObservableList<Node> createAccessibleChildren(Node graphic, Node content, boolean expanded) {
+        ObservableList<Node> children = FXCollections.observableArrayList();
+        if(graphic != null) {
+            children.add(graphic);
+        }
+        if(expanded && content != null) {
+            children.add(content);
+        }
+        return children;
     }
 
     protected Control createButton() {

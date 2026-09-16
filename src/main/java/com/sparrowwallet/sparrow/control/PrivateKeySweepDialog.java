@@ -175,6 +175,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         Field ignoreDustField = new Field();
         ignoreDustField.setText("Ignore dust:");
         ignoreDust = new UnlabeledToggleSwitch();
+        ignoreDust.setAccessibleText("Ignore dust");
         ignoreDustField.getInputs().add(ignoreDust);
 
         fieldset.getChildren().addAll(keyField, keyScriptTypeField, addressField, toAddressField, feeRangeField, feeRateField, ignoreDustField);

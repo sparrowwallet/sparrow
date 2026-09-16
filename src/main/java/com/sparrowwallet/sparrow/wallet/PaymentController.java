@@ -80,7 +80,13 @@ public class PaymentController extends WalletFormController implements Initializ
     private ValidationSupport validationSupport;
 
     @FXML
+    private AccessibleField payToField;
+
+    @FXML
     private ComboBox<Wallet> openWallets;
+
+    @FXML
+    private Label recipientWalletLabel;
 
     @FXML
     private ComboBoxTextField address;
@@ -95,7 +101,13 @@ public class PaymentController extends WalletFormController implements Initializ
     private ComboBox<BitcoinUnit> amountUnit;
 
     @FXML
+    private Label amountUnitLabel;
+
+    @FXML
     private FiatLabel fiatAmount;
+
+    @FXML
+    private Label fiatAmountLabel;
 
     @FXML
     private Label amountStatus;
@@ -300,6 +312,10 @@ public class PaymentController extends WalletFormController implements Initializ
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
+        payToField.setLabelFor(address);
+        recipientWalletLabel.setLabelFor(openWallets);
+        amountUnitLabel.setLabelFor(amountUnit);
+        fiatAmountLabel.setLabelFor(fiatAmount);
     }
 
     public void setSendController(SendController sendController) {

@@ -2,7 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import org.controlsfx.control.StatusBar?>
+<?import com.sparrowwallet.sparrow.control.AccessibleStatusBar?>
 <?import javafx.scene.text.Text?>
 <?import javafx.scene.shape.Rectangle?>
 <?import com.sparrowwallet.sparrow.control.UnlabeledToggleSwitch?>
@@ -15,7 +15,7 @@
     <children>
         <MenuBar useSystemMenuBar="true">
             <menus>
-                <Menu fx:id="fileMenu" mnemonicParsing="false" text="File">
+                <Menu fx:id="fileMenu" mnemonicParsing="true" text="_File">
                     <items>
                         <MenuItem mnemonicParsing="false" text="New Wallet" accelerator="Shortcut+N" onAction="#newWallet"/>
                         <MenuItem mnemonicParsing="false" text="Open Wallet..." accelerator="Shortcut+O" onAction="#openWallet"/>
@@ -64,7 +64,7 @@
                 <fx:define>
                     <ToggleGroup fx:id="theme"/>
                 </fx:define>
-                <Menu fx:id="viewMenu" mnemonicParsing="false" text="View">
+                <Menu fx:id="viewMenu" mnemonicParsing="true" text="_View">
                     <items>
                         <Menu mnemonicParsing="false" text="Bitcoin Unit">
                             <items>
@@ -142,7 +142,7 @@
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>
-                <Menu fx:id="toolsMenu" mnemonicParsing="false" text="Tools">
+                <Menu fx:id="toolsMenu" mnemonicParsing="true" text="_Tools">
                     <MenuItem mnemonicParsing="false" text="Sign/Verify Message" accelerator="Shortcut+M" onAction="#signVerifyMessage"/>
                     <MenuItem fx:id="sendToMany" mnemonicParsing="false" text="Send To Many" onAction="#sendToMany"/>
                     <MenuItem fx:id="sweepPrivateKey" mnemonicParsing="false" text="Sweep Private Key" onAction="#sweepPrivateKey"/>
@@ -155,7 +155,7 @@
                     <CheckMenuItem fx:id="preventSleep" mnemonicParsing="false" text="Prevent Computer Sleep" onAction="#preventSleep"/>
                     <Menu fx:id="restart" mnemonicParsing="false" text="Restart In" />
                 </Menu>
-                <Menu fx:id="helpMenu" mnemonicParsing="false" text="Help">
+                <Menu fx:id="helpMenu" mnemonicParsing="true" text="_Help">
                     <MenuItem mnemonicParsing="false" text="Show Introduction" onAction="#showIntroduction"/>
                     <MenuItem mnemonicParsing="false" text="Show Online Documentation" onAction="#showDocumentation"/>
                     <MenuItem mnemonicParsing="false" text="Show Log File" onAction="#showLogFile"/>
@@ -178,14 +178,14 @@
             <TabPane fx:id="tabs" />
         </DecorationPane>
 
-        <StatusBar fx:id="statusBar" text="" minHeight="36">
+        <AccessibleStatusBar fx:id="statusBar" text="" minHeight="36" accessibleText="Application status">
             <rightItems>
-                <UnlabeledToggleSwitch fx:id="serverToggle">
+                <UnlabeledToggleSwitch fx:id="serverToggle" accessibleText="Server connection">
                     <tooltip>
                         <Tooltip text="Disconnected" />
                     </tooltip>
                 </UnlabeledToggleSwitch>
             </rightItems>
-        </StatusBar>
+        </AccessibleStatusBar>
     </children>
 </VBox>
