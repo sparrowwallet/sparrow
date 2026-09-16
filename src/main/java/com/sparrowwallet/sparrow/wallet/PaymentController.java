@@ -410,12 +410,13 @@ public class PaymentController extends WalletFormController implements Initializ
             sendController.updateTransaction();
         });
 
-        amount.setTextFormatter(new CoinTextFormatter(Config.get().getUnitFormat()));
+        amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(sendController.getBitcoinUnit(Config.get().getBitcoinUnit())) ? 0 : 1);
+        amount.setTextFormatter(new CoinTextFormatter(Config.get().getUnitFormat(), amountUnit.getValue()));
         amount.textProperty().addListener(amountListener);
 
-        amountUnit.getSelectionModel().select(BitcoinUnit.BTC.equals(sendController.getBitcoinUnit(Config.get().getBitcoinUnit())) ? 0 : 1);
         amountUnit.valueProperty().addListener((observable, oldValue, newValue) -> {
             Long value = getRecipientValueSats(oldValue);
+            amount.setTextFormatter(new CoinTextFormatter(Config.get().getUnitFormat(), newValue));
             if(value != null) {
                 UnitFormat unitFormat = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
                 DecimalFormat df = new DecimalFormat("#.#", unitFormat.getDecimalFormatSymbols());
@@ -939,7 +940,7 @@ public class PaymentController extends WalletFormController implements Initializ
     public void unitFormatChanged(UnitFormatChangedEvent event) {
         if(amount.getTextFormatter() instanceof CoinTextFormatter coinTextFormatter && coinTextFormatter.getUnitFormat() != event.getUnitFormat()) {
             Long value = getRecipientValueSats(coinTextFormatter.getUnitFormat(), amountUnit.getSelectionModel().getSelectedItem());
-            amount.setTextFormatter(new CoinTextFormatter(event.getUnitFormat()));
+            amount.setTextFormatter(new CoinTextFormatter(event.getUnitFormat(), amountUnit.getValue()));
 
             if(value != null) {
                 setRecipientValueSats(value);

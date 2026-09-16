@@ -59,7 +59,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         this.wallet = wallet;
         this.bitcoinUnit = bitcoinUnit;
         this.unitFormat = unitFormat == null ? UnitFormat.DOT : unitFormat;
-        this.amountCellType = new UnitFormatDoubleCellType(this.unitFormat);
+        this.amountCellType = new UnitFormatDoubleCellType(this.unitFormat, bitcoinUnit);
 
         final DialogPane dialogPane = new SendToManyDialogPane();
         setDialogPane(dialogPane);
@@ -373,10 +373,12 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
 
     private static class UnitFormatDoubleCellType extends SpreadsheetCellType<Double> {
         private final UnitFormat unitFormat;
+        private final BitcoinUnit bitcoinUnit;
 
-        UnitFormatDoubleCellType(UnitFormat unitFormat) {
-            super(new UnitFormatDoubleConverter(unitFormat));
+        UnitFormatDoubleCellType(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
+            super(new UnitFormatDoubleConverter(unitFormat, bitcoinUnit));
             this.unitFormat = unitFormat;
+            this.bitcoinUnit = bitcoinUnit;
         }
 
         @Override
@@ -392,7 +394,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
 
         @Override
         public SpreadsheetCellEditor createEditor(SpreadsheetView view) {
-            return new UnitFormatDoubleEditor(view, unitFormat);
+            return new UnitFormatDoubleEditor(view, unitFormat, bitcoinUnit);
         }
 
         @Override
@@ -432,9 +434,11 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
 
     private static class UnitFormatDoubleConverter extends StringConverterWithFormat<Double> {
         private final UnitFormat unitFormat;
+        private final BitcoinUnit bitcoinUnit;
 
-        UnitFormatDoubleConverter(UnitFormat unitFormat) {
+        UnitFormatDoubleConverter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
             this.unitFormat = unitFormat;
+            this.bitcoinUnit = bitcoinUnit;
         }
 
         @Override
@@ -442,11 +446,14 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             if(str == null || str.isEmpty()) {
                 return null;
             }
-            String normalised = str.trim()
-                    .replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "")
-                    .replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
+            String groupingStripped = str.trim().replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "");
             try {
-                return Double.valueOf(normalised);
+                //A sats amount with a fraction is not read, as in a CSV import, rather than truncated when paid - a paste of it clears the cell like any text that is not an amount
+                if(bitcoinUnit == BitcoinUnit.SATOSHIS) {
+                    return (double)Long.parseLong(groupingStripped);
+                }
+
+                return Double.valueOf(groupingStripped.replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), "."));
             } catch(NumberFormatException e) {
                 return null;
             }
@@ -473,11 +480,11 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         private final UnitFormat unitFormat;
         private final TextField textField;
 
-        UnitFormatDoubleEditor(SpreadsheetView view, UnitFormat unitFormat) {
+        UnitFormatDoubleEditor(SpreadsheetView view, UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
             super(view);
             this.unitFormat = unitFormat;
             this.textField = new TextField();
-            this.textField.setTextFormatter(new CoinTextFormatter(unitFormat));
+            this.textField.setTextFormatter(new CoinTextFormatter(unitFormat, bitcoinUnit));
         }
 
         @Override

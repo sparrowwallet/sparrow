@@ -24,13 +24,13 @@ final class CoinAxisFormatter extends StringConverter<Number> {
         }
 
         Double value = bitcoinUnit.getValue(object.longValue());
-        return new CoinTextFormatter(unitFormat).getCoinFormat().format(value);
+        return new CoinTextFormatter(unitFormat, bitcoinUnit).getCoinFormat().format(value);
     }
 
     @Override
     public Number fromString(String string) {
         try {
-            Number number = new CoinTextFormatter(unitFormat).getCoinFormat().parse(string);
+            Number number = new CoinTextFormatter(unitFormat, bitcoinUnit).getCoinFormat().parse(string);
             return bitcoinUnit.getSatsValue(number.doubleValue());
         } catch (ParseException e) {
             throw new RuntimeException(e);

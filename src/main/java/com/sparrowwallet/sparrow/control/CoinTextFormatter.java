@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.UnitFormat;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputControl;
@@ -11,8 +12,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CoinTextFormatter extends TextFormatter<String> {
-    public CoinTextFormatter(UnitFormat unitFormat) {
-        super(new CoinFilter(unitFormat == null ? UnitFormat.DOT : unitFormat));
+    public CoinTextFormatter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
+        super(new CoinFilter(unitFormat == null ? UnitFormat.DOT : unitFormat, bitcoinUnit));
     }
 
     public UnitFormat getUnitFormat() {
@@ -27,11 +28,16 @@ public class CoinTextFormatter extends TextFormatter<String> {
         private final UnitFormat unitFormat;
         private final DecimalFormat coinFormat;
         private final Pattern coinValidation;
+        private final Pattern anyPrecisionAmount;
 
-        public CoinFilter(UnitFormat unitFormat) {
+        public CoinFilter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
             this.unitFormat = unitFormat;
             this.coinFormat = new DecimalFormat("###,###.########", unitFormat.getDecimalFormatSymbols());
-            this.coinValidation = Pattern.compile("[\\d" + Pattern.quote(unitFormat.getGroupingSeparator()) + "]*(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d{0,8})?");
+            String integer = "[\\d" + Pattern.quote(unitFormat.getGroupingSeparator()) + "]*";
+            //A satoshi is indivisible, so a sats amount has no fractional part to validate
+            String fraction = bitcoinUnit == BitcoinUnit.SATOSHIS ? "" : "(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d{0,8})?";
+            this.coinValidation = Pattern.compile(integer + fraction);
+            this.anyPrecisionAmount = Pattern.compile(integer + "(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d*)?");
         }
 
         @Override
@@ -51,12 +57,13 @@ public class CoinTextFormatter extends TextFormatter<String> {
                 commasRemoved = newText.length() - noFractionCommaText.length();
             }
 
-            Matcher matcher = coinValidation.matcher(noFractionCommaText);
-            boolean validAmount = matcher.matches();
+            boolean validAmount = coinValidation.matcher(noFractionCommaText).matches();
             if(!validAmount) {
-                matcher.reset();
-                if(matcher.find()) {
-                    noFractionCommaText = matcher.group();
+                //The amount a pasted text starts with is taken, unless it is more precise than the unit allows - that is ignored rather than truncated,
+                //so a digit typed beyond the last place leaves the field as it was
+                Matcher leadingAmount = anyPrecisionAmount.matcher(noFractionCommaText);
+                if(leadingAmount.find() && coinValidation.matcher(leadingAmount.group()).matches()) {
+                    noFractionCommaText = leadingAmount.group();
                 } else {
                     return null;
                 }
@@ -78,12 +85,13 @@ public class CoinTextFormatter extends TextFormatter<String> {
                 Number value = coinFormat.parse(noFractionCommaText);
                 String correct = coinFormat.format(value.doubleValue());
 
+                //Trailing fractional zeros and a trailing separator are left as typed so the fraction can still be entered, but only where the entire text is a valid amount
                 String compare = newText;
-                if(compare.contains(unitFormat.getDecimalSeparator()) && compare.endsWith("0")) {
+                if(validAmount && compare.contains(unitFormat.getDecimalSeparator()) && compare.endsWith("0")) {
                     compare = compare.replaceAll("0*$", "");
                 }
 
-                if(compare.endsWith(unitFormat.getDecimalSeparator())) {
+                if(validAmount && compare.endsWith(unitFormat.getDecimalSeparator())) {
                     compare = compare.substring(0, compare.length() - 1);
                 }
 
