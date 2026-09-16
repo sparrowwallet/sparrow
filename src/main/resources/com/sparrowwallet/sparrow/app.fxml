@@ -97,6 +97,11 @@
                                         <UnitFormat fx:constant="COMMA" />
                                     </userData>
                                 </RadioMenuItem>
+                                <RadioMenuItem mnemonicParsing="false" text="1 234,56" toggleGroup="$unitFormat" onAction="#setUnitFormat">
+                                    <userData>
+                                        <UnitFormat fx:constant="SPACE" />
+                                    </userData>
+                                </RadioMenuItem>
                             </items>
                         </Menu>
                         <Menu mnemonicParsing="false" text="Bitcoin Addresses">
