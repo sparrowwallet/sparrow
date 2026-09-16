@@ -431,6 +431,7 @@ def nativeLibJars = [
 
 tasks.register('extractNativeLibraries') {
     dependsOn 'jlink'
+    inputs.files(configurations.runtimeClasspath)
     def drongoNativeDir = "${project(':drongo').projectDir}/src/main/resources/native/${osName}/${osArch}"
     doLast {
         def imageLib = file("$buildDir/image/lib")
