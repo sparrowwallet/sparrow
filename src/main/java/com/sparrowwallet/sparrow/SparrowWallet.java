@@ -1,6 +1,8 @@
 package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.JCommander;
+import com.beust.jcommander.ParameterDescription;
+import com.beust.jcommander.ParameterException;
 import com.sparrowwallet.drongo.ApplicationDir;
 import com.sparrowwallet.drongo.Drongo;
 import com.sparrowwallet.drongo.Network;
@@ -39,7 +41,28 @@ public class SparrowWallet {
 
         Args args = new Args();
         JCommander jCommander = JCommander.newBuilder().addObject(args).programName(APP_NAME.toLowerCase(Locale.ROOT)).acceptUnknownOptions(true).build();
-        jCommander.parse(argv);
+        try {
+            jCommander.parse(argv);
+            Optional<String> unknownOption = jCommander.getUnknownOptions().stream().filter(arg -> arg.startsWith("-")).findFirst();
+            if(unknownOption.isPresent()) {
+                throw new ParameterException("Unknown option: " + unknownOption.get());
+            }
+            //Flags take no value, and the = separator would otherwise set the flag and pass the value on as a file or URI
+            for(ParameterDescription description : jCommander.getParameters()) {
+                if(description.getParameterized().getType() == boolean.class) {
+                    for(String name : description.getParameter().names()) {
+                        if(Arrays.stream(argv).anyMatch(arg -> arg.startsWith(name + "="))) {
+                            throw new ParameterException("Option " + name + " does not take a value");
+                        }
+                    }
+                }
+            }
+        } catch(ParameterException e) {
+            System.err.println(e.getMessage());
+            jCommander.usage();
+            System.exit(1);
+        }
+
         if(args.help) {
             jCommander.usage();
             System.exit(0);

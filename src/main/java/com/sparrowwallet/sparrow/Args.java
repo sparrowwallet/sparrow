@@ -1,12 +1,14 @@
 package com.sparrowwallet.sparrow;
 
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
 import com.sparrowwallet.drongo.Network;
 import org.slf4j.event.Level;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Parameters(separators = "=")
 public class Args {
     @Parameter(names = { "--dir", "-d" }, description = "Path to Sparrow home folder")
     public String dir;
