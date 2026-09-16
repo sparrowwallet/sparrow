@@ -24,6 +24,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Comparator;
+import java.util.stream.Stream;
 
 public class DbPersistenceTest {
     private Path tempDir;
@@ -36,7 +37,9 @@ public class DbPersistenceTest {
     @AfterEach
     public void tearDown() throws Exception {
         if(tempDir != null) {
-            Files.walk(tempDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            try(Stream<Path> paths = Files.walk(tempDir)) {
+                paths.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            }
         }
     }
 

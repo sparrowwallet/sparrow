@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.IOUtils;
+import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
@@ -117,8 +118,13 @@ public class Sparrow implements WalletImport, WalletExport {
                 }
             }
 
+            storage.restorePublicKeysFromSeed(wallet, null);
+            for(Wallet childWallet : wallet.getChildWallets()) {
+                storage.restorePublicKeysFromSeed(childWallet, null);
+            }
+
             return wallet;
-        } catch(IOException | StorageException e) {
+        } catch(IOException | StorageException | MnemonicException e) {
             throw new ImportException("Error importing Sparrow wallet", e);
         } finally {
             if(storage != null) {
