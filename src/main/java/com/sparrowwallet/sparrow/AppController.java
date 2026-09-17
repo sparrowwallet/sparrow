@@ -2650,6 +2650,7 @@ public class AppController implements Initializable {
     }
 
     private void serverToggleStartAnimation() {
+        serverToggleStopAnimation();
         Node thumbArea = serverToggle.lookup(".thumb-area");
         if(thumbArea != null) {
             Timeline timeline = AnimationUtil.getPulse(thumbArea, Duration.millis(600), 1.0, 0.25, 8);
