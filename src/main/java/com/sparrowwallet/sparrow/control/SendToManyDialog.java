@@ -37,6 +37,8 @@ import javafx.util.StringConverter;
 import org.controlsfx.control.spreadsheet.*;
 
 import java.io.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -225,34 +227,27 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                                     }
 
                                     try {
-                                        String rawAmount = csvReader.get(1).trim();
-                                        String groupingStripped = rawAmount.replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "");
-                                        long amount;
-                                        if(bitcoinUnit == BitcoinUnit.BTC) {
-                                            String normalised = groupingStripped.replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
-                                            double doubleAmount = Double.parseDouble(normalised);
-                                            amount = bitcoinUnit.getSatsValue(doubleAmount);
-                                        } else {
-                                            amount = Long.parseLong(groupingStripped);
-                                        }
-                                        String label = csvReader.get(2);
-                                        Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(csvReader.get(0));
-                                        if(optDnsPaymentHrn.isPresent()) {
-                                            Payment payment = new Payment(null, label, amount, false);
-                                            csvPayments.add(new SendToPayment(payment, new SendToAddress(optDnsPaymentHrn.get())));
-                                        } else {
-                                            try {
-                                                SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(csvReader.get(0));
-                                                Payment payment = new SilentPayment(silentPaymentAddress, label, amount, false);
-                                                csvPayments.add(new SendToPayment(payment, SendToAddress.fromPayment(payment)));
-                                            } catch(Exception e) {
-                                                Address address = Address.fromString(csvReader.get(0));
-                                                Payment payment = new Payment(address, label, amount, false);
-                                                csvPayments.add(new SendToPayment(payment, SendToAddress.fromPayment(payment)));
+                                        //Read as a pasted amount is, so digits beyond the places of the unit are cut - a row without an amount is probably a header line
+                                        Double value = amountCellType.convertValue(csvReader.get(1));
+                                        if(value != null) {
+                                            long amount = bitcoinUnit.getSatsValue(value);
+                                            String label = csvReader.get(2);
+                                            Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(csvReader.get(0));
+                                            if(optDnsPaymentHrn.isPresent()) {
+                                                Payment payment = new Payment(null, label, amount, false);
+                                                csvPayments.add(new SendToPayment(payment, new SendToAddress(optDnsPaymentHrn.get())));
+                                            } else {
+                                                try {
+                                                    SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(csvReader.get(0));
+                                                    Payment payment = new SilentPayment(silentPaymentAddress, label, amount, false);
+                                                    csvPayments.add(new SendToPayment(payment, SendToAddress.fromPayment(payment)));
+                                                } catch(Exception e) {
+                                                    Address address = Address.fromString(csvReader.get(0));
+                                                    Payment payment = new Payment(address, label, amount, false);
+                                                    csvPayments.add(new SendToPayment(payment, SendToAddress.fromPayment(payment)));
+                                                }
                                             }
                                         }
-                                    } catch(NumberFormatException e) {
-                                        //ignore and continue - probably a header line
                                     } catch(InvalidAddressException e) {
                                         AppServices.showErrorDialog("Invalid Address", e.getMessage());
                                     }
@@ -433,6 +428,9 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
     }
 
     private static class UnitFormatDoubleConverter extends StringConverterWithFormat<Double> {
+        //2,100,000,000,000,000 sats is every bitcoin there will be
+        private static final int MAX_SATS_DIGITS = 16;
+
         private final UnitFormat unitFormat;
         private final BitcoinUnit bitcoinUnit;
 
@@ -446,15 +444,19 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             if(str == null || str.isEmpty()) {
                 return null;
             }
-            String groupingStripped = str.trim().replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "");
+            String normalised = str.trim().replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "").replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
             try {
-                //A sats amount with a fraction is not read, as in a CSV import, rather than truncated when paid - a paste of it clears the cell like any text that is not an amount
-                if(bitcoinUnit == BitcoinUnit.SATOSHIS) {
-                    return (double)Long.parseLong(groupingStripped);
+                //Read as an exact decimal, which takes the exponent a script writes a small amount with, but not the hexadecimal, NaN or Infinity a double parses
+                BigDecimal sats = new BigDecimal(normalised).scaleByPowerOfTen(bitcoinUnit == BitcoinUnit.BTC ? 8 : 0);
+                //Sized by its digits before the point without rescaling it, as rescaling an exponent far out of range takes minutes
+                long wholeDigits = (long)sats.precision() - sats.scale();
+                if(sats.signum() < 0 || wholeDigits > MAX_SATS_DIGITS) {
+                    return null;
                 }
 
-                return Double.valueOf(groupingStripped.replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), "."));
-            } catch(NumberFormatException e) {
+                //Digits beyond the places of the unit are cut rather than rounded, so the cell shows the amount of the payment
+                return bitcoinUnit.getValue(wholeDigits < 1 ? 0 : sats.setScale(0, RoundingMode.DOWN).longValueExact());
+            } catch(NumberFormatException | ArithmeticException e) {
                 return null;
             }
         }

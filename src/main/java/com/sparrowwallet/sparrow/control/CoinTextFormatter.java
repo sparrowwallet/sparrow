@@ -59,11 +59,12 @@ public class CoinTextFormatter extends TextFormatter<String> {
 
             boolean validAmount = coinValidation.matcher(noFractionCommaText).matches();
             if(!validAmount) {
-                //The amount a pasted text starts with is taken, unless it is more precise than the unit allows - that is ignored rather than truncated,
-                //so a digit typed beyond the last place leaves the field as it was
+                //The amount a pasted text starts with is taken, cut to the places the unit has. A digit typed beyond the last place is ignored instead,
+                //leaving what has been typed as it was rather than rewriting it
                 Matcher leadingAmount = anyPrecisionAmount.matcher(noFractionCommaText);
-                if(leadingAmount.find() && coinValidation.matcher(leadingAmount.group()).matches()) {
-                    noFractionCommaText = leadingAmount.group();
+                Matcher amount = coinValidation.matcher(leadingAmount.find() ? leadingAmount.group() : "");
+                if(amount.matches() || (change.getText().length() > 1 && amount.lookingAt())) {
+                    noFractionCommaText = amount.group();
                 } else {
                     return null;
                 }
