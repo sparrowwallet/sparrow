@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.wallet.Bip39MnemonicCode;
+import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.PdfUtils;
@@ -17,6 +18,8 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.util.Pair;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
@@ -26,7 +29,10 @@ import org.controlsfx.glyphfont.Glyph;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -37,6 +43,9 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
     private final SpreadsheetView spreadsheetView;
 
     private final int GRID_COLUMN_COUNT = 16;
+
+    private final ButtonType generateGridButtonType = new javafx.scene.control.ButtonType("Generate Grid...", ButtonBar.ButtonData.HELP_2);
+    private final ButtonType mapExistingSeedButtonType = new javafx.scene.control.ButtonType("Map Existing Seed...", ButtonBar.ButtonData.HELP_2);
 
     private final BooleanProperty initializedProperty = new SimpleBooleanProperty(false);
     private final BooleanProperty wordsSelectedProperty = new SimpleBooleanProperty(false);
@@ -49,7 +58,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         setTitle("Border Wallets Grid");
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("grid.css").toExternalForm());
-        dialogPane.setHeaderText("Load a Border Wallets PDF, or generate a grid from a BIP39 seed.\nThen select 11 or 23 words in a pattern on the grid.\nThe order of selection is important!");
+        dialogPane.setHeaderText("Load a Border Wallets PDF, generate a grid from a grid seed, or map an existing seed onto a grid.\nThen select 11 or 23 words in a pattern on the grid.\nThe order of selection is important!");
         dialogPane.setGraphic(new DialogImage(DialogImage.Type.BORDERWALLETS));
 
         String[][] emptyWordGrid = new String[128][GRID_COLUMN_COUNT];
@@ -123,8 +132,8 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         final ButtonType loadCsvButtonType = new javafx.scene.control.ButtonType("Load PDF...", ButtonBar.ButtonData.LEFT);
         dialogPane.getButtonTypes().add(loadCsvButtonType);
 
-        final ButtonType generateButtonType = new javafx.scene.control.ButtonType("Generate Grid...", ButtonBar.ButtonData.HELP_2);
-        dialogPane.getButtonTypes().add(generateButtonType);
+        dialogPane.getButtonTypes().add(generateGridButtonType);
+        dialogPane.getButtonTypes().add(mapExistingSeedButtonType);
 
         final ButtonType clearButtonType = new javafx.scene.control.ButtonType("Clear Selection", ButtonBar.ButtonData.OTHER);
         dialogPane.getButtonTypes().add(clearButtonType);
@@ -207,7 +216,117 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         return words;
     }
 
-    public List<String> shuffle(List<String> mnemonic) {
+    /**
+     * Maps an existing BIP39 seed onto a freshly generated Border Wallets grid.
+     *
+     * A new grid seed is generated, the standard deterministic grid is built from it, and the cells
+     * containing all but the final (checksum) word of the existing seed are preselected in order.
+     * The preselected cells form the pattern: regenerating the grid from the grid seed and
+     * reselecting the pattern reproduces the existing seed, with the checksum word recalculated.
+     */
+    private void mapExistingSeed() {
+        ChoiceDialog<Integer> wordCountDialog = new ChoiceDialog<>(24, List.of(12, 24));
+        wordCountDialog.setTitle("Existing Seed Length");
+        wordCountDialog.setHeaderText("Map an existing seed onto a Border Wallets grid");
+        wordCountDialog.setContentText("Number of words in the existing seed:");
+        Optional<Integer> optNumWords = wordCountDialog.showAndWait();
+        if(optNumWords.isEmpty()) {
+            return;
+        }
+
+        SeedEntryDialog seedEntryDialog = new SeedEntryDialog("Existing Seed Words", optNumWords.get());
+        seedEntryDialog.initOwner(getDialogPane().getScene().getWindow());
+        Optional<List<String>> optWords = seedEntryDialog.showAndWait();
+        if(optWords.isEmpty()) {
+            return;
+        }
+
+        List<String> existingWords = optWords.get();
+        //The final word is the checksum, which is recalculated when the seed is recreated from the grid
+        List<String> wordsToMap = existingWords.subList(0, existingWords.size() - 1);
+        if(new HashSet<>(wordsToMap).size() < wordsToMap.size()) {
+            AppServices.showErrorDialog("Duplicate Words in Seed", "A Border Wallets grid contains each of the 2048 BIP39 words exactly once,\nso a seed containing repeated words cannot be mapped onto a grid.");
+            return;
+        }
+
+        List<String> gridSeedWords = generateGridSeed().getMnemonicCode();
+        List<String> shuffledWordList = shuffle(gridSeedWords);
+        String[][] wordGrid = toGrid(shuffledWordList);
+        spreadsheetView.setGrid(getGrid(wordGrid));
+        selectedCells.clear();
+        spreadsheetView.getSelectionModel().clearSelection();
+        initializedProperty.set(true);
+
+        int firstRow = -1;
+        List<Pair<Integer, Integer>> cellsToSelect = new ArrayList<>();
+        for(String word : wordsToMap) {
+            int index = shuffledWordList.indexOf(word);
+            if(index < 0) {
+                throw new IllegalStateException("Word " + word + " not found in grid");
+            }
+            int row = index / GRID_COLUMN_COUNT;
+            int col = index % GRID_COLUMN_COUNT;
+            if(firstRow < 0) {
+                firstRow = row;
+            }
+            cellsToSelect.add(new Pair<>(row, col));
+        }
+
+        spreadsheetView.getSelectionModel().selectCells(cellsToSelect);
+        spreadsheetView.scrollToRow(firstRow);
+
+        //The order of selection determines the order of the words in the seed, so restore the word order
+        List<TablePosition> orderedPositions = new ArrayList<>();
+        for(Pair<Integer, Integer> cell : cellsToSelect) {
+            orderedPositions.add(selectedCells.stream()
+                    .filter(pos -> pos.getRow() == cell.getKey() && pos.getColumn() == cell.getValue())
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Cell " + cell.getKey() + "," + cell.getValue() + " was not selected")));
+        }
+        selectedCells.setAll(orderedPositions);
+
+        showGridSeedDialog(gridSeedWords);
+
+        PdfUtils.saveWordGrid(wordGrid, gridSeedWords);
+    }
+
+    private DeterministicSeed generateGridSeed() {
+        SecureRandom secureRandom;
+        try {
+            secureRandom = SecureRandom.getInstanceStrong();
+        } catch(NoSuchAlgorithmException e) {
+            //Not a fallback to a weaker source: both resolve to the SUN provider and the same java.base implementation seeded from the OS CSPRNG
+            secureRandom = new SecureRandom();
+        }
+
+        return new DeterministicSeed(secureRandom, 128, "");
+    }
+
+    private void showGridSeedDialog(List<String> gridSeedWords) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.initOwner(getDialogPane().getScene().getWindow());
+        alert.setTitle("Grid Seed");
+        alert.setHeaderText("Grid generated from a new grid seed");
+
+        TextArea seedArea = new TextArea(String.join(" ", gridSeedWords));
+        seedArea.setEditable(false);
+        seedArea.setWrapText(true);
+        seedArea.setPrefRowCount(2);
+
+        Label patternLabel = new Label("The numbered cells on the grid mark where the words of your existing seed appear, in order.\n\n"
+                + "To recreate your wallet: regenerate this grid with the grid seed (Generate Grid...), then select\n"
+                + "the numbered cells in the same order. The final (checksum) word is recalculated automatically.\n\n"
+                + "Memorise the pattern or record the cell coordinates separately - the pattern is not stored in the PDF.");
+        patternLabel.setWrapText(true);
+
+        VBox vBox = new VBox(10);
+        vBox.getChildren().addAll(new Label("Grid seed (regenerates this exact grid):"), seedArea, patternLabel);
+        alert.getDialogPane().setContent(vBox);
+        alert.setResizable(true);
+        alert.showAndWait();
+    }
+
+    public static List<String> shuffle(List<String> mnemonic) {
         String mnemonicString = String.join(" ", mnemonic);
         List<String> words = new ArrayList<>(Bip39MnemonicCode.INSTANCE.getWordList());
 
@@ -276,7 +395,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                 });
 
                 button = loadButton;
-            } else if(buttonType.getButtonData() == ButtonBar.ButtonData.HELP_2) {
+            } else if(buttonType == generateGridButtonType) {
                 Button generateButton = new Button(buttonType.getText());
                 final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
                 ButtonBar.setButtonData(generateButton, buttonData);
@@ -300,6 +419,15 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                 });
 
                 button = generateButton;
+            } else if(buttonType == mapExistingSeedButtonType) {
+                Button mapExistingSeedButton = new Button(buttonType.getText());
+                final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
+                ButtonBar.setButtonData(mapExistingSeedButton, buttonData);
+                mapExistingSeedButton.setOnAction(event -> {
+                    mapExistingSeed();
+                });
+
+                button = mapExistingSeedButton;
             } else if(buttonType.getButtonData() == ButtonBar.ButtonData.OTHER) {
                 Button clearButton = new Button(buttonType.getText());
                 final ButtonBar.ButtonData buttonData = buttonType.getButtonData();
