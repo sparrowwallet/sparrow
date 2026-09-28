@@ -464,7 +464,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         //ignore, bytes not parsable as utf-8
                     }
 
-                    result = new Result(new URException("Parsed UR of type " + urRegistryType + " was not a PSBT, transaction or UTF-8 text"));
+                    return new Result(new URException("Parsed UR of type " + urRegistryType + " was not a PSBT, transaction or UTF-8 text"));
                 } else if(urRegistryType.equals(RegistryType.CRYPTO_PSBT)) {
                     CryptoPSBT cryptoPSBT = (CryptoPSBT)ur.decodeFromRegistry();
                     try {
@@ -549,8 +549,6 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 log.error("Error parsing UR CBOR", e);
                 return new Result(new URException("Error parsing UR CBOR", e));
             }
-
-            return null;
         }
 
         private Address getAddress(CryptoAddress cryptoAddress) {
