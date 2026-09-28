@@ -306,15 +306,19 @@ public class Storage {
 
     private WalletAndKey migrateType(PersistenceType type, Wallet wallet, ECKey encryptionKey) throws IOException, StorageException {
         File existingFile = walletFile;
+        Persistence existingPersistence = persistence;
+        String walletName = persistence.getWalletName(walletFile, null);
+        File migratedFile = new File(walletFile.getParentFile(), walletName + "." + type.getExtension());
+        if(migratedFile.exists()) {
+            throw new StorageException("Cannot migrate " + existingFile.getName() + " as " + migratedFile.getName() + " already exists. Move or rename one of these files and try again.");
+        }
 
         try {
             AsymmetricKeyDeriver keyDeriver = persistence.getKeyDeriver();
             persistence = type.getInstance();
             persistence.setKeyDeriver(keyDeriver);
-            walletFile = new File(walletFile.getParentFile(), wallet.getName() + "." + type.getExtension());
-            if(walletFile.exists()) {
-                walletFile.delete();
-            }
+            walletFile = migratedFile;
+            wallet.setName(walletName);
 
             saveWallet(wallet);
             if(type == PersistenceType.DB) {
@@ -329,6 +333,11 @@ public class Storage {
 
             return persistence.loadWallet(this, null, encryptionKey);
         } catch(Exception e) {
+            //Remove the partial migration and return to the original file so opening it again can retry
+            persistence.close();
+            migratedFile.delete();
+            persistence = existingPersistence;
+            walletFile = existingFile;
             existingFile = null;
             throw e;
         } finally {
