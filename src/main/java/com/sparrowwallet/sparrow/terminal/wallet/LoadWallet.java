@@ -68,13 +68,15 @@ public class LoadWallet implements Runnable {
                 }
 
                 Platform.runLater(() -> {
-                    Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, new SecureString(password));
+                    SecureString securePassword = new SecureString(password);
+                    Storage.LoadWalletService loadWalletService = new Storage.LoadWalletService(storage, securePassword);
                     loadWalletService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Done"));
                         WalletAndKey walletAndKey = loadWalletService.getValue();
                         openWallet(storage, walletAndKey);
                     });
                     loadWalletService.setOnFailed(workerStateEvent -> {
+                        securePassword.clear();
                         EventManager.get().post(new StorageEvent(storage.getWalletId(null), TimedEvent.Action.END, "Failed"));
                         SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(loadingDialog));
                         Throwable exception = loadWalletService.getException();
@@ -94,7 +96,8 @@ public class LoadWallet implements Runnable {
                 });
             }
         } catch(Exception e) {
-            if(e instanceof IOException && e.getMessage().startsWith("The process cannot access the file because another process has locked")) {
+            SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(loadingDialog));
+            if(e instanceof IOException && e.getMessage() != null && e.getMessage().startsWith("The process cannot access the file because another process has locked")) {
                 showErrorDialog("Error Opening Wallet", "The wallet file is locked. Is another instance of " + SparrowWallet.APP_NAME + " already running?");
             } else {
                 log.error("Error opening wallet", e);

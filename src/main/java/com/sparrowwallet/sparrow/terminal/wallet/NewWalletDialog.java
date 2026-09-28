@@ -150,6 +150,8 @@ public abstract class NewWalletDialog extends DialogWindow {
                         });
                     } catch(IOException | StorageException | MnemonicException e) {
                         log.error("Error saving imported wallet", e);
+                        SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(savingDialog));
+                        showErrorDialog("Error Saving Wallet", e.getMessage());
                     }
                 } else {
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, new SecureString(password));
@@ -182,6 +184,8 @@ public abstract class NewWalletDialog extends DialogWindow {
                             });
                         } catch(IOException | StorageException | MnemonicException e) {
                             log.error("Error saving imported wallet", e);
+                            SparrowTerminal.get().getGuiThread().invokeLater(() -> SparrowTerminal.get().getGui().removeWindow(savingDialog));
+                            showErrorDialog("Error Saving Wallet", e.getMessage());
                         } finally {
                             if(key != null) {
                                 key.clear();
