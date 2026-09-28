@@ -129,8 +129,9 @@ public class ReceiveDialog extends WalletDialog {
 
     protected boolean isSingleDerivationPath() {
         KeyDerivation firstDerivation = getWalletForm().getWallet().getKeystores().get(0).getKeyDerivation();
+        String firstDerivationPath = KeyDerivation.writePath(firstDerivation.getDerivation());
         for(Keystore keystore : getWalletForm().getWallet().getKeystores()) {
-            if(!keystore.getKeyDerivation().getDerivationPath().equals(firstDerivation.getDerivationPath())) {
+            if(!KeyDerivation.writePath(keystore.getKeyDerivation().getDerivation()).equals(firstDerivationPath)) {
                 return false;
             }
         }
