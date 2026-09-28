@@ -333,11 +333,6 @@ public class UtxosController extends WalletFormController implements Initializab
     }
 
     @Subscribe
-    public void utxosChartChanged(UtxosChartChangedEvent event) {
-        utxosChart.setVisible(event.isVisible() && !getWalletForm().getWallet().isWhirlpoolMixWallet());
-    }
-
-    @Subscribe
     public void selectEntry(SelectEntryEvent event) {
         if(event.getWallet().equals(getWalletForm().getWallet()) && event.getEntry().getWalletFunction() == Function.UTXOS) {
             utxosTable.getSelectionModel().clearSelection();

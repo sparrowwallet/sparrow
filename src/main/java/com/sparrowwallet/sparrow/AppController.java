@@ -3283,12 +3283,6 @@ public class AppController implements Initializable {
     }
 
     @Subscribe
-    public void torExternalStatus(TorExternalStatusEvent event) {
-        serverToggle.setDisable(false);
-        statusUpdated(new StatusEvent(event.getStatus()));
-    }
-
-    @Subscribe
     public void newBlock(NewBlockEvent event) {
         setServerToggleTooltip(event.getHeight());
     }
@@ -3407,13 +3401,6 @@ public class AppController implements Initializable {
             } else {
                 openTransactionFromFile(null, event.getContextPsbt());
             }
-        }
-    }
-
-    @Subscribe
-    public void requestQRScan(RequestQRScanEvent event) {
-        if(tabs.getScene().getWindow().equals(event.getWindow())) {
-            openTransactionFromQR(null);
         }
     }
 

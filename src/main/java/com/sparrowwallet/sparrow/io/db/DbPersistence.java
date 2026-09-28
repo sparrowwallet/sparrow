@@ -1027,23 +1027,6 @@ public class DbPersistence implements Persistence {
     }
 
     @Subscribe
-    public void walletMixConfigChanged(WalletMixConfigChangedEvent event) {
-        if(persistsFor(event.getWallet()) && event.getWallet().getMixConfig() != null) {
-            updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).mixConfig = true);
-        }
-    }
-
-    @Subscribe
-    public void walletUtxoMixesChanged(WalletUtxoMixesChangedEvent event) {
-        if(persistsFor(event.getWallet())) {
-            updateExecutor.execute(() -> {
-                dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).changedUtxoMixes.putAll(event.getChangedUtxoMixes());
-                dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).removedUtxoMixes.putAll(event.getRemovedUtxoMixes());
-            });
-        }
-    }
-
-    @Subscribe
     public void keystoreLabelsChanged(KeystoreLabelsChangedEvent event) {
         if(persistsFor(event.getWallet())) {
             updateExecutor.execute(() -> dirtyPersistablesMap.computeIfAbsent(event.getWallet(), key -> new DirtyPersistables()).labelKeystores.addAll(event.getChangedKeystores()));
