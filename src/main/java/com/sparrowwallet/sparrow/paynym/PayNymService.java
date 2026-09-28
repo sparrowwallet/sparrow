@@ -201,6 +201,12 @@ public class PayNymService {
             List<Map<String, Object>> codes = (List<Map<String, Object>>)nymMap.get("codes");
             PaymentCode code = new PaymentCode((String)codes.stream().filter(codeMap -> codeMap.get("segwit") == Boolean.FALSE).map(codeMap -> codeMap.get("code")).findFirst().orElse(codes.get(0).get("code")));
 
+            //A payment code identifies itself, so a PayNym looked up by payment code must share its key and chain code, differing at most in the segwit feature bit
+            PaymentCode requestedCode = getRequestedPaymentCode(nymIdentifier);
+            if(requestedCode != null && !requestedCode.getNotificationAddress().equals(code.getNotificationAddress())) {
+                throw new IllegalStateException("PayNym server returned payment code " + code + " for requested payment code " + requestedCode);
+            }
+
             if(compact) {
                 return new PayNym(code, (String)nymMap.get("nymID"), (String)nymMap.get("nymName"), (Boolean)nymMap.get("segwit"), Collections.emptyList(), Collections.emptyList());
             }
@@ -218,6 +224,14 @@ public class PayNymService {
 
             return new PayNym(code, (String)nymMap.get("nymID"), (String)nymMap.get("nymName"), (Boolean)nymMap.get("segwit"), following, followers);
         });
+    }
+
+    private static PaymentCode getRequestedPaymentCode(String nymIdentifier) {
+        try {
+            return new PaymentCode(nymIdentifier);
+        } catch(InvalidPaymentCodeException e) {
+            return null;
+        }
     }
 
     public static Observable<String> getAuthToken(Wallet wallet, Map<String, Object> map) {

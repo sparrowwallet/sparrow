@@ -184,8 +184,8 @@ public class PayNymController {
             walletPayNym = payNym;
             searchPayNyms.setDisable(false);
             payNymName.setText(payNym.nymName());
-            paymentCode.setPaymentCode(payNym.paymentCode());
-            payNymAvatar.setPaymentCode(payNym.paymentCode());
+            paymentCode.setPaymentCode(getMasterWallet().getPaymentCode());
+            payNymAvatar.setPaymentCode(getMasterWallet().getPaymentCode());
             followingList.setUserData(null);
             followingList.setPlaceholder(new Label("No contacts"));
             updateFollowing();
