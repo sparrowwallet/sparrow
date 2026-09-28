@@ -76,6 +76,10 @@ public class CkCardApi extends CardApi {
         return cardStatus;
     }
 
+    void verify() throws CardException {
+        cardProtocol.verify();
+    }
+
     void checkWait(CardStatus cardStatus, IntegerProperty delayProperty, StringProperty messageProperty) throws CardException {
         if(cardStatus.auth_delay != null) {
             int delay = cardStatus.auth_delay.intValue();
@@ -295,6 +299,8 @@ public class CkCardApi extends CardApi {
     }
 
     Address getAddress(int currentSlot, int lastSlot, String addr) throws CardException {
+        cardProtocol.verify();
+
         if(currentSlot == lastSlot) {
             CardDump cardDump = cardProtocol.dump(currentSlot);
             if(!cardDump.sealed) {

@@ -75,6 +75,8 @@ public class Tapsigner implements KeystoreCardImport {
             }
             cardApi.checkWait(cardStatus, new SimpleIntegerProperty(), messageProperty);
 
+            cardApi.verify();
+
             if(!derivation.equals(cardStatus.getDerivation())) {
                 cardApi.setDerivation(derivation);
             }
