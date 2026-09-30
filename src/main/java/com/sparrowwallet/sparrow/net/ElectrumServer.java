@@ -3230,7 +3230,7 @@ public class ElectrumServer {
                                 return new FeeRatesUpdatedEvent(blockTargetFeeRates, mempoolRateSizes, nextBlockMedianFeeRate);
                             }
                         } else {
-                            closeConnection();
+                            throw new ServerException("Connection to server lost");
                         }
                     }
 
