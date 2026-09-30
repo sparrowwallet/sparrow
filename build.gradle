@@ -320,6 +320,51 @@ jlink {
     }
 }
 
+if(os.macOsX) {
+    tasks.jpackageImage.finalizedBy('patchLauncherUuid')
+    tasks.jpackage.dependsOn('patchLauncherUuid')
+}
+
+// Give the launcher a Sparrow LC_UUID, since the stock jpackage launcher shares its Mach-O UUID with every app packaged by the same JDK
+tasks.register('patchLauncherUuid') {
+    dependsOn tasks.jpackageImage
+    def appDir = layout.buildDirectory.dir('jpackage/Sparrow.app').get().asFile
+    def launcherUuid = UUID.nameUUIDFromBytes("com.sparrowwallet.sparrow.${osArch}".getBytes('UTF-8'))
+    doLast {
+        def launcher = new File(appDir, 'Contents/MacOS/Sparrow')
+        byte[] bytes = launcher.bytes
+        def buffer = java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        if(Integer.toUnsignedLong(buffer.getInt(0)) != 0xfeedfacfL) {
+            throw new GradleException("Launcher ${launcher} is not a thin 64-bit Mach-O binary")
+        }
+
+        int ncmds = buffer.getInt(16)
+        int offset = 32
+        int uuidOffset = -1
+        for(int i = 0; i < ncmds && uuidOffset < 0; i++) {
+            if(buffer.getInt(offset) == 0x1b) {
+                uuidOffset = offset + 8
+            } else {
+                offset += buffer.getInt(offset + 4)
+            }
+        }
+        if(uuidOffset < 0) {
+            throw new GradleException("Launcher ${launcher} has no LC_UUID load command")
+        }
+
+        buffer.order(java.nio.ByteOrder.BIG_ENDIAN)
+        buffer.putLong(uuidOffset, launcherUuid.mostSignificantBits)
+        buffer.putLong(uuidOffset + 8, launcherUuid.leastSignificantBits)
+        launcher.bytes = bytes
+
+        //Patching invalidates the ad hoc signature applied by jpackage, so re-sign
+        def codesign = new ProcessBuilder('codesign', '--force', '--sign', '-', appDir.path).inheritIO().start()
+        if(codesign.waitFor() != 0) {
+            throw new GradleException("Ad hoc signing ${appDir} failed")
+        }
+    }
+}
+
 if(os.linux) {
     tasks.jlink.finalizedBy('addUserWritePermission', 'copyUdevRules', 'extractNativeLibraries')
     tasks.jpackageImage.finalizedBy('prepareResourceDir')
