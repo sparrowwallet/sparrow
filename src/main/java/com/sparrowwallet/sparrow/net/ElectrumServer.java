@@ -108,8 +108,9 @@ public class ElectrumServer {
     //Counts the rewinds of the header store, so that a proof can tell whether one happened while it was being obtained. Written under headerSyncLock
     static volatile int reorgCount;
 
-    //The deepest fork point the store has been rewound to this session, at or above which a stored height may have been proven against an orphaned
-    //header. Written only under headerSyncLock, which is what makes the min in reconcile atomic; volatile is for the readers that do not take it
+    //The deepest fork point the store has been rewound to this session, or that a wallet loaded in it was found to hold a proof from above, at or above
+    //which a stored height may have been proven against an orphaned header. Written only under headerSyncLock, which is what makes the min atomic;
+    //volatile is for the readers that do not take it
     static volatile int lastReorgForkHeight = Integer.MAX_VALUE;
 
     private static final Map<Integer, WalletSyncLock> walletSyncLocks = Collections.synchronizedMap(new HashMap<>());
@@ -260,7 +261,10 @@ public class ElectrumServer {
         reorgInvalidatedScriptHashes.clear();
         proofWarnedPairs.clear();
         proofsShownFalseWarnedPairs.clear();
-        walletSyncLocks.values().forEach(syncLock -> syncLock.scriptHashesInitialized = false);
+        walletSyncLocks.values().forEach(syncLock -> {
+            syncLock.scriptHashesInitialized = false;
+            syncLock.storedProofsChecked = false;
+        });
     }
 
     public void connect() throws ServerException {
@@ -394,7 +398,10 @@ public class ElectrumServer {
     public static void clearRetrievedScriptHashes(Wallet wallet) {
         wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(ElectrumServer::clearRetrievedScriptHash);
         wallet.getNode(KeyPurpose.CHANGE).getChildren().stream().map(ElectrumServer::getScriptHash).forEach(ElectrumServer::clearRetrievedScriptHash);
-        walletSyncLocks.computeIfAbsent(wallet.hashCode(), w -> new WalletSyncLock()).scriptHashesInitialized = false;
+        WalletSyncLock walletSyncLock = walletSyncLocks.computeIfAbsent(wallet.hashCode(), w -> new WalletSyncLock());
+        walletSyncLock.scriptHashesInitialized = false;
+        walletSyncLock.storedProofsChecked = false;
+        walletSyncLock.storedProofsFromHeight = null;
     }
 
     private static void clearRetrievedScriptHash(String scriptHash) {
@@ -485,6 +492,14 @@ public class ElectrumServer {
 
             if(isConnected()) {
                 try {
+                    if(!walletSyncLock.storedProofsChecked && isVerifyingTransactions()) {
+                        walletSyncLock.storedProofsChecked = checkStoredProofs(wallet, walletSyncLock);
+                        //Only a fetch of every node revisits what the comparison invalidated, and it is not made again once it has completed
+                        if(nodes != null && hasReorgInvalidatedScriptHashes(wallet)) {
+                            nodes = null;
+                        }
+                    }
+
                     //Taken before the fetch, so an invalidation arriving while this pass runs can be told from one the pass is acting on
                     Set<String> invalidatedBeforeFetch = Set.copyOf(reorgInvalidatedScriptHashes);
                     Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);
@@ -555,6 +570,62 @@ public class ElectrumServer {
             }
 
             return false;
+        }
+    }
+
+    /**
+     * Compares the block each of the wallet's transactions was proven against with the header the store now holds at that height, once for a wallet
+     * as it is first fetched. A reorg reaches the wallets open when the store is rewound, and a wallet closed at the time - whether earlier this
+     * session or in one before it - still holds what the replaced block proved, at heights the server may well report unchanged. Where one is found,
+     * the wallet is treated as a reorg at that height would have treated it: its nodes above are fetched again and the stored block hashes compared.
+     * <p>
+     * Only the transactions within the deepest reorg the store accepts of the block height the wallet stored are compared, which keeps an ordinary
+     * load from reading the store at all. That is every transaction a reorg could have reached where the store kept pace with the wallet, since the
+     * wallet heard of every reorg while it was open. It is not where the wallet's height advanced while nothing was being verified - on a Bitcoin
+     * Core connection, or with verification off - and the store stood still: a reorg reconciled later, below that window, is not looked for.
+     * <p>
+     * Returns whether every one of them could be compared, which is false while the store has yet to reach one. The comparison is then made again on
+     * a later fetch, from the height it was first made from: the fetch in between moves the wallet's stored height on to the current tip.
+     */
+    private static boolean checkStoredProofs(Wallet wallet, WalletSyncLock walletSyncLock) throws ServerException {
+        if(walletSyncLock.storedProofsFromHeight == null) {
+            int startHeight = Network.get().getHeaderCheckpoints().getMaxHeight() + 1;
+            Integer storedHeight = wallet.getStoredBlockHeight();
+            walletSyncLock.storedProofsFromHeight = storedHeight == null ? startHeight : Math.max(startHeight, storedHeight - MAX_REORG_DEPTH + 1);
+        }
+
+        int fromHeight = walletSyncLock.storedProofsFromHeight;
+        List<BlockTransaction> proven = wallet.getTransactions().values().stream().filter(blkTx -> blkTx.getBlockHash() != null && blkTx.getHeight() >= fromHeight).toList();
+        if(proven.isEmpty()) {
+            return true;    //the ordinary case, in which the store is not read, nor loaded for a wallet that has no use for it
+        }
+
+        try {
+            //Read without the header sync lock, which a catch up holds across its fetches. A header the sync is about to replace compares as held,
+            //and the reorg that replaces it then reaches this wallet as it does any other that is open
+            HeaderStore store = getHeaderStore();
+            int orphanedHeight = Integer.MAX_VALUE;
+            boolean compared = true;
+            for(BlockTransaction blkTx : proven) {
+                Sha256Hash storedHash = store.getHash(blkTx.getHeight());
+                if(storedHash == null) {
+                    compared = false;
+                } else if(!storedHash.equals(blkTx.getBlockHash())) {
+                    orphanedHeight = Math.min(orphanedHeight, blkTx.getHeight());
+                }
+            }
+
+            if(orphanedHeight < Integer.MAX_VALUE) {
+                int forkHeight = orphanedHeight - 1;
+                synchronized(headerSyncLock) {
+                    lastReorgForkHeight = Math.min(lastReorgForkHeight, forkHeight);
+                }
+                invalidateWalletScriptHashesForReorg(wallet, forkHeight);
+            }
+
+            return compared;
+        } catch(IOException e) {
+            throw new ServerException("Could not read the block header store", e);
         }
     }
 
@@ -3542,6 +3613,8 @@ public class ElectrumServer {
 
     private static class WalletSyncLock {
         public boolean scriptHashesInitialized;
+        public boolean storedProofsChecked;
+        public Integer storedProofsFromHeight;
     }
 
     public static class TransactionHistoryService extends Service<Boolean> {
