@@ -1821,8 +1821,7 @@ public class ElectrumServer {
      * in the wallet no more than any other the server cannot prove. A tip not yet announced is not evidence of lagging.
      * <p>
      * Not asked of a Bitcoin Core connection at all, whichever backend is fronting it: the node answering is the user's own, and a proof it built
-     * against headers it also supplied establishes nothing it has not already been trusted for. Cormorant declares as much in its capability, but
-     * bwt takes over where cormorant cannot start, and the same node should not verify or not according to which one did.
+     * against headers it also supplied establishes nothing it has not already been trusted for.
      */
     public static boolean isVerifyingTransactions() {
         if(!Config.get().isVerifyTransactions() || Config.get().getServerType() == ServerType.BITCOIN_CORE
@@ -2966,7 +2965,7 @@ public class ElectrumServer {
             }
 
             if(server.startsWith("cormorant")) {
-                return new ServerCapability(true, false, true, false, true).withMerkleProofs(false);
+                return new ServerCapability(true, false, true, false, true);
             }
 
             if(server.startsWith("electrs/")) {

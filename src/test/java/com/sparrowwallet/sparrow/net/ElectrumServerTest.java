@@ -355,7 +355,6 @@ public class ElectrumServerTest {
         ServerCapability previousCapability = ElectrumServer.serverCapability;
         ServerType previousServerType = Config.get().getServerType();
         try {
-            //The capability bwt falls through to, which unlike cormorant's says nothing about proofs
             ElectrumServer.serverCapability = new ServerCapability(false, true, true);
             assertTrue(ElectrumServer.serverCapability.supportsMerkleProofs());
 
