@@ -381,7 +381,13 @@ public class ServerSettingsController extends SettingsDetailController {
         });
 
         electrumUseSsl.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            setElectrumServerInConfig(config);
+            //An alias names a server at one protocol as it does at one port, so changing either leaves the host it names to be connected to as entered
+            Server aliasServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
+            if(aliasServer != null && aliasServer.getProtocol() != getProtocol()) {
+                electrumHost.setText(aliasServer.getHost());
+            } else {
+                setElectrumServerInConfig(config);
+            }
             electrumCertificate.setDisable(!newValue);
             electrumCertificateSelect.setDisable(!newValue);
             electrumPort.setPromptText(newValue ? "e.g. 50002" : "e.g. 50001");
@@ -468,10 +474,11 @@ public class ServerSettingsController extends SettingsDetailController {
             if(server != null) {
                 coreHost.setLeft(getGlyph(FontAwesome5.Glyph.TAG, null));
             }
-            coreHost.setText(server == null || server.getAlias() == null ? hostAndPort.getHost() : server.getAlias());
+            //The port is set first, as an alias in the host field is only kept while the port field holds the port of the server it names
             if(hostAndPort.hasPort()) {
                 corePort.setText(Integer.toString(hostAndPort.getPort()));
             }
+            coreHost.setText(server == null || server.getAlias() == null ? hostAndPort.getHost() : server.getAlias());
         } else {
             coreHost.setText("127.0.0.1");
             corePort.setText(String.valueOf(Network.get().getDefaultPort()));
@@ -502,10 +509,10 @@ public class ServerSettingsController extends SettingsDetailController {
             if(server != null) {
                 electrumHost.setLeft(getGlyph(FontAwesome5.Glyph.TAG, null));
             }
-            electrumHost.setText(server == null || server.getAlias() == null ? hostAndPort.getHost() : server.getAlias());
             if(hostAndPort.hasPort()) {
                 electrumPort.setText(Integer.toString(hostAndPort.getPort()));
             }
+            electrumHost.setText(server == null || server.getAlias() == null ? hostAndPort.getHost() : server.getAlias());
         }
 
         File certificateFile = config.getElectrumServerCert();
@@ -892,7 +899,7 @@ public class ServerSettingsController extends SettingsDetailController {
     private ChangeListener<String> getElectrumServerListener(Config config) {
         return (observable, oldValue, newValue) -> {
             Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
-            if(existingServer != null && !existingServer.portEquals(electrumPort.getText())) {
+            if(existingServer != null && (!existingServer.portEquals(electrumPort.getText()) || existingServer.getProtocol() != getProtocol())) {
                 electrumHost.setText(existingServer.getHost());
                 existingServer = null;
             }
