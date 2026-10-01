@@ -192,99 +192,101 @@ public class PaymentController extends WalletFormController implements Initializ
                 payjoinURIProperty.set(null);
             }
 
-            try {
-                BitcoinURI bitcoinURI = new BitcoinURI(newValue);
-                Platform.runLater(() -> updateFromURI(bitcoinURI));
-                return;
-            } catch(Exception e) {
-                //ignore, not a URI
-            }
-
-            Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(newValue);
-            if(optDnsPaymentHrn.isPresent()) {
-                String dnsPaymentHrn = optDnsPaymentHrn.get();
-                DnsPayment cachedDnsPayment = DnsPaymentCache.getDnsPayment(dnsPaymentHrn);
-                if(cachedDnsPayment != null) {
-                    setDnsPayment(cachedDnsPayment);
-                    return;
-                }
-
-                if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
-                    if(Config.get().getConnectToResolve() == null || Config.get().getConnectToResolve() == Boolean.FALSE) {
-                        Platform.runLater(() -> {
-                            ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "You are currently offline. Connect to resolve the address?", ButtonType.NO, ButtonType.YES);
-                            Optional<ButtonType> optType = confirmationAlert.showAndWait();
-                            if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
-                                Config.get().setConnectToResolve(optType.get() == ButtonType.YES);
-                            }
-                            if(optType.isPresent() && optType.get() == ButtonType.YES) {
-                                EventManager.get().post(new RequestConnectEvent());
-                            }
-                        });
-                    } else {
-                        Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
-                    }
-                    return;
-                }
-
-                DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
-                dnsPaymentService.setOnSucceeded(_ -> {
-                    if(isCurrentHrn(dnsPaymentHrn)) {
-                        dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
-                    }
-                });
-                dnsPaymentService.setOnFailed(failEvent -> {
-                    Throwable exception = failEvent.getSource().getException();
-                    if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
-                        AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
-                    }
-                });
-                dnsPaymentService.start();
-                return;
-            }
-
-            if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
+            if(payNymProperty.get() == null) {
                 try {
-                    PaymentCode paymentCode = new PaymentCode(newValue);
-                    Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
-                    if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
-                        recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
-                    }
-
-                    if(recipientBip47Wallet != null && hasNotificationTransaction(paymentCode)) {
-                        PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
-                        Platform.runLater(() -> setPayNym(payNym));
-                    } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
-                        ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
-                        Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
-                        if(optButton.isPresent() && optButton.get() == previewType) {
-                            Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
-                            Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
-                        } else {
-                            Platform.runLater(() -> address.setText(""));
-                        }
-                    }
+                    BitcoinURI bitcoinURI = new BitcoinURI(newValue);
+                    Platform.runLater(() -> updateFromURI(bitcoinURI));
+                    return;
                 } catch(Exception e) {
-                    //ignore, not a payment code
+                    //ignore, not a URI
                 }
-            }
 
-            try {
-                SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(newValue);
-                setSilentPaymentAddress(silentPaymentAddress);
-            } catch(Exception e) {
-                //ignore, not a silent payment address
-            }
+                Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(newValue);
+                if(optDnsPaymentHrn.isPresent()) {
+                    String dnsPaymentHrn = optDnsPaymentHrn.get();
+                    DnsPayment cachedDnsPayment = DnsPaymentCache.getDnsPayment(dnsPaymentHrn);
+                    if(cachedDnsPayment != null) {
+                        setDnsPayment(cachedDnsPayment);
+                        return;
+                    }
 
-            try {
-                Address toAddress = Address.fromString(newValue);
-                WalletNode walletNode = sendController.getWalletNode(toAddress);
-                if(walletNode != null) {
-                    consolidationNodeProperty.set(walletNode);
+                    if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
+                        if(Config.get().getConnectToResolve() == null || Config.get().getConnectToResolve() == Boolean.FALSE) {
+                            Platform.runLater(() -> {
+                                ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "You are currently offline. Connect to resolve the address?", ButtonType.NO, ButtonType.YES);
+                                Optional<ButtonType> optType = confirmationAlert.showAndWait();
+                                if(confirmationAlert.isDontAskAgain() && optType.isPresent()) {
+                                    Config.get().setConnectToResolve(optType.get() == ButtonType.YES);
+                                }
+                                if(optType.isPresent() && optType.get() == ButtonType.YES) {
+                                    EventManager.get().post(new RequestConnectEvent());
+                                }
+                            });
+                        } else {
+                            Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
+                        }
+                        return;
+                    }
+
+                    DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
+                    dnsPaymentService.setOnSucceeded(_ -> {
+                        if(isCurrentHrn(dnsPaymentHrn)) {
+                            dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
+                        }
+                    });
+                    dnsPaymentService.setOnFailed(failEvent -> {
+                        Throwable exception = failEvent.getSource().getException();
+                        if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
+                            AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
+                        }
+                    });
+                    dnsPaymentService.start();
+                    return;
                 }
-                label.requestFocus();
-            } catch(Exception e) {
-                //ignore, not an address
+
+                if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
+                    try {
+                        PaymentCode paymentCode = new PaymentCode(newValue);
+                        Wallet recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, sendController.getWalletForm().getWallet().getScriptType());
+                        if(recipientBip47Wallet == null && sendController.getWalletForm().getWallet().getScriptType() != ScriptType.P2PKH) {
+                            recipientBip47Wallet = sendController.getWalletForm().getWallet().getChildWallet(paymentCode, ScriptType.P2PKH);
+                        }
+
+                        if(recipientBip47Wallet != null && hasNotificationTransaction(paymentCode)) {
+                            PayNym payNym = PayNym.fromWallet(recipientBip47Wallet);
+                            Platform.runLater(() -> setPayNym(payNym));
+                        } else if(!paymentCode.equals(sendController.getWalletForm().getWallet().getPaymentCode())) {
+                            ButtonType previewType = new ButtonType("Preview Transaction", ButtonBar.ButtonData.YES);
+                            Optional<ButtonType> optButton = AppServices.showAlertDialog("Send notification transaction?", "This payment code is not yet linked with a notification transaction. Send a notification transaction?", Alert.AlertType.CONFIRMATION, ButtonType.CANCEL, previewType);
+                            if(optButton.isPresent() && optButton.get() == previewType) {
+                                Payment payment = new Payment(paymentCode.getNotificationAddress(), "Link " + paymentCode.toAbbreviatedString(), MINIMUM_P2PKH_OUTPUT_SATS, false);
+                                Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(sendController.getWalletForm().getWallet(), List.of(payment), List.of(new byte[80]), paymentCode)));
+                            } else {
+                                Platform.runLater(() -> address.setText(""));
+                            }
+                        }
+                    } catch(Exception e) {
+                        //ignore, not a payment code
+                    }
+                }
+
+                try {
+                    SilentPaymentAddress silentPaymentAddress = SilentPaymentAddress.from(newValue);
+                    setSilentPaymentAddress(silentPaymentAddress);
+                } catch(Exception e) {
+                    //ignore, not a silent payment address
+                }
+
+                try {
+                    Address toAddress = Address.fromString(newValue);
+                    WalletNode walletNode = sendController.getWalletNode(toAddress);
+                    if(walletNode != null) {
+                        consolidationNodeProperty.set(walletNode);
+                    }
+                    label.requestFocus();
+                } catch(Exception e) {
+                    //ignore, not an address
+                }
             }
 
             revalidateAmount();
