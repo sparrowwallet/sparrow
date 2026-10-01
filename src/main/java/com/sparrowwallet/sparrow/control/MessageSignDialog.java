@@ -63,6 +63,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
     private final ToggleButton formatBip322;
     private final Wallet wallet;
     private WalletNode walletNode;
+    private Button signButton;
     private boolean canSign;
     private boolean closed;
 
@@ -218,7 +219,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
 
             Node showQrButton = dialogPane.lookupButton(showQrButtonType);
 
-            Button signButton = (Button) dialogPane.lookupButton(signButtonType);
+            signButton = (Button) dialogPane.lookupButton(signButtonType);
             signButton.setDisable(!canSign);
             signButton.setGraphic(getGlyph(getSignGlyph()));
             signButton.setGraphicTextGap(5);
@@ -765,13 +766,22 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 Wallet decryptedWallet = decryptWalletService.getValue();
                 signUnencryptedKeystore(decryptedWallet);
                 decryptedWallet.clearPrivate();
+                setDecrypting(false);
             });
             decryptWalletService.setOnFailed(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.END, "Failed"));
+                setDecrypting(false);
                 AppServices.showErrorDialog("Incorrect Password", "The password was incorrect.");
             });
             EventManager.get().post(new StorageEvent(storage.getWalletId(wallet), TimedEvent.Action.START, "Decrypting wallet..."));
+            setDecrypting(true);
             decryptWalletService.start();
+        }
+    }
+
+    private void setDecrypting(boolean decrypting) {
+        if(signButton != null) {
+            signButton.setDisable(decrypting || !isValidAddress());
         }
     }
 
