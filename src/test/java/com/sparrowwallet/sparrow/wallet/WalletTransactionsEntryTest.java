@@ -17,6 +17,8 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.SparrowWallet;
+import com.google.common.eventbus.Subscribe;
+import com.sparrowwallet.sparrow.event.NewWalletTransactionsEvent;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,11 +26,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Which transaction entries follow the chain tip. Only an entry held in a wallet form's transactions model is shown, while a refresh builds an entry for every
@@ -129,6 +134,76 @@ public class WalletTransactionsEntryTest {
             assertEquals(2, entryFor(walletTransactionsEntry, existing).getConfirmations());
         } finally {
             walletTransactionsEntry.unregisterForConfirmations();
+        }
+    }
+
+    /**
+     * A transfer between two of the wallet's addresses arrives a node at a time, and until the node it was funded from has been updated the entry
+     * holds what was received and not what was spent. It is not shown, counted in the balance or notified until it is complete.
+     */
+    @Test
+    public void incompleteEntryIsLeftOutOfTheBalanceAndTheNotification() {
+        Wallet wallet = testWallet();
+        BlockTransaction funding = receive(wallet, 0, 100000L);
+        WalletTransactionsEntry walletTransactionsEntry = new WalletTransactionsEntry(wallet);
+        assertEquals(100000L, walletTransactionsEntry.getBalance());
+
+        NotificationListener listener = new NotificationListener();
+        EventManager.get().register(listener);
+        try {
+            //The receiving node has the transfer, while the funding node has yet to record its output as spent
+            BlockTransaction transfer = transfer(wallet, funding, 1, 90000L);
+            walletTransactionsEntry.updateTransactions();
+
+            assertEquals(1, walletTransactionsEntry.getChildren().size());
+            assertEquals(100000L, walletTransactionsEntry.getBalance());
+            assertTrue(listener.events.isEmpty());
+
+            //Arriving beside a complete entry, it is still not part of what that one is notified with
+            BlockTransaction received = receive(wallet, 1, 200000L);
+            walletTransactionsEntry.updateTransactions();
+
+            assertEquals(2, walletTransactionsEntry.getChildren().size());
+            assertEquals(300000L, walletTransactionsEntry.getBalance());
+            assertEquals(1, listener.events.size());
+            assertEquals(List.of(received), listener.events.getFirst().getBlockTransactions());
+            assertEquals(200000L, listener.events.getFirst().getTotalValue());
+
+            //The path that must keep working: once the funding node records the spend the entry is complete, and is shown at what it moved
+            BlockTransactionHashIndex fundingOutput = receiveNode(wallet, 0).getTransactionOutputs().iterator().next();
+            fundingOutput.setSpentBy(new BlockTransactionHashIndex(transfer.getHash(), HEIGHT, transfer.getDate(), null, 0, 100000L));
+            walletTransactionsEntry.updateTransactions();
+
+            assertEquals(3, walletTransactionsEntry.getChildren().size());
+            assertEquals(290000L, walletTransactionsEntry.getBalance());
+            assertEquals(2, listener.events.size());
+            assertEquals(List.of(transfer), listener.events.getLast().getBlockTransactions());
+            assertEquals(-10000L, listener.events.getLast().getTotalValue());
+        } finally {
+            EventManager.get().unregister(listener);
+            walletTransactionsEntry.unregisterForConfirmations();
+        }
+    }
+
+    private static BlockTransaction transfer(Wallet wallet, BlockTransaction funding, int index, long value) {
+        WalletNode node = receiveNode(wallet, index);
+        Transaction transaction = new Transaction();
+        transaction.addInput(funding.getHash(), 0, new Script(new byte[0]));
+        transaction.addOutput(value, node.getAddress());
+        Date date = new Date(1700000000000L);
+        BlockTransaction blockTransaction = new BlockTransaction(transaction.getTxId(), HEIGHT, date, null, transaction);
+        wallet.updateTransactions(Map.of(transaction.getTxId(), blockTransaction));
+        node.getTransactionOutputs().add(new BlockTransactionHashIndex(transaction.getTxId(), HEIGHT, date, null, 0, value));
+
+        return blockTransaction;
+    }
+
+    private static class NotificationListener {
+        private final List<NewWalletTransactionsEvent> events = new ArrayList<>();
+
+        @Subscribe
+        public void newWalletTransactions(NewWalletTransactionsEvent event) {
+            events.add(event);
         }
     }
 

@@ -88,13 +88,9 @@ public class WalletTransactionsEntry extends Entry {
         getChildren().removeAll(entriesRemoved);
         entriesRemoved.forEach(entry -> ((TransactionEntry)entry).unregisterForConfirmations());
 
-        calculateBalances(true);
-
+        //An incomplete entry is missing some of the wallet's inputs or outputs, so its value is not yet what the transaction moved. It is removed
+        //before the balances are calculated and left out of the notification, and is added again once the rest of the history has arrived
         List<Entry> entriesComplete = entriesAdded.stream().filter(txEntry -> ((TransactionEntry)txEntry).isComplete(walletTxos)).collect(Collectors.toList());
-        if(!entriesComplete.isEmpty()) {
-            EventManager.get().post(new NewWalletTransactionsEvent(getWallet(), entriesAdded.stream().map(entry -> (TransactionEntry)entry).collect(Collectors.toList())));
-        }
-
         if(entriesAdded.size() > entriesComplete.size()) {
             Set<Entry> incompleteEntries = new HashSet<>(entriesAdded);
             entriesComplete.forEach(incompleteEntries::remove);
@@ -104,6 +100,12 @@ public class WalletTransactionsEntry extends Entry {
                 log.warn("Removing and not notifying incomplete entry " + ((TransactionEntry)entry).getBlockTransaction().getHashAsString() + " value " + txEntry.getValue()
                         + " children " + entry.getChildren().stream().map(e -> e.getEntryType() + " " + ((HashIndexEntry)e).getHashIndex()).collect(Collectors.toList()));
             }
+        }
+
+        calculateBalances(true);
+
+        if(!entriesComplete.isEmpty()) {
+            EventManager.get().post(new NewWalletTransactionsEvent(getWallet(), entriesComplete.stream().map(entry -> (TransactionEntry)entry).collect(Collectors.toList())));
         }
 
         entriesComplete.forEach(entry -> ((TransactionEntry)entry).registerForConfirmations());
