@@ -84,8 +84,8 @@ public class HeadersController extends TransactionFormController implements Init
     public static final String MIN_LOCKTIME_DATE = "1985-11-05T00:53:20Z";
 
     private static final Pattern MIN_MEMPOOL_FEE = Pattern.compile("the transaction was rejected by network rules.*mempool min fee not met, (\\d+) < (\\d+).*", Pattern.DOTALL | Pattern.MULTILINE);
-    private static final Pattern RBF_INSUFFICIENT_FEE = Pattern.compile("insufficient fee, rejecting replacement.*?(\\d+\\.?\\d*) < (\\d+\\.?\\d*)");
-    private static final Pattern RBF_INSUFFICIENT_FEE_RATE = Pattern.compile("insufficient fee, rejecting replacement.*new feerate (\\d+\\.?\\d*)[^\\d]*(\\d+\\.?\\d*)[^\\d]*");
+    private static final Pattern RBF_INSUFFICIENT_FEE = Pattern.compile("insufficient fee, rejecting replacement.*?(?<![\\d.])(\\d++\\.?+\\d*+) < (\\d++\\.?+\\d*+)");
+    private static final Pattern RBF_INSUFFICIENT_FEE_RATE = Pattern.compile("insufficient fee, rejecting replacement.*new feerate (\\d++\\.?+\\d*+)[^\\d]*+(\\d++\\.?+\\d*+)[^\\d]*+");
 
     private static final double FEE_MULTIPLE_LIMIT = 100d;
 
