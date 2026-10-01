@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.wallet;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.InvalidPasswordException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
@@ -190,6 +191,7 @@ public class WalletController extends WalletFormController implements Initializa
     }
 
     private void unlockWallet(CustomPasswordField passwordField) {
+        updateWalletEncryptedStatus();
         if(walletEncryptedProperty.get()) {
             String walletId = walletForm.getWalletId();
             SecureString password = new SecureString(passwordField.getText());
@@ -221,24 +223,14 @@ public class WalletController extends WalletFormController implements Initializa
     }
 
     private void updateWalletEncryptedStatus() {
-        try {
-            walletEncryptedProperty.set(getWalletForm().getStorage().isEncrypted());
-        } catch(IOException e) {
-            log.warn("Error determining if wallet is locked", e);
-        }
+        ECKey encryptionPubKey = getWalletForm().getStorage().getEncryptionPubKey();
+        walletEncryptedProperty.set(encryptionPubKey != null && !Storage.NO_PASSWORD_KEY.equals(encryptionPubKey));
     }
 
     @Subscribe
     public void walletAddressesChanged(WalletAddressesChangedEvent event) {
         if(event.getWalletId().equals(walletForm.getWalletId())) {
             configure(event.getWallet());
-        }
-    }
-
-    @Subscribe
-    public void walletSettingsChanged(WalletSettingsChangedEvent event) {
-        if(event.getWalletId().equals(walletForm.getWalletId())) {
-            Platform.runLater(this::updateWalletEncryptedStatus);
         }
     }
 
@@ -252,8 +244,8 @@ public class WalletController extends WalletFormController implements Initializa
     @Subscribe
     public void walletLock(WalletLockEvent event) {
         if(event.getWallet().equals(walletForm.getMasterWallet())) {
+            updateWalletEncryptedStatus();
             if(lockPane == null) {
-                updateWalletEncryptedStatus();
                 initializeLockScreen();
             }
 
