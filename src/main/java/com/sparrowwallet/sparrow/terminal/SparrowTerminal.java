@@ -41,6 +41,7 @@ public class SparrowTerminal extends Application {
 
     private final Map<String, WalletData> walletData = new HashMap<>();
     private final Set<File> lockedWallets = new HashSet<>();
+    private final Map<File, Integer> lockCounts = new HashMap<>();
 
     private static final javafx.stage.Window DEFAULT_WINDOW = new Window() { };
 
@@ -157,15 +158,20 @@ public class SparrowTerminal extends Application {
         EventManager.get().post(new WalletOpenedEvent(storage, wallet));
     }
 
-    public boolean isLocked(Storage storage) {
+    public synchronized boolean isLocked(Storage storage) {
         return lockedWallets.contains(storage.getWalletFile());
     }
 
-    public void lockWallet(Storage storage) {
+    public synchronized void lockWallet(Storage storage) {
         lockedWallets.add(storage.getWalletFile());
+        lockCounts.merge(storage.getWalletFile(), 1, Integer::sum);
     }
 
-    public void unlockWallet(Storage storage) {
-        lockedWallets.remove(storage.getWalletFile());
+    public synchronized int getLockCount(Storage storage) {
+        return lockCounts.getOrDefault(storage.getWalletFile(), 0);
+    }
+
+    public synchronized boolean unlockWallet(Storage storage, int lockCount) {
+        return lockCount == getLockCount(storage) && lockedWallets.remove(storage.getWalletFile());
     }
 }

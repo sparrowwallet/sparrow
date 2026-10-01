@@ -97,6 +97,7 @@ public class MasterActionListBox extends ActionListBox {
     private static void openLoadedWallet(Storage storage, Wallet wallet) {
         if(SparrowTerminal.get().isLocked(storage)) {
             String walletId = storage.getWalletId(wallet);
+            int lockCount = SparrowTerminal.get().getLockCount(storage);
 
             TextInputDialogBuilder builder = new TextInputDialogBuilder().setTitle("Wallet Password");
             builder.setDescription("Enter the wallet password:");
@@ -108,8 +109,9 @@ public class MasterActionListBox extends ActionListBox {
                     Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(storage, new SecureString(password), true);
                     keyDerivationService.setOnSucceeded(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                        SparrowTerminal.get().unlockWallet(storage);
-                        SparrowTerminal.get().getGuiThread().invokeLater(() -> LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui()));
+                        if(SparrowTerminal.get().unlockWallet(storage, lockCount)) {
+                            SparrowTerminal.get().getGuiThread().invokeLater(() -> LoadWallet.getOpeningDialog(storage, wallet).showDialog(SparrowTerminal.get().getGui()));
+                        }
                     });
                     keyDerivationService.setOnFailed(workerStateEvent -> {
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));

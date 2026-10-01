@@ -1283,7 +1283,7 @@ public class AppController implements Initializable {
     }
 
     public void importWallet(ActionEvent event) {
-        List<WalletForm> selectedWalletForms = getSelectedWalletForms();
+        List<WalletForm> selectedWalletForms = getSelectedWalletForms().stream().filter(walletForm -> !walletForm.isLocked()).collect(Collectors.toList());
         WalletImportDialog dlg = new WalletImportDialog(selectedWalletForms);
         dlg.initOwner(rootStack.getScene().getWindow());
         Optional<List<Wallet>> optionalWallets = dlg.showAndWait();
@@ -1558,7 +1558,7 @@ public class AppController implements Initializable {
     public void sweepPrivateKey(ActionEvent event) {
         Wallet wallet = null;
         WalletForm selectedWalletForm = getSelectedWalletForm();
-        if(selectedWalletForm != null && selectedWalletForm.getWallet().isValid()) {
+        if(selectedWalletForm != null && selectedWalletForm.getWallet().isValid() && !selectedWalletForm.isLocked()) {
             wallet = selectedWalletForm.getWallet();
         }
 
@@ -3439,6 +3439,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(true);
             exportWallet.setDisable(true);
+            showPayNym.setDisable(true);
         }
 
         lockAllWallets.setDisable(allWalletsLocked(event.getWallet()));
@@ -3450,6 +3451,7 @@ public class AppController implements Initializable {
         if(selectedWalletForm != null && selectedWalletForm.getMasterWallet().equals(event.getWallet())) {
             lockWallet.setDisable(false);
             exportWallet.setDisable(!event.getWallet().isValid());
+            showPayNym.setDisable(exportWallet.isDisable() || !selectedWalletForm.getWallet().hasPaymentCode());
             lockAllWallets.setDisable(false);
         }
     }

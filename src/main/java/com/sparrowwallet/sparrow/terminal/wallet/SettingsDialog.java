@@ -240,7 +240,7 @@ public class SettingsDialog extends WalletDialog {
                                 Key existingKey = key;
                                 key = null;
                                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
-                                    boolean saving = saveWallet(true, false);
+                                    boolean saving = !SparrowTerminal.get().isLocked(walletForm.getStorage()) && saveWallet(true, false);
                                     Platform.runLater(() -> {
                                         //If a new password is not provided, re-encrypt with the existing key rather than leaving the wallet decrypted for the session
                                         if(!saving) {

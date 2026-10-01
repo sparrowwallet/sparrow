@@ -508,6 +508,12 @@ public class KeystoreController extends WalletFormController implements Initiali
                 Storage.DecryptWalletService decryptWalletService = new Storage.DecryptWalletService(copy, password.get());
                 decryptWalletService.setOnSucceeded(workerStateEvent -> {
                     EventManager.get().post(new StorageEvent(getWalletForm().getWalletId(), TimedEvent.Action.END, "Done"));
+
+                    if(getWalletForm().isLocked()) {
+                        AppServices.showErrorDialog("Wallet Locked", "The wallet was locked before the keystore could be displayed.");
+                        return;
+                    }
+
                     Wallet decryptedWallet = decryptWalletService.getValue();
                     showPrivate(decryptedWallet.getKeystores().get(keystoreIndex));
                 });

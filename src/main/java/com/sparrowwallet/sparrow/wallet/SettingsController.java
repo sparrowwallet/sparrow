@@ -1046,7 +1046,12 @@ public class SettingsController extends WalletFormController implements Initiali
 
         WalletPasswordDialog dlg = new WalletPasswordDialog(null, requirement, suggestChangePassword);
         dlg.initOwner(apply.getScene().getWindow());
-        Optional<SecureString> password = dlg.showAndWait();
+        Optional<SecureString> password = walletForm.isLocked() ? Optional.empty() : dlg.showAndWait();
+        if(password.isPresent() && walletForm.isLocked()) {
+            AppServices.showErrorDialog("Wallet Locked", "The wallet was locked before the password was entered. Unlock the wallet and apply the change again.");
+            password = Optional.empty();
+        }
+
         if(password.isPresent()) {
             if(dlg.isBackupExisting()) {
                 try {

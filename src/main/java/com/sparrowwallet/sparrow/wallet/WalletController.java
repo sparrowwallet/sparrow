@@ -54,6 +54,8 @@ public class WalletController extends WalletFormController implements Initializa
 
     private CustomPasswordField passwordField;
 
+    private int lockCount;
+
     private final BooleanProperty walletEncryptedProperty = new SimpleBooleanProperty(false);
 
     private final ChangeListener<Boolean> lockFocusListener = new ChangeListener<>() {
@@ -195,12 +197,15 @@ public class WalletController extends WalletFormController implements Initializa
         if(walletEncryptedProperty.get()) {
             String walletId = walletForm.getWalletId();
             SecureString password = new SecureString(passwordField.getText());
+            int lockCount = this.lockCount;
             Storage.KeyDerivationService keyDerivationService = new Storage.KeyDerivationService(walletForm.getStorage(), password, true);
             keyDerivationService.setOnSucceeded(workerStateEvent -> {
                 passwordField.clear();
                 password.clear();
                 EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
-                unlockWallet();
+                if(lockCount == this.lockCount) {
+                    unlockWallet();
+                }
             });
             keyDerivationService.setOnFailed(workerStateEvent -> {
                 EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Failed"));
@@ -251,6 +256,7 @@ public class WalletController extends WalletFormController implements Initializa
 
             getWalletForm().setLocked(true);
             lockPane.setViewOrder(-1);
+            lockCount++;
         }
     }
 

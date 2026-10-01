@@ -10,6 +10,7 @@ import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.io.StorageException;
+import javafx.beans.property.BooleanProperty;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,6 +45,21 @@ public class SettingsWalletForm extends WalletForm {
 
     public WalletForm getAppWalletForm() {
         return appWalletForm;
+    }
+
+    @Override
+    public boolean isLocked() {
+        return appWalletForm.isLocked();
+    }
+
+    @Override
+    public BooleanProperty lockedProperty() {
+        return appWalletForm.lockedProperty();
+    }
+
+    @Override
+    public void setLocked(boolean locked) {
+        appWalletForm.setLocked(locked);
     }
 
     @Override
