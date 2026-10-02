@@ -479,7 +479,9 @@ public class AppServices {
         torService.setOnSucceeded(workerStateEvent -> {
             Tor.setDefault(torService.getValue());
             torService.cancel();
-            restartServices();
+            if(onlineProperty.get() || Config.get().getMode() == Mode.ONLINE) {
+                restartServices();
+            }
             EventManager.get().post(new TorReadyStatusEvent());
         });
         torService.setOnFailed(workerStateEvent -> {

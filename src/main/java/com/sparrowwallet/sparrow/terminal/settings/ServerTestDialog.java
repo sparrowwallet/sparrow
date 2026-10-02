@@ -28,6 +28,7 @@ public class ServerTestDialog extends DialogWindow {
 
     private TorService torService;
     private ElectrumServer.ConnectionService connectionService;
+    private volatile boolean abandoned;     //written on the gui thread and read on the application thread
 
     public ServerTestDialog() {
         super("Server Test");
@@ -65,7 +66,12 @@ public class ServerTestDialog extends DialogWindow {
     }
 
     public void onBack() {
+        //Going back abandons the test, so one still running is not left to complete against whatever server is configured by then
+        abandoned = true;
+        EventManager.get().unregister(this);
         close();
+
+        Platform.runLater(this::cancelConnectionService);
 
         if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
             PublicElectrumDialog publicElectrumServer = new PublicElectrumDialog();
@@ -92,13 +98,13 @@ public class ServerTestDialog extends DialogWindow {
     }
 
     public void onDone() {
+        //A test not yet started is not started once the dialog is gone: it would cancel the connection requested below
+        abandoned = true;
         EventManager.get().unregister(this);
         close();
 
         Platform.runLater(() -> {
-            if(connectionService != null && connectionService.isRunning()) {
-                connectionService.cancel();
-            }
+            cancelConnectionService();
             if(Config.get().getMode() == Mode.ONLINE && !(AppServices.isConnecting() || AppServices.isConnected())) {
                 EventManager.get().post(new RequestConnectEvent());
             }
@@ -117,8 +123,10 @@ public class ServerTestDialog extends DialogWindow {
         torService.setOnSucceeded(workerStateEvent -> {
             Tor.setDefault(torService.getValue());
             torService.cancel();
-            appendText("\nTor running, connecting to " + Config.get().getServer().getUrl() + "...");
-            startElectrumConnection();
+            if(!abandoned) {
+                appendText("\nTor running, connecting to " + Config.get().getServer().getUrl() + "...");
+                startElectrumConnection();
+            }
         });
         torService.setOnFailed(workerStateEvent -> {
             torService.cancel();
@@ -129,10 +137,16 @@ public class ServerTestDialog extends DialogWindow {
         torService.start();
     }
 
-    private void startElectrumConnection() {
-        if(connectionService != null && connectionService.isRunning()) {
-            connectionService.cancel();
+    //A cancel that takes effect runs neither of the handlers that unregister the service, so it is unregistered here. One that comes after the test
+    //has finished does not take effect, and the handler already on its way unregisters the service itself
+    private void cancelConnectionService() {
+        if(connectionService != null && connectionService.isRunning() && connectionService.cancel()) {
+            EventManager.get().unregister(connectionService);
         }
+    }
+
+    private void startElectrumConnection() {
+        cancelConnectionService();
 
         AppServices.cancelConnection();
 
