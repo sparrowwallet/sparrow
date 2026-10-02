@@ -227,15 +227,21 @@ public class Bwt {
      *
      */
     private void shutdown() {
-        if(shutdownPtr == null) {
-            terminating = true;
+        //The handle is taken before it is used, so that it is passed to the daemon once however many shutdowns are under way
+        Long ptr;
+        synchronized(this) {
+            ptr = shutdownPtr;
+            shutdownPtr = null;
+        }
+
+        //A shutdown is only requested of a running daemon, so one finding no handle has been overtaken by another and has nothing to do
+        if(ptr == null) {
             return;
         }
 
-        NativeBwtDaemon.shutdown(shutdownPtr);
+        NativeBwtDaemon.shutdown(ptr);
         this.terminating = false;
         this.ready = false;
-        this.shutdownPtr = null;
     }
 
     public boolean isRunning() {
@@ -342,7 +348,9 @@ public class Bwt {
                         public void onBooting(long shutdownPtr) {
                             log.debug("Booting bwt");
 
-                            Bwt.this.shutdownPtr = shutdownPtr;
+                            synchronized(Bwt.this) {
+                                Bwt.this.shutdownPtr = shutdownPtr;
+                            }
                             if(terminating) {
                                 Bwt.this.shutdown();
                                 terminating = false;
