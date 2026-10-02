@@ -194,16 +194,15 @@ public class PaymentController extends WalletFormController implements Initializ
                     //ignore, not a URI
                 }
 
+                //A name is not a recipient until it has resolved, which it may never do. Whatever becomes of it, the transaction is rebuilt below, as the
+                //one already created is for the recipient the name has replaced
                 Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(newValue);
                 if(optDnsPaymentHrn.isPresent()) {
                     String dnsPaymentHrn = optDnsPaymentHrn.get();
                     DnsPayment cachedDnsPayment = DnsPaymentCache.getDnsPayment(dnsPaymentHrn);
                     if(cachedDnsPayment != null) {
                         setDnsPayment(cachedDnsPayment);
-                        return;
-                    }
-
-                    if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
+                    } else if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
                         if(Config.get().getConnectToResolve() == null || Config.get().getConnectToResolve() == Boolean.FALSE) {
                             Platform.runLater(() -> {
                                 ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "You are currently offline. Connect to resolve the address?", ButtonType.NO, ButtonType.YES);
@@ -218,23 +217,21 @@ public class PaymentController extends WalletFormController implements Initializ
                         } else {
                             Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
                         }
-                        return;
+                    } else {
+                        DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
+                        dnsPaymentService.setOnSucceeded(_ -> {
+                            if(isCurrentHrn(dnsPaymentHrn)) {
+                                dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
+                            }
+                        });
+                        dnsPaymentService.setOnFailed(failEvent -> {
+                            Throwable exception = failEvent.getSource().getException();
+                            if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
+                                AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
+                            }
+                        });
+                        dnsPaymentService.start();
                     }
-
-                    DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
-                    dnsPaymentService.setOnSucceeded(_ -> {
-                        if(isCurrentHrn(dnsPaymentHrn)) {
-                            dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
-                        }
-                    });
-                    dnsPaymentService.setOnFailed(failEvent -> {
-                        Throwable exception = failEvent.getSource().getException();
-                        if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
-                            AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
-                        }
-                    });
-                    dnsPaymentService.start();
-                    return;
                 }
 
                 if(sendController.getWalletForm().getWallet().hasPaymentCode()) {
