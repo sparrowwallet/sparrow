@@ -60,11 +60,12 @@ public class TxEntry implements Comparable<TxEntry> {
             return height - o.height;
         }
 
-        if(height <= 0) {
-            return tx_hash.compareTo(o.tx_hash);
+        if(height > 0 && index != o.index) {
+            return index - o.index;
         }
 
-        return index - o.index;
+        //Two transactions share a position in a block only while one of them is an entry a reorg has yet to replace, and both must be held until it is
+        return tx_hash.compareTo(o.tx_hash);
     }
 
     @Override

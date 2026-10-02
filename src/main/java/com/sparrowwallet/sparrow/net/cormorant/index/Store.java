@@ -35,14 +35,20 @@ public class Store {
                 mempoolEntries.put(txid, null);
             }
             entries.removeIf(txe -> txe.height > 0 && txe.tx_hash.equals(listTransaction.txid()));
-            txEntry = new TxEntry(0, 0, listTransaction.txid(), listTransaction.fee());
+            //An unconfirmed entry already held is kept current by updateMempoolTransactions, at the height its parents give it. Adding it again here
+            //would report it as an update each time the wallet lists it
+            boolean held = entries.stream().anyMatch(txe -> txe.height <= 0 && txe.tx_hash.equals(listTransaction.txid()));
+            txEntry = held ? null : new TxEntry(0, 0, listTransaction.txid(), listTransaction.fee());
         } else {
             mempoolEntries.remove(txid);
-            entries.removeIf(txe -> txe.height != listTransaction.blockheight() && txe.tx_hash.equals(listTransaction.txid()));
-            txEntry = new TxEntry(listTransaction.blockheight(), listTransaction.blockindex(), listTransaction.txid());
+            TxEntry confirmedEntry = new TxEntry(listTransaction.blockheight(), listTransaction.blockindex(), listTransaction.txid());
+            //A reorg can confirm the transaction again in another block, or at the same height in another position. An entry unchanged is left in place
+            //so that it is not reported as an update each time the wallet lists it
+            entries.removeIf(txe -> txe.tx_hash.equals(listTransaction.txid()) && txe.compareTo(confirmedEntry) != 0);
+            txEntry = confirmedEntry;
         }
 
-        if(entries.add(txEntry)) {
+        if(txEntry != null && entries.add(txEntry)) {
             return scriptHash;
         }
 
