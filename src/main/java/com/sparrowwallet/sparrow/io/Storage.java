@@ -49,7 +49,7 @@ public class Storage {
 
     private Persistence persistence;
     private File walletFile;
-    private ECKey encryptionPubKey;
+    private volatile ECKey encryptionPubKey;    //set where the wallet is saved, and read by the queued updates that follow on another thread
 
     public Storage(File walletFile) {
         this(!walletFile.exists() || walletFile.getName().endsWith("." + PersistenceType.DB.getExtension()) ? PersistenceType.DB : PersistenceType.JSON, walletFile);

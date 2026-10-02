@@ -195,12 +195,18 @@ public class DbPersistence implements Persistence {
 
     @Override
     public void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws StorageException {
-        String newPassword = getFilePassword(encryptionPubKey);
-        String currentPassword = getDatasourcePassword();
-
         updateExecutor.execute(() -> {
             try {
-                if(dataSource != null && currentPassword != null && newPassword == null) {
+                //An update can wait behind others while the wallet is saved with a password added or removed. The key it was queued with is then
+                //no longer the key of the storage, and it leaves the encryption of the file as it finds it
+                ECKey storagePubKey = storage.getEncryptionPubKey();
+                boolean queuedWithStorageKey = Objects.equals(encryptionPubKey, Storage.NO_PASSWORD_KEY.equals(storagePubKey) ? null : storagePubKey);
+                String newPassword = getFilePassword(encryptionPubKey);
+                String currentPassword = getDatasourcePassword();
+
+                if(!queuedWithStorageKey) {
+                    update(storage, wallet, currentPassword);
+                } else if(dataSource != null && currentPassword != null && newPassword == null) {
                     //Removing encryption: write data first
                     update(storage, wallet, currentPassword);
                     updatePassword(storage, encryptionPubKey);

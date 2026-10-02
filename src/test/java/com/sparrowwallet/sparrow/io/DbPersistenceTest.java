@@ -209,6 +209,66 @@ public class DbPersistenceTest {
         Assertions.assertEquals(otherHash, getFileHash(otherFile), "another wallet file was written by a wallet name containing the extension");
     }
 
+    /**
+     * An update is queued with the key the storage held at the time, and can still be waiting when the wallet is saved with a password added. Run
+     * after that save, it must leave the file as the save left it.
+     */
+    @Test
+    public void updateQueuedBeforeAPasswordWasAddedLeavesTheFileEncrypted() throws Exception {
+        Persistence persistence = PersistenceType.DB.getInstance();
+        Storage storage = new Storage(persistence, tempDir.resolve("Savings." + PersistenceType.DB.getExtension()).toFile());
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+
+        setPassword(storage, "pass");
+        persistence.updateWallet(storage, wallet);      //as it was queued, with no key
+        storage.closeAndWait();
+
+        Assertions.assertTrue(Storage.isEncrypted(storage.getWalletFile()));
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
+    }
+
+    /**
+     * The same in the other direction: an update queued while the wallet had a password does not put it back once it has been removed.
+     */
+    @Test
+    public void updateQueuedBeforeAPasswordWasRemovedLeavesTheFileUnencrypted() throws Exception {
+        Persistence persistence = PersistenceType.DB.getInstance();
+        Storage storage = new Storage(persistence, tempDir.resolve("Savings." + PersistenceType.DB.getExtension()).toFile());
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+        setPassword(storage, "pass");
+        ECKey queuedKey = storage.getEncryptionPubKey();
+
+        setPassword(storage, null);
+        persistence.updateWallet(storage, wallet, queuedKey);
+        storage.closeAndWait();
+
+        Assertions.assertFalse(Storage.isEncrypted(storage.getWalletFile()));
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), null));
+    }
+
+    /**
+     * The path that must keep working: a password added without a full save reaches the file through the update queued with the new key.
+     */
+    @Test
+    public void updateQueuedWithANewPasswordEncryptsTheFile() throws Exception {
+        Storage storage = createUnencryptedWallet("Savings");
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+
+        storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")));
+        storage.updateWallet(wallet);
+        storage.closeAndWait();
+
+        Assertions.assertTrue(Storage.isEncrypted(storage.getWalletFile()));
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
+    }
+
     @Test
     public void passwordRemovalDecryptsWalletFile() throws Exception {
         Storage storage = createUnencryptedWallet("Savings");
