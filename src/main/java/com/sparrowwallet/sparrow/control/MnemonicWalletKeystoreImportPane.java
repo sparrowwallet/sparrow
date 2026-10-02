@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -107,6 +108,8 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         progressIndicator.getStyleClass().add("button-progress");
         discoverButton.setGraphic(progressIndicator);
         List<Wallet> wallets = new ArrayList<>();
+        List<String> words = List.copyOf(wordEntriesProperty.get());
+        String passphrase = passphraseProperty.get();
 
         List<List<ChildNumber>> derivations = ScriptType.getScriptTypesForPolicyType(PolicyType.SINGLE_HD).stream().map(ScriptType::getDefaultDerivation).collect(Collectors.toList());
         derivations.add(List.of(new ChildNumber(0, true)));
@@ -135,7 +138,9 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
         walletDiscoveryService.setOnSucceeded(successEvent -> {
             discoverButton.setGraphic(null);
             Optional<List<Wallet>> optWallets = walletDiscoveryService.getValue();
-            if(optWallets.isPresent()) {
+            if(!words.equals(wordEntriesProperty.get()) || !Objects.equals(passphrase, passphraseProperty.get())) {
+                discoverButton.setDisable(discoverButton.isDisable() && !words.equals(wordEntriesProperty.get()));
+            } else if(optWallets.isPresent()) {
                 List<Wallet> discoveredWallets = optWallets.get();
                 if(discoveredWallets.size() > 1) {
                     for(Wallet wallet : discoveredWallets) {
