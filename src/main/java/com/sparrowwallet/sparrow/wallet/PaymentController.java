@@ -119,14 +119,7 @@ public class PaymentController extends WalletFormController implements Initializ
     private final ChangeListener<String> amountListener = new ChangeListener<>() {
         @Override
         public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-            if(sendController.getUtxoSelector() instanceof MaxUtxoSelector) {
-                sendController.utxoSelectorProperty().setValue(null);
-            }
-
-            for(Tab tab : sendController.getPaymentTabs().getTabs()) {
-                PaymentController controller = (PaymentController) tab.getUserData();
-                controller.setSendMax(false);
-            }
+            clearSendMax();
 
             Long recipientValueSats = getRecipientValueSats();
             if(recipientValueSats != null) {
@@ -840,8 +833,10 @@ public class PaymentController extends WalletFormController implements Initializ
             label.setText(bitcoinURI.getLabel());
         }
         if(bitcoinURI.getAmount() != null) {
+            clearSendMax();
             setRecipientValueSats(bitcoinURI.getAmount());
             setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), bitcoinURI.getAmount());
+            revalidateAmount();
         }
         setPayjoinURI(bitcoinURI);
         sendController.updateTransaction();
@@ -879,6 +874,17 @@ public class PaymentController extends WalletFormController implements Initializ
 
     public boolean isSendMax() {
         return maxButton.isSelected();
+    }
+
+    private void clearSendMax() {
+        if(sendController.getUtxoSelector() instanceof MaxUtxoSelector) {
+            sendController.utxoSelectorProperty().setValue(null);
+        }
+
+        for(Tab tab : sendController.getPaymentTabs().getTabs()) {
+            PaymentController controller = (PaymentController)tab.getUserData();
+            controller.setSendMax(false);
+        }
     }
 
     public void setSendMax(boolean sendMax) {
