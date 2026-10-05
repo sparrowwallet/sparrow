@@ -142,7 +142,10 @@ public class PayNymController {
         searchPayNyms.setTextFormatter(new TextFormatter<>(paymentCodeFilter));
         searchPayNyms.addEventFilter(KeyEvent.ANY, event -> {
             if(event.getCode() == KeyCode.ENTER) {
-                findNymProperty.set(searchPayNyms.getText());
+                //An abbreviated payment code is only the display of the one already being searched for
+                if(!searchPayNyms.getText().contains("...")) {
+                    findNymProperty.set(searchPayNyms.getText());
+                }
                 event.consume();
             }
         });
@@ -231,10 +234,12 @@ public class PayNymController {
 
             PayNymService.getPayNym(nymIdentifier, true).subscribe(searchedPayNym -> {
                 findPayNym.setVisible(false);
-                List<PayNym> searchList = new ArrayList<>();
-                searchList.add(searchedPayNym);
-                followingList.setUserData(Boolean.TRUE);
-                followingList.setItems(FXCollections.observableList(searchList));
+                if(nymIdentifier.equals(findNymProperty.get())) {
+                    List<PayNym> searchList = new ArrayList<>();
+                    searchList.add(searchedPayNym);
+                    followingList.setUserData(Boolean.TRUE);
+                    followingList.setItems(FXCollections.observableList(searchList));
+                }
             }, error -> {
                 findPayNym.setVisible(false);
             });
