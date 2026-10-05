@@ -4,7 +4,7 @@ import com.sparrowwallet.drongo.crypto.ECKey;
 
 /**
  * Represents a BIP32 keypair. This can be a master key or any other key in the path. Contains convenience method to
- * read and write formats the the card understands.
+ * read and write formats the card understands.
  */
 public class BIP32KeyPair {
     private byte[] privateKey;
