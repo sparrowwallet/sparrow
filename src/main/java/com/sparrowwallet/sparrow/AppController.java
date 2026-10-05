@@ -1505,7 +1505,7 @@ public class AppController implements Initializable {
     public void signVerifyMessage(ActionEvent event) {
         MessageSignDialog messageSignDialog = null;
         WalletForm selectedWalletForm = getSelectedWalletForm();
-        if(selectedWalletForm != null) {
+        if(selectedWalletForm != null && !selectedWalletForm.isLocked()) {
             Wallet wallet = selectedWalletForm.getWallet();
             if(wallet.getPolicyType() == PolicyType.SINGLE_HD || wallet.getPolicyType() == PolicyType.SINGLE_SP) {
                 //Can sign and verify
