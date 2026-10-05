@@ -749,6 +749,7 @@ public class PaymentController extends WalletFormController implements Initializ
             }
             if(payment.getAmount() >= 0) {
                 setRecipientValueSats(payment.getAmount());
+                revalidateAmount();
             }
             setFiatAmount(AppServices.getFiatCurrencyExchangeRate(), payment.getAmount());
         }
