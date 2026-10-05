@@ -312,7 +312,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 return;
             }
 
-            PGPVerificationResult result = pgpVerifyService.getValue();
+            SignedManifest signedManifest = pgpVerifyService.getValue();
+            PGPVerificationResult result = signedManifest.result();
 
             String message = result.userId() + " on " + signatureDateFormat.format(result.signatureTimestamp()) + (result.expired() ? " (key expired)" : "");
             signedBy.setText(message);
@@ -332,7 +333,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 releaseVerified.setGraphic(GlyphUtils.getSuccessGlyph());
                 releaseLink.setText(release.get().getName());
             } else {
-                verifyManifest(verification);
+                verifyManifest(verification, signedManifest.content());
             }
         });
         pgpVerifyService.setOnFailed(event -> {
@@ -374,10 +375,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         releaseLink.setText("");
     }
 
-    private void verifyManifest(long verification) {
+    private void verifyManifest(long verification, byte[] manifestContent) {
         File releaseFile = release.get();
         if(releaseFile != null && releaseFile.exists()) {
-            File manifestFile = manifest.get();
             hashService = new FileSha256Service(releaseFile);
             hashService.setOnRunning(event -> {
                 if(verification != verificationCount) {
@@ -398,7 +398,11 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
 
                 String calculatedHash = hashService.getValue();
                 try {
-                    Map<File, String> manifestMap = getManifest(manifestFile);
+                    if(manifestContent == null || manifestContent.length > MAX_VALID_MANIFEST_SIZE) {
+                        throw new InvalidManifestException("Manifest file is larger than " + (MAX_VALID_MANIFEST_SIZE / 1024) + "KB");
+                    }
+
+                    Map<File, String> manifestMap = getManifest(new ByteArrayInputStream(manifestContent));
                     String manifestHash = getManifestHash(releaseFile.getName(), manifestMap);
                     if(calculatedHash.equalsIgnoreCase(manifestHash)) {
                         releaseHash.setText("Matched manifest hash");
@@ -775,7 +779,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
     }
 
-    private static class PGPVerifyService extends Service<PGPVerificationResult> {
+    private record SignedManifest(PGPVerificationResult result, byte[] content) { }
+
+    private static class PGPVerifyService extends Service<SignedManifest> {
         private final File signature;
         private final File manifest;
         private final File publicKey;
@@ -787,15 +793,30 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         }
 
         @Override
-        protected Task<PGPVerificationResult> createTask() {
+        protected Task<SignedManifest> createTask() {
             return new Task<>() {
-                protected PGPVerificationResult call() throws IOException, PGPVerificationException {
+                protected SignedManifest call() throws IOException, PGPVerificationException {
                     boolean detachedSignature = !manifest.equals(signature);
+
+                    //Retain at most one byte more than a valid manifest, so the content of a manifest that is too large can be rejected without holding all of it
+                    ByteArrayOutputStream signedContent = manifest.length() > MAX_VALID_MANIFEST_SIZE ? null : new ByteArrayOutputStream();
+                    OutputStream signedContentStream = signedContent == null ? null : new OutputStream() {
+                        @Override
+                        public void write(int b) {
+                            write(new byte[] { (byte)b }, 0, 1);
+                        }
+
+                        @Override
+                        public void write(byte[] b, int off, int len) {
+                            signedContent.write(b, off, (int)Math.max(0, Math.min(len, MAX_VALID_MANIFEST_SIZE + 1 - signedContent.size())));
+                        }
+                    };
 
                     try(InputStream publicKeyStream = publicKey == null ? null : new FileInputStream(publicKey);
                         InputStream contentStream = new BufferedInputStream(new FileInputStream(manifest));
                         InputStream detachedSignatureStream = detachedSignature ? new FileInputStream(signature) : null) {
-                        return PGPUtils.verify(publicKeyStream, contentStream, detachedSignatureStream);
+                        PGPVerificationResult result = PGPUtils.verify(publicKeyStream, contentStream, detachedSignatureStream, signedContentStream);
+                        return new SignedManifest(result, signedContent == null ? null : signedContent.toByteArray());
                     }
                 }
             };
