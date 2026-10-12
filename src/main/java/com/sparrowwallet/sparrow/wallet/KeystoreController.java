@@ -336,7 +336,7 @@ public class KeystoreController extends WalletFormController implements Initiali
                     }
 
                     ExtendedKey extendedPublicKey = ExtendedKey.fromDescriptor(newValue);
-                    return walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore && extendedPublicKey.equals(k.getExtendedPublicKey())).findFirst()
+                    return walletForm.getWallet().getKeystores().stream().filter(k -> k != keystore && extendedPublicKey.hasSameKey(k.getExtendedPublicKey())).findFirst()
                             .map(k -> ValidationResult.fromError(c, "Extended key matches " + k.getLabel())).orElseGet(ValidationResult::new);
                 }
         ));
