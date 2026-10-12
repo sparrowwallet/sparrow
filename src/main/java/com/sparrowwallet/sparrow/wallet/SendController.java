@@ -1328,7 +1328,7 @@ public class SendController extends WalletFormController implements Initializabl
             broadcastTransactionService.setOnFailed(failedEvent -> {
                 proxyWorker.end();
                 log.error("Error broadcasting notification transaction", failedEvent.getSource().getException());
-                AppServices.showErrorDialog("Error broadcasting notification transaction", failedEvent.getSource().getException().getMessage());
+                AppServices.showErrorDialog("Error broadcasting notification transaction", "The server returned an error when broadcasting the notification transaction. The server response is contained in the log (See Help > Show Log File).");
             });
             ServiceProgressDialog progressDialog = new ServiceProgressDialog("Broadcast", "Broadcast Notification Transaction", new DialogImage(DialogImage.Type.PAYNYM), proxyWorker);
             progressDialog.initOwner(notificationButton.getScene().getWindow());

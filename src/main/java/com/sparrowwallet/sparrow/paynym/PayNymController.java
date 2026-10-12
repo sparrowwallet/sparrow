@@ -601,7 +601,7 @@ public class PayNymController {
                 log.error("Error broadcasting notification transaction", failedEvent.getSource().getException());
                 retrievePayNymProgress.setVisible(false);
                 followingList.refresh();
-                AppServices.showErrorDialog("Error broadcasting notification transaction", failedEvent.getSource().getException().getMessage());
+                AppServices.showErrorDialog("Error broadcasting notification transaction", "The server returned an error when broadcasting the notification transaction. The server response is contained in the log (See Help > Show Log File).");
             });
             retrievePayNymProgress.setVisible(true);
             notificationTransactions.put(transaction.getTxId(), payNym);
