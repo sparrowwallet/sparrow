@@ -1,7 +1,5 @@
 package com.sparrowwallet.sparrow.net;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
@@ -12,14 +10,12 @@ import com.sparrowwallet.drongo.protocol.Bech32;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.tern.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -108,43 +104,37 @@ public class LnurlAuth {
         }
     }
 
-    public void sendResponse(Wallet wallet) throws LnurlAuthException, IOException {
+    public void sendResponse(Wallet wallet) throws Exception {
         URL callback = getReturnURL(wallet);
 
         if(log.isInfoEnabled()) {
             log.info("Sending LNURL-auth response to " + callback);
         }
 
-        Proxy proxy = AppServices.getProxy();
-        if(proxy == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX)) {
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        if(httpClientService.getTorProxy() == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX)) {
             throw new LnurlAuthException("A Tor proxy must be configured to authenticate this resource.");
         }
 
-        HttpURLConnection connection = proxy == null ? (HttpURLConnection) callback.openConnection() : (HttpURLConnection) callback.openConnection(proxy);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Content-Type", "application/json");
-
-        StringBuilder res = new StringBuilder();
-        try(BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-            String responseLine;
-            while((responseLine = br.readLine()) != null) {
-                res.append(responseLine.trim());
-            }
+        Map<?, ?> result;
+        try {
+            result = httpClientService.requestJson(callback.toString(), Map.class, null);
+        } catch(HttpResponseException e) {
+            throw new LnurlAuthException("Service returned HTTP " + e.getStatusCode() + ": " + e.getResponseBody());
         }
 
         if(log.isDebugEnabled()) {
-            log.debug("Received from " + callback + ": " + res);
+            log.debug("Received from " + callback + ": " + result);
         }
 
-        JsonObject result = JsonParser.parseString(res.toString()).getAsJsonObject();
-        String status = result.get("status").getAsString();
+        Object status = result.get("status");
         if("OK".equals(status)) {
             return;
         } else if("ERROR".equals(status)) {
-            String reason = result.get("reason").getAsString();
+            Object reason = result.get("reason");
             throw new LnurlAuthException("Service returned error: " + reason);
         } else {
-            throw new LnurlAuthException("Service returned unknown response: " + res);
+            throw new LnurlAuthException("Service returned unknown response: " + result);
         }
     }
 

@@ -11,15 +11,11 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.tern.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class Auth47 {
@@ -88,7 +84,7 @@ public class Auth47 {
         }
     }
 
-    public void sendResponse(Wallet wallet) throws IOException, Auth47Exception {
+    public void sendResponse(Wallet wallet) throws Exception {
         if(!wallet.hasPaymentCode()) {
             throw new Auth47Exception("A software wallet is required to authenticate.");
         }
@@ -100,13 +96,13 @@ public class Auth47 {
         }
     }
 
-    public void sendHttpResponse(Wallet wallet) throws IOException, Auth47Exception {
+    public void sendHttpResponse(Wallet wallet) throws Exception {
         String json = getJsonResponse(wallet);
 
         send(json);
     }
 
-    public void sendSorobanResponse(Wallet wallet) throws IOException, Auth47Exception {
+    public void sendSorobanResponse(Wallet wallet) throws Exception {
         String json = getJsonResponse(wallet);
 
         SorobanResponse sorobanResponse = new SorobanResponse(srbnName, json);
@@ -125,45 +121,27 @@ public class Auth47 {
         return gson.toJson(response);
     }
 
-    private void send(String json) throws IOException, Auth47Exception {
+    private void send(String json) throws Exception {
         if(log.isInfoEnabled()) {
             log.info("Sending auth47 response " + json + " to " + callback);
         }
 
-        Proxy proxy = AppServices.getProxy();
-        if(proxy == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX)) {
+        HttpClientService httpClientService = AppServices.getHttpClientService();
+        if(httpClientService.getTorProxy() == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX)) {
             throw new Auth47Exception("A Tor proxy must be configured to authenticate this resource.");
         }
 
-        HttpURLConnection connection = proxy == null ? (HttpURLConnection) callback.openConnection() : (HttpURLConnection) callback.openConnection(proxy);
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setDoOutput(true);
-
-        try(OutputStream os = connection.getOutputStream()) {
-            byte[] jsonBytes = json.getBytes(StandardCharsets.UTF_8);
-            os.write(jsonBytes);
-        }
-
-        int statusCode = connection.getResponseCode();
-        if(statusCode == 404) {
-            throw new Auth47Exception("Could not authenticate. Callback URL of " + callback + " returned a 404 response.");
-        }
-
-        StringBuilder res = new StringBuilder();
-        try(BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
-            String responseLine;
-            while((responseLine = br.readLine()) != null) {
-                res.append(responseLine.trim());
+        try {
+            String response = httpClientService.postString(callback.toString(), null, "application/json", json);
+            if(log.isDebugEnabled()) {
+                log.debug("Received " + response);
             }
-        }
+        } catch(HttpResponseException e) {
+            if(e.getStatusCode() == 404) {
+                throw new Auth47Exception("Could not authenticate. Callback URL of " + callback + " returned a 404 response.");
+            }
 
-        if(log.isDebugEnabled()) {
-            log.debug("Received " + statusCode + " " + res);
-        }
-
-        if(statusCode < 200 || statusCode >= 300) {
-            throw new Auth47Exception("Could not authenticate. Server returned " + res);
+            throw new Auth47Exception("Could not authenticate. Server returned " + e.getResponseBody());
         }
     }
 
