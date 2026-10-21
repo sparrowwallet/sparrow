@@ -13,6 +13,7 @@ import java.util.Locale;
 public enum BlockExplorer {
     MEMPOOL_SPACE("https://mempool.space"),
     BLOCKSTREAM_INFO("https://blockstream.info"),
+    TIMECHAIN_LIVE("https://timechain.live"),
     NONE("http://none");
 
     private static final Logger log = LoggerFactory.getLogger(BlockExplorer.class);
