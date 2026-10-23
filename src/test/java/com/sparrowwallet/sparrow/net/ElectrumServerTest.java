@@ -371,6 +371,20 @@ public class ElectrumServerTest {
         }
     }
 
+    @Test
+    public void batchesWithRbitcoinFromMinimumVersion() {
+        assertTrue(ElectrumServer.getServerCapability(List.of("rbitcoin-electrs 0.9.0", "1.4")).supportsBatching());
+        assertTrue(ElectrumServer.getServerCapability(List.of("rbitcoin-electrs 0.10.1", "1.4")).supportsBatching());
+        assertTrue(ElectrumServer.getServerCapability(List.of("Rbitcoin-Electrs 1.0.0-rc1", "1.4")).supportsBatching());
+
+        assertFalse(ElectrumServer.getServerCapability(List.of("rbitcoin-electrs 0.8.99", "1.4")).supportsBatching());
+        assertFalse(ElectrumServer.getServerCapability(List.of("rbitcoin-electrs", "1.4")).supportsBatching());
+        assertTrue(ElectrumServer.getServerCapability(List.of("rbitcoin-electrs 0.8.99", "1.4")).supportsUnsubscribe());
+
+        //rbitcoin versions that identify as electrs continue to be handled as electrs
+        assertTrue(ElectrumServer.getServerCapability(List.of("electrs/0.10.0-rbitcoin-0.8.99", "1.4")).supportsBatching());
+    }
+
     private static Wallet testWallet() {
         Wallet wallet = new Wallet();
         wallet.setPolicyType(PolicyType.SINGLE_HD);

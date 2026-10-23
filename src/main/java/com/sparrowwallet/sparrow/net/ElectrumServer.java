@@ -64,6 +64,8 @@ public class ElectrumServer {
 
     private static final Version MEMPOOL_ELECTRS_MIN_BATCHING_VERSION = new Version("3.1.0");
 
+    private static final Version RBITCOIN_MIN_BATCHING_VERSION = new Version("0.9.0");
+
     public static final String CORE_ELECTRUM_HOST = "127.0.0.1";
 
     private static final int MINIMUM_BROADCASTS = 2;
@@ -3064,6 +3066,22 @@ public class ElectrumServer {
                 try {
                     Version version = new Version(fulcrumVersion);
                     if(version.compareTo(FULCRUM_MIN_BATCHING_VERSION) >= 0) {
+                        return new ServerCapability(true, true, true);
+                    }
+                } catch(Exception e) {
+                    //ignore
+                }
+            }
+
+            if(server.startsWith("rbitcoin")) {
+                String rbitcoinVersion = server.substring(server.indexOf(' ') + 1).trim();
+                int dashIndex = rbitcoinVersion.indexOf('-');
+                if(dashIndex > -1) {
+                    rbitcoinVersion = rbitcoinVersion.substring(0, dashIndex);
+                }
+                try {
+                    Version version = new Version(rbitcoinVersion);
+                    if(version.compareTo(RBITCOIN_MIN_BATCHING_VERSION) >= 0) {
                         return new ServerCapability(true, true, true);
                     }
                 } catch(Exception e) {
