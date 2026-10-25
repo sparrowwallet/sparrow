@@ -701,9 +701,15 @@ public class SettingsController extends WalletFormController implements Initiali
                         masterWallet.decrypt(key);
 
                         if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() != KeystoreSource.SW_SEED)) {
-                            for(StandardAccount standardAccount : standardAccounts) {
-                                Wallet childWallet = masterWallet.addChildWallet(standardAccount);
-                                EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                            try {
+                                for(StandardAccount standardAccount : standardAccounts) {
+                                    Wallet childWallet = masterWallet.addChildWallet(standardAccount);
+                                    childWallet.encrypt(key);
+                                    EventManager.get().post(new ChildWalletsAddedEvent(getWalletForm().getStorage(), masterWallet, childWallet));
+                                }
+                            } finally {
+                                masterWallet.encrypt(key);
+                                key.clear();
                             }
                         } else if(discoverAccounts) {
                             ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
