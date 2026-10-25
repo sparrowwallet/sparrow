@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.sparrowwallet.drongo.protocol.Script;
+import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionInput;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
@@ -153,6 +154,7 @@ public class Payjoin {
         }
 
         Set<Long> sequences = new HashSet<>();
+        List<PSBTInput> receiverInputs = new ArrayList<>();
         // For each inputs in the proposal:
         for(PSBTInput proposedPSBTInput : proposal.getPsbtInputs()) {
             if(!proposedPSBTInput.getDerivedPublicKeys().isEmpty() || !proposedPSBTInput.getTapDerivedPublicKeys().isEmpty() || proposedPSBTInput.getTapInternalKey() != null) {
@@ -204,12 +206,27 @@ public class Payjoin {
                 if(wallet.getScriptType() != proposedPSBTInput.getScriptType()) {
                     throw new PayjoinReceiverException("Proposal script type of " + proposedPSBTInput.getScriptType() + " did not match wallet script type of " + wallet.getScriptType());
                 }
+                // Verify that non_witness_utxo is filled in for non segwit inputs.
+                if(Arrays.asList(ScriptType.NON_WITNESS_TYPES).contains(proposedPSBTInput.getScriptType()) && proposedPSBTInput.getNonWitnessUtxo() == null) {
+                    throw new PayjoinReceiverException("The receiver did not specify non_witness_utxo for one of their non segwit inputs");
+                }
+                receiverInputs.add(proposedPSBTInput);
             }
         }
 
         // Verify that all of sender's inputs from the original PSBT are in the proposal.
         if(!originalInputs.isEmpty()) {
             throw new PayjoinReceiverException("Some of the original inputs are not included in the proposal");
+        }
+
+        // Verify the receiver's finalized signatures against the utxos it provided, once the utxos of the original inputs have been filled up.
+        for(PSBTInput receiverInput : receiverInputs) {
+            try {
+                receiverInput.verifyFinalizedSignatures();
+            } catch(PSBTSignatureException e) {
+                log.warn("Payjoin receiver input failed verification: " + e.getMessage());
+                throw new PayjoinReceiverException("The receiver did not provide valid signatures for one of their inputs");
+            }
         }
 
         // Verify that the payjoin proposal did not introduced mixed inputs' sequence.

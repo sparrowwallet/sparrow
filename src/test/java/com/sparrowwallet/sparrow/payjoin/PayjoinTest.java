@@ -1,11 +1,13 @@
 package com.sparrowwallet.sparrow.payjoin;
 
 import com.sparrowwallet.drongo.crypto.ECKey;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.protocol.TransactionOutput;
+import com.sparrowwallet.drongo.protocol.TransactionSignature;
 import com.sparrowwallet.drongo.protocol.TransactionWitness;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.psbt.PSBTInput;
@@ -115,15 +117,79 @@ public class PayjoinTest {
         Assertions.assertEquals("Original PSBT for payjoin transaction cannot contain silent payment outputs", e.getMessage());
     }
 
+    @Test
+    public void receiverInputWithValidSignatureIsAccepted() throws Exception {
+        PSBT original = getOriginalPSBT();
+        Payjoin payjoin = getPayjoin(original);
+        PSBT proposal = getProposalPSBT(getPaymentScript(), PAYMENT_VALUE + RECEIVER_UTXO_VALUE, CHANGE_VALUE);
+
+        payjoin.checkProposal(original, proposal, CHANGE_OUTPUT_INDEX, MAX_ADDITIONAL_FEE_CONTRIBUTION, MIN_FEE_RATE, true);
+        Assertions.assertEquals(SENDER_UTXO_VALUE + RECEIVER_UTXO_VALUE - PAYMENT_VALUE - RECEIVER_UTXO_VALUE - CHANGE_VALUE, proposal.getFee());
+    }
+
+    @Test
+    public void receiverInputSignedForDifferentAmountIsRejected() throws Exception {
+        PSBT original = getOriginalPSBT();
+        Payjoin payjoin = getPayjoin(original);
+        long difference = 5000L;
+        PSBT proposal = getProposalPSBT(ScriptType.P2WPKH, getPaymentScript(), PAYMENT_VALUE + RECEIVER_UTXO_VALUE + difference, CHANGE_VALUE, 0, RECEIVER_UTXO_VALUE + difference);
+
+        PayjoinReceiverException e = Assertions.assertThrows(PayjoinReceiverException.class,
+                () -> payjoin.checkProposal(original, proposal, CHANGE_OUTPUT_INDEX, MAX_ADDITIONAL_FEE_CONTRIBUTION, MIN_FEE_RATE, true));
+        Assertions.assertEquals("The receiver did not provide valid signatures for one of their inputs", e.getMessage());
+    }
+
+    @Test
+    public void nonSegwitReceiverInputWithoutNonWitnessUtxoIsRejected() throws Exception {
+        PSBT original = getOriginalPSBT(ScriptType.P2PKH);
+        Payjoin payjoin = getPayjoin(original, ScriptType.P2PKH);
+        PSBT proposal = getProposalPSBT(ScriptType.P2PKH, getPaymentScript(), PAYMENT_VALUE + RECEIVER_UTXO_VALUE, CHANGE_VALUE, 0, RECEIVER_UTXO_VALUE);
+
+        PayjoinReceiverException e = Assertions.assertThrows(PayjoinReceiverException.class,
+                () -> payjoin.checkProposal(original, proposal, CHANGE_OUTPUT_INDEX, MAX_ADDITIONAL_FEE_CONTRIBUTION, MIN_FEE_RATE, true));
+        Assertions.assertEquals("The receiver did not specify non_witness_utxo for one of their non segwit inputs", e.getMessage());
+    }
+
+    @Test
+    public void taprootReceiverInputIsVerifiedWithOriginalUtxosFilledUp() throws Exception {
+        PSBT original = getOriginalPSBT(ScriptType.P2TR);
+        Payjoin payjoin = getPayjoin(original, ScriptType.P2TR);
+
+        //The receiver input comes first and the proposal omits the utxo of the original input, which the taproot sighash of the receiver input commits to
+        Transaction transaction = new Transaction();
+        transaction.setVersion(2);
+        transaction.addInput(RECEIVER_UTXO_HASH, 0, new Script(new byte[0]));
+        transaction.addInput(SENDER_UTXO_HASH, 0, new Script(new byte[0]));
+        transaction.addOutput(PAYMENT_VALUE + RECEIVER_UTXO_VALUE, getPaymentScript());
+        transaction.addOutput(CHANGE_VALUE, getChangeScript());
+
+        PSBT proposal = new PSBT(transaction);
+        proposal.convertVersion(0);
+        PSBTInput senderInput = proposal.getPsbtInputs().get(1);
+        senderInput.setWitnessUtxo(original.getPsbtInputs().get(0).getWitnessUtxo());
+        finalise(proposal.getPsbtInputs().get(0), proposal.getTransaction(), ScriptType.P2TR, RECEIVER_KEY, RECEIVER_UTXO_VALUE, RECEIVER_UTXO_VALUE, 0);
+        senderInput.setWitnessUtxo(null);
+
+        payjoin.checkProposal(original, proposal, CHANGE_OUTPUT_INDEX, MAX_ADDITIONAL_FEE_CONTRIBUTION, MIN_FEE_RATE, true);
+    }
+
     private Payjoin getPayjoin(PSBT original) throws Exception {
+        return getPayjoin(original, ScriptType.P2WPKH);
+    }
+
+    private Payjoin getPayjoin(PSBT original, ScriptType scriptType) throws Exception {
         Wallet wallet = new Wallet();
-        wallet.setScriptType(ScriptType.P2WPKH);
+        wallet.setScriptType(scriptType);
         BitcoinURI payjoinURI = new BitcoinURI("bitcoin:" + ScriptType.P2WPKH.getAddress(PAYMENT_KEY.getPubKeyHash()) + "?pj=https://payjoin.example.com/pj");
 
         return new Payjoin(payjoinURI, wallet, original);
     }
 
     private PSBT getOriginalPSBT() {
+        return getOriginalPSBT(ScriptType.P2WPKH);
+    }
+
+    private PSBT getOriginalPSBT(ScriptType scriptType) {
         Transaction transaction = new Transaction();
         transaction.setVersion(2);
         transaction.addInput(SENDER_UTXO_HASH, 0, new Script(new byte[0]));
@@ -132,16 +198,20 @@ public class PayjoinTest {
 
         PSBT psbt = new PSBT(transaction);
         psbt.convertVersion(0);
-        finalise(psbt.getPsbtInputs().get(0), psbt.getTransaction(), SENDER_UTXO_VALUE, getSenderScript(), SENDER_KEY);
+        finalise(psbt.getPsbtInputs().get(0), psbt.getTransaction(), scriptType, SENDER_KEY, SENDER_UTXO_VALUE, SENDER_UTXO_VALUE, 0);
 
         return psbt;
     }
 
     private PSBT getProposalPSBT(Script paymentScript, long paymentValue, long changeValue) {
-        return getProposalPSBT(paymentScript, paymentValue, changeValue, 71);
+        return getProposalPSBT(paymentScript, paymentValue, changeValue, 0);
     }
 
-    private PSBT getProposalPSBT(Script paymentScript, long paymentValue, long changeValue, int receiverSignatureLength) {
+    private PSBT getProposalPSBT(Script paymentScript, long paymentValue, long changeValue, int receiverWitnessPadding) {
+        return getProposalPSBT(ScriptType.P2WPKH, paymentScript, paymentValue, changeValue, receiverWitnessPadding, RECEIVER_UTXO_VALUE);
+    }
+
+    private PSBT getProposalPSBT(ScriptType scriptType, Script paymentScript, long paymentValue, long changeValue, int receiverWitnessPadding, long receiverUtxoValue) {
         Transaction transaction = new Transaction();
         transaction.setVersion(2);
         transaction.addInput(SENDER_UTXO_HASH, 0, new Script(new byte[0]));
@@ -151,23 +221,31 @@ public class PayjoinTest {
 
         PSBT psbt = new PSBT(transaction);
         psbt.convertVersion(0);
-        finalise(psbt.getPsbtInputs().get(1), psbt.getTransaction(), RECEIVER_UTXO_VALUE, getReceiverScript(), RECEIVER_KEY, receiverSignatureLength);
+        finalise(psbt.getPsbtInputs().get(1), psbt.getTransaction(), scriptType, RECEIVER_KEY, RECEIVER_UTXO_VALUE, receiverUtxoValue, receiverWitnessPadding);
 
         return psbt;
     }
 
-    private void finalise(PSBTInput psbtInput, Transaction transaction, long value, Script script, ECKey key) {
-        finalise(psbtInput, transaction, value, script, key, 71);
-    }
+    private void finalise(PSBTInput psbtInput, Transaction transaction, ScriptType scriptType, ECKey key, long signedValue, long utxoValue, int witnessPadding) {
+        ECKey signingKey = scriptType == ScriptType.P2TR ? key.getTweakedOutputKey() : key;
+        Script script = scriptType == ScriptType.P2TR ? ScriptType.P2TR.getOutputScript(signingKey.getPubKeyXCoord()) : scriptType.getOutputScript(key.getPubKeyHash());
+        psbtInput.setWitnessUtxo(new TransactionOutput(null, signedValue, script));
+        psbtInput.sign(signingKey);
+        TransactionSignature signature = scriptType == ScriptType.P2TR ? psbtInput.getTapKeyPathSignature() : psbtInput.getPartialSignatures().values().iterator().next();
+        psbtInput.setTapKeyPathSignature(null);
+        psbtInput.getPartialSignatures().clear();
 
-    private void finalise(PSBTInput psbtInput, Transaction transaction, long value, Script script, ECKey key, int signatureLength) {
-        psbtInput.setWitnessUtxo(new TransactionOutput(null, value, script));
-        psbtInput.setFinalScriptSig(new Script(new byte[0]));
-        psbtInput.setFinalScriptWitness(new TransactionWitness(transaction, List.of(new byte[signatureLength], key.getPubKey())));
-    }
+        if(scriptType == ScriptType.P2PKH) {
+            psbtInput.setFinalScriptSig(ScriptType.P2PKH.getScriptSig(PolicyType.SINGLE_HD, script, key, signature));
+        } else if(scriptType == ScriptType.P2TR) {
+            psbtInput.setFinalScriptWitness(new TransactionWitness(transaction, List.of(signature.encodeToBitcoin())));
+        } else {
+            List<byte[]> pushes = witnessPadding > 0 ? List.of(signature.encodeToBitcoin(), key.getPubKey(), new byte[witnessPadding]) : List.of(signature.encodeToBitcoin(), key.getPubKey());
+            psbtInput.setFinalScriptSig(new Script(new byte[0]));
+            psbtInput.setFinalScriptWitness(new TransactionWitness(transaction, pushes));
+        }
 
-    private Script getSenderScript() {
-        return ScriptType.P2WPKH.getOutputScript(SENDER_KEY.getPubKeyHash());
+        psbtInput.setWitnessUtxo(new TransactionOutput(null, utxoValue, script));
     }
 
     private Script getChangeScript() {
@@ -180,9 +258,5 @@ public class PayjoinTest {
 
     private Script getSubstituteScript() {
         return ScriptType.P2WPKH.getOutputScript(SUBSTITUTE_KEY.getPubKeyHash());
-    }
-
-    private Script getReceiverScript() {
-        return ScriptType.P2WPKH.getOutputScript(RECEIVER_KEY.getPubKeyHash());
     }
 }
