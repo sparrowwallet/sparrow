@@ -1589,6 +1589,16 @@ public class AppServices {
                 + " A server contradicting itself in this way may be faulty or overloaded, and what it reported cannot be taken as confirmed.");
     }
 
+    @Subscribe
+    public void unsignedTransactions(UnsignedTransactionsEvent event) {
+        String firstId = event.getTxids().iterator().next().toString().substring(0, 8) + "..";
+        String content = (event.getTxids().size() == 1 ? "Transaction " + firstId + " was" : event.getTxids().size() + " transactions, the first being " + firstId + ", were")
+                + " reported by the connected server as spending from " + event.getWallet().getFullName() + " but " + (event.getTxids().size() == 1 ? "is" : "are")
+                + " not validly signed, and " + (event.getTxids().size() == 1 ? "has" : "have") + " not been added to the wallet."
+                + " This means the server is either faulty or dishonest.\n\nConsider switching servers.";
+        Platform.runLater(() -> showErrorDialog("Invalid Transaction", content));
+    }
+
     private void showProofsDialog(TransactionProofsEvent event, String title, String content) {
         Platform.runLater(() -> {
             if(event.getWallet() == null) {
