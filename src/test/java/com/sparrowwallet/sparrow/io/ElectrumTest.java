@@ -71,6 +71,13 @@ public class ElectrumTest extends IoTest {
     }
 
     @Test
+    public void testMultisigImportExtraCosigner() {
+        Network.set(Network.TESTNET);
+        Electrum electrum = new Electrum();
+        Assertions.assertThrows(ImportException.class, () -> electrum.importWallet(getInputStream("electrum-multisig-wallet-extrakey.json"), null));
+    }
+
+    @Test
     public void testMultisigExport() throws ImportException, ExportException, IOException {
         Network.set(Network.TESTNET);
         Electrum electrum = new Electrum();

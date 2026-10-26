@@ -208,7 +208,14 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
             } else if(ew.wallet_type.contains("of")) {
                 wallet.setPolicyType(PolicyType.MULTI_HD);
                 String[] mOfn = ew.wallet_type.split("of");
+                if(mOfn.length != 2) {
+                    throw new ImportException("Could not determine the multisig policy from wallet type " + ew.wallet_type);
+                }
                 int threshold = Integer.parseInt(mOfn[0]);
+                int cosigners = Integer.parseInt(mOfn[1]);
+                if(cosigners != wallet.getKeystores().size()) {
+                    throw new ImportException("This wallet specifies a policy of " + threshold + " of " + cosigners + ", but contains " + wallet.getKeystores().size() + " cosigner key" + (wallet.getKeystores().size() == 1 ? "" : "s"));
+                }
                 wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.MULTI_HD, scriptType, wallet.getKeystores(), threshold));
             } else {
                 throw new ImportException("Unknown Electrum wallet type of " + ew.wallet_type);
