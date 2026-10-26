@@ -28,6 +28,8 @@ public class WalletTransactionsEntry extends Entry {
 
     public WalletTransactionsEntry(Wallet wallet, boolean includeAllChildWallets) {
         super(wallet, wallet.getDisplayName(), getWalletTransactions(wallet, includeAllChildWallets).stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toList()));
+        Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWalletTxos(wallet, includeAllChildWallets);
+        getChildren().removeIf(entry -> !((TransactionEntry)entry).isComplete(walletTxos));
         calculateBalances(false); //No need to resort
     }
 
@@ -73,10 +75,7 @@ public class WalletTransactionsEntry extends Entry {
     }
 
     public void updateTransactions() {
-        Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWallet().getWalletTxos().entrySet().stream()
-                .collect(Collectors.toUnmodifiableMap(entry -> new HashIndex(entry.getKey().getHash(), entry.getKey().getIndex()), Map.Entry::getKey,
-                        BinaryOperator.maxBy(BlockTransactionHashIndex::compareTo)));
-
+        Map<HashIndex, BlockTransactionHashIndex> walletTxos = getWalletTxos(getWallet(), false);
         Collection<WalletTransactionsEntry.WalletTransaction> entries = getWalletTransactions(getWallet(), false);
         Set<Entry> current = entries.stream().map(WalletTransaction::getTransactionEntry).collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Entry> previous = new LinkedHashSet<>(getChildren());
@@ -117,6 +116,16 @@ public class WalletTransactionsEntry extends Entry {
 
     public void unregisterForConfirmations() {
         getChildren().forEach(entry -> ((TransactionEntry)entry).unregisterForConfirmations());
+    }
+
+    private static Map<HashIndex, BlockTransactionHashIndex> getWalletTxos(Wallet wallet, boolean includeAllChildWallets) {
+        List<Wallet> wallets = new ArrayList<>(List.of(wallet));
+        if(includeAllChildWallets) {
+            wallets.addAll(wallet.getChildWallets());
+        }
+
+        return wallets.stream().flatMap(txoWallet -> txoWallet.getWalletTxos().keySet().stream())
+                .collect(Collectors.toUnmodifiableMap(txo -> new HashIndex(txo.getHash(), txo.getIndex()), txo -> txo, BinaryOperator.maxBy(BlockTransactionHashIndex::compareTo)));
     }
 
     private static Collection<WalletTransaction> getWalletTransactions(Wallet wallet, boolean includeAllChildWallets) {

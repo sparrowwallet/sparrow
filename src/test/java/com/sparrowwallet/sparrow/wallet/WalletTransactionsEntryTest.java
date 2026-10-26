@@ -185,6 +185,41 @@ public class WalletTransactionsEntryTest {
         }
     }
 
+    /**
+     * A model built from a wallet whose history already holds an incomplete transfer, as when the transactions tab is first opened, leaves it out the same way.
+     */
+    @Test
+    public void incompleteEntryIsLeftOutOfANewModel() {
+        Wallet wallet = testWallet();
+        BlockTransaction funding = receive(wallet, 0, 100000L);
+        BlockTransaction transfer = transfer(wallet, funding, 1, 90000L);
+        WalletTransactionsEntry walletTransactionsEntry = new WalletTransactionsEntry(wallet);
+
+        NotificationListener listener = new NotificationListener();
+        EventManager.get().register(listener);
+        try {
+            assertEquals(1, walletTransactionsEntry.getChildren().size());
+            assertEquals(100000L, walletTransactionsEntry.getBalance());
+
+            //Once the funding node records the spend, a refresh adds the entry at what it moved, and a new model includes it
+            BlockTransactionHashIndex fundingOutput = receiveNode(wallet, 0).getTransactionOutputs().iterator().next();
+            fundingOutput.setSpentBy(new BlockTransactionHashIndex(transfer.getHash(), HEIGHT, transfer.getDate(), null, 0, 100000L));
+            walletTransactionsEntry.updateTransactions();
+
+            assertEquals(2, walletTransactionsEntry.getChildren().size());
+            assertEquals(90000L, walletTransactionsEntry.getBalance());
+            assertEquals(1, listener.events.size());
+            assertEquals(List.of(transfer), listener.events.getFirst().getBlockTransactions());
+
+            WalletTransactionsEntry rebuilt = new WalletTransactionsEntry(wallet);
+            assertEquals(2, rebuilt.getChildren().size());
+            assertEquals(90000L, rebuilt.getBalance());
+        } finally {
+            EventManager.get().unregister(listener);
+            walletTransactionsEntry.unregisterForConfirmations();
+        }
+    }
+
     private static BlockTransaction transfer(Wallet wallet, BlockTransaction funding, int index, long value) {
         WalletNode node = receiveNode(wallet, index);
         Transaction transaction = new Transaction();
