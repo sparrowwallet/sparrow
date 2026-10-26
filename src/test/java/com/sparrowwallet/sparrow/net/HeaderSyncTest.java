@@ -40,6 +40,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -466,6 +467,27 @@ public class HeaderSyncTest {
         assertEquals(branch.getLast().getHash(), verified.getHash());
         assertEquals(branch.getLast().getHash(), store.getTipHash());
         assertEquals(9, listener.getForkHeight());
+    }
+
+    /**
+     * A history thread can sync the store onto a new branch before the announcement of that branch arrives, leaving the announced tip naming a block
+     * the store has replaced. The server's chain to that height is the store's, so the stored header is served rather than refused.
+     */
+    @Test
+    public void servesAStoredHeaderWhenTheAnnouncedTipIsAReplacedBlock() throws Exception {
+        List<BlockHeader> chain = mineChain(Network.REGTEST.getGenesisHeader(), 10, CHAIN_TIME);
+        List<BlockHeader> replaced = fork(chain, 8, 1);
+        HeaderStore store = seedStore(chain, 10);
+        serve(chain);
+        AppServices.setAnnouncedTip(new ChainTip(9, replaced.getLast()));
+
+        BlockHeader verified = new ElectrumServer().getVerifiedHeader(10);
+
+        assertNotNull(verified);
+        assertEquals(chain.getLast().getHash(), verified.getHash());
+        assertEquals(chain.getLast().getHash(), store.getTipHash());
+        assertEquals(Integer.MAX_VALUE, ElectrumServer.lastReorgForkHeight);
+        assertNull(listener.getForkHeight());
     }
 
     @Test

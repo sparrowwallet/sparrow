@@ -1829,6 +1829,12 @@ public class ElectrumServer {
             throw new VerificationException("Server returned a malformed header chunk when reconciling to height " + endHeight, e);
         }
 
+        //The server's chain to this height is the one the store holds, as when an announcement the store has already synced past names a block it
+        //replaced. Each header commits to the one below it, so a matching top header means there is nothing to reorganise
+        if(candidate.getLast().getHash().equals(store.getHash(endHeight))) {
+            return;
+        }
+
         //Walk back from the announced tip, checking each header against the one below it, until one descends from a header the store already holds
         int forkHeight = -1;
         for(int i = count - 1; i >= 0; i--) {
