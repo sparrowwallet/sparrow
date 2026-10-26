@@ -512,10 +512,17 @@ public class ElectrumServer {
 
                     //Taken before the fetch, so an invalidation arriving while this pass runs can be told from one the pass is acting on
                     Set<String> invalidatedBeforeFetch = Set.copyOf(reorgInvalidatedScriptHashes);
+                    int reorgsBeforeFetch = reorgCount;
                     Map<String, String> previousScriptHashes = getCalculatedScriptHashes(wallet);
                     Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = (nodes == null ? getHistory(wallet) : getHistory(wallet, nodes));
                     getReferencedTransactions(wallet, nodeTransactionMap);
                     calculateNodeHistory(wallet, nodeTransactionMap);
+
+                    //A reorg reconciled while this pass was in flight was invalidated against the outputs the wallet held at the time, which do not include
+                    //a payment this pass has just found above the fork. The wallet may have had nothing above it then, and so not have refreshed at all
+                    if(reorgCount != reorgsBeforeFetch && invalidateWalletScriptHashesForReorg(wallet, lastReorgForkHeight)) {
+                        EventManager.get().post(new RequestWalletRefreshEvent(wallet));
+                    }
 
                     //A node invalidated by a reorg has no retrieved status left to compare against, so it must not count as changed history below
                     Set<String> invalidatedScriptHashes = Set.copyOf(reorgInvalidatedScriptHashes);
@@ -561,11 +568,13 @@ public class ElectrumServer {
                         reorgInvalidatedScriptHashes.removeAll(invalidatedBeforeFetch.stream().filter(walletScriptHashes::contains).collect(Collectors.toSet()));
                     }
 
-                    //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool
+                    //Clear transaction outputs for nodes that have no history - this is useful when a transaction is replaced in the mempool. A node a reorg
+                    //invalidated during this pass has no status because it was invalidated, not because it has no history, and is left for the refresh
                     if(nodes != null) {
                         for(WalletNode node : nodes) {
                             String scriptHash = getScriptHash(node);
-                            if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()) {
+                            if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()
+                                    && (invalidatedBeforeFetch.contains(scriptHash) || !invalidatedScriptHashes.contains(scriptHash))) {
                                 log.debug("Clearing transaction history for " + node);
                                 node.getTransactionOutputs().clear();
                             }
