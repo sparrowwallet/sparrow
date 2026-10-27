@@ -1,13 +1,19 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.NamedArg;
+import javafx.collections.FXCollections;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.chart.Axis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
@@ -16,6 +22,16 @@ public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
 
     public BlockTargetFeeRatesChart(@NamedArg("xAxis") Axis<String> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
+        setAccessibleRole(AccessibleRole.TEXT);
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.CHILDREN) {
+            return FXCollections.emptyObservableList();
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     public void initialize() {
@@ -35,9 +51,24 @@ public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
             }
         }
 
+        setAccessibleText(getSummary());
+
         if(selectedTargetBlocks != null) {
             select(selectedTargetBlocks);
         }
+    }
+
+    private String getSummary() {
+        List<XYChart.Data<String, Number>> data = feeRateSeries.getData();
+        if(data.isEmpty()) {
+            return "Fee rates by target blocks, no fee rates";
+        }
+
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        XYChart.Data<String, Number> first = data.getFirst();
+        XYChart.Data<String, Number> last = data.getLast();
+        return "Fee rates by target blocks, from " + format.getCurrencyFormat().format(first.getYValue()) + " sats/vB for " + first.getXValue() + " block"
+                + (first.getXValue().equals("1") ? "" : "s") + " to " + format.getCurrencyFormat().format(last.getYValue()) + " sats/vB for " + last.getXValue() + " blocks";
     }
 
     public void select(Integer targetBlocks) {

@@ -11,6 +11,8 @@ import javafx.event.EventHandler;
 import javafx.geometry.Insets;
 import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -129,7 +131,17 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         setOnMouseClicked(expandedChartHandler);
     }
 
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.CHILDREN) {
+            return FXCollections.emptyObservableList();
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
+    }
+
     public void initialize() {
+        setAccessibleRole(AccessibleRole.TEXT);
         getStyleClass().add("vsizeChart");
         setCreateSymbols(false);
         setCursor(Cursor.CROSSHAIR);
@@ -152,6 +164,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
 
         Map<Date, Set<MempoolRateSize>> periodRateSizes = getPeriodRateSizes(mempoolRateSizes);
         Map<Date, String> categories = getCategories(periodRateSizes);
+        setAccessibleText(getSummary(periodRateSizes));
 
         CategoryAxis categoryAxis = (CategoryAxis)getXAxis();
         categoryAxis.setTickMarkVisible(false);
@@ -241,6 +254,18 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         if(expandedChart != null) {
             expandedChart.update(mempoolRateSizes);
         }
+    }
+
+    private String getSummary(Map<Date, Set<MempoolRateSize>> periodRateSizes) {
+        String summary = "Mempool size by fee rate over the last " + maxPeriodHours + " hours";
+        Optional<Set<MempoolRateSize>> latest = periodRateSizes.values().stream().reduce((first, second) -> second);
+        if(latest.isPresent()) {
+            long vSize = latest.get().stream().mapToLong(MempoolRateSize::getVSize).sum();
+            summary += vSize >= 1_000_000 ? String.format(Locale.ENGLISH, ", currently %.1f MvB", vSize / 1_000_000d)
+                    : String.format(Locale.ENGLISH, ", currently %,d kvB", vSize / 1000);
+        }
+
+        return summary;
     }
 
     private Map<Date, Set<MempoolRateSize>> getPeriodRateSizes(Map<Date, Set<MempoolRateSize>> mempoolRateSizes) {

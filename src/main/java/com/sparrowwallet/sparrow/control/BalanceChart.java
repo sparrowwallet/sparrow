@@ -9,18 +9,25 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
 import javafx.beans.NamedArg;
+import javafx.collections.FXCollections;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.chart.*;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BalanceChart extends LineChart<Number, Number> {
     private static final int MAX_VALUES = 500;
+    private static final DateFormat SUMMARY_DATE_FORMAT = new SimpleDateFormat("MMM yyyy");
 
     private XYChart.Series<Number, Number> balanceSeries;
 
@@ -28,6 +35,16 @@ public class BalanceChart extends LineChart<Number, Number> {
 
     public BalanceChart(@NamedArg("xAxis") Axis<Number> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
+        setAccessibleRole(AccessibleRole.TEXT);
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.CHILDREN) {
+            return FXCollections.emptyObservableList();
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     public void initialize(WalletTransactionsEntry walletTransactionsEntry) {
@@ -73,6 +90,7 @@ public class BalanceChart extends LineChart<Number, Number> {
         }
 
         balanceSeries.getData().addAll(balanceDataList);
+        setAccessibleText(getSummary(walletTransactionsEntry));
 
         if(selectedEntry != null) {
             select(selectedEntry);
@@ -95,6 +113,18 @@ public class BalanceChart extends LineChart<Number, Number> {
         }
 
         return reducedEntries.stream();
+    }
+
+    private String getSummary(WalletTransactionsEntry walletTransactionsEntry) {
+        List<Date> dates = walletTransactionsEntry.getChildren().stream().map(entry -> (TransactionEntry)entry)
+                .filter(txEntry -> txEntry.getBlockTransaction().getHeight() > 0).map(txEntry -> txEntry.getBlockTransaction().getDate())
+                .filter(Objects::nonNull).sorted().toList();
+        if(dates.isEmpty()) {
+            return "Balance history chart, no confirmed transactions";
+        }
+
+        return "Balance history chart of " + dates.size() + " confirmed transaction" + (dates.size() == 1 ? "" : "s") + " from "
+                + SUMMARY_DATE_FORMAT.format(dates.getFirst()) + " to " + SUMMARY_DATE_FORMAT.format(dates.getLast());
     }
 
     public void select(TransactionEntry transactionEntry) {
