@@ -313,7 +313,9 @@ public class HeadersController extends TransactionFormController implements Init
         updateType();
 
         locktimeToggleGroup.selectedToggleProperty().addListener((ov, old_toggle, new_toggle) -> {
-            if(locktimeToggleGroup.getSelectedToggle() != null) {
+            if(new_toggle == null) {
+                old_toggle.setSelected(true);
+            } else {
                 String selection = locktimeToggleGroup.getSelectedToggle().getUserData().toString();
                 if(selection.equals("none")) {
                     locktimeFieldset.getChildren().remove(locktimeDateField);

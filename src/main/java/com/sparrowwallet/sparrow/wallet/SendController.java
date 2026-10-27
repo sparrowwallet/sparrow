@@ -355,11 +355,13 @@ public class SendController extends WalletFormController implements Initializabl
         feeSelectionToggleGroup.selectToggle(feeRatesSelection == FeeRatesSelection.BLOCK_TARGET ? targetBlocksToggle :
                 (feeRatesSelection == FeeRatesSelection.MEMPOOL_SIZE ? mempoolSizeToggle : recentBlocksToggle));
         feeSelectionToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue != null) {
+            if(newValue == null) {
+                oldValue.setSelected(true);
+            } else {
                 FeeRatesSelection newFeeRatesSelection = (FeeRatesSelection)newValue.getUserData();
                 Config.get().setFeeRatesSelection(newFeeRatesSelection);
                 EventManager.get().post(new FeeRatesSelectionChangedEvent(getWalletForm().getWallet(), newFeeRatesSelection));
-            };
+            }
         });
 
         BitcoinUnit unit = getBitcoinUnit(Config.get().getBitcoinUnit());
@@ -444,6 +446,11 @@ public class SendController extends WalletFormController implements Initializabl
         privacyToggle.setOnAction(event -> {
             Config.get().setSendOptimizationStrategy(OptimizationStrategy.PRIVACY);
             updateTransaction();
+        });
+        optimizationToggleGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
+            if(newValue == null) {
+                oldValue.setSelected(true);
+            }
         });
         setPreferredOptimizationStrategy();
         updatePrivacyAnalysis(null);

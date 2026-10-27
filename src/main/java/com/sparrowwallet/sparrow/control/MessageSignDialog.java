@@ -268,8 +268,10 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
                 }
             });
 
-            formatGroup.selectedToggleProperty().addListener((_, _, newVal) -> {
-                if(wallet != null) {
+            formatGroup.selectedToggleProperty().addListener((_, oldVal, newVal) -> {
+                if(newVal == null) {
+                    oldVal.setSelected(true);
+                } else if(wallet != null) {
                     boolean canSignSelectedFormat = canSignAllFormats(wallet) || newVal == formatElectrum;
                     signButton.setDisable(!isValidAddress() || !canSign || !canSignSelectedFormat);
                 }

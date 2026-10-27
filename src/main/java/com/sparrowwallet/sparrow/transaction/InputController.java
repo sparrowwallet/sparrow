@@ -388,7 +388,9 @@ public class InputController extends TransactionFormController implements Initia
     private void initializeLocktimeFields(TransactionInput txInput) {
         Transaction transaction = inputForm.getTransaction();
         locktimeToggleGroup.selectedToggleProperty().addListener((ov, old_toggle, new_toggle) -> {
-            if(locktimeToggleGroup.getSelectedToggle() != null) {
+            if(new_toggle == null) {
+                old_toggle.setSelected(true);
+            } else {
                 String selection = locktimeToggleGroup.getSelectedToggle().getUserData().toString();
                 if(selection.equals("none")) {
                     locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);

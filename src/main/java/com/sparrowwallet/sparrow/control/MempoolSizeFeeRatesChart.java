@@ -90,8 +90,12 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 periodButtons.setToggleGroup(periodGroup);
                 periodButtons.getButtons().forEach(button -> button.setAccessibleRole(AccessibleRole.RADIO_BUTTON));
                 periodGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
-                    expandedChart.maxPeriodHours = (newValue == period2 ? 2 : 24);
-                    expandedChart.update(AppServices.getMempoolHistogram());
+                    if(newValue == null) {
+                        oldValue.setSelected(true);
+                    } else {
+                        expandedChart.maxPeriodHours = (newValue == period2 ? 2 : 24);
+                        expandedChart.update(AppServices.getMempoolHistogram());
+                    }
                 });
 
                 Optional<Date> optEarliest = AppServices.getMempoolHistogram().keySet().stream().findFirst();
