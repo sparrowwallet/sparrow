@@ -41,6 +41,7 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -1000,6 +1001,10 @@ public class AppServices {
             }
             if(Config.get().isChunkAddresses()) {
                 stage.getScene().getRoot().getStyleClass().add("chunk-addresses");
+            }
+            //macOS has no accessibility role for DIALOG and exposes it as an unknown element around the whole dialog
+            if(OsType.getCurrent() == OsType.MACOS && stage.getScene().getRoot().getAccessibleRole() == AccessibleRole.DIALOG) {
+                stage.getScene().getRoot().setAccessibleRole(AccessibleRole.PARENT);
             }
         }
     }

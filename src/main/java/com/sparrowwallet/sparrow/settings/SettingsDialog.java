@@ -25,6 +25,7 @@ public class SettingsDialog extends Dialog<Boolean> {
     public SettingsDialog(SettingsGroup initialGroup, boolean initialSetup) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Settings");
 
         try {
             FXMLLoader settingsLoader = new FXMLLoader(AppServices.class.getResource("settings/settings.fxml"));
