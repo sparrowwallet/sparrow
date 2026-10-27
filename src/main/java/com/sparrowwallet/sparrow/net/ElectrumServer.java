@@ -1332,7 +1332,7 @@ public class ElectrumServer {
      * longer holds, which is the form a reorg takes when a transaction is re-included at the same height. Above the last fork point this session only,
      * so an ordinary pass reads neither the store nor the disk.
      */
-    private boolean isProvenAgainstOrphanedHeader(BlockTransaction existing) throws ServerException {
+    private static boolean isProvenAgainstOrphanedHeader(BlockTransaction existing) throws ServerException {
         if(existing.getBlockHash() == null || existing.getHeight() <= lastReorgForkHeight) {
             return false;       //history from before this feature, or a height no reorg this session has reached
         }
@@ -1492,11 +1492,25 @@ public class ElectrumServer {
     /**
      * The given transaction carrying the block it was proven to be in, where this session has proved its height, and the transaction itself where it
      * has not. The proof outlives the objects a wallet or a fetch hands out, none of which carry what was established after they were built, so what
-     * has been proven is asked here rather than read from whichever of them a form was last handed.
+     * has been proven is asked here rather than read from whichever of them a form was last handed. For the same reason a block one of them carries
+     * that a reorg has since replaced is not taken as proven: the object may have been handed out before the reorg reached the wallet that holds it.
      */
     public static BlockTransaction getProvenTransaction(BlockTransaction blockTransaction) {
-        if(blockTransaction.getHeight() <= 0 || isProven(blockTransaction)) {
+        if(blockTransaction.getHeight() <= 0) {
             return blockTransaction;
+        }
+
+        if(isProven(blockTransaction)) {
+            try {
+                if(!isProvenAgainstOrphanedHeader(blockTransaction)) {
+                    return blockTransaction;
+                }
+            } catch(ServerException e) {
+                log.warn("Could not compare the block of transaction " + blockTransaction.getHashAsString() + " with the header store", e);
+                return blockTransaction;
+            }
+
+            blockTransaction = new BlockTransaction(blockTransaction.getHash(), blockTransaction.getHeight(), null, blockTransaction.getFee(), blockTransaction.getTransaction(), null);
         }
 
         BlockHeader provenHeader = provenTransactionHeaders.get(blockTransaction.getHashAsString() + ":" + blockTransaction.getHeight());

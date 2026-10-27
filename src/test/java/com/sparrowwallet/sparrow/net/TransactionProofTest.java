@@ -328,6 +328,31 @@ public class TransactionProofTest {
     }
 
     /**
+     * A transaction handed out before a reorg reached the wallet holding it still carries the block that was replaced, and is not shown as proven
+     * whichever object a form is redrawn from. Proven again against the block that replaced it, it carries that one. One carrying a block the store
+     * still holds is returned as it is, at a height a reorg this session has reached as well as below it.
+     */
+    @Test
+    public void doesNotCarryABlockAReorgHasReplaced() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        BlockHeader proven = chain.get(PROVEN_HEIGHT - 1);
+        BlockTransaction held = new BlockTransaction(transaction.getTxId(), PROVEN_HEIGHT, proven.getTimeAsDate(), 0L, transaction, proven.getHash());
+        assertSame(held, ElectrumServer.getProvenTransaction(held));
+        ElectrumServer.lastReorgForkHeight = PROVEN_HEIGHT - 1;
+        assertSame(held, ElectrumServer.getProvenTransaction(held));
+
+        List<BlockHeader> replacement = reorganiseStoreAbove(PROVEN_HEIGHT - 1);
+
+        BlockTransaction shown = ElectrumServer.getProvenTransaction(held);
+        assertFalse(ElectrumServer.isProven(shown));
+        assertEquals(PROVEN_HEIGHT, shown.getHeight());
+        assertNull(shown.getDate());
+
+        ElectrumServer.provenTransactionHeaders.put(transaction.getTxId() + ":" + PROVEN_HEIGHT, replacement.getFirst());
+        assertEquals(replacement.getFirst().getHash(), ElectrumServer.getProvenTransaction(held).getBlockHash());
+    }
+
+    /**
      * Only what was proven is remembered. A server that would not prove it is not necessarily the server that will be asked next, and caching the
      * refusal would outlast the connection that earned it. Refused for a whole budget here, since anything less is recovered from within one call.
      */
@@ -1103,13 +1128,7 @@ public class TransactionProofTest {
             @Override
             public void calculateNodeHistory(Wallet calculatingWallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap) {
                 try {
-                    HeaderStore store = ElectrumServer.getHeaderStore();
-                    store.truncate(PROVEN_HEIGHT - 1);
-                    BlockHeader previous = chain.get(PROVEN_HEIGHT - 2);
-                    for(int height = PROVEN_HEIGHT; height < CHAIN_LENGTH; height++) {
-                        previous = mineHeader(previous, Sha256Hash.ZERO_HASH, CHAIN_TIME + 100 + height);
-                        store.append(previous);
-                    }
+                    reorganiseStoreAbove(PROVEN_HEIGHT - 1);
                 } catch(Exception e) {
                     throw new IllegalStateException(e);
                 }
@@ -1279,6 +1298,24 @@ public class TransactionProofTest {
 
         assertEquals(Set.of(demoted), nodeTransactionMap.keySet());
         assertEquals(1, demoted.getTransactionOutputs().size());     //cache state only: the node's own outputs are untouched
+    }
+
+    /**
+     * Replaces the blocks the store holds above the given height with empty ones as far as it reached, returning those that replaced them.
+     */
+    private List<BlockHeader> reorganiseStoreAbove(int forkHeight) throws Exception {
+        HeaderStore store = ElectrumServer.getHeaderStore();
+        int tipHeight = store.getTipHeight();
+        store.truncate(forkHeight);
+        List<BlockHeader> replacement = new ArrayList<>();
+        BlockHeader previous = chain.get(forkHeight - 1);
+        for(int height = forkHeight + 1; height <= tipHeight; height++) {
+            previous = mineHeader(previous, Sha256Hash.ZERO_HASH, CHAIN_TIME + 100 + height);
+            store.append(previous);
+            replacement.add(previous);
+        }
+
+        return replacement;
     }
 
     private static Map<WalletNode, Set<BlockTransactionHash>> references(Wallet wallet, BlockTransactionHash... references) {
