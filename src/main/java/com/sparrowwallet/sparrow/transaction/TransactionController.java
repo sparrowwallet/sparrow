@@ -262,8 +262,10 @@ public class TransactionController implements Initializable {
                     if(transactionForm == childForm) {
                         detailPane = txdetail;
                         txdetail.setViewOrder(0);
+                        txdetail.setVisible(true);
                     } else {
                         txdetail.setViewOrder(1);
+                        txdetail.setVisible(false);
                     }
                 }
 

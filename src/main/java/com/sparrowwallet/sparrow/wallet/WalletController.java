@@ -86,7 +86,7 @@ public class WalletController extends WalletFormController implements Initializa
                 if(walletFunction.getUserData().equals(function)) {
                     existing = true;
                     walletFunction.setViewOrder(0);
-                } else if(function != Function.LOCK) {
+                } else if(walletFunction.getUserData() != Function.LOCK) {
                     walletFunction.setViewOrder(1);
                 }
             }
@@ -116,6 +116,8 @@ public class WalletController extends WalletFormController implements Initializa
             } catch (IOException e) {
                 throw new IllegalStateException("Can't find pane", e);
             }
+
+            showFrontView();
         });
 
         for(Toggle toggle : walletMenu.getToggles()) {
@@ -256,6 +258,7 @@ public class WalletController extends WalletFormController implements Initializa
 
             getWalletForm().setLocked(true);
             lockPane.setViewOrder(-1);
+            showFrontView();
             lockCount++;
         }
     }
@@ -266,7 +269,22 @@ public class WalletController extends WalletFormController implements Initializa
             getWalletForm().setLocked(false);
             if(lockPane != null) {
                 lockPane.setViewOrder(2);
+                showFrontView();
             }
+        }
+    }
+
+    //Views behind the front one are hidden so they stay out of keyboard focus traversal and the accessibility tree
+    private void showFrontView() {
+        Node front = null;
+        for(Node view : walletPane.getChildren()) {
+            if(front == null || view.getViewOrder() <= front.getViewOrder()) {
+                front = view;
+            }
+        }
+
+        for(Node view : walletPane.getChildren()) {
+            view.setVisible(view == front);
         }
     }
 }
