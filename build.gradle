@@ -33,7 +33,7 @@ tasks.withType(AbstractArchiveTask).configureEach {
 }
 
 javafx {
-    version = "26"
+    version = "27.0.1"
     modules = [ 'javafx.controls', 'javafx.fxml', 'javafx.swing', 'javafx.graphics' ]
 }
 
