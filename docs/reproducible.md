@@ -12,26 +12,26 @@ Work on resolving both of these issues is ongoing.
 ### Install Java
 
 Because Sparrow bundles a Java runtime in the release binaries, it is essential to have the same version of Java installed when creating the release.
-For v1.6.6 to v1.9.1, this was Eclipse Temurin 18.0.1+10. For v2.0.0 to v2.3.1, this was Eclipse Temurin 22.0.2+9. For v2.4.0 and later, Eclipse Temurin 25.0.2+10 is used.
+For v1.6.6 to v1.9.1, this was Eclipse Temurin 18.0.1+10. For v2.0.0 to v2.3.1, this was Eclipse Temurin 22.0.2+9. For v2.4.0 to v2.5.5, this was Eclipse Temurin 25.0.2+10. For v2.5.6 and later, Eclipse Temurin 25.0.5+8 is used.
 
 Note: Do not install Java using a system package manager (e.g. apt, dnf, rpm). 
 Linux packages replace the JDK's bundled `cacerts` file with a symlink to the system CA certificates, which differ from those in the release tarballs and will produce a non-reproducible build.
 
 #### Java from Adoptium github repo
 
-It is available for all supported platforms from [Eclipse Temurin 25.0.2+10](https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.2%2B10).
+It is available for all supported platforms from [Eclipse Temurin 25.0.5+8](https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.5%2B8).
 
 For reference, the downloads are as follows:
-- [Linux x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_10.tar.gz)
-- [Linux aarch64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.2_10.tar.gz)
-- [MacOS x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_mac_hotspot_25.0.2_10.tar.gz)
-- [MacOS aarch64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.2_10.tar.gz)
-- [Windows x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.2%2B10/OpenJDK25U-jdk_x64_windows_hotspot_25.0.2_10.zip)
+- [Linux x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz)
+- [Linux aarch64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.5_8.tar.gz)
+- [MacOS x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5_8.tar.gz)
+- [MacOS aarch64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5_8.tar.gz)
+- [Windows x64](https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5%2B8/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5_8.zip)
 
 On Linux, extract the tarball and set `JAVA_HOME` to use it for the build:
 ```shell
-tar -xzf OpenJDK25U-jdk_x64_linux_hotspot_25.0.2_10.tar.gz
-export JAVA_HOME=$PWD/jdk-25.0.2+10
+tar -xzf OpenJDK25U-jdk_x64_linux_hotspot_25.0.5_8.tar.gz
+export JAVA_HOME=$PWD/jdk-25.0.5+8
 export PATH=$JAVA_HOME/bin:$PATH
 ```
 
@@ -41,7 +41,7 @@ An alternative option for all platforms is to use the [sdkman.io](https://sdkman
 See the installation [instructions here](https://sdkman.io/install).
 Once installed, run
 ```shell
-sdk install java 25.0.2-tem
+sdk install java 25.0.5.0+8-tem
 ```
 
 ### Other requirements

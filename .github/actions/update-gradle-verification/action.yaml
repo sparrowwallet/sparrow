@@ -67,11 +67,11 @@ runs:
       shell: bash
       run: rm -rf "$RUNNER_TOOL_CACHE"/Java_*
 
-    - name: Set up JDK 25.0.2
+    - name: Set up JDK 25.0.5
       uses: actions/setup-java@0f481fcb613427c0f801b606911222b5b6f3083a # v5.5.0
       with:
         distribution: temurin
-        java-version: '25.0.2'
+        java-version: '25.0.5'
 
     - name: Cache Gradle wrapper distribution
       if: ${{ inputs.cache-gradle-wrapper-distribution == 'true' }}

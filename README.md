@@ -17,7 +17,7 @@ or for those without SSH credentials:
 `git clone --recursive https://github.com/sparrowwallet/sparrow.git`
 
 In order to build, Sparrow requires Java 25 or higher to be installed. 
-The release binaries are built with [Eclipse Temurin 25.0.2+10](https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.2%2B10).
+The release binaries are built with [Eclipse Temurin 25.0.5+8](https://github.com/adoptium/temurin25-binaries/releases/tag/jdk-25.0.5%2B8).
 If you are using [SDKMAN](https://sdkman.io/), you can use `sdk env install` to ensure you have the correct version.
 
 Other packages may also be necessary to build depending on the platform. On Debian/Ubuntu systems:
