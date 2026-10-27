@@ -60,6 +60,8 @@ public class WalletForm {
     private boolean spSubscriptionHeld;
     private boolean spPendingRefresh;
 
+    private boolean closed;
+
     private final BooleanProperty lockedProperty = new SimpleBooleanProperty(false);
 
     private final Disposable refreshNodesDisposable;
@@ -159,6 +161,11 @@ public class WalletForm {
     }
 
     public void refreshHistory(Integer blockHeight, List<Wallet> filterToWallets, Set<WalletNode> nodes) {
+        //A refresh queued before the wallet was closed would otherwise subscribe it again
+        if(closed) {
+            return;
+        }
+
         Wallet previousWallet = wallet.copy();
         if(wallet.isValid() && AppServices.isConnected()) {
             if(log.isDebugEnabled()) {
@@ -235,6 +242,10 @@ public class WalletForm {
         ElectrumServer.SilentPaymentScanService scanService = new ElectrumServer.SilentPaymentScanService(wallet, shouldHold, wallet.getNeededScanStart());
         scanService.setOnSucceeded(workerStateEvent -> {
             spScanInProgress = false;
+            if(closed) {
+                return;
+            }
+
             spSubscriptionHeld = true;
             if(scanService.getValue()) {
                 EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
@@ -244,6 +255,11 @@ public class WalletForm {
         });
         scanService.setOnFailed(workerStateEvent -> {
             spScanInProgress = false;
+            //Closing releases the subscription, which cancels the scan: that is not a history failure to report
+            if(closed) {
+                return;
+            }
+
             if(scanService.isReleasedHold()) {
                 spSubscriptionHeld = false;
             }
@@ -835,12 +851,14 @@ public class WalletForm {
     public void walletTabsClosed(WalletTabsClosedEvent event) {
         for(WalletTabData tabData : event.getClosedWalletTabData()) {
             if(tabData.getWalletForm() == this) {
+                closed = true;
                 EventManager.get().unregister(this);
                 disposeRefreshNodes();
                 if(walletTransactionsEntry != null) {
                     walletTransactionsEntry.unregisterForConfirmations();
                 }
                 for(WalletForm nestedWalletForm : nestedWalletForms) {
+                    nestedWalletForm.closed = true;
                     EventManager.get().unregister(nestedWalletForm);
                     nestedWalletForm.disposeRefreshNodes();
                     if(nestedWalletForm.walletTransactionsEntry != null) {
