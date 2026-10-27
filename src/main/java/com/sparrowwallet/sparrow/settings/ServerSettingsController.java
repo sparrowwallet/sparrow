@@ -381,13 +381,14 @@ public class ServerSettingsController extends SettingsDetailController {
         });
 
         electrumUseSsl.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            //An alias names a server at one protocol as it does at one port, so changing either leaves the host it names to be connected to as entered
+            //An alias names a server at one protocol as it does at one port, so changing either leaves the host it names to be connected to as entered.
+            //The config is set whether or not the host field changed, since an alias that is also its server's host is replaced by the same text
             Server aliasServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
-            if(aliasServer != null && aliasServer.getProtocol() != getProtocol()) {
+            if(aliasServer != null && !isElectrumAliasEntered(aliasServer)) {
                 electrumHost.setText(aliasServer.getHost());
-            } else {
-                setElectrumServerInConfig(config);
             }
+            electrumHost.setLeft(aliasServer != null && isElectrumAliasEntered(aliasServer) ? getGlyph(FontAwesome5.Glyph.TAG, null) : null);
+            setElectrumServerInConfig(config);
             electrumCertificate.setDisable(!newValue);
             electrumCertificateSelect.setDisable(!newValue);
             electrumPort.setPromptText(newValue ? "e.g. 50002" : "e.g. 50001");
@@ -792,7 +793,7 @@ public class ServerSettingsController extends SettingsDetailController {
     private ChangeListener<String> getBitcoinCoreListener(Config config) {
         return (observable, oldValue, newValue) -> {
             Server existingServer = config.getRecentCoreServers().stream().filter(server -> coreHost.getText().equals(server.getAlias())).findFirst().orElse(null);
-            if(existingServer != null && !existingServer.portEquals(corePort.getText())) {
+            if(existingServer != null && !isCoreAliasEntered(existingServer)) {
                 coreHost.setText(existingServer.getHost());
                 existingServer = null;
             }
@@ -818,7 +819,7 @@ public class ServerSettingsController extends SettingsDetailController {
 
     private void setCoreServerInConfig(Config config) {
         Server existingServer = config.getRecentCoreServers().stream().filter(server -> coreHost.getText().equals(server.getAlias())).findFirst().orElse(null);
-        if(existingServer != null) {
+        if(existingServer != null && isCoreAliasEntered(existingServer)) {
             config.setCoreServer(existingServer);
             return;
         }
@@ -839,6 +840,13 @@ public class ServerSettingsController extends SettingsDetailController {
     //An entered https is retained for the host it was entered on only, so that editing the host to another server returns to http as a typed or scanned host without a scheme does
     private void setCoreProtocol(Protocol protocol, String host) {
         coreHttpsHost = protocol == Protocol.HTTPS ? host : null;
+    }
+
+    //Whether an alias in the host field still names its server: an alias names a server at one port and one protocol, and an https entered for a
+    //host that is also the alias of an http server is not that server. Only such an alias can be the host an entered https leaves in the field
+    private boolean isCoreAliasEntered(Server aliasServer) {
+        return aliasServer.portEquals(corePort.getText()) && !(aliasServer.getProtocol() == Protocol.HTTP && aliasServer.getHost().equalsIgnoreCase(coreHttpsHost)
+                && aliasServer.getHost().equalsIgnoreCase(aliasServer.getAlias()));
     }
 
     private void showRemoteCoreServerWarning(Config config) {
@@ -899,7 +907,7 @@ public class ServerSettingsController extends SettingsDetailController {
     private ChangeListener<String> getElectrumServerListener(Config config) {
         return (observable, oldValue, newValue) -> {
             Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
-            if(existingServer != null && (!existingServer.portEquals(electrumPort.getText()) || existingServer.getProtocol() != getProtocol())) {
+            if(existingServer != null && !isElectrumAliasEntered(existingServer)) {
                 electrumHost.setText(existingServer.getHost());
                 existingServer = null;
             }
@@ -923,9 +931,14 @@ public class ServerSettingsController extends SettingsDetailController {
         };
     }
 
+    //Whether an alias in the host field still names its server at the port and protocol entered
+    private boolean isElectrumAliasEntered(Server aliasServer) {
+        return aliasServer.portEquals(electrumPort.getText()) && aliasServer.getProtocol() == getProtocol();
+    }
+
     private void setElectrumServerInConfig(Config config) {
         Server existingServer = config.getRecentElectrumServers().stream().filter(server -> electrumHost.getText().equals(server.getAlias())).findFirst().orElse(null);
-        if(existingServer != null) {
+        if(existingServer != null && isElectrumAliasEntered(existingServer)) {
             config.setElectrumServer(existingServer);
             return;
         }
