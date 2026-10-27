@@ -103,10 +103,8 @@ public class WebcamView {
                             log.error("Failed to start web cam", service.getException());
                             break;
                         case SUCCEEDED:
-                            // unreachable...
-                            imageView.imageProperty().unbind();
-                            statusPlaceholder.setText("");
-                            getChildren().clear();
+                            //Every capture succeeds and is then rescheduled, so the camera image stays in place
+                            break;
                     }
                 });
             }
