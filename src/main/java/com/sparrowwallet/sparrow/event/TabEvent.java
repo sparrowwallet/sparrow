@@ -1,7 +1,6 @@
 package com.sparrowwallet.sparrow.event;
 
 import com.sparrowwallet.sparrow.TabData;
-import javafx.scene.control.Label;
 import javafx.scene.control.Tab;
 
 public class TabEvent {
@@ -16,7 +15,7 @@ public class TabEvent {
     }
 
     public String getTabName() {
-        return ((Label)tab.getGraphic()).getText();
+        return tab.getText();
     }
 
     public TabData getTabData() {

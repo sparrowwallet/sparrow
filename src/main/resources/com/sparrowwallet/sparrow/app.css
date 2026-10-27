@@ -35,6 +35,14 @@
     -fx-text-fill: rgb(202, 18, 67);
 }
 
+#tabs > .tab-header-area > .headers-region > .tab .tab-label {
+    -fx-graphic-text-gap: 5;
+}
+
+#tabs > .tab-header-area > .headers-region > .long-transaction-tab .tab-label {
+    -fx-pref-width: 300;
+}
+
 .tor-status.failure .glyph-font {
     -fx-text-fill: rgb(202, 18, 67);
 }
@@ -65,6 +73,7 @@
     -fx-pref-width: 90;
     -fx-alignment: CENTER;
     -fx-translate-x: -6;
+    -fx-content-display: graphic-only;
 }
 
 .wallet-subtabs > .tab-header-area .tab-label .label {

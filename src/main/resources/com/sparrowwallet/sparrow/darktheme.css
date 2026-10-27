@@ -165,6 +165,15 @@ HorizontalHeaderColumn > TableColumnHeader.column-header.table-column{
     -fx-text-fill: white;
 }
 
+.root #tabs > .tab-header-area > .headers-region > .tab .tab-label {
+    -fx-text-fill: derive(white, -8%);
+}
+
+.root #tabs > .tab-header-area > .headers-region > .tab:selected .tab-label,
+.root #tabs > .tab-header-area > .headers-region > .tab:hover .tab-label {
+    -fx-text-fill: white;
+}
+
 .root .wallet-subtabs > .tab-header-area > .headers-region > .tab {
     -fx-background-color: derive(#2284bb, 32%);
 }
