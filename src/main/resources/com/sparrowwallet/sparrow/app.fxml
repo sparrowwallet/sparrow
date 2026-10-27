@@ -171,15 +171,17 @@
             </menus>
         </MenuBar>
         <DecorationPane fx:id="rootStack" VBox.vgrow="ALWAYS">
-            <Rectangle styleClass="background-box" width="450" height="230" />
-            <HBox alignment="CENTER">
-                <VBox alignment="CENTER" spacing="15">
-                    <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#newWallet" styleClass="background-text,background-link" text="New Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
-                    <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#openWallet" styleClass="background-text,background-link" text="Open Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
-                    <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#importWallet" styleClass="background-text,background-link" text="Import Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
-                    <Text styleClass="background-text" text="drag files to open" />
-                </VBox>
-            </HBox>
+            <StackPane fx:id="noTabsPane">
+                <Rectangle styleClass="background-box" width="450" height="230" />
+                <HBox alignment="CENTER">
+                    <VBox alignment="CENTER" spacing="15">
+                        <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#newWallet" styleClass="background-text,background-link" text="New Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
+                        <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#openWallet" styleClass="background-text,background-link" text="Open Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
+                        <HBox><Text styleClass="background-text" text="File menu → "/><Hyperlink onAction="#importWallet" styleClass="background-text,background-link" text="Import Wallet"/><Text styleClass="background-text" text=" or"/></HBox>
+                        <Text styleClass="background-text" text="drag files to open" />
+                    </VBox>
+                </HBox>
+            </StackPane>
             <TabPane fx:id="tabs" />
         </DecorationPane>
 

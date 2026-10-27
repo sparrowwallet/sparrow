@@ -7,7 +7,7 @@
     -fx-fill: transparent;
 }
 
-.drag-over > .background-box {
+.drag-over .background-box {
     -fx-stroke: #383a42;
 }
 
@@ -29,10 +29,6 @@
 
 .background-link:hover:visited {
     -fx-underline: true;
-}
-
-.drag-over > .background-text {
-    -fx-fill: #383a42;
 }
 
 .tab-label .failure {

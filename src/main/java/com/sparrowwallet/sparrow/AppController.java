@@ -215,6 +215,9 @@ public class AppController implements Initializable {
     private StackPane rootStack;
 
     @FXML
+    private StackPane noTabsPane;
+
+    @FXML
     private TabPane tabs;
 
     @FXML
@@ -348,6 +351,7 @@ public class AppController implements Initializable {
         //Draggle tabs introduce unwanted movement when selecting between them
         //tabs.setTabDragPolicy(TabPane.TabDragPolicy.REORDER);
         tabs.getTabs().addListener(tabsChangeListener);
+        noTabsPane.visibleProperty().bind(Bindings.isEmpty(tabs.getTabs()));
 
         tabs.getScene().getWindow().setOnCloseRequest(event -> {
             EventManager.get().unregister(this);
