@@ -829,6 +829,9 @@ public class ServerSettingsController extends SettingsDetailController {
         if(hostAsString != null && !hostAsString.isEmpty() && portAsInteger != null && isValidPort(portAsInteger)) {
             Protocol protocol = portAsInteger == Protocol.HTTPS.getDefaultPort() || hostAsString.equalsIgnoreCase(coreHttpsHost) ? Protocol.HTTPS : Protocol.HTTP;
             config.setCoreServer(new Server(protocol.toUrlString(hostAsString, portAsInteger)));
+        } else if(hostAsString != null && !hostAsString.isEmpty() && !corePort.getText().isBlank()) {
+            //An invalid port leaves the server as it was, rather than connecting to the default port as an empty one does
+            return;
         } else if(hostAsString != null && !hostAsString.isEmpty()) {
             Protocol protocol = hostAsString.equalsIgnoreCase(coreHttpsHost) ? Protocol.HTTPS : Protocol.HTTP;
             config.setCoreServer(new Server(protocol.toUrlString(hostAsString)));
@@ -947,6 +950,9 @@ public class ServerSettingsController extends SettingsDetailController {
         Integer portAsInteger = getPort(electrumPort.getText());
         if(hostAsString != null && !hostAsString.isEmpty() && portAsInteger != null && isValidPort(portAsInteger)) {
             config.setElectrumServer(new Server(getProtocol().toUrlString(hostAsString, portAsInteger)));
+        } else if(hostAsString != null && !hostAsString.isEmpty() && !electrumPort.getText().isBlank()) {
+            //An invalid port leaves the server as it was, rather than connecting to the default port as an empty one does
+            return;
         } else if(hostAsString != null && !hostAsString.isEmpty()) {
             config.setElectrumServer(new Server(getProtocol().toUrlString(hostAsString)));
         } else {
@@ -971,6 +977,10 @@ public class ServerSettingsController extends SettingsDetailController {
         String proxyServer = null;
         if(hostAsString != null && !hostAsString.isBlank() && portAsInteger != null && isValidPort(portAsInteger)) {
             proxyServer = HostAndPort.fromParts(hostAsString, portAsInteger).toString();
+        } else if(hostAsString != null && !hostAsString.isBlank() && !proxyPort.getText().isBlank()) {
+            //An invalid port leaves the proxy as it was, rather than connecting to the default port as an empty one does. With no proxy to leave, the
+            //default port is used all the same, since a proxy that fails to connect is better than connecting without one
+            proxyServer = config.getProxyServer() != null ? config.getProxyServer() : HostAndPort.fromHost(hostAsString).toString();
         } else if(hostAsString != null && !hostAsString.isBlank()) {
             proxyServer = HostAndPort.fromHost(hostAsString).toString();
         }

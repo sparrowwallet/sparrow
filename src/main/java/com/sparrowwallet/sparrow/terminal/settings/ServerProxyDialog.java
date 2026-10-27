@@ -83,6 +83,10 @@ public abstract class ServerProxyDialog extends DialogWindow {
         String proxyServer = null;
         if(hostAsString != null && !hostAsString.isBlank() && portAsInteger != null && isValidPort(portAsInteger)) {
             proxyServer = HostAndPort.fromParts(hostAsString, portAsInteger).toString();
+        } else if(hostAsString != null && !hostAsString.isBlank() && !proxyPort.getText().isBlank()) {
+            //An invalid port leaves the proxy as it was, rather than connecting to the default port as an empty one does. With no proxy to leave, the
+            //default port is used all the same, since a proxy that fails to connect is better than connecting without one
+            proxyServer = Config.get().getProxyServer() != null ? Config.get().getProxyServer() : HostAndPort.fromHost(hostAsString).toString();
         } else if(hostAsString != null && !hostAsString.isBlank()) {
             proxyServer = HostAndPort.fromHost(hostAsString).toString();
         }

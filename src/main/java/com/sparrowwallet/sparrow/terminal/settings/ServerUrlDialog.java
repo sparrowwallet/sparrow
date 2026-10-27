@@ -96,6 +96,9 @@ public abstract class ServerUrlDialog extends ServerProxyDialog {
         Integer portAsInteger = getPort(port.getText());
         if(hostAsString != null && portAsInteger != null && isValidPort(portAsInteger)) {
             return new Server(getProtocol().toUrlString(hostAsString, portAsInteger), getAlias());
+        } else if(hostAsString != null && !port.getText().isBlank()) {
+            //An invalid port leaves the server as it was, rather than connecting to the default port as an empty one does
+            return null;
         } else if(hostAsString != null) {
             return new Server(getProtocol().toUrlString(hostAsString), getAlias());
         }
