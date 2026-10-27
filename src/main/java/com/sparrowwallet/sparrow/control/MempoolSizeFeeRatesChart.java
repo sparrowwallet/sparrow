@@ -88,6 +88,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                 ToggleButton period24 = new ToggleButton("24H");
                 SegmentedButton periodButtons = new SegmentedButton(period2, period24);
                 periodButtons.setToggleGroup(periodGroup);
+                periodButtons.getButtons().forEach(button -> button.setAccessibleRole(AccessibleRole.RADIO_BUTTON));
                 periodGroup.selectedToggleProperty().addListener((observable, oldValue, newValue) -> {
                     expandedChart.maxPeriodHours = (newValue == period2 ? 2 : 24);
                     expandedChart.update(AppServices.getMempoolHistogram());

@@ -23,6 +23,7 @@ import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5Brands;
 import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -182,6 +183,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         formatBip322 = new ToggleButton("BIP322 (Simple)");
         SegmentedButton formatButtons = new SegmentedButton(formatElectrum, formatTrezor, formatBip322);
         formatButtons.setToggleGroup(formatGroup);
+        formatButtons.getButtons().forEach(button -> button.setAccessibleRole(AccessibleRole.RADIO_BUTTON));
         formatField.getInputs().add(formatButtons);
 
         fieldset.getChildren().addAll(addressField, messageField, signatureField, formatField);

@@ -111,9 +111,9 @@
                                     <ToggleGroup fx:id="locktimeToggleGroup" />
                                 </toggleGroup>
                                 <buttons>
-                                    <ToggleButton fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
-                                    <ToggleButton fx:id="locktimeBlockType" text="Block" userData="block" toggleGroup="$locktimeToggleGroup" />
-                                    <ToggleButton fx:id="locktimeDateType" text="Date" userData="date" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeBlockType" text="Block" userData="block" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeDateType" text="Date" userData="date" toggleGroup="$locktimeToggleGroup" />
                                 </buttons>
                             </SegmentedButton>
                         </Field>

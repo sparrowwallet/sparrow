@@ -65,7 +65,7 @@
                             <ToggleGroup fx:id="feeSelectionToggleGroup" />
                         </toggleGroup>
                         <buttons>
-                            <ToggleButton fx:id="targetBlocksToggle" text="Target Blocks" toggleGroup="$feeSelectionToggleGroup">
+                            <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="targetBlocksToggle" text="Target Blocks" toggleGroup="$feeSelectionToggleGroup">
                                 <tooltip>
                                     <Tooltip text="Determine fee via estimated number of blocks"/>
                                 </tooltip>
@@ -73,7 +73,7 @@
                                     <FeeRatesSelection fx:constant="BLOCK_TARGET"/>
                                 </userData>
                             </ToggleButton>
-                            <ToggleButton fx:id="mempoolSizeToggle" text="Mempool Size" toggleGroup="$feeSelectionToggleGroup">
+                            <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="mempoolSizeToggle" text="Mempool Size" toggleGroup="$feeSelectionToggleGroup">
                                 <tooltip>
                                     <Tooltip text="Determine fee via current mempool size"/>
                                 </tooltip>
@@ -81,7 +81,7 @@
                                     <FeeRatesSelection fx:constant="MEMPOOL_SIZE"/>
                                 </userData>
                             </ToggleButton>
-                            <ToggleButton fx:id="recentBlocksToggle" text="Recent Blocks" toggleGroup="$feeSelectionToggleGroup">
+                            <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="recentBlocksToggle" text="Recent Blocks" toggleGroup="$feeSelectionToggleGroup">
                                 <tooltip>
                                     <Tooltip text="Show recent and upcoming blocks"/>
                                 </tooltip>
@@ -169,7 +169,7 @@
                         <ToggleGroup fx:id="optimizationToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton fx:id="efficiencyToggle" text="Efficiency" toggleGroup="$optimizationToggleGroup">
+                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="efficiencyToggle" text="Efficiency" toggleGroup="$optimizationToggleGroup">
                             <tooltip>
                                 <Tooltip text="Smallest transaction size for lowest fees"/>
                             </tooltip>
@@ -177,7 +177,7 @@
                                 <OptimizationStrategy fx:constant="EFFICIENCY"/>
                             </userData>
                         </ToggleButton>
-                        <ToggleButton fx:id="privacyToggle" text="Privacy" toggleGroup="$optimizationToggleGroup">
+                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="privacyToggle" text="Privacy" toggleGroup="$optimizationToggleGroup">
                             <tooltip>
                                 <Tooltip text="Higher entropy transactions that reduce probabilities in blockchain analysis"/>
                             </tooltip>
