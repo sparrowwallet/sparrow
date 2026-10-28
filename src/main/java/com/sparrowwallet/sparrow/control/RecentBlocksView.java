@@ -38,6 +38,7 @@ public class RecentBlocksView extends Pane {
 
     private final ObjectProperty<List<BlockCube>> cubesProperty = new SimpleObjectProperty<>(new ArrayList<>());
     private final Tooltip tooltip = new Tooltip();
+    private String accessibleSummary;
 
     public RecentBlocksView() {
         cubesProperty.addListener((_, _, newValue) -> {
@@ -54,13 +55,15 @@ public class RecentBlocksView extends Pane {
             for(BlockCube cube : getCubes()) {
                 cube.setElapsed(BlockCube.getElapsed(cube.getTimestamp()));
             }
+            updateAccessibleSummary();
         }));
 
         FeeRatesSource feeRatesSource = Config.get().getFeeRatesSource();
         feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
         updateFeeRatesSource(feeRatesSource);
         Tooltip.install(this, tooltip);
-        setAccessibleRole(AccessibleRole.TEXT);
+        //A read-only text field rather than text, as VoiceOver keeps reading the first value it saw of text that later changes
+        setAccessibleRole(AccessibleRole.TEXT_FIELD);
     }
 
     @Override
@@ -68,9 +71,18 @@ public class RecentBlocksView extends Pane {
         //Read as one summary rather than the individual heights, fee rates and times on the cubes
         return switch(attribute) {
             case TEXT -> getSummary();
+            case EDITABLE -> false;
             case CHILDREN -> FXCollections.emptyObservableList();
             default -> super.queryAccessibleAttribute(attribute, parameters);
         };
+    }
+
+    private void updateAccessibleSummary() {
+        String summary = getSummary();
+        if(!summary.equals(accessibleSummary)) {
+            accessibleSummary = summary;
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+        }
     }
 
     private String getSummary() {
@@ -159,6 +171,8 @@ public class RecentBlocksView extends Pane {
                 updateFeeRate(currentFeeRate);
             }
         }
+
+        updateAccessibleSummary();
     }
 
     private void addNewBlock(List<BlockSummary> latestBlocks, Double currentFeeRate) {
@@ -205,6 +219,7 @@ public class RecentBlocksView extends Pane {
         if(!getCubes().isEmpty()) {
             BlockCube firstCube = getCubes().getFirst();
             firstCube.setMedianFee(currentFeeRate);
+            updateAccessibleSummary();
         }
     }
 
