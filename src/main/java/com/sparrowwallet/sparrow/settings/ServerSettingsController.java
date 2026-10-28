@@ -680,6 +680,8 @@ public class ServerSettingsController extends SettingsDetailController {
         if(serverBanner != null) {
             testResults.setText(testResults.getText() + "\nServer Banner: " + serverBanner);
         }
+        //Focus moves to the result so it is read out once the test finishes
+        testResults.requestFocus();
     }
 
     private void showConnectionFailure(Throwable exception) {
@@ -728,6 +730,7 @@ public class ServerSettingsController extends SettingsDetailController {
 
         testResults.setText("Could not connect:\n\n" + reason);
         testConnection.setGraphic(getGlyph(FontAwesome5.Glyph.EXCLAMATION_CIRCLE, "failure"));
+        testResults.requestFocus();
     }
 
     private void setupValidation() {

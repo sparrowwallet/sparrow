@@ -42,6 +42,7 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
+import javafx.event.EventHandler;
 import javafx.concurrent.Worker;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.AccessibleRole;
@@ -106,6 +107,12 @@ public class AppServices {
     private static final List<Double> LONG_FEE_RATES_RANGE = List.of(1d, 2d, 4d, 8d, 16d, 32d, 64d, 128d, 256d, 512d, 1024d, 2048d, 4096d, 8192d);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
+    private static final EventHandler<javafx.scene.input.KeyEvent> FORWARD_ESCAPE_FROM_CLOSED_MENU_BUTTON = event -> {
+        if(event.getCode() == KeyCode.ESCAPE && event.getTarget() instanceof MenuButton menuButton && !menuButton.isShowing() && menuButton.getParent() != null) {
+            event.consume();
+            menuButton.getParent().fireEvent(event);
+        }
+    };
     private static final ChangeListener<Boolean> NOT_FOCUS_TRAVERSABLE = (observable, wasTraversable, traversable) -> {
         if(traversable) {
             ((Node)((ReadOnlyProperty<?>)observable).getBean()).setFocusTraversable(false);
@@ -727,6 +734,19 @@ public class AppServices {
             if(event.getCode() == KeyCode.TAB && !event.isShortcutDown() && !event.isControlDown() && !event.isAltDown()) {
                 node.requestFocusTraversal(event.isShiftDown() ? TraversalDirection.PREVIOUS : TraversalDirection.NEXT);
                 event.consume();
+            }
+        });
+    }
+
+    //Menu buttons consume Escape even when their menu is closed, so Escape on a split button did not close its dialog.
+    //Like a combo box, a closed menu button passes Escape on to its parent.
+    public static void forwardEscapeFromClosedMenuButtons() {
+        Window.getWindows().addListener((ListChangeListener<Window>)change -> {
+            while(change.next()) {
+                for(Window window : change.getAddedSubList()) {
+                    window.removeEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, FORWARD_ESCAPE_FROM_CLOSED_MENU_BUTTON);
+                    window.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, FORWARD_ESCAPE_FROM_CLOSED_MENU_BUTTON);
+                }
             }
         });
     }

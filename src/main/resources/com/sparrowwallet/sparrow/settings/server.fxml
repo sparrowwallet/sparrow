@@ -93,6 +93,7 @@
             <Field text="Proxy URL:">
                 <TextField fx:id="publicProxyHost" promptText="e.g. 127.0.0.1" />
                 <TextField fx:id="publicProxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+                <Label text="Proxy port" labelFor="$publicProxyPort" visible="false" managed="false" />
             </Field>
         </Fieldset>
     </Form>
@@ -105,6 +106,7 @@
                     <ComboBoxTextField fx:id="coreHost" promptText="e.g. 127.0.0.1" comboProperty="$recentCoreServers" />
                 </StackPane>
                 <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" />
+                <Label text="Port" labelFor="$corePort" visible="false" managed="false" />
             </Field>
             <Field text="Authentication:">
                 <SegmentedButton>
@@ -143,6 +145,7 @@
             <Field text="Proxy URL:">
                 <TextField fx:id="coreProxyHost" promptText="e.g. 127.0.0.1" />
                 <TextField fx:id="coreProxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+                <Label text="Proxy port" labelFor="$coreProxyPort" visible="false" managed="false" />
             </Field>
         </Fieldset>
     </Form>
@@ -155,6 +158,7 @@
                     <ComboBoxTextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)" comboProperty="$recentElectrumServers" />
                 </StackPane>
                 <TextField fx:id="electrumPort" promptText="e.g. 50001" maxWidth="120" />
+                <Label text="Port" labelFor="$electrumPort" visible="false" managed="false" />
             </Field>
             <Field text="Use SSL:">
                 <UnlabeledToggleSwitch fx:id="electrumUseSsl"/>
@@ -173,6 +177,7 @@
             <Field text="Proxy URL:">
                 <TextField fx:id="proxyHost" promptText="e.g. 127.0.0.1" />
                 <TextField fx:id="proxyPort" maxWidth="120" promptText="e.g. 9050/9150" />
+                <Label text="Proxy port" labelFor="$proxyPort" visible="false" managed="false" />
             </Field>
         </Fieldset>
     </Form>

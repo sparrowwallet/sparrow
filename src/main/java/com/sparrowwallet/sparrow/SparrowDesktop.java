@@ -47,6 +47,7 @@ public class SparrowDesktop extends Application {
 
         AppServices.initialize(this);
         AppServices.monitorSystemTheme();
+        AppServices.forwardEscapeFromClosedMenuButtons();
 
         boolean createNewWallet = false;
         Mode mode = Config.get().getMode();
