@@ -17,8 +17,11 @@ import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
@@ -191,6 +194,20 @@ public class TransactionController implements Initializable {
                         setOnDragDropped(event -> drop(event, this));
                     }
                 }
+            }
+
+            @Override
+            public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+                //Empty cells fill the space below the tree and have nothing to read
+                if(isEmpty()) {
+                    if(attribute == AccessibleAttribute.ROLE) {
+                        return AccessibleRole.NODE;
+                    } else if(attribute == AccessibleAttribute.CHILDREN) {
+                        return FXCollections.emptyObservableList();
+                    }
+                }
+
+                return super.queryAccessibleAttribute(attribute, parameters);
             }
         });
 
