@@ -450,6 +450,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             Label usePassphraseLabel = new Label("Use passphrase?");
             usePassphraseLabel.managedProperty().bind(usePassphraseLabel.visibleProperty());
             CheckBox usePassphraseCheckbox = new CheckBox(" ");
+            usePassphraseCheckbox.setAccessibleText(usePassphraseLabel.getText());
             usePassphraseCheckbox.setDisable(!editable);
             usePassphraseCheckbox.managedProperty().bind(usePassphraseCheckbox.visibleProperty());
             usePassphraseLabel.visibleProperty().bind(usePassphraseCheckbox.visibleProperty());
@@ -470,6 +471,7 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
             Label passphraseLabel = new Label(getPassphraseLabel());
             passphraseLabel.managedProperty().bind(passphraseLabel.visibleProperty());
             passphraseField = new TextField();
+            passphraseLabel.setLabelFor(passphraseField);
             passphraseField.setPromptText(passphraseProperty.isEmpty().get() ? "Leave blank for none" : "");
             passphraseField.setText(passphraseProperty.get());
             passphraseField.setDisable(!editable);

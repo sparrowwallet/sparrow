@@ -214,6 +214,11 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
     private Node getDerivationEntry(List<ChildNumber> derivation) {
         TextField derivationField = new TextField();
         derivationField.setPromptText("Derivation path");
+        //Screen readers do not read prompt text, and accessible text on a text field would replace the path it reads, so it is named by an unshown label
+        Label derivationLabel = new Label("Derivation path");
+        derivationLabel.setVisible(false);
+        derivationLabel.setManaged(false);
+        derivationLabel.setLabelFor(derivationField);
         derivationField.setText(KeyDerivation.writePath(derivation));
         HBox.setHgrow(derivationField, Priority.ALWAYS);
 
@@ -241,6 +246,7 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
         HBox contentBox = new HBox();
         contentBox.setAlignment(Pos.TOP_RIGHT);
         contentBox.setSpacing(20);
+        contentBox.getChildren().add(derivationLabel);
         contentBox.getChildren().add(derivationField);
         contentBox.getChildren().add(importDerivationButton);
         contentBox.setPadding(new Insets(10, 30, 10, 30));

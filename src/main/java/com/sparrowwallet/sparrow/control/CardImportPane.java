@@ -294,6 +294,7 @@ public class CardImportPane extends TitledDescriptionPane {
         CheckBox checkBox = new CheckBox("Use Custom Derivation");
         Label customLabel = new Label("Derivation:");
         TextField customDerivation = new TextField(KeyDerivation.writePath(derivation));
+        customLabel.setLabelFor(customDerivation);
 
         ValidationSupport validationSupport = new ValidationSupport();
         validationSupport.setValidationDecorator(new StyleClassValidationDecoration());
