@@ -95,7 +95,7 @@
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="2">
                     <Fieldset inputGrow="SOMETIMES">
                         <Field fx:id="targetBlocksField" text="Blocks:">
-                            <Slider fx:id="targetBlocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
+                            <Slider fx:id="targetBlocks" accessibleText="Target Blocks" snapToTicks="true" showTickLabels="true" showTickMarks="true" />
                         </Field>
                         <Field fx:id="feeRangeField" text="Range:">
                             <FeeRangeSlider fx:id="feeRange" />

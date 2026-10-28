@@ -208,6 +208,7 @@ public class SendController extends WalletFormController implements Initializabl
 
             Tooltip tooltip = new Tooltip("Target inclusion within " + target + " blocks");
             targetBlocks.setTooltip(tooltip);
+            targetBlocks.setAccessibleText(tooltip.getText());
 
             userFeeSet.set(false);
             for(Tab tab : paymentTabs.getTabs()) {
@@ -841,6 +842,7 @@ public class SendController extends WalletFormController implements Initializabl
         blockTargetFeeRatesChart.select(target);
         Tooltip tooltip = new Tooltip("Target inclusion within " + target + " blocks");
         targetBlocks.setTooltip(tooltip);
+        targetBlocks.setAccessibleText(tooltip.getText());
         targetBlocks.valueProperty().addListener(targetBlocksListener);
     }
 

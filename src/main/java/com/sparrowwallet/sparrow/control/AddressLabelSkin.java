@@ -2,7 +2,10 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Network;
 import javafx.beans.value.ChangeListener;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
@@ -27,10 +30,7 @@ public class AddressLabelSkin extends LabelSkin {
     public AddressLabelSkin(Label control) {
         super(control);
 
-        displayFlow = new TextFlow();
-        displayFlow.setManaged(false);
-        displayFlow.setMouseTransparent(true);
-
+        displayFlow = createDisplayFlow();
         getChildren().addFirst(displayFlow);
 
         textListener = (_, _, newText) -> updateDisplay(newText);
@@ -40,6 +40,24 @@ public class AddressLabelSkin extends LabelSkin {
         updateDisplay(control.getText());
 
         control.setStyle("-fx-text-fill: transparent;");
+    }
+
+    static TextFlow createDisplayFlow() {
+        //Drawn over the control's own transparent text, which screen readers already read
+        TextFlow displayFlow = new TextFlow() {
+            @Override
+            public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+                if(attribute == AccessibleAttribute.CHILDREN) {
+                    return FXCollections.emptyObservableList();
+                }
+
+                return super.queryAccessibleAttribute(attribute, parameters);
+            }
+        };
+        displayFlow.setAccessibleRole(AccessibleRole.NODE);
+        displayFlow.setManaged(false);
+        displayFlow.setMouseTransparent(true);
+        return displayFlow;
     }
 
     @Override

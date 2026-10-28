@@ -50,7 +50,7 @@
             </Form>
 
             <AnchorPane fx:id="qrCodePane" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                <ImageView fx:id="qrCode" styleClass="qr-code" AnchorPane.rightAnchor="5"/>
+                <ImageView fx:id="qrCode" accessibleText="Address QR Code" styleClass="qr-code" AnchorPane.rightAnchor="5"/>
             </AnchorPane>
 
             <Form fx:id="spReceiveForm" GridPane.columnIndex="0" GridPane.rowIndex="0">
@@ -104,7 +104,7 @@
             <Form fx:id="spQrForm" GridPane.columnIndex="0" GridPane.rowIndex="2" alignment="CENTER">
                 <Fieldset inputGrow="SOMETIMES" text="">
                     <Field text="">
-                        <ImageView fx:id="spQrCode" styleClass="qr-code" />
+                        <ImageView fx:id="spQrCode" accessibleText="Silent Payments Address QR Code" styleClass="qr-code" />
                     </Field>
                 </Fieldset>
             </Form>
