@@ -32,7 +32,7 @@
         <Fieldset inputGrow="ALWAYS">
             <Field text="Pay to:">
                 <StackPane>
-                    <ComboBox fx:id="openWallets" />
+                    <ComboBox fx:id="openWallets" accessibleText="Choose a wallet to pay to" />
                     <ComboBoxTextField fx:id="address" styleClass="address-text-field" comboProperty="$openWallets">
                         <tooltip>
                             <Tooltip text="Address, payment code or bitcoin: URI"/>

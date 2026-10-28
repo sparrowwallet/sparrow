@@ -47,11 +47,18 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -81,6 +88,9 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @FXML
     private ComboBox<Wallet> openWallets;
+
+    private Wallet browsedWallet;
+    private boolean chooseBrowsedWallet;
 
     @FXML
     private ComboBoxTextField address;
@@ -303,34 +313,22 @@ public class PaymentController extends WalletFormController implements Initializ
     public void initializeView() {
         updateOpenWallets();
         openWallets.prefWidthProperty().bind(address.widthProperty());
+        //While the list is open the value follows the highlighted wallet, so a wallet is only chosen once the list closes
         openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(newValue == payNymWallet) {
-                PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), PayNymDialog.Operation.SEND);
-                payNymDialog.initOwner(scanQrButton.getScene().getWindow());
-                Optional<PayNym> optPayNym = payNymDialog.showAndWait();
-                optPayNym.ifPresent(this::setPayNym);
-            } else if(newValue == nfcCardWallet) {
-                DeviceGetAddressDialog deviceGetAddressDialog = new DeviceGetAddressDialog(Collections.emptyList());
-                deviceGetAddressDialog.initOwner(scanQrButton.getScene().getWindow());
-                Optional<Address> optAddress = deviceGetAddressDialog.showAndWait();
-                if(optAddress.isPresent()) {
-                    address.setText(optAddress.get().toString());
-                    label.requestFocus();
-                }
+            if(!openWallets.isShowing()) {
+                selectOpenWallet(newValue);
             } else if(newValue != null) {
-                if(newValue.getPolicyType() == PolicyType.SINGLE_SP) {
-                    address.setText(newValue.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
-                } else {
-                    List<Address> existingAddresses = getOtherAddresses();
-                    WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
-                    Address freshAddress = freshNode.getAddress();
-                    while(existingAddresses.contains(freshAddress) || (freshNode.getLabel() != null && !freshNode.getLabel().isEmpty())) {
-                        freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE, freshNode);
-                        freshAddress = freshNode.getAddress();
-                    }
-                    address.setText(freshAddress.toString());
-                }
-                label.requestFocus();
+                browsedWallet = newValue;
+            }
+        });
+        //Only Enter, Space or a click on a wallet chooses it; closing the list any other way leaves the browsed wallet unchosen
+        openWallets.setOnHidden(event -> {
+            Wallet wallet = chooseBrowsedWallet ? browsedWallet : null;
+            browsedWallet = null;
+            chooseBrowsedWallet = false;
+            Platform.runLater(() -> openWallets.getSelectionModel().clearSelection());
+            if(wallet != null) {
+                selectOpenWallet(wallet);
             }
         });
         openWallets.setCellFactory(c -> new ListCell<>() {
@@ -344,6 +342,32 @@ public class PaymentController extends WalletFormController implements Initializ
                     setText(wallet.getFullDisplayName() + (wallet == sendController.getWalletForm().getWallet() ? " (Consolidation)" : ""));
                     setGraphic(getOpenWalletIcon(wallet));
                 }
+            }
+        });
+        //Choosing a wallet fills the address and moves on to the label, so arrow keys open the list to browse rather than choosing the next wallet
+        openWallets.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if((event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) && !openWallets.isShowing()) {
+                openWallets.show();
+                event.consume();
+            }
+        });
+        openWallets.skinProperty().addListener((observable, oldSkin, skin) -> {
+            if(skin instanceof ComboBoxListViewSkin<?> listViewSkin) {
+                Node popupContent = listViewSkin.getPopupContent();
+                popupContent.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+                    if(event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
+                        chooseBrowsedWallet = true;
+                    }
+                });
+                //Checked on the press, as the list closes in a release filter of its own that runs before one added here
+                popupContent.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+                    for(Node node = event.getPickResult().getIntersectedNode(); node != null && node != popupContent; node = node.getParent()) {
+                        if(node instanceof ListCell<?> cell) {
+                            chooseBrowsedWallet = !cell.isEmpty();
+                            break;
+                        }
+                    }
+                });
             }
         });
         openWallets.setOnShowing(event -> {
@@ -510,13 +534,44 @@ public class PaymentController extends WalletFormController implements Initializ
         openWallets.setItems(FXCollections.observableList(openWalletList));
     }
 
+    private void selectOpenWallet(Wallet newValue) {
+        if(newValue == payNymWallet) {
+            PayNymDialog payNymDialog = new PayNymDialog(sendController.getWalletForm().getWalletId(), PayNymDialog.Operation.SEND);
+            payNymDialog.initOwner(scanQrButton.getScene().getWindow());
+            Optional<PayNym> optPayNym = payNymDialog.showAndWait();
+            optPayNym.ifPresent(this::setPayNym);
+        } else if(newValue == nfcCardWallet) {
+            DeviceGetAddressDialog deviceGetAddressDialog = new DeviceGetAddressDialog(Collections.emptyList());
+            deviceGetAddressDialog.initOwner(scanQrButton.getScene().getWindow());
+            Optional<Address> optAddress = deviceGetAddressDialog.showAndWait();
+            if(optAddress.isPresent()) {
+                address.setText(optAddress.get().toString());
+                label.requestFocus();
+            }
+        } else if(newValue != null) {
+            if(newValue.getPolicyType() == PolicyType.SINGLE_SP) {
+                address.setText(newValue.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());
+            } else {
+                List<Address> existingAddresses = getOtherAddresses();
+                WalletNode freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE);
+                Address freshAddress = freshNode.getAddress();
+                while(existingAddresses.contains(freshAddress) || (freshNode.getLabel() != null && !freshNode.getLabel().isEmpty())) {
+                    freshNode = newValue.getFreshNode(KeyPurpose.RECEIVE, freshNode);
+                    freshAddress = freshNode.getAddress();
+                }
+                address.setText(freshAddress.toString());
+            }
+            label.requestFocus();
+        }
+    }
+
     private Node getOpenWalletIcon(Wallet wallet) {
         if(wallet == payNymWallet) {
-            return getPayNymGlyph();
+            return getDecorativeIcon(getPayNymGlyph());
         }
 
         if(wallet == nfcCardWallet) {
-            return getNfcCardGlyph();
+            return getDecorativeIcon(getNfcCardGlyph());
         }
 
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
@@ -526,6 +581,20 @@ public class PaymentController extends WalletFormController implements Initializ
         }
 
         return null;
+    }
+
+    //Hidden from screen readers, as the glyph reads as empty text before the name it decorates
+    private static Node getDecorativeIcon(Node glyph) {
+        return new StackPane(glyph) {
+            @Override
+            public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+                return switch(attribute) {
+                    case ROLE -> AccessibleRole.NODE;
+                    case CHILDREN -> FXCollections.emptyObservableList();
+                    default -> super.queryAccessibleAttribute(attribute, parameters);
+                };
+            }
+        };
     }
 
     private void addValidation(ValidationSupport validationSupport) {

@@ -6,10 +6,13 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ComboBoxBase;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.input.Clipboard;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.control.textfield.CustomTextField;
@@ -30,6 +33,27 @@ public class ComboBoxTextField extends CustomTextField {
         disabledProperty().addListener((observable, oldValue, newValue) -> {
             if(comboProperty.isNotNull().get()) {
                 comboProperty.get().setVisible(!newValue);
+            }
+        });
+
+        //Down opens the list from the keyboard, as the button does with the mouse; the list takes the keys only while its combo has focus
+        addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            ComboBox<?> combo = comboProperty.get();
+            if(event.getCode() == KeyCode.DOWN && combo != null && combo.isVisible() && !combo.isDisabled() && !combo.isShowing()) {
+                combo.requestFocus();
+                combo.show();
+                event.consume();
+            }
+        });
+        comboProperty.addListener((observable, oldCombo, combo) -> {
+            if(combo != null) {
+                //Closing the list without a choice that moves focus elsewhere returns focus here from the combo behind this field.
+                //The scene's focus owner is checked as isFocused() is false while a dialog opened by the choice is in front.
+                combo.addEventHandler(ComboBoxBase.ON_HIDDEN, event -> Platform.runLater(() -> {
+                    if(combo.getScene() != null && combo.getScene().getFocusOwner() == combo) {
+                        requestFocus();
+                    }
+                }));
             }
         });
     }
@@ -53,8 +77,13 @@ public class ComboBoxTextField extends CustomTextField {
                 if(!initialized) {
                     comboProperty.get().valueProperty().addListener((observable, oldValue, newValue) -> {
                         comboShowing = false;
-                        Platform.runLater(() -> comboProperty.get().getSelectionModel().clearSelection());
+                        //While the list is open the value follows the highlighted item, which clearing would reset
+                        if(!comboProperty.get().isShowing()) {
+                            Platform.runLater(() -> comboProperty.get().getSelectionModel().clearSelection());
+                        }
                     });
+                    //A choice made while the list is open is cleared once it closes, so the same item can be chosen again
+                    comboProperty.get().addEventHandler(ComboBoxBase.ON_HIDDEN, event -> Platform.runLater(() -> comboProperty.get().getSelectionModel().clearSelection()));
                     initialized = true;
                 }
             }
