@@ -273,7 +273,7 @@
         <Fieldset text="Signatures" inputGrow="SOMETIMES">
             <VBox>
                 <SignaturesProgressBar fx:id="signaturesProgressBar" />
-                <ProgressBar fx:id="broadcastProgressBar" maxWidth="Infinity" minHeight="50" prefHeight="50" />
+                <ProgressBar fx:id="broadcastProgressBar" accessibleText="Broadcasting transaction" maxWidth="Infinity" minHeight="50" prefHeight="50" />
             </VBox>
             <VBox>
                 <HBox fx:id="signButtonBox" styleClass="signatures-buttons" spacing="20">

@@ -32,6 +32,7 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.HashIndexEntry;
 import com.sparrowwallet.sparrow.wallet.TransactionEntry;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
@@ -502,6 +503,7 @@ public class HeadersController extends TransactionFormController implements Init
         signaturesProgressBar.managedProperty().bind(signaturesProgressBar.visibleProperty());
         broadcastProgressBar.managedProperty().bind(broadcastProgressBar.visibleProperty());
         broadcastProgressBar.visibleProperty().bind(signaturesProgressBar.visibleProperty().not());
+        blockStatus.accessibleTextProperty().bind(Bindings.concat("Transaction status: ", blockStatus.textProperty()));
 
         broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
         showTransactionButton.managedProperty().bind(showTransactionButton.visibleProperty());
@@ -870,6 +872,7 @@ public class HeadersController extends TransactionFormController implements Init
     }
 
     private void updateBlockchainForm(BlockTransaction reportedTransaction, Integer currentHeight) {
+        boolean broadcasting = broadcastProgressBar.isFocused();
         signaturesForm.setVisible(false);
         blockchainForm.setVisible(true);
         updateEditable(false);
@@ -952,6 +955,10 @@ public class HeadersController extends TransactionFormController implements Init
 
         if(unproven) {
             verifyBlockTransaction(blockTransaction);
+        }
+
+        if(broadcasting) {
+            blockStatus.requestFocus();
         }
     }
 
@@ -1403,6 +1410,7 @@ public class HeadersController extends TransactionFormController implements Init
         if(headersForm.getPsbt() != null) {
             if(!extractTransaction()) {
                 broadcastButton.setDisable(false);
+                broadcastButton.requestFocus();
                 return;
             }
         }
@@ -1414,6 +1422,7 @@ public class HeadersController extends TransactionFormController implements Init
                         "This transaction pays a very high fee rate of " + String.format("%.0f", feeRateAmt) + " sats/vB.\n\nBroadcast this transaction?", ButtonType.YES, ButtonType.NO);
                 if(optType.isPresent() && optType.get() == ButtonType.NO) {
                     broadcastButton.setDisable(false);
+                    broadcastButton.requestFocus();
                     return;
                 }
             }
@@ -1455,6 +1464,7 @@ public class HeadersController extends TransactionFormController implements Init
                         log.error("Timeout searching for broadcasted transaction");
                         AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not register it in the mempool. It is safe to try broadcasting again.");
                         broadcastButton.setDisable(false);
+                        broadcastButton.requestFocus();
                     }
                 });
                 transactionMempoolService.setOnFailed(mempoolWorkerStateEvent -> {
@@ -1464,6 +1474,7 @@ public class HeadersController extends TransactionFormController implements Init
                         log.error("Timeout searching for broadcasted transaction");
                         AppServices.showErrorDialog("Timeout searching for broadcasted transaction", "The transaction was broadcast but the server did not indicate it had entered the mempool. It is safe to try broadcasting again.");
                         broadcastButton.setDisable(false);
+                        broadcastButton.requestFocus();
                     }
                 });
                 transactionMempoolService.start();
@@ -1541,10 +1552,13 @@ public class HeadersController extends TransactionFormController implements Init
                 AppServices.showErrorDialog("Error broadcasting transaction", "The server returned an error when broadcasting the transaction. The server response is contained in the log (See Help > Show Log File).");
             }
             broadcastButton.setDisable(false);
+            broadcastButton.requestFocus();
         });
 
         signaturesProgressBar.setVisible(false);
         broadcastProgressBar.setProgress(-1);
+        //Pressing Broadcast disables it, so focus is given to the progress, and then to the transaction status once it reaches the mempool
+        broadcastProgressBar.requestFocus();
         broadcastTransactionService.start();
     }
 
@@ -1876,8 +1890,16 @@ public class HeadersController extends TransactionFormController implements Init
                 updateSignedKeystores(headersForm.getSigningWallet());
             }
 
+            //Signing from the sign buttons hides them, so focus is given to the signatures, which are read as a summary
+            boolean signing = false;
+            for(Node node = signButtonBox.getScene() == null ? null : signButtonBox.getScene().getFocusOwner(); node != null && !signing; node = node.getParent()) {
+                signing = node == signButtonBox;
+            }
             signButtonBox.setVisible(false);
             broadcastButtonBox.setVisible(true);
+            if(signing) {
+                signaturesProgressBar.requestFocus();
+            }
 
             if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
                 if(Config.get().getConnectToBroadcast() == null) {

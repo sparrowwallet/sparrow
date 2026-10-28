@@ -8,11 +8,14 @@ import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
 import javafx.collections.MapChangeListener;
 import javafx.collections.ObservableMap;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.layout.StackPane;
@@ -21,9 +24,15 @@ import org.controlsfx.control.SegmentedBar;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.SignatureProgressSegment> {
+    private int threshold;
+
     public SignaturesProgressBar() {
+        //Read as one summary: each segment is a progress bar, which screen readers announce only as a percentage.
+        //A read-only text field rather than text, as VoiceOver keeps reading the first value it saw of text that later changes.
+        setAccessibleRole(AccessibleRole.TEXT_FIELD);
         getStyleClass().add("signatures-progress-bar");
         setOrientation(Orientation.HORIZONTAL);
         setSegmentViewFactory(SignatureProgressSegmentView::new);
@@ -31,6 +40,7 @@ public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.Si
     }
 
     public void initialize(ObservableMap<TransactionSignature, Keystore> signatureKeystoreMap, int threshold) {
+        this.threshold = threshold;
         getSegments().clear();
 
         List<Keystore> signedKeystores = new ArrayList<>(signatureKeystoreMap.values());
@@ -79,7 +89,24 @@ public class SignaturesProgressBar extends SegmentedBar<SignaturesProgressBar.Si
                     newSegment.setKeystore(signedKeystore);
                 }
             }
+
+            notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
         });
+
+        notifyAccessibleAttributeChanged(AccessibleAttribute.TEXT);
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        return switch(attribute) {
+            case TEXT -> {
+                List<String> signers = getSegments().stream().map(SignatureProgressSegment::getKeystore).filter(Objects::nonNull).map(Keystore::getLabel).toList();
+                yield signers.isEmpty() ? "No signatures, " + threshold + " required" : signers.size() + " of " + threshold + " signatures, signed by " + String.join(", ", signers);
+            }
+            case EDITABLE -> false;
+            case CHILDREN -> FXCollections.emptyObservableList();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
     }
 
     public static class SignatureProgressSegment extends SegmentedBar.Segment {
