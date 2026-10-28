@@ -291,7 +291,7 @@ public class ServerSettingsController extends SettingsDetailController {
         recentCoreServers.setCellFactory(value -> new ServerCell());
         recentCoreServers.setItems(getObservableServerList(Config.get().getRecentCoreServers()));
         recentCoreServers.prefWidthProperty().bind(coreHost.widthProperty());
-        recentCoreServers.valueProperty().addListener((observable, oldValue, newValue) -> {
+        coreHost.<Server>setOnChoose(newValue -> {
             if(newValue != null) {
                 if(newValue == MANAGE_ALIASES_SERVER) {
                     ServerAliasDialog serverAliasDialog = new ServerAliasDialog(ServerType.BITCOIN_CORE);
@@ -337,7 +337,7 @@ public class ServerSettingsController extends SettingsDetailController {
         recentElectrumServers.setCellFactory(value -> new ServerCell());
         recentElectrumServers.setItems(getObservableServerList(Config.get().getRecentElectrumServers()));
         recentElectrumServers.prefWidthProperty().bind(electrumHost.widthProperty());
-        recentElectrumServers.valueProperty().addListener((observable, oldValue, newValue) -> {
+        electrumHost.<Server>setOnChoose(newValue -> {
             if(newValue != null) {
                 if(newValue == MANAGE_ALIASES_SERVER) {
                     ServerAliasDialog serverAliasDialog = new ServerAliasDialog(ServerType.ELECTRUM_SERVER);

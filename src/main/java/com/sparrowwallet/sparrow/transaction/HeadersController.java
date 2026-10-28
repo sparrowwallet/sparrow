@@ -38,6 +38,7 @@ import javafx.collections.ObservableMap;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.DateCell;
@@ -504,6 +505,8 @@ public class HeadersController extends TransactionFormController implements Init
         broadcastProgressBar.managedProperty().bind(broadcastProgressBar.visibleProperty());
         broadcastProgressBar.visibleProperty().bind(signaturesProgressBar.visibleProperty().not());
         blockStatus.accessibleTextProperty().bind(Bindings.concat("Transaction status: ", blockStatus.textProperty()));
+        //A read-only text field rather than text, as VoiceOver keeps reading the first value it saw of text that later changes
+        blockStatus.setAccessibleRole(AccessibleRole.TEXT_FIELD);
 
         broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
         showTransactionButton.managedProperty().bind(showTransactionButton.visibleProperty());

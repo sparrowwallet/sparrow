@@ -49,6 +49,7 @@ import javafx.scene.TraversalDirection;
 import javafx.scene.control.*;
 import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
 import javafx.stage.Screen;
@@ -75,7 +76,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.sparrowwallet.sparrow.AppController.CONNECTION_FAILED_PREFIX;
 import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
@@ -1016,6 +1019,17 @@ public class AppServices {
             //macOS has no accessibility role for DIALOG and exposes it as an unknown element around the whole dialog
             if(OsType.getCurrent() == OsType.MACOS && stage.getScene().getRoot().getAccessibleRole() == AccessibleRole.DIALOG) {
                 stage.getScene().getRoot().setAccessibleRole(AccessibleRole.PARENT);
+            }
+            //The icon an alert style puts in the dialog header is otherwise read as an unnamed image
+            if(stage.getScene().getRoot() instanceof DialogPane dialogPane) {
+                Consumer<Node> nameAlertIcon = graphic -> {
+                    if(graphic instanceof ImageView && graphic.getAccessibleText() == null) {
+                        Stream.of("warning", "error", "information", "confirmation").filter(dialogPane.getStyleClass()::contains).findFirst()
+                                .ifPresent(kind -> graphic.setAccessibleText(Character.toUpperCase(kind.charAt(0)) + kind.substring(1)));
+                    }
+                };
+                dialogPane.graphicProperty().addListener((_, _, graphic) -> nameAlertIcon.accept(graphic));
+                nameAlertIcon.accept(dialogPane.getGraphic());
             }
         }
     }

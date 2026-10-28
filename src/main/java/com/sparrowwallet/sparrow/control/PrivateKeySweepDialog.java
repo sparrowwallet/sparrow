@@ -152,6 +152,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         toAddress.getStyleClass().add("fixed-width");
         toAddress.setSkin(new AddressTextFieldSkin(toAddress));
         toWallet = new ComboBox<>();
+        toWallet.setAccessibleText("Choose a wallet to sweep to");
         toWallet.setItems(FXCollections.observableList(AppServices.get().getOpenWallets().keySet().stream()
                 .filter(w -> !w.isWhirlpoolChildWallet() && !w.isBip47()).collect(Collectors.toList())));
         toAddress.setComboProperty(toWallet);
@@ -227,7 +228,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
             createButton.setDisable(!isValidKey() || !isValidToAddress());
         });
 
-        toWallet.valueProperty().addListener((observable, oldValue, selectedWallet) -> {
+        toAddress.<Wallet>setOnChoose(selectedWallet -> {
             if(selectedWallet != null) {
                 if(selectedWallet.getPolicyType() == PolicyType.SINGLE_SP) {
                     toAddress.setText(selectedWallet.getSilentPaymentScanAddress().getSilentPaymentAddress().getAddress());

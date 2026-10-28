@@ -101,7 +101,7 @@
         <Fieldset inputGrow="SOMETIMES" text="Bitcoin Core RPC">
             <Field text="URL:">
                 <StackPane>
-                    <ComboBox fx:id="recentCoreServers" />
+                    <ComboBox fx:id="recentCoreServers" accessibleText="Choose a recent server" />
                     <ComboBoxTextField fx:id="coreHost" promptText="e.g. 127.0.0.1" comboProperty="$recentCoreServers" />
                 </StackPane>
                 <TextField fx:id="corePort" promptText="e.g. 8332" maxWidth="120" />
@@ -151,7 +151,7 @@
         <Fieldset inputGrow="SOMETIMES" text="Private Electrum Server">
             <Field text="URL:">
                 <StackPane>
-                    <ComboBox fx:id="recentElectrumServers" />
+                    <ComboBox fx:id="recentElectrumServers" accessibleText="Choose a recent server" />
                     <ComboBoxTextField fx:id="electrumHost" promptText="e.g. 127.0.0.1 or Tor hostname (.onion)" comboProperty="$recentElectrumServers" />
                 </StackPane>
                 <TextField fx:id="electrumPort" promptText="e.g. 50001" maxWidth="120" />

@@ -51,12 +51,8 @@ import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.control.skin.ComboBoxListViewSkin;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import org.controlsfx.glyphfont.Glyph;
@@ -88,9 +84,6 @@ public class PaymentController extends WalletFormController implements Initializ
 
     @FXML
     private ComboBox<Wallet> openWallets;
-
-    private Wallet browsedWallet;
-    private boolean chooseBrowsedWallet;
 
     @FXML
     private ComboBoxTextField address;
@@ -313,24 +306,7 @@ public class PaymentController extends WalletFormController implements Initializ
     public void initializeView() {
         updateOpenWallets();
         openWallets.prefWidthProperty().bind(address.widthProperty());
-        //While the list is open the value follows the highlighted wallet, so a wallet is only chosen once the list closes
-        openWallets.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if(!openWallets.isShowing()) {
-                selectOpenWallet(newValue);
-            } else if(newValue != null) {
-                browsedWallet = newValue;
-            }
-        });
-        //Only Enter, Space or a click on a wallet chooses it; closing the list any other way leaves the browsed wallet unchosen
-        openWallets.setOnHidden(event -> {
-            Wallet wallet = chooseBrowsedWallet ? browsedWallet : null;
-            browsedWallet = null;
-            chooseBrowsedWallet = false;
-            Platform.runLater(() -> openWallets.getSelectionModel().clearSelection());
-            if(wallet != null) {
-                selectOpenWallet(wallet);
-            }
-        });
+        address.setOnChoose(this::selectOpenWallet);
         openWallets.setCellFactory(c -> new ListCell<>() {
             @Override
             protected void updateItem(Wallet wallet, boolean empty) {
@@ -342,32 +318,6 @@ public class PaymentController extends WalletFormController implements Initializ
                     setText(wallet.getFullDisplayName() + (wallet == sendController.getWalletForm().getWallet() ? " (Consolidation)" : ""));
                     setGraphic(getOpenWalletIcon(wallet));
                 }
-            }
-        });
-        //Choosing a wallet fills the address and moves on to the label, so arrow keys open the list to browse rather than choosing the next wallet
-        openWallets.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            if((event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) && !openWallets.isShowing()) {
-                openWallets.show();
-                event.consume();
-            }
-        });
-        openWallets.skinProperty().addListener((observable, oldSkin, skin) -> {
-            if(skin instanceof ComboBoxListViewSkin<?> listViewSkin) {
-                Node popupContent = listViewSkin.getPopupContent();
-                popupContent.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-                    if(event.getCode() == KeyCode.ENTER || event.getCode() == KeyCode.SPACE) {
-                        chooseBrowsedWallet = true;
-                    }
-                });
-                //Checked on the press, as the list closes in a release filter of its own that runs before one added here
-                popupContent.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
-                    for(Node node = event.getPickResult().getIntersectedNode(); node != null && node != popupContent; node = node.getParent()) {
-                        if(node instanceof ListCell<?> cell) {
-                            chooseBrowsedWallet = !cell.isEmpty();
-                            break;
-                        }
-                    }
-                });
             }
         });
         openWallets.setOnShowing(event -> {
