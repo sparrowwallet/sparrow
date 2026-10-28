@@ -15,6 +15,7 @@ import com.sparrowwallet.sparrow.io.ImportException;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
@@ -77,6 +78,7 @@ public abstract class FileImportPane extends TitledDescriptionPane {
 
             SegmentedButton segmentedButton = new SegmentedButton();
             segmentedButton.getButtons().addAll(scanButton, fileButton);
+            segmentedButton.getButtons().forEach(button -> button.setAccessibleRole(AccessibleRole.BUTTON));
             return segmentedButton;
         } else if(scannable) {
             importButton = new Button("Scan...");

@@ -19,6 +19,7 @@ import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Button;
 import javafx.scene.control.Control;
 import javafx.scene.control.ToggleButton;
@@ -72,6 +73,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
 
             SegmentedButton segmentedButton = new SegmentedButton();
             segmentedButton.getButtons().addAll(showButton, fileButton);
+            segmentedButton.getButtons().forEach(button -> button.setAccessibleRole(AccessibleRole.BUTTON));
             return segmentedButton;
         } else if(scannable) {
             Button showButton = new Button("Show...");

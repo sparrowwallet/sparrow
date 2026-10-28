@@ -50,7 +50,7 @@
                 <IdLabel fx:id="id"/>
                 <SegmentedButton>
                     <buttons>
-                        <ToggleButton fx:id="copyTxid" onAction="#copyId">
+                        <ToggleButton accessibleRole="BUTTON" fx:id="copyTxid" onAction="#copyId">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="COPY" />
                             </graphic>
@@ -58,7 +58,7 @@
                                 <Tooltip text="Copy the transaction id to the clipboard"/>
                             </tooltip>
                         </ToggleButton>
-                        <ToggleButton fx:id="openBlockExplorer" onAction="#openInBlockExplorer">
+                        <ToggleButton accessibleRole="BUTTON" fx:id="openBlockExplorer" onAction="#openInBlockExplorer">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="UP_RIGHT_FROM_SQUARE" />
                             </graphic>
@@ -279,12 +279,12 @@
                 <HBox fx:id="signButtonBox" styleClass="signatures-buttons" spacing="20">
                     <SegmentedButton HBox.hgrow="ALWAYS">
                         <buttons>
-                            <ToggleButton HBox.hgrow="ALWAYS" text="Show QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showPSBT">
+                            <ToggleButton accessibleRole="BUTTON" HBox.hgrow="ALWAYS" text="Show QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#showPSBT">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="QRCODE" />
                                 </graphic>
                             </ToggleButton>
-                            <ToggleButton HBox.hgrow="ALWAYS" text="Scan QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#scanPSBT">
+                            <ToggleButton accessibleRole="BUTTON" HBox.hgrow="ALWAYS" text="Scan QR" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#scanPSBT">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="CAMERA" />
                                 </graphic>
@@ -293,12 +293,12 @@
                     </SegmentedButton>
                     <SegmentedButton HBox.hgrow="ALWAYS">
                         <buttons>
-                            <ToggleButton HBox.hgrow="ALWAYS" text="Save Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#savePSBT">
+                            <ToggleButton accessibleRole="BUTTON" HBox.hgrow="ALWAYS" text="Save Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#savePSBT">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="SD_CARD" />
                                 </graphic>
                             </ToggleButton>
-                            <ToggleButton HBox.hgrow="ALWAYS" text="Load Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#loadPSBT">
+                            <ToggleButton accessibleRole="BUTTON" HBox.hgrow="ALWAYS" text="Load Transaction" contentDisplay="TOP" wrapText="true" textAlignment="CENTER" onAction="#loadPSBT">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="20" icon="ARROW_UP" />
                                 </graphic>
