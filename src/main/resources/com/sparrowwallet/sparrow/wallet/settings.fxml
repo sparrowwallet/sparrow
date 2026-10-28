@@ -57,7 +57,7 @@
                                 </FXCollections>
                             </items>
                         </ComboBox>
-                        <HelpLabel helpText="Native Segwit the type chosen for most new wallets.\nTaproot is a newer type useful for specific needs.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are restoring." />
+                        <HelpLabel helpText="Native Segwit is the type chosen for most new wallets.\nTaproot is a newer type useful for specific needs.\nNested Segwit and Legacy are useful for recovering older wallets.\nFor existing wallets, be sure to choose the type that matches the wallet you are restoring." />
                     </Field>
                 </Fieldset>
             </Form>

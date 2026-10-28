@@ -2,10 +2,12 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
@@ -23,8 +25,18 @@ public class HelpLabel extends Label {
         tooltip.setShowDuration(Duration.seconds(15));
         tooltip.setShowDelay(Duration.millis(500));
         getStyleClass().add("help-label");
+        accessibleTextProperty().bind(helpTextProperty());
 
         Platform.runLater(() -> setTooltip(tooltip));
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.CHILDREN) {
+            return FXCollections.emptyObservableList();
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     private static Glyph getHelpGlyph() {
