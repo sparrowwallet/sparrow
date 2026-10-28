@@ -24,8 +24,11 @@ import com.sparrowwallet.sparrow.wallet.Entry;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import javafx.application.Platform;
+import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.StackPane;
@@ -45,6 +48,24 @@ public class CoinTreeTable extends TreeTableView<Entry> {
 
     private final PublishSubject<WalletTableChangedEvent> walletTableSubject = PublishSubject.create();
     private final Observable<WalletTableChangedEvent> walletTableEvents = walletTableSubject.debounce(1, TimeUnit.SECONDS);
+
+    public CoinTreeTable() {
+        setRowFactory(_ -> new TreeTableRow<>() {
+            @Override
+            public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+                //Empty rows fill the space below the last entry and have nothing to read
+                if(isEmpty()) {
+                    if(attribute == AccessibleAttribute.ROLE) {
+                        return AccessibleRole.NODE;
+                    } else if(attribute == AccessibleAttribute.CHILDREN) {
+                        return FXCollections.emptyObservableList();
+                    }
+                }
+
+                return super.queryAccessibleAttribute(attribute, parameters);
+            }
+        });
+    }
 
     public TableType getTableType() {
         return tableType;
