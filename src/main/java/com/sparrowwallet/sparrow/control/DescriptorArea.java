@@ -6,24 +6,18 @@ import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
-import com.sparrowwallet.sparrow.AppServices;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
-import org.fxmisc.richtext.CodeArea;
 
 import java.util.List;
 
 import static com.sparrowwallet.drongo.policy.PolicyType.*;
 import static com.sparrowwallet.drongo.protocol.ScriptType.MULTISIG;
 
-public class DescriptorArea extends CodeArea {
+public class DescriptorArea extends ReadOnlyCodeArea {
     private Wallet wallet;
-
-    public DescriptorArea() {
-        AppServices.moveFocusOnTab(this);
-    }
 
     public void setWallet(Wallet wallet) {
         clear();

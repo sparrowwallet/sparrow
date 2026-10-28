@@ -8,7 +8,7 @@
 
 <SplitPane fx:id="tabContent" dividerPositions="0.82" orientation="VERTICAL" stylesheets="@transaction.css" VBox.vgrow="ALWAYS" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.transaction.TransactionController">
 <items>
-    <MasterDetailPane fx:id="transactionMasterDetail" detailSide="BOTTOM">
+    <MasterDetailPane fx:id="transactionMasterDetail" detailSide="BOTTOM" focusTraversable="false">
         <masterNode>
             <SplitPane fx:id="txSplitPane" dividerPositions="0.15">
                 <items>

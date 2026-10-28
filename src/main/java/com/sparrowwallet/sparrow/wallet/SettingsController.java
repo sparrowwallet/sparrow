@@ -24,6 +24,7 @@ import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
 import com.sparrowwallet.sparrow.net.ServerType;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -83,10 +84,7 @@ public class SettingsController extends WalletFormController implements Initiali
     private RangeSlider multisigControl;
 
     @FXML
-    private CopyableLabel multisigLowLabel;
-
-    @FXML
-    private CopyableLabel multisigHighLabel;
+    private CopyableLabel multisigLabel;
 
     @FXML
     private StackPane keystoreTabsPane;
@@ -192,8 +190,9 @@ public class SettingsController extends WalletFormController implements Initiali
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.SCRIPT_TYPE));
         });
 
-        multisigLowLabel.textProperty().bind(multisigControl.lowValueProperty().asString("%.0f") );
-        multisigHighLabel.textProperty().bind(multisigControl.highValueProperty().asString("%.0f"));
+        multisigLabel.textProperty().bind(Bindings.format("%.0f / %.0f", multisigControl.lowValueProperty(), multisigControl.highValueProperty()));
+        //Spoken as "2 of 3" rather than with a slash
+        multisigLabel.accessibleTextProperty().bind(Bindings.format("%.0f of %.0f", multisigControl.lowValueProperty(), multisigControl.highValueProperty()));
 
         multisigControl.lowValueProperty().addListener((observable, oldValue, threshold) -> {
             EventManager.get().post(new SettingsChangedEvent(walletForm.getWallet(), SettingsChangedEvent.Type.MUTLISIG_THRESHOLD));

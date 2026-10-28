@@ -62,7 +62,7 @@
                     </yAxis>
                 </BalanceChart>
             </GridPane>
-            <MasterDetailPane fx:id="transactionsMasterDetail" detailSide="BOTTOM" VBox.vgrow="ALWAYS">
+            <MasterDetailPane fx:id="transactionsMasterDetail" detailSide="BOTTOM" VBox.vgrow="ALWAYS" focusTraversable="false">
                 <masterNode>
                     <TransactionsTreeTable fx:id="transactionsTable" tableType="TRANSACTIONS" />
                 </masterNode>

@@ -52,7 +52,7 @@ public class LabelledFieldSkin extends FieldSkin {
     //Only value controls are labelled: a button or a value shown in a plain label after the field label is not what the label names
     private Node findInput(List<Node> nodes, boolean textInputOnly) {
         for(Node node : nodes) {
-            boolean input = node instanceof TextInputControl || (!textInputOnly && isValueControl(node));
+            boolean input = node instanceof TextInputControl || node instanceof ReadOnlyCodeArea || (!textInputOnly && isValueControl(node));
             if(input || (!(node instanceof Control) && node instanceof Parent)) {
                 watchVisibility(node);
             }

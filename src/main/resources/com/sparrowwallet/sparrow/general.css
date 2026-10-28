@@ -5,6 +5,10 @@
     -fx-padding: 5 0 5 0;
 }
 
+.copyable-label:empty {
+    -fx-focus-traversable: false;
+}
+
 .form .wideLabelFieldSet.fieldset:horizontal .label-container {
     -fx-pref-width: 170px;
     -fx-pref-height: 25px;

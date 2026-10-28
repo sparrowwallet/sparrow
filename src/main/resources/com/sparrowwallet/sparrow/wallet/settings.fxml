@@ -68,9 +68,7 @@
                         <CosignersSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="1" max="9" highValue="3" lowValue="2" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
                     </Field>
                     <Field text="M of N:">
-                        <CopyableLabel fx:id="multisigLowLabel" />
-                        <CopyableLabel text="/"/>
-                        <CopyableLabel fx:id="multisigHighLabel" />
+                        <CopyableLabel fx:id="multisigLabel" />
                     </Field>
                 </Fieldset>
             </Form>

@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
-import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.scene.control.ContextMenu;
@@ -12,7 +11,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.stage.Popup;
-import org.fxmisc.richtext.CodeArea;
 import org.fxmisc.richtext.event.MouseOverTextEvent;
 import org.fxmisc.richtext.model.StyleSpan;
 
@@ -23,7 +21,7 @@ import java.util.*;
 
 import static org.fxmisc.richtext.model.TwoDimensional.Bias.Backward;
 
-public class TransactionHexArea extends CodeArea {
+public class TransactionHexArea extends ReadOnlyCodeArea {
     private static final int TRUNCATE_AT = 30000;
     private static final int SEGMENTS_INTERVAL = 250;
 
@@ -32,7 +30,6 @@ public class TransactionHexArea extends CodeArea {
 
     public TransactionHexArea() {
         super();
-        AppServices.moveFocusOnTab(this);
         addPopupHandler();
     }
 

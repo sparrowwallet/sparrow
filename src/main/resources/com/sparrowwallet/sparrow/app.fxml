@@ -185,7 +185,7 @@
             <TabPane fx:id="tabs" />
         </DecorationPane>
 
-        <StatusBar fx:id="statusBar" text="" minHeight="36">
+        <StatusBar fx:id="statusBar" text="" minHeight="36" focusTraversable="false">
             <rightItems>
                 <UnlabeledToggleSwitch fx:id="serverToggle" accessibleText="Server connection">
                     <tooltip>
