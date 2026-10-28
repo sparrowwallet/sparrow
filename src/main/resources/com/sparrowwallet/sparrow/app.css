@@ -1,3 +1,7 @@
+.tab-pane {
+    -fx-skin: "com.sparrowwallet.sparrow.control.SelectedTabSkin";
+}
+
 .background-box {
     -fx-stroke: #a0a1a7;
     -fx-stroke-width: 1px;
