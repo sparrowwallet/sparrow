@@ -50,7 +50,7 @@
                 <IdLabel fx:id="id"/>
                 <SegmentedButton>
                     <buttons>
-                        <ToggleButton accessibleRole="BUTTON" fx:id="copyTxid" onAction="#copyId">
+                        <ToggleButton accessibleText="Copy Transaction ID" accessibleRole="BUTTON" fx:id="copyTxid" onAction="#copyId">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="COPY" />
                             </graphic>
@@ -58,7 +58,7 @@
                                 <Tooltip text="Copy the transaction id to the clipboard"/>
                             </tooltip>
                         </ToggleButton>
-                        <ToggleButton accessibleRole="BUTTON" fx:id="openBlockExplorer" onAction="#openInBlockExplorer">
+                        <ToggleButton accessibleText="Open in Block Explorer" accessibleRole="BUTTON" fx:id="openBlockExplorer" onAction="#openInBlockExplorer">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="UP_RIGHT_FROM_SQUARE" />
                             </graphic>

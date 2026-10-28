@@ -127,7 +127,7 @@
             </Field>
             <Field fx:id="coreDataDirField" text="Data Folder:" styleClass="label-button">
                 <TextField fx:id="coreDataDir"/>
-                <Button fx:id="coreDataDirSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
+                <Button accessibleText="Select Data Folder" fx:id="coreDataDirSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" fontSize="13" />
                     </graphic>
@@ -161,7 +161,7 @@
             </Field>
             <Field text="Certificate:" styleClass="label-button">
                 <TextField fx:id="electrumCertificate" promptText="Optional server certificate (.crt)"/>
-                <Button fx:id="electrumCertificateSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
+                <Button accessibleText="Select Certificate" fx:id="electrumCertificateSelect" maxWidth="35" minWidth="-Infinity" prefWidth="35">
                     <graphic>
                         <Glyph fontFamily="FontAwesome" icon="EDIT" fontSize="13" />
                     </graphic>

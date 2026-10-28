@@ -44,7 +44,7 @@
                         <Label text="Payment code:" styleClass="field-label" />
                         <HBox spacing="10">
                             <PaymentCodeTextField fx:id="paymentCode" styleClass="field-control" editable="false"/>
-                            <Button onAction="#showQR">
+                            <Button accessibleText="Show QR Code" onAction="#showQR">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="QRCODE" />
                                 </graphic>
@@ -61,7 +61,7 @@
                         <Label text="Find Contact:" styleClass="field-label" />
                         <HBox spacing="10">
                             <CopyableTextField fx:id="searchPayNyms" promptText="PayNym or Payment code" styleClass="field-control"/>
-                            <Button fx:id="searchPayNymsScan" onAction="#scanQR">
+                            <Button accessibleText="Scan QR Code" fx:id="searchPayNymsScan" onAction="#scanQR">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                                 </graphic>

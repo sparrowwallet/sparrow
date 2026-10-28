@@ -28,6 +28,7 @@ public class TransactionDiagramLabel extends HBox {
 
         left = new Button("");
         left.setGraphic(getLeftGlyph());
+        left.setAccessibleText("Previous Output");
         left.setOnAction(event -> {
             int index = displayedIndex.get();
             if(index > 0) {
@@ -38,6 +39,7 @@ public class TransactionDiagramLabel extends HBox {
 
         right = new Button("");
         right.setGraphic(getRightGlyph());
+        right.setAccessibleText("Next Output");
         right.setOnAction(event -> {
             int index = displayedIndex.get();
             if(index < outputs.size() - 1) {

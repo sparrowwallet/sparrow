@@ -271,6 +271,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             xpubField.setText(Network.get().getXpubHeader().getDisplayName() + " / " + header.getDisplayName() + ":");
             switchXpubHeader.setDisable(false);
             switchXpubHeader.setTooltip(new Tooltip("Show as " + header.getDisplayName()));
+            switchXpubHeader.setAccessibleText("Show as " + header.getDisplayName());
         } else {
             xpubField.setText(Network.get().getXpubHeader().getDisplayName() + ":");
             switchXpubHeader.setDisable(true);
@@ -725,10 +726,12 @@ public class KeystoreController extends WalletFormController implements Initiali
                 String otherPub = keystore.getExtendedPublicKey().getExtendedKey(header);
                 xpub.setText(otherPub);
                 switchXpubHeader.setTooltip(new Tooltip("Show as " + Network.get().getXpubHeader().getDisplayName()));
+                switchXpubHeader.setAccessibleText("Show as " + Network.get().getXpubHeader().getDisplayName());
             } else {
                 String xPub = keystore.getExtendedPublicKey().getExtendedKey();
                 xpub.setText(xPub);
                 switchXpubHeader.setTooltip(new Tooltip("Show as " + header.getDisplayName()));
+                switchXpubHeader.setAccessibleText("Show as " + header.getDisplayName());
             }
         }
     }

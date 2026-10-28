@@ -25,7 +25,7 @@
         <top>
             <HBox alignment="CENTER_LEFT">
                 <Label styleClass="addresses-treetable-label" text="Receive Addresses"/>
-                <Button onAction="#exportReceiveAddresses" styleClass="icon-button">
+                <Button accessibleText="Export Receive Addresses" onAction="#exportReceiveAddresses" styleClass="icon-button">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
                     </graphic>
@@ -52,7 +52,7 @@
         <top>
             <HBox alignment="CENTER_LEFT">
                 <Label styleClass="addresses-treetable-label" text="Change Addresses"/>
-                <Button onAction="#exportChangeAddresses" styleClass="icon-button">
+                <Button accessibleText="Export Change Addresses" onAction="#exportChangeAddresses" styleClass="icon-button">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
                     </graphic>

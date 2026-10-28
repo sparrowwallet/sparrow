@@ -42,7 +42,7 @@
                         </Field>
                         <Field text="UTXOs:">
                             <CopyableLabel fx:id="utxoCount" />
-                            <Button fx:id="exportCsv" maxHeight="25" onAction="#exportUtxos" translateY="-1" styleClass="icon-button">
+                            <Button accessibleText="Export UTXOs" fx:id="exportCsv" maxHeight="25" onAction="#exportUtxos" translateY="-1" styleClass="icon-button">
                                 <graphic>
                                     <Glyph fontFamily="Font Awesome 5 Free Solid" icon="ARROW_CIRCLE_DOWN" fontSize="12" />
                                 </graphic>
