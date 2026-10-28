@@ -296,6 +296,8 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void createImportButton() {
         importButton = requiredDerivation == null ? new SplitMenuButton() : new Button();
+        //A split button is not named by its text for screen readers
+        importButton.accessibleTextProperty().bind(importButton.textProperty());
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         importButton.setOnAction(event -> {
@@ -415,6 +417,8 @@ public class DevicePane extends TitledDescriptionPane {
         }
 
         getPrivateKeyButton = currentSlot > 0 ? new SplitMenuButton() : new Button();
+        //A split button is not named by its text for screen readers
+        getPrivateKeyButton.accessibleTextProperty().bind(getPrivateKeyButton.textProperty());
         getPrivateKeyButton.setAlignment(Pos.CENTER_RIGHT);
         getPrivateKeyButton.setText("Get Private Key");
         getPrivateKeyButton.setOnAction(event -> {
@@ -531,6 +535,8 @@ public class DevicePane extends TitledDescriptionPane {
         });
 
         SplitMenuButton sendPassphraseButton = new SplitMenuButton();
+        //A split button is not named by its text for screen readers
+        sendPassphraseButton.accessibleTextProperty().bind(sendPassphraseButton.textProperty());
         sendPassphraseButton.setText("Send Passphrase");
         setDefaultButton(sendPassphraseButton);
         sendPassphraseButton.setOnAction(event -> {

@@ -95,6 +95,8 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
 
     private void createImportButton() {
         importButton = new SplitMenuButton();
+        //A split button is not named by its text for screen readers
+        importButton.accessibleTextProperty().bind(importButton.textProperty());
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         setDefaultButton(importButton);

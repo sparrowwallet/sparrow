@@ -59,6 +59,8 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
 
     private void createEnterMnemonicButton() {
         enterMnemonicButton = new SplitMenuButton();
+        //A split button is not named by its text for screen readers
+        enterMnemonicButton.accessibleTextProperty().bind(enterMnemonicButton.textProperty());
         enterMnemonicButton.setAlignment(Pos.CENTER_RIGHT);
         enterMnemonicButton.setText("Use 24 Words");
         defaultWordSizeProperty = new SimpleIntegerProperty(24);

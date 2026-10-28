@@ -61,6 +61,8 @@ public class MnemonicShareKeystoreImportPane extends MnemonicKeystorePane {
 
     private void createEnterMnemonicButton() {
         enterMnemonicButton = new SplitMenuButton();
+        //A split button is not named by its text for screen readers
+        enterMnemonicButton.accessibleTextProperty().bind(enterMnemonicButton.textProperty());
         enterMnemonicButton.setAlignment(Pos.CENTER_RIGHT);
         enterMnemonicButton.setText("Use 20 Words");
         defaultWordSizeProperty = new SimpleIntegerProperty(20);
@@ -194,6 +196,8 @@ public class MnemonicShareKeystoreImportPane extends MnemonicKeystorePane {
 
     private void createImportButton() {
         importButton = new SplitMenuButton();
+        //A split button is not named by its text for screen readers
+        importButton.accessibleTextProperty().bind(importButton.textProperty());
         importButton.setAlignment(Pos.CENTER_RIGHT);
         importButton.setText("Import Keystore");
         setDefaultButton(importButton);

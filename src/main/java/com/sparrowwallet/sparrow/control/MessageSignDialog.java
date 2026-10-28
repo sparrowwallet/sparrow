@@ -795,6 +795,8 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         protected Node createButton(ButtonType buttonType) {
             if(buttonType.getButtonData() == ButtonBar.ButtonData.LEFT) {
                 SplitMenuButton signByButton = new SplitMenuButton();
+                //A split button is not named by its text for screen readers
+                signByButton.accessibleTextProperty().bind(signByButton.textProperty());
                 signByButton.setText("Sign by QR");
                 signByButton.setDisable(wallet == null);
                 signByButton.setGraphic(getGlyph(new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.QRCODE)));
