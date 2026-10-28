@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.google.common.collect.Lists;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
@@ -36,6 +37,7 @@ public class BalanceChart extends LineChart<Number, Number> {
     public BalanceChart(@NamedArg("xAxis") Axis<Number> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
         setAccessibleRole(AccessibleRole.TEXT);
+        AppServices.keepChartPointsOutOfTabOrder(getPlotChildren());
     }
 
     @Override

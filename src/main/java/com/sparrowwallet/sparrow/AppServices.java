@@ -33,9 +33,12 @@ import javafx.application.Application;
 import javafx.application.ColorScheme;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -103,6 +106,11 @@ public class AppServices {
     private static final List<Double> LONG_FEE_RATES_RANGE = List.of(1d, 2d, 4d, 8d, 16d, 32d, 64d, 128d, 256d, 512d, 1024d, 2048d, 4096d, 8192d);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
+    private static final ChangeListener<Boolean> NOT_FOCUS_TRAVERSABLE = (observable, wasTraversable, traversable) -> {
+        if(traversable) {
+            ((Node)((ReadOnlyProperty<?>)observable).getBean()).setFocusTraversable(false);
+        }
+    };
 
     private static AppServices INSTANCE;
 
@@ -713,12 +721,26 @@ public class AppServices {
         });
     }
 
-    //Text areas holding keys, addresses or scripts never need a tab character, so Tab moves focus on rather than trapping keyboard users
+    //Text areas holding keys, addresses, scripts or messages to sign never need a typed tab character, so Tab moves focus on rather than trapping keyboard users
     public static void moveFocusOnTab(Node node) {
         node.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
             if(event.getCode() == KeyCode.TAB && !event.isShortcutDown() && !event.isControlDown() && !event.isAltDown()) {
                 node.requestFocusTraversal(event.isShiftDown() ? TraversalDirection.PREVIOUS : TraversalDirection.NEXT);
                 event.consume();
+            }
+        });
+    }
+
+    //Charts make every data point a Tab stop while a screen reader is on, including points created before it started.
+    //The charts here are read as a one-line summary, so their points are kept out of the Tab order.
+    public static void keepChartPointsOutOfTabOrder(ObservableList<Node> plotChildren) {
+        plotChildren.addListener((ListChangeListener<Node>)change -> {
+            while(change.next()) {
+                for(Node node : change.getAddedSubList()) {
+                    node.focusTraversableProperty().removeListener(NOT_FOCUS_TRAVERSABLE);
+                    node.focusTraversableProperty().addListener(NOT_FOCUS_TRAVERSABLE);
+                    node.setFocusTraversable(false);
+                }
             }
         });
     }

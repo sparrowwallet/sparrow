@@ -23,6 +23,7 @@ public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
     public BlockTargetFeeRatesChart(@NamedArg("xAxis") Axis<String> xAxis, @NamedArg("yAxis") Axis<Number> yAxis) {
         super(xAxis, yAxis);
         setAccessibleRole(AccessibleRole.TEXT);
+        AppServices.keepChartPointsOutOfTabOrder(getPlotChildren());
     }
 
     @Override

@@ -121,6 +121,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();
+        qrImageView.setAccessibleText("QR code");
         stackPane.getChildren().add(qrImageView);
 
         qrImageView.setOnScroll(scrollEvent -> {
@@ -195,6 +196,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();
+        qrImageView.setAccessibleText("QR code");
         stackPane.getChildren().add(qrImageView);
 
         dialogPane.setContent(Borders.wrap(stackPane).lineBorder().buildAll());
@@ -429,6 +431,8 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
                 encodingComboBox.setCellFactory(_ -> new QREncodingListCell());
                 encodingComboBox.setButtonCell(new QREncodingButtonCell());
                 encodingComboBox.setValue(encoding);
+                //Named like the density pop-up beside it ("Medium Density"); the button shows only the encoding's name
+                encodingComboBox.accessibleTextProperty().bind(encodingComboBox.valueProperty().map(value -> value.getName() + " Encoding"));
                 encodingComboBox.setOnAction(_ -> {
                     setEncoding(encodingComboBox.getValue());
                     Config.get().setQrEncoding(encodingComboBox.getValue());
