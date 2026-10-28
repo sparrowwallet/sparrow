@@ -32,6 +32,10 @@
     -fx-spacing: 10;
 }
 
+.field {
+    -fx-skin: "com.sparrowwallet.sparrow.control.LabelledFieldSkin";
+}
+
 .form .field {
     -fx-padding: 3 5;
 }

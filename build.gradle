@@ -524,6 +524,7 @@ tasks.register('extractNativeLibraries') {
 extraJavaModuleInfo {
     module('no.tornado:tornadofx-controls', 'tornadofx.controls') {
         exports('tornadofx.control')
+        exports('tornadofx.control.skin')
         requires('javafx.controls')
     }
     module('com.github.arteam:simple-json-rpc-core', 'simple.json.rpc.core') {

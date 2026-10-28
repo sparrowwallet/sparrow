@@ -2,10 +2,10 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.FeeRatesSource;
 import javafx.application.Platform;
-import javafx.scene.AccessibleAction;
-import javafx.scene.AccessibleAttribute;
 import javafx.scene.Node;
 import javafx.scene.control.Slider;
 import javafx.util.StringConverter;
@@ -29,7 +29,7 @@ public class FeeRangeSlider extends Slider {
         setShowTickLabels(true);
         setShowTickMarks(true);
         setBlockIncrement(Math.log(1.02) / Math.log(2));
-        setAccessibleText("Fee Rate (sats/vB)");
+        updateAccessibleText();
 
         setLabelFormatter(new StringConverter<>() {
             @Override
@@ -53,6 +53,7 @@ public class FeeRangeSlider extends Slider {
             if(newValue != null) {
                 updateMaxFeeRange(newValue.doubleValue());
             }
+            updateAccessibleText();
         });
 
         setOnScroll(event -> {
@@ -73,22 +74,18 @@ public class FeeRangeSlider extends Slider {
     }
 
     public double getFeeRate(Double minRelayFeeRate) {
-        return getFeeRate(getValue(), minRelayFeeRate);
-    }
-
-    private double getFeeRate(double value, Double minRelayFeeRate) {
         if(minRelayFeeRate >= Transaction.DEFAULT_MIN_RELAY_FEE) {
-            return Math.pow(2.0, value);
+            return Math.pow(2.0, getValue());
         }
 
-        if(value < 1.0d) {
+        if(getValue() < 1.0d) {
             if(minRelayFeeRate == 0.0d) {
-                return value;
+                return getValue();
             }
-            return Math.pow(minRelayFeeRate, 1.0d - value);
+            return Math.pow(minRelayFeeRate, 1.0d - getValue());
         }
 
-        return Math.pow(2.0, value - 1.0d);
+        return Math.pow(2.0, getValue() - 1.0d);
     }
 
     public void setFeeRate(double feeRate) {
@@ -144,24 +141,10 @@ public class FeeRangeSlider extends Slider {
         }
     }
 
-    @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
-        //Report fee rates rather than the logarithmic slider position
-        return switch(attribute) {
-            case VALUE -> Math.round(getFeeRate() * 1000) / 1000.0;
-            case MIN_VALUE -> getFeeRate(getMin(), AppServices.getMinimumRelayFeeRate());
-            case MAX_VALUE -> getFeeRate(getMax(), AppServices.getMinimumRelayFeeRate());
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
-    }
-
-    @Override
-    public void executeAccessibleAction(AccessibleAction action, Object... parameters) {
-        if(action == AccessibleAction.SET_VALUE && parameters.length > 0 && parameters[0] instanceof Double feeRate) {
-            setFeeRate(Math.clamp(feeRate, AppServices.getLongFeeRatesRange().getFirst(), AppServices.getLongFeeRatesRange().getLast()));
-        } else {
-            super.executeAccessibleAction(action, parameters);
-        }
+    private void updateAccessibleText() {
+        //Screen readers announce a slider's value as a percentage of its range, so the fee rate is given in the name
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        setAccessibleText("Fee rate " + format.getCurrencyFormat().format(getFeeRate()) + " sats/vB");
     }
 
     public boolean isLongFeeRange() {

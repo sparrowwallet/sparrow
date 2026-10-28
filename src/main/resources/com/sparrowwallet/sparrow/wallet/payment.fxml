@@ -57,7 +57,7 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
-                <Label style="-fx-pref-width: 15" />
+                <Region style="-fx-pref-width: 15" />
                 <FiatLabel fx:id="fiatAmount" />
                 <Group managed="false" translateY="38">
                     <Label fx:id="amountStatus" text="Insufficient funds">

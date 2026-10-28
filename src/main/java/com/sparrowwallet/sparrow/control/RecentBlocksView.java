@@ -9,6 +9,9 @@ import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import javafx.animation.TranslateTransition;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.collections.FXCollections;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.Pane;
 import javafx.scene.shape.Line;
@@ -19,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.sparrowwallet.sparrow.AppServices.TARGET_BLOCKS_RANGE;
 import static com.sparrowwallet.sparrow.control.BlockCube.CUBE_SIZE;
@@ -27,6 +32,7 @@ public class RecentBlocksView extends Pane {
     private static final double CUBE_SPACING = 100;
     private static final double ANIMATION_DURATION_MILLIS = 1000;
     private static final double SEPARATOR_X = 74;
+    private static final Pattern ELAPSED_PATTERN = Pattern.compile("(\\d+)([mhd]) ago");
 
     private final CompositeDisposable disposables = new CompositeDisposable();
 
@@ -54,6 +60,53 @@ public class RecentBlocksView extends Pane {
         feeRatesSource = (feeRatesSource == null ? FeeRatesSource.MEMPOOL_SPACE : feeRatesSource);
         updateFeeRatesSource(feeRatesSource);
         Tooltip.install(this, tooltip);
+        setAccessibleRole(AccessibleRole.TEXT);
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        //Read as one summary rather than the individual heights, fee rates and times on the cubes
+        return switch(attribute) {
+            case TEXT -> getSummary();
+            case CHILDREN -> FXCollections.emptyObservableList();
+            default -> super.queryAccessibleAttribute(attribute, parameters);
+        };
+    }
+
+    private String getSummary() {
+        List<BlockCube> cubes = getCubes();
+        if(cubes.isEmpty()) {
+            return "Recent blocks, no blocks";
+        }
+
+        StringBuilder summary = new StringBuilder("Recent blocks");
+        for(BlockCube cube : cubes.subList(0, Math.min(3, cubes.size()))) {
+            summary.append(", ").append(cube.isConfirmed() ? "block " + cube.getHeight() : "next block");
+            if(cube.getMedianFee() >= 0.0d) {
+                summary.append(" ~").append(Math.round(Math.max(cube.getMedianFee(), 1.0d))).append(" sats/vB");
+            }
+            if(cube.isConfirmed()) {
+                summary.append(cube.getTxCount() > 0 ? " with " + cube.getTxCount() + " transactions " : " ").append(getSpokenElapsed(cube.getElapsed()));
+            } else {
+                summary.append(" in about 10 minutes");
+            }
+        }
+
+        return summary.toString();
+    }
+
+    private static String getSpokenElapsed(String elapsed) {
+        Matcher matcher = ELAPSED_PATTERN.matcher(elapsed);
+        if(matcher.matches()) {
+            String unit = switch(matcher.group(2)) {
+                case "m" -> "minute";
+                case "h" -> "hour";
+                default -> "day";
+            };
+            return matcher.group(1) + " " + unit + (matcher.group(1).equals("1") ? "" : "s") + " ago";
+        }
+
+        return elapsed.toLowerCase();
     }
 
     public void updateFeeRatesSource(FeeRatesSource feeRatesSource) {

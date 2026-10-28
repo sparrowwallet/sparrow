@@ -127,7 +127,7 @@
                                     </FXCollections>
                                 </items>
                             </ComboBox>
-                            <Label style="-fx-pref-width: 15" />
+                            <Region style="-fx-pref-width: 15" />
                             <FiatLabel fx:id="fiatFeeAmount" />
                         </Field>
                     </Fieldset>

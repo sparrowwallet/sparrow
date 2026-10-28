@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.control;
 
+import javafx.collections.FXCollections;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.TextField;
 
 public class CopyableLabel extends TextField {
@@ -21,4 +24,17 @@ public class CopyableLabel extends TextField {
         });
     }
 
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        //An empty value has nothing to read
+        if(getText() == null || getText().isEmpty()) {
+            if(attribute == AccessibleAttribute.ROLE) {
+                return AccessibleRole.NODE;
+            } else if(attribute == AccessibleAttribute.CHILDREN) {
+                return FXCollections.emptyObservableList();
+            }
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
+    }
 }
