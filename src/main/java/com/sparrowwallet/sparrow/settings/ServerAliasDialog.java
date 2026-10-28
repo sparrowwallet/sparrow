@@ -11,11 +11,11 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.Event;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.TextFieldTableCell;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.layout.StackPane;
 import javafx.util.converter.DefaultStringConverter;
 import org.controlsfx.glyphfont.Glyph;
@@ -43,6 +43,21 @@ public class ServerAliasDialog extends Dialog<Server> {
 
         serverTable = new TableView<>();
         serverTable.setPlaceholder(new Label("No servers added yet"));
+        serverTable.setRowFactory(_ -> new TableRow<>() {
+            @Override
+            public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+                //Empty rows fill the space below the last server and have nothing to read
+                if(isEmpty()) {
+                    if(attribute == AccessibleAttribute.ROLE) {
+                        return AccessibleRole.NODE;
+                    } else if(attribute == AccessibleAttribute.CHILDREN) {
+                        return FXCollections.emptyObservableList();
+                    }
+                }
+
+                return super.queryAccessibleAttribute(attribute, parameters);
+            }
+        });
 
         TableColumn<ServerEntry, String> urlColumn = new TableColumn<>("URL");
         urlColumn.setMinWidth(300);

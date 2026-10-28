@@ -6,8 +6,11 @@ import com.sparrowwallet.sparrow.event.WalletLabelChangedEvent;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.paynym.PayNym;
 import com.sparrowwallet.sparrow.paynym.PayNymController;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -100,6 +103,20 @@ public class PayNymCell extends ListCell<PayNym> {
         Glyph failGlyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.LINK);
         failGlyph.setFontSize(12);
         return failGlyph;
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        //Empty cells fill the space below the last PayNym and have nothing to read
+        if(isEmpty()) {
+            if(attribute == AccessibleAttribute.ROLE) {
+                return AccessibleRole.NODE;
+            } else if(attribute == AccessibleAttribute.CHILDREN) {
+                return FXCollections.emptyObservableList();
+            }
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     private class PayNymCellContextMenu extends ContextMenu {
