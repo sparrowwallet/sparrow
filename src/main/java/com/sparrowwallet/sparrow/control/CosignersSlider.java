@@ -14,18 +14,20 @@ import javafx.scene.input.KeyEvent;
 import org.controlsfx.control.RangeSlider;
 
 /**
- * Range slider for the multisig threshold (low thumb) and number of cosigners (high thumb), exposed to screen readers as a slider
+ * Range slider for the multisig threshold (low thumb) and number of cosigners (high thumb), exposed to screen readers as a spinner
  * for whichever thumb is selected. The thumbs are not controls, so without this the slider has no role, value or name.
  */
 public class CosignersSlider extends RangeSlider {
-    private final InvalidationListener accessibleValueListener = _ -> updateAccessibleValue();
+    private final InvalidationListener accessibleValueListener = _ -> notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE_STRING);
     private final EventHandler<KeyEvent> sceneKeyPressedFilter = event -> shiftTabPressed = event.getCode() == KeyCode.TAB && event.isShiftDown();
     private final EventHandler<KeyEvent> sceneKeyReleasedFilter = _ -> shiftTabPressed = false;
     private boolean shiftTabPressed;
     private Node highThumb;
 
     public CosignersSlider() {
-        setAccessibleRole(AccessibleRole.SLIDER);
+        //A spinner rather than a slider: screen readers announce a slider's changing value as a percentage of its range, but a
+        //spinner's as its text, so the counts are spoken as they change
+        setAccessibleRole(AccessibleRole.SPINNER);
         lowValueProperty().addListener(accessibleValueListener);
         highValueProperty().addListener(accessibleValueListener);
         skinProperty().addListener((_, _, _) -> {
@@ -73,24 +75,18 @@ public class CosignersSlider extends RangeSlider {
                 });
             }
         });
-        updateAccessibleValue();
     }
 
     private boolean isHighThumbSelected() {
         return highThumb != null && highThumb.isFocused();
     }
 
-    private void updateAccessibleValue() {
-        //Screen readers announce a slider's value as a percentage of its range, so the counts are given in the name
-        int required = (int)getLowValue();
-        int cosigners = (int)getHighValue();
-        setAccessibleText(isHighThumbSelected() ? cosigners + (cosigners == 1 ? " cosigner, " : " cosigners, ") + required + " required to sign" : required + " of " + cosigners + " required to sign");
-        notifyAccessibleAttributeChanged(AccessibleAttribute.VALUE);
-    }
-
     @Override
     public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
         return switch(attribute) {
+            //Only the value is spoken when it changes or the other thumb is selected, so it says which count it is
+            case VALUE_STRING -> isHighThumbSelected() ? (int)getHighValue() + ((int)getHighValue() == 1 ? " cosigner" : " cosigners")
+                    : (int)getLowValue() + " of " + (int)getHighValue() + " signatures required";
             case VALUE -> isHighThumbSelected() ? getHighValue() : getLowValue();
             case MIN_VALUE -> getMin();
             case MAX_VALUE -> getMax();

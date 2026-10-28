@@ -1799,6 +1799,8 @@ public class AppController implements Initializable {
 
             tabs.getTabs().add(tab);
             tabs.getSelectionModel().select(tab);
+            //Focus goes to the new tab rather than falling to the status bar from the view the wallet was opened from
+            Platform.runLater(tabs::requestFocus);
 
             File oldWalletFile = renamedWallets.remove(storage.getWalletFile());
             if(oldWalletFile != null) {
