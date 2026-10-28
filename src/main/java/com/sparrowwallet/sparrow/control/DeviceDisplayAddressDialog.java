@@ -15,6 +15,7 @@ public class DeviceDisplayAddressDialog extends DeviceDialog<String> {
 
     public DeviceDisplayAddressDialog(Wallet wallet, OutputDescriptor outputDescriptor) {
         super(outputDescriptor.getExtendedPublicKeys().stream().map(extKey -> outputDescriptor.getKeyDerivation(extKey).getMasterFingerprint()).collect(Collectors.toList()));
+        setTitle("Display Address");
         this.wallet = wallet;
         this.outputDescriptor = outputDescriptor;
 

@@ -43,6 +43,7 @@ public class WalletSummaryDialog extends Dialog<Void> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("wallet/transactions.css").toExternalForm());
 
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Wallet Summary");
         dialogPane.setHeaderText("Wallet Summary for " + (allOpenWallets ? "All Open Wallets" : masterWallets.get(0).getName()));
         dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 

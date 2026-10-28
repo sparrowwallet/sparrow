@@ -35,6 +35,7 @@ public class WalletImportDialog extends Dialog<List<Wallet>> {
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Import Wallet");
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

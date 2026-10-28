@@ -199,6 +199,8 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
             showHideLink.setText("Show Derivation...");
             showHideLink.setVisible(false);
             setContent(getDerivationEntry(getDefaultDerivation()));
+            //The create button goes with the replaced content, so focus moves on to the import button that replaces it
+            importButton.requestFocus();
         });
 
         rightBox.getChildren().add(calculateButton);

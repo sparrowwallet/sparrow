@@ -19,6 +19,7 @@ public class DeviceSignDialog extends DeviceDialog<PSBT> {
 
     public DeviceSignDialog(Wallet wallet, List<String> operationFingerprints, PSBT psbt) {
         super(operationFingerprints);
+        setTitle("Sign Transaction");
         this.wallet = wallet;
         this.psbt = psbt;
         EventManager.get().register(this);

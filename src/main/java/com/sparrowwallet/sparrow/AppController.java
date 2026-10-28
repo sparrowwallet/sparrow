@@ -2168,6 +2168,8 @@ public class AppController implements Initializable {
 
             tabs.getTabs().add(tab);
             tabs.getSelectionModel().select(tab);
+            //The view the transaction was opened from is hidden, so focus goes to the new tab rather than falling to the status bar
+            Platform.runLater(tabs::requestFocus);
         } catch(IOException e) {
             throw new RuntimeException(e);
         }

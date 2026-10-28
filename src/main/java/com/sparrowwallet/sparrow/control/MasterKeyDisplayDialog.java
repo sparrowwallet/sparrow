@@ -12,6 +12,7 @@ public class MasterKeyDisplayDialog  extends Dialog<Void> {
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Master Private Key");
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

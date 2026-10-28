@@ -28,6 +28,7 @@ public class WalletExportDialog extends Dialog<Wallet> {
 
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Export Wallet");
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

@@ -15,6 +15,7 @@ public class PayNymDialog extends Dialog<PayNym> {
     public PayNymDialog(String walletId, Operation operation) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("PayNym");
         AppServices.onEscapePressed(dialogPane.getScene(), this::close);
 
         try {

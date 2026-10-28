@@ -17,6 +17,7 @@ public class SeedEntryDialog extends Dialog<List<String>> {
         setDialogPane(dialogPane);
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle(name);
 
         int lines = numWords / 3;
         int height = lines * 40;

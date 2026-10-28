@@ -33,6 +33,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
 
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Import Keystore");
         scriptType = wallet.getScriptType();
         existingLabel = currentLabel;
 

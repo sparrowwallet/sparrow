@@ -11,6 +11,7 @@ import javafx.scene.control.Button;
 public class DescriptorQRDisplayDialog extends QRDisplayDialog {
     public DescriptorQRDisplayDialog(String walletName, String outputDescriptor, UR ur, BBQR bbqr, QREncoding encoding) {
         super(ur, bbqr, false, false, encoding);
+        setTitle("Wallet Descriptor");
 
         DialogPane dialogPane = getDialogPane();
         final ButtonType pdfButtonType = new javafx.scene.control.ButtonType("Save PDF...", ButtonBar.ButtonData.HELP_2);

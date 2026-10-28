@@ -12,6 +12,7 @@ import java.util.List;
 public class DeviceUnsealDialog extends DeviceDialog<DeviceUnsealDialog.DevicePrivateKey> {
     public DeviceUnsealDialog(List<String> operationFingerprints) {
         super(operationFingerprints);
+        setTitle("Unseal Private Key");
         EventManager.get().register(this);
         setOnCloseRequest(event -> {
             EventManager.get().unregister(this);

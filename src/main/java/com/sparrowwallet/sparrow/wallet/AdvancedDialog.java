@@ -16,6 +16,7 @@ public class AdvancedDialog extends Dialog<Boolean> {
     public AdvancedDialog(WalletForm walletForm) {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Advanced Settings");
         Wallet wallet = walletForm.getWallet();
 
         try {

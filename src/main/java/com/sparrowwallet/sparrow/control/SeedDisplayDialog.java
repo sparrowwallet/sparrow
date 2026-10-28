@@ -17,6 +17,7 @@ public class SeedDisplayDialog extends Dialog<Void> {
         final DialogPane dialogPane = getDialogPane();
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Seed Words");
 
         int lines = Math.ceilDiv(decryptedKeystore.getSeed().getMnemonicCode().size(), 3);
         int height = lines * 40;

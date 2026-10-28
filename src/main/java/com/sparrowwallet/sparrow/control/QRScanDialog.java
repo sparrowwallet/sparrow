@@ -103,6 +103,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         final DialogPane dialogPane = new QRScanDialogPane();
         setDialogPane(dialogPane);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Scan QR Code");
 
         WebcamView webcamView = new WebcamView(webcamService, Config.get().isMirrorCapture());
 

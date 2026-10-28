@@ -16,6 +16,7 @@ public class DeviceSignMessageDialog extends DeviceDialog<String> {
 
     public DeviceSignMessageDialog(List<String> operationFingerprints, Wallet wallet, String message, KeyDerivation keyDerivation) {
         super(operationFingerprints);
+        setTitle("Sign Message");
         this.wallet = wallet;
         this.message = message;
         this.keyDerivation = keyDerivation;

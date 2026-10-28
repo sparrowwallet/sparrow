@@ -77,6 +77,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Sweep Private Key");
         dialogPane.setHeaderText("Sweep Private Key");
         dialogPane.setGraphic(new WalletModelImage(WalletModel.SEED));
 

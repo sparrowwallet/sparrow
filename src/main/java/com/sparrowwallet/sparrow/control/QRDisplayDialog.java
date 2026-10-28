@@ -117,6 +117,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("QR Code");
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();
@@ -190,6 +191,7 @@ public class QRDisplayDialog extends Dialog<ButtonType> {
         final DialogPane dialogPane = new QRDisplayDialogPane();
         setDialogPane(dialogPane);
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("QR Code");
 
         StackPane stackPane = new StackPane();
         qrImageView = new ImageView();

@@ -22,6 +22,7 @@ public class KeystoreExportDialog extends Dialog<Keystore> {
 
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Export Keystore");
 
         StackPane stackPane = new StackPane();
         dialogPane.setContent(stackPane);

@@ -12,6 +12,7 @@ public class WelcomeDialog extends Dialog<Mode> {
     public WelcomeDialog() {
         final DialogPane dialogPane = getDialogPane();
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Welcome to Sparrow");
         AppServices.onEscapePressed(dialogPane.getScene(), this::close);
 
         try {
