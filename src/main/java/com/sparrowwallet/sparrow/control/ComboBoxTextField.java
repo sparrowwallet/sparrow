@@ -27,8 +27,8 @@ import java.util.function.Consumer;
 public class ComboBoxTextField extends CustomTextField {
     private final ObjectProperty<ComboBox<?>> comboProperty = new SimpleObjectProperty<>();
 
-    private boolean initialized;
-    private boolean comboShowing;
+    private boolean comboJustHidden;
+    private boolean hideOnRelease;
     private Object browsedItem;
     private boolean chooseBrowsedItem;
 
@@ -48,12 +48,17 @@ public class ComboBoxTextField extends CustomTextField {
             ComboBox<?> combo = comboProperty.get();
             if(event.getCode() == KeyCode.DOWN && combo != null && combo.isVisible() && !combo.isDisabled() && !combo.isShowing()) {
                 combo.requestFocus();
-                combo.show();
+                showFromKeyboard(combo);
                 event.consume();
             }
         });
         comboProperty.addListener((observable, oldCombo, combo) -> {
             if(combo != null) {
+                //Set until the current event finishes, so the button can tell that its own press closed the list
+                combo.addEventHandler(ComboBoxBase.ON_HIDDEN, event -> {
+                    comboJustHidden = true;
+                    Platform.runLater(() -> comboJustHidden = false);
+                });
                 //Closing the list without a choice that moves focus elsewhere returns focus here from the combo behind this field.
                 //The scene's focus owner is checked as isFocused() is false while a dialog opened by the choice is in front.
                 combo.addEventHandler(ComboBoxBase.ON_HIDDEN, event -> Platform.runLater(() -> {
@@ -71,21 +76,22 @@ public class ComboBoxTextField extends CustomTextField {
         StackPane showComboButtonPane = new StackPane(showComboButton);
         showComboButtonPane.getStyleClass().addAll("combo-button"); //$NON-NLS-1$
         showComboButtonPane.setCursor(Cursor.DEFAULT);
+        //The button opens a closed list and closes an open one, however it was opened or last closed. A press while the list is open
+        //closes it before the button sees the press, so whether it was open is taken from the press.
+        showComboButtonPane.setOnMousePressed(e -> {
+            ComboBox<?> combo = comboProperty.get();
+            hideOnRelease = combo != null && (combo.isShowing() || comboJustHidden);
+        });
         showComboButtonPane.setOnMouseReleased(e -> {
-            if(comboProperty.isNotNull().get()) {
-                if(comboShowing) {
-                    comboProperty.get().hide();
+            ComboBox<?> combo = comboProperty.get();
+            if(combo != null) {
+                if(hideOnRelease) {
+                    combo.hide();
                 } else {
-                    comboProperty.get().show();
-                }
-
-                comboShowing = !comboShowing;
-
-                if(!initialized) {
-                    comboProperty.get().valueProperty().addListener((observable, oldValue, newValue) -> comboShowing = false);
-                    initialized = true;
+                    combo.show();
                 }
             }
+            hideOnRelease = false;
         });
 
         rightProperty.set(showComboButtonPane);
@@ -121,7 +127,7 @@ public class ComboBoxTextField extends CustomTextField {
         //Arrow keys on the closed combo open the list rather than choosing the next item
         combo.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if((event.getCode() == KeyCode.UP || event.getCode() == KeyCode.DOWN) && !combo.isShowing()) {
-                combo.show();
+                showFromKeyboard(combo);
                 event.consume();
             }
         });
@@ -148,6 +154,14 @@ public class ComboBoxTextField extends CustomTextField {
             addChooseFilters.accept(combo.getSkin());
         }
         combo.skinProperty().addListener((observable, oldSkin, skin) -> addChooseFilters.accept(skin));
+    }
+
+    //The first item is highlighted as the list opens, so it is announced and the next arrow moves on from it; highlighting only browses
+    private static void showFromKeyboard(ComboBox<?> combo) {
+        combo.show();
+        if(combo.getSelectionModel().isEmpty()) {
+            combo.getSelectionModel().selectFirst();
+        }
     }
 
     public ComboBox<?> getComboProperty() {

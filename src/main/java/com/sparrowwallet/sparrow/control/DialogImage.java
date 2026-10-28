@@ -4,7 +4,6 @@ import com.sparrowwallet.sparrow.AppServices;
 import javafx.beans.NamedArg;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.scene.layout.StackPane;
 import org.girod.javafx.svgimage.SVGImage;
 import org.girod.javafx.svgimage.SVGLoader;
 import org.slf4j.Logger;
@@ -13,7 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URL;
 import java.util.Locale;
 
-public class DialogImage extends StackPane {
+public class DialogImage extends DecorativePane {
     private static final Logger log = LoggerFactory.getLogger(DialogImage.class);
 
     public static final int WIDTH = 50;

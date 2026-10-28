@@ -64,7 +64,11 @@ public class KeystoreImportController implements Initializable {
     public void selectSource(KeystoreSource keystoreSource, boolean required) {
         for(Toggle toggle : importMenu.getToggles()) {
             if(toggle.getUserData().equals(keystoreSource)) {
-                Platform.runLater(() -> importMenu.selectToggle(toggle));
+                //Focus starts on the chosen source rather than the dialog's first button
+                Platform.runLater(() -> {
+                    importMenu.selectToggle(toggle);
+                    ((ToggleButton)toggle).requestFocus();
+                });
             } else if(required) {
                 ((ToggleButton)toggle).setDisable(true);
             }

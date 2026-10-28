@@ -47,14 +47,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.AccessibleAttribute;
-import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.StackPane;
 import org.controlsfx.glyphfont.Glyph;
 import org.controlsfx.validation.ValidationResult;
 import org.controlsfx.validation.ValidationSupport;
@@ -517,11 +514,11 @@ public class PaymentController extends WalletFormController implements Initializ
 
     private Node getOpenWalletIcon(Wallet wallet) {
         if(wallet == payNymWallet) {
-            return getDecorativeIcon(getPayNymGlyph());
+            return new DecorativePane(getPayNymGlyph());
         }
 
         if(wallet == nfcCardWallet) {
-            return getDecorativeIcon(getNfcCardGlyph());
+            return new DecorativePane(getNfcCardGlyph());
         }
 
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
@@ -531,20 +528,6 @@ public class PaymentController extends WalletFormController implements Initializ
         }
 
         return null;
-    }
-
-    //Hidden from screen readers, as the glyph reads as empty text before the name it decorates
-    private static Node getDecorativeIcon(Node glyph) {
-        return new StackPane(glyph) {
-            @Override
-            public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
-                return switch(attribute) {
-                    case ROLE -> AccessibleRole.NODE;
-                    case CHILDREN -> FXCollections.emptyObservableList();
-                    default -> super.queryAccessibleAttribute(attribute, parameters);
-                };
-            }
-        };
     }
 
     private void addValidation(ValidationSupport validationSupport) {

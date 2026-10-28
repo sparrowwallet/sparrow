@@ -8,10 +8,7 @@ import com.sparrowwallet.sparrow.io.Storage;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.geometry.Pos;
-import javafx.scene.AccessibleAttribute;
-import javafx.scene.AccessibleRole;
 import javafx.scene.image.Image;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.ImagePattern;
@@ -27,7 +24,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 
-public class WalletIcon extends StackPane {
+public class WalletIcon extends DecorativePane {
     public static final String PROTOCOL = "walleticon";
     private static final String QUERY = "icon";
     public static final int WIDTH = 15;
@@ -54,16 +51,6 @@ public class WalletIcon extends StackPane {
             refresh();
         });
         walletProperty.set(wallet);
-    }
-
-    @Override
-    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
-        //Decorative next to the wallet or keystore name, and its glyphs read as empty text
-        return switch(attribute) {
-            case ROLE -> AccessibleRole.NODE;
-            case CHILDREN -> FXCollections.emptyObservableList();
-            default -> super.queryAccessibleAttribute(attribute, parameters);
-        };
     }
 
     public void refresh() {
