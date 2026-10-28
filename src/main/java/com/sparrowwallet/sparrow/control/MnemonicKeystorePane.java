@@ -321,7 +321,9 @@ public class MnemonicKeystorePane extends TitledDescriptionPane {
                 }
             };
             wordField.setMaxWidth(100);
-            wordField.setAccessibleText("Word " + (wordNumber + 1));
+            //Named through its label: accessible text on a text field replaces the word as the field's value
+            label.setAccessibleText("Word " + (wordNumber + 1));
+            label.setLabelFor(wordField);
             TextFormatter<?> formatter = new TextFormatter<>((TextFormatter.Change change) -> {
                 String text = change.getText();
                 // if text was added, fix the text to fit the requirements

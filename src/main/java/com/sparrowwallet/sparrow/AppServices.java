@@ -45,6 +45,7 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.TraversalDirection;
 import javafx.scene.control.*;
 import javafx.scene.control.Dialog;
 import javafx.scene.image.Image;
@@ -705,6 +706,16 @@ public class AppServices {
         scene.setOnKeyPressed(event -> {
             if(event.getCode() == KeyCode.ESCAPE) {
                 runnable.run();
+            }
+        });
+    }
+
+    //Text areas holding keys, addresses or scripts never need a tab character, so Tab moves focus on rather than trapping keyboard users
+    public static void moveFocusOnTab(Node node) {
+        node.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, event -> {
+            if(event.getCode() == KeyCode.TAB && !event.isShortcutDown() && !event.isControlDown() && !event.isAltDown()) {
+                node.requestFocusTraversal(event.isShiftDown() ? TraversalDirection.PREVIOUS : TraversalDirection.NEXT);
+                event.consume();
             }
         });
     }

@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.drongo.protocol.Script;
 import com.sparrowwallet.drongo.protocol.ScriptChunk;
 import com.sparrowwallet.drongo.protocol.ScriptOpCodes;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.geometry.Pos;
 import org.controlsfx.control.decoration.Decorator;
 import org.controlsfx.control.decoration.GraphicDecoration;
@@ -12,6 +13,10 @@ import static com.sparrowwallet.drongo.protocol.ScriptType.*;
 
 public class ScriptArea extends CodeArea {
     private Script script;
+
+    public ScriptArea() {
+        AppServices.moveFocusOnTab(this);
+    }
 
     public void appendScript(Script script) {
         appendScript(script, null, null);

@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.protocol.*;
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.geometry.Point2D;
 import javafx.scene.control.ContextMenu;
@@ -31,6 +32,7 @@ public class TransactionHexArea extends CodeArea {
 
     public TransactionHexArea() {
         super();
+        AppServices.moveFocusOnTab(this);
         addPopupHandler();
     }
 

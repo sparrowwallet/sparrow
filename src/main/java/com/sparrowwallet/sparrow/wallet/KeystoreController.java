@@ -35,6 +35,7 @@ import org.controlsfx.validation.decoration.StyleClassValidationDecoration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tornadofx.control.Field;
+import tornadofx.control.Form;
 
 import javax.smartcardio.CardException;
 import java.net.URL;
@@ -47,6 +48,9 @@ public class KeystoreController extends WalletFormController implements Initiali
     private static final Logger log = LoggerFactory.getLogger(KeystoreController.class);
 
     private Keystore keystore;
+
+    @FXML
+    private Form keystoreForm;
 
     @FXML
     private StackPane selectSourcePane;
@@ -121,6 +125,8 @@ public class KeystoreController extends WalletFormController implements Initiali
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         EventManager.get().register(this);
+        AppServices.moveFocusOnTab(xpub);
+        AppServices.moveFocusOnTab(spScan);
     }
 
     public void setKeystore(WalletForm walletForm, Keystore keystore) {
@@ -133,6 +139,8 @@ public class KeystoreController extends WalletFormController implements Initiali
         Platform.runLater(this::setupValidation);
 
         selectSourcePane.managedProperty().bind(selectSourcePane.visibleProperty());
+        //The source choice covers the keystore form, so its fields must not be reachable by keyboard or screen reader underneath
+        keystoreForm.visibleProperty().bind(selectSourcePane.visibleProperty().not());
         if(keystore.isValid() || keystore.getExtendedPublicKey() != null) {
             selectSourcePane.setVisible(false);
         } else if(!getWalletForm().getWallet().isMasterWallet() && keystore.getKeyDerivation() != null) {
@@ -307,6 +315,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             derivation.setText(getWalletForm().getWallet().getPolicyType() == PolicyType.SINGLE_SP ? KeyDerivation.writePath(KeyDerivation.getBip352Derivation(0))
                     : getWalletForm().getWallet().getScriptType().getDefaultDerivationPath());
             selectSourcePane.setVisible(false);
+            label.requestFocus();
         }
     }
 
@@ -447,6 +456,7 @@ public class KeystoreController extends WalletFormController implements Initiali
         Optional<Keystore> result = dlg.showAndWait();
         if(result.isPresent()) {
             selectSourcePane.setVisible(false);
+            label.requestFocus();
 
             Keystore importedKeystore = result.get();
             if(keystore.getSource() == KeystoreSource.SW_SEED && importedKeystore.getSource() != KeystoreSource.SW_SEED) {

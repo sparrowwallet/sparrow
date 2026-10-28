@@ -16,10 +16,6 @@
     -fx-prompt-text-fill: gray;
 }
 
-.button{
-    -fx-focus-traversable: false;
-}
-
 .button:hover{
     -fx-text-fill: white;
 }

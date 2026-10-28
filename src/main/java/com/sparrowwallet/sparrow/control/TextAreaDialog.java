@@ -48,6 +48,7 @@ public class TextAreaDialog extends Dialog<String> {
 
         HBox hbox = new HBox();
         this.textArea = new TextArea(defaultValue);
+        AppServices.moveFocusOnTab(textArea);
         this.textArea.setMaxWidth(Double.MAX_VALUE);
         this.textArea.setWrapText(true);
         this.textArea.getStyleClass().add("fixed-width");

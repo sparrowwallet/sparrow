@@ -5,7 +5,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import tornadofx.control.*?>
-<?import org.controlsfx.control.RangeSlider?>
+<?import com.sparrowwallet.sparrow.control.CosignersSlider?>
 <?import com.sparrowwallet.sparrow.control.CopyableLabel?>
 <?import com.sparrowwallet.drongo.policy.PolicyType?>
 <?import com.sparrowwallet.drongo.protocol.ScriptType?>
@@ -65,7 +65,7 @@
             <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
                 <Fieldset inputGrow="SOMETIMES" text="" fx:id="multisigFieldset">
                     <Field text="Cosigners:">
-                        <RangeSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="1" max="9" highValue="3" lowValue="2" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
+                        <CosignersSlider fx:id="multisigControl" showTickMarks="true" showTickLabels="true" blockIncrement="1" min="1" max="9" highValue="3" lowValue="2" snapToTicks="true" majorTickUnit="1" minorTickCount="0" />
                     </Field>
                     <Field text="M of N:">
                         <CopyableLabel fx:id="multisigLowLabel" />

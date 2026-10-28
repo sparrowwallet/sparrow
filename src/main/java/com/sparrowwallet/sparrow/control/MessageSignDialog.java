@@ -157,6 +157,7 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         Field signatureField = new Field();
         signatureField.setText("Signature:");
         signature = new TextArea();
+        AppServices.moveFocusOnTab(signature);
         signature.getStyleClass().add("id");
         signature.setPrefRowCount(4);
         signature.setStyle("-fx-pref-height: 80px");

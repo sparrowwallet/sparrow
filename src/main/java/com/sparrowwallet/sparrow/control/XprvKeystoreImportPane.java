@@ -8,6 +8,7 @@ import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.KeystoreImportEvent;
 import com.sparrowwallet.sparrow.io.ImportException;
@@ -128,6 +129,7 @@ public class XprvKeystoreImportPane extends TitledDescriptionPane {
 
     private Node getXprvEntry(boolean displayOnly) {
         TextArea xprvField = new TextArea();
+        AppServices.moveFocusOnTab(xprvField);
         xprvField.setPrefRowCount(2);
         xprvField.setWrapText(true);
         xprvField.getStyleClass().add("fixed-width");

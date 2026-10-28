@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.control;
 
+import com.sparrowwallet.sparrow.AppServices;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.MenuItem;
 import javafx.scene.input.Clipboard;
@@ -9,6 +10,7 @@ import org.fxmisc.richtext.CodeArea;
 public class SelectableCodeArea extends CodeArea {
     public SelectableCodeArea() {
         super();
+        AppServices.moveFocusOnTab(this);
 
         ContextMenu contextMenu = new ContextMenu();
         MenuItem copy = new MenuItem("Copy");
