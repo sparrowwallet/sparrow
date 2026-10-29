@@ -249,6 +249,18 @@ public class WalletController extends WalletFormController implements Initializa
     }
 
     @Subscribe
+    public void functionShortcut(FunctionShortcutEvent event) {
+        if(event.getWallet().equals(walletForm.getWallet()) && walletMenuBox.isVisible()) {
+            for(Toggle toggle : walletMenu.getToggles()) {
+                if(toggle.getUserData().equals(event.getFunction()) && toggle instanceof ToggleButton toggleButton && toggleButton.isVisible() && !toggleButton.isDisabled()) {
+                    toggleButton.setSelected(true);
+                    toggleButton.requestFocus();
+                }
+            }
+        }
+    }
+
+    @Subscribe
     public void walletLock(WalletLockEvent event) {
         if(event.getWallet().equals(walletForm.getMasterWallet())) {
             updateWalletEncryptedStatus();

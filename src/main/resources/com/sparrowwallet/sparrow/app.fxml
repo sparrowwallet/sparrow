@@ -144,6 +144,14 @@
                         <MenuItem fx:id="showWalletSummary" mnemonicParsing="false" text="Show Wallet Summary" onAction="#showWalletSummary"/>
                         <MenuItem fx:id="showAllWalletsSummary" mnemonicParsing="false" text="Show All Wallets Summary" onAction="#showAllWalletsSummary"/>
                         <SeparatorMenuItem />
+                        <Menu fx:id="goToMenu" mnemonicParsing="false" text="Go To">
+                            <MenuItem mnemonicParsing="false" text="Transactions" accelerator="Shortcut+1" userData="TRANSACTIONS" onAction="#goToFunction"/>
+                            <MenuItem mnemonicParsing="false" text="Send" accelerator="Shortcut+2" userData="SEND" onAction="#goToFunction"/>
+                            <MenuItem mnemonicParsing="false" text="Receive" accelerator="Shortcut+3" userData="RECEIVE" onAction="#goToFunction"/>
+                            <MenuItem mnemonicParsing="false" text="Addresses" accelerator="Shortcut+4" userData="ADDRESSES" onAction="#goToFunction"/>
+                            <MenuItem mnemonicParsing="false" text="UTXOs" accelerator="Shortcut+5" userData="UTXOS" onAction="#goToFunction"/>
+                            <MenuItem mnemonicParsing="false" text="Settings" accelerator="Shortcut+6" userData="SETTINGS" onAction="#goToFunction"/>
+                        </Menu>
                         <MenuItem fx:id="refreshWallet" mnemonicParsing="false" text="Refresh Wallet" accelerator="Shortcut+R" onAction="#refreshWallet"/>
                     </items>
                 </Menu>

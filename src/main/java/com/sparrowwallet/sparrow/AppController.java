@@ -30,6 +30,7 @@ import com.sparrowwallet.sparrow.transaction.TransactionController;
 import com.sparrowwallet.sparrow.transaction.TransactionData;
 import com.sparrowwallet.sparrow.transaction.TransactionView;
 import com.sparrowwallet.sparrow.wallet.Entry;
+import com.sparrowwallet.sparrow.wallet.Function;
 import com.sparrowwallet.sparrow.wallet.WalletController;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import de.jangassen.MenuToolkit;
@@ -193,6 +194,9 @@ public class AppController implements Initializable {
 
     @FXML
     private MenuItem refreshWallet;
+
+    @FXML
+    private Menu goToMenu;
 
     @FXML
     private MenuItem sendToMany;
@@ -442,6 +446,7 @@ public class AppController implements Initializable {
         searchWallet.disableProperty().bind(exportWallet.disableProperty());
         refreshWallet.disableProperty().bind(Bindings.or(exportWallet.disableProperty(), Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not())));
         sendToMany.disableProperty().bind(exportWallet.disableProperty());
+        goToMenu.getItems().forEach(item -> item.disableProperty().bind(exportWallet.disableProperty()));
         sweepPrivateKey.disableProperty().bind(Bindings.or(serverToggle.disableProperty(), AppServices.onlineProperty().not()));
         showPayNym.setDisable(true);
 
@@ -1706,6 +1711,14 @@ public class AppController implements Initializable {
             WalletSummaryDialog walletSummaryDialog = new WalletSummaryDialog(allWalletForms);
             walletSummaryDialog.initOwner(rootStack.getScene().getWindow());
             walletSummaryDialog.showAndWait();
+        }
+    }
+
+    //Go To and its shortcuts select a wallet function without tabbing back through the current one
+    public void goToFunction(ActionEvent event) {
+        WalletForm selectedWalletForm = getSelectedWalletForm();
+        if(selectedWalletForm != null && event.getSource() instanceof MenuItem item) {
+            EventManager.get().post(new FunctionShortcutEvent(Function.valueOf((String)item.getUserData()), selectedWalletForm.getWallet()));
         }
     }
 
