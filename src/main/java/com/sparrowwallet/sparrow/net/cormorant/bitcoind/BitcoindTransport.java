@@ -110,7 +110,15 @@ public class BitcoindTransport implements Transport {
             os.write(jsonBytes);
         }
 
-        int statusCode = connection.getResponseCode();
+        int statusCode;
+        try {
+            statusCode = connection.getResponseCode();
+        } catch(InterruptedIOException e) {
+            throw e;
+        } catch(IOException e) {
+            //From v32.1 Bitcoin Core closes the connection from a client outside rpcallowip without answering, where earlier versions answered 403 below
+            throw new IOException("Bitcoin Core at " + bitcoindUrl.getAuthority() + " closed the connection without responding, check its rpcallowip settings", e);
+        }
 
         //Trust on first use, as for non-CA-certified Electrum servers: the certificate presented by the node on the first connection is saved, and required on all connections thereafter
         if(connection instanceof HttpsURLConnection httpsConn && Storage.getCertificateFile(bitcoindServer.getHost()) == null) {

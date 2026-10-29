@@ -3,10 +3,15 @@ package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sparrowwallet.sparrow.net.cormorant.index.TxEntry;
 
+//Bitcoin Core v32.1 deprecates vsize in favour of the identical vsize_adjusted, so prefer the latter and fall back for earlier versions
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record MempoolEntry(int vsize, int ancestorsize, boolean bip125_replaceable, FeesMempoolEntry fees) {
+public record MempoolEntry(Integer vsize, Integer vsize_adjusted, int ancestorsize, FeesMempoolEntry fees) {
+    public int getVsize() {
+        return vsize_adjusted != null ? vsize_adjusted : vsize;
+    }
+
     public boolean hasUnconfirmedParents() {
-        return vsize != ancestorsize;
+        return getVsize() != ancestorsize;
     }
 
     public TxEntry getTxEntry(String txid) {
@@ -14,6 +19,6 @@ public record MempoolEntry(int vsize, int ancestorsize, boolean bip125_replaceab
     }
 
     public VsizeFeerate getVsizeFeerate() {
-        return new VsizeFeerate(vsize, fees().base());
+        return new VsizeFeerate(getVsize(), fees().base());
     }
 }

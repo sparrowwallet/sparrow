@@ -88,7 +88,7 @@ public class StoreTest {
         ListTransaction unconfirmed = new ListTransaction(address.toString(), List.of(), Category.receive, 1.0, 0, 0.0, 0, null, 0, 0, 0, FIRST_TXID, 0, 0, List.of(), List.of());
 
         assertEquals(scriptHash, store.addAddressTransaction(address, unconfirmed));
-        store.getMempoolEntries().put(FIRST_TXID, new MempoolEntry(100, 200, true, new FeesMempoolEntry(0.00001, 0.00002)));
+        store.getMempoolEntries().put(FIRST_TXID, new MempoolEntry(100, null, 200, new FeesMempoolEntry(0.00001, 0.00002)));
         assertEquals(Set.of(scriptHash), store.updateMempoolTransactions());
         assertEquals(List.of(-1), store.getHistory(scriptHash).stream().map(txEntry -> txEntry.height).toList());
         String status = store.getStatus(scriptHash);
