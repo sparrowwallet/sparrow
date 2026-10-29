@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.pgp.PGPVerificationResult;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.glyphfont.GlyphUtils;
 import com.sparrowwallet.sparrow.net.VersionCheckService;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -17,6 +18,7 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -96,6 +98,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("dialog.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
+        setTitle("Verify Download");
         dialogPane.setHeader(new Header());
         setupDrag(dialogPane);
 
@@ -132,6 +135,8 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         Field releaseVerifiedField = setupResultField(releaseVerified, "Verified");
 
         releaseLink = new Hyperlink("");
+        //The link to the release file has no text until a download is verified, and an empty link tells a screen reader user nothing
+        releaseLink.focusTraversableProperty().bind(releaseLink.textProperty().isNotEmpty());
         releaseVerifiedField.getInputs().add(releaseLink);
         releaseLink.setOnAction(event -> {
             if(release.get() != null && release.get().exists()) {
@@ -156,6 +161,9 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         ButtonType clearButtonType = new javafx.scene.control.ButtonType("Clear", ButtonBar.ButtonData.CANCEL_CLOSE);
         ButtonType closeButtonType = new javafx.scene.control.ButtonType("Close", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().addAll(clearButtonType, closeButtonType);
+        //Escape closes the dialog rather than quietly clearing the chosen files, which the Clear button still does
+        ((Button)dialogPane.lookupButton(clearButtonType)).setCancelButton(false);
+        ((Button)dialogPane.lookupButton(closeButtonType)).setCancelButton(true);
 
         setOnCloseRequest(event -> {
             if(ButtonBar.ButtonData.CANCEL_CLOSE.equals(getResult())) {
@@ -332,6 +340,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 releaseVerified.setText("Ready to install ");
                 releaseVerified.setGraphic(GlyphUtils.getSuccessGlyph());
                 releaseLink.setText(release.get().getName());
+                focusResults();
             } else {
                 verifyManifest(verification, signedManifest.content());
             }
@@ -346,6 +355,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             signedBy.setGraphic(GlyphUtils.getFailureGlyph());
             signedBy.setTooltip(null);
             clearReleaseFields();
+            focusResults();
         });
 
         pgpVerifyService.start();
@@ -434,6 +444,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                     releaseVerified.setGraphic(GlyphUtils.getFailureGlyph());
                     releaseLink.setText("");
                 }
+                focusResults();
             });
             hashService.setOnFailed(event -> {
                 if(verification != verificationCount) {
@@ -446,6 +457,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 releaseVerified.setText("Cannot verify " + releaseFile.getName());
                 releaseVerified.setGraphic(GlyphUtils.getFailureGlyph());
                 releaseLink.setText("");
+                focusResults();
             });
             hashService.start();
         } else {
@@ -455,6 +467,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             releaseVerified.setText("Not verified");
             releaseVerified.setGraphic(GlyphUtils.getFailureGlyph());
             releaseLink.setText("");
+            focusResults();
         }
     }
 
@@ -471,7 +484,16 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
         field.setText(title + ":");
         field.getInputs().add(label);
         label.setGraphicTextGap(8);
+        //Read as a read-only text field named by its title, and a Tab stop once it has a result, so the outcome can be heard
+        label.setAccessibleRole(AccessibleRole.TEXT_FIELD);
+        label.accessibleTextProperty().bind(Bindings.concat(title, ": ", label.textProperty()));
+        label.focusTraversableProperty().bind(label.textProperty().isNotEmpty());
         return field;
+    }
+
+    //Results appear beside the chosen files without anything else changing, so focus moves to them once verification ends
+    private void focusResults() {
+        javafx.application.Platform.runLater(signedBy::requestFocus);
     }
 
     public static Map<File, String> getManifest(File manifest) throws IOException, InvalidManifestException {
@@ -726,6 +748,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
             textField.setPromptText("e.g. " + example + formatExtensionsList(extensions) + (optional ? " (optional)" : ""));
             textField.setOnMouseClicked(event -> browseForFile(title, extensions));
             Button browseButton = new Button("Browse...");
+            browseButton.setAccessibleText("Browse for " + title);
             browseButton.setOnAction(event -> browseForFile(title, extensions));
             getChildren().addAll(textField, browseButton);
             HBox.setHgrow(textField, Priority.ALWAYS);
