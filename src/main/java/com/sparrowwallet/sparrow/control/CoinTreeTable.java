@@ -45,6 +45,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class CoinTreeTable extends TreeTableView<Entry> {
     private TableType tableType;
@@ -96,6 +97,19 @@ public class CoinTreeTable extends TreeTableView<Entry> {
     static Object withRowActionsHelp(Object help) {
         String rowActionsHelp = OsType.getCurrent() == OsType.MACOS ? "Press Shift-F10 or Control-Return for row actions" : "Press Shift-F10 for row actions";
         return help == null || help.toString().isEmpty() ? rowActionsHelp : help + ". " + rowActionsHelp;
+    }
+
+    //Moving up and down a table reads the first cell of each row, so a first cell holding only a name or type also reads the rest of its row.
+    //On macOS its own text is left out, as VoiceOver also reads the text inside the cell; other screen readers read only the name.
+    static String getRowSummary(TreeTableCell<?, ?> cell) {
+        if(cell.getText() == null || cell.isEditing() || cell.getTableRow() == null) {
+            return null;
+        }
+
+        boolean ownTextReadSeparately = OsType.getCurrent() == OsType.MACOS;
+        String summary = cell.getTableRow().getChildrenUnmodifiable().stream().filter(node -> node instanceof TreeTableCell<?, ?> && !(ownTextReadSeparately && node == cell))
+                .map(node -> ((TreeTableCell<?, ?>)node).getText()).filter(text -> text != null && !text.isEmpty()).collect(Collectors.joining(", "));
+        return summary.isEmpty() ? null : summary;
     }
 
     private boolean showRowMenu(int index) {
