@@ -674,7 +674,9 @@ public class DbPersistence implements Persistence {
     //created alongside the wallet file so that the replacement is an atomic move, and so that the copy is not written to a shared temp location.
     private void changeFileEncryption(File walletFile, String currentPassword, String newPassword) throws IOException, SQLException {
         File dbFile = walletFile.getAbsoluteFile();
-        Path encryptionDir = Files.createTempDirectory(dbFile.getParentFile().toPath(), "sparrowenc");
+        //A wallet file may be a symlink to a file stored elsewhere, so convert and replace the file it points to rather than the link
+        Path targetFile = dbFile.toPath().toRealPath();
+        Path encryptionDir = Files.createTempDirectory(targetFile.getParent(), "sparrowenc");
 
         try {
             Path encryptionFile = encryptionDir.resolve(dbFile.getName());
@@ -700,9 +702,9 @@ public class DbPersistence implements Persistence {
             }
 
             try {
-                Files.move(encryptionFile, dbFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
+                Files.move(encryptionFile, targetFile, StandardCopyOption.ATOMIC_MOVE);
             } catch(AtomicMoveNotSupportedException e) {
-                Files.move(encryptionFile, dbFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                Files.move(encryptionFile, targetFile, StandardCopyOption.REPLACE_EXISTING);
             }
         } finally {
             File[] remainingFiles = encryptionDir.toFile().listFiles();

@@ -14,10 +14,12 @@ import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -267,6 +269,33 @@ public class DbPersistenceTest {
 
         Assertions.assertTrue(Storage.isEncrypted(storage.getWalletFile()));
         Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
+    }
+
+    @Test
+    public void passwordChangeKeepsSymlinkedWalletInPlace() throws Exception {
+        Storage targetStorage = createUnencryptedWallet("Volume");
+        targetStorage.closeAndWait();
+        Path walletsDir = Files.createDirectory(tempDir.resolve("wallets"));
+        Path link;
+        try {
+            link = Files.createSymbolicLink(walletsDir.resolve("Savings." + PersistenceType.DB.getExtension()), targetStorage.getWalletFile().toPath());
+        } catch(UnsupportedOperationException | IOException e) {
+            //Windows only allows symbolic links to be created in Developer Mode or when elevated
+            throw Assumptions.<RuntimeException>abort("Symbolic links cannot be created: " + e.getMessage());
+        }
+
+        Storage storage = new Storage(PersistenceType.DB, link.toFile());
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.loadUnencryptedWallet();
+        setPassword(storage, "pass");
+        storage.closeAndWait();
+
+        Assertions.assertTrue(Files.isSymbolicLink(link), "the symlink was replaced by the wallet file");
+        Assertions.assertTrue(isWalletValid(targetStorage.getWalletFile(), "pass"));
+        String[] walletsDirFiles = walletsDir.toFile().list();
+        Assertions.assertEquals(1, walletsDirFiles == null ? -1 : walletsDirFiles.length, "files were left in the wallets directory");
+        String[] tempFiles = tempDir.toFile().list((dir, name) -> name.equals("temp.db") || name.startsWith("sparrowenc"));
+        Assertions.assertEquals(0, tempFiles == null ? -1 : tempFiles.length, "temporary files were left alongside the wallet file");
     }
 
     @Test
