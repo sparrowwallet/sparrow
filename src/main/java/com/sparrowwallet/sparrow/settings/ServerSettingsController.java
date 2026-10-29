@@ -457,6 +457,8 @@ public class ServerSettingsController extends SettingsDetailController {
             setFieldsEditable(true);
             editConnection.setVisible(false);
             testConnection.setVisible(true);
+            //The button pressed is hidden, so focus moves to the one that takes its place rather than falling to the dialog's Close button
+            testConnection.requestFocus();
         });
 
         PublicElectrumServer configPublicElectrumServer = PublicElectrumServer.fromServer(config.getPublicElectrumServer());

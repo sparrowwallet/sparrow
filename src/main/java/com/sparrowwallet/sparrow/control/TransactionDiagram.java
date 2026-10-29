@@ -460,7 +460,8 @@ public class TransactionDiagram extends GridPane {
 
                 Button excludeUtxoButton = new Button("");
                 excludeUtxoButton.setGraphic(getExcludeGlyph());
-                excludeUtxoButton.setAccessibleText("Exclude UTXO");
+                //Named with the UTXO shown beside it, as each input has one of these buttons
+                excludeUtxoButton.setAccessibleText("Exclude UTXO " + desc);
                 excludeUtxoButton.setOnAction(event -> {
                     EventManager.get().post(new ExcludeUtxoEvent(walletTx, input));
                 });

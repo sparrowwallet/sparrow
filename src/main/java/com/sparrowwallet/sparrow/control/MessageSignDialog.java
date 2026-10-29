@@ -188,7 +188,12 @@ public class MessageSignDialog extends Dialog<ButtonBar.ButtonData> {
         formatBip322 = new ToggleButton("BIP322 (Simple)");
         SegmentedButton formatButtons = new SegmentedButton(formatElectrum, formatTrezor, formatBip322);
         formatButtons.setToggleGroup(formatGroup);
-        formatButtons.getButtons().forEach(button -> button.setAccessibleRole(AccessibleRole.RADIO_BUTTON));
+        //The skin only puts the buttons in the group when it is created, after the group listener below that restores a cleared selection.
+        //Joining it now keeps each button's Tab stop listener ahead of that one, so a restored selection leaves one Tab stop as before.
+        formatButtons.getButtons().forEach(button -> {
+            button.setToggleGroup(formatGroup);
+            button.setAccessibleRole(AccessibleRole.RADIO_BUTTON);
+        });
         formatField.getInputs().add(formatButtons);
 
         fieldset.getChildren().addAll(addressField, messageField, signatureField, formatField);
