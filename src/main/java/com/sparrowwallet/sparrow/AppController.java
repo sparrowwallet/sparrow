@@ -2965,6 +2965,10 @@ public class AppController implements Initializable {
                 }
 
                 notificationBuilder.show();
+                //The notification's close button shows only an icon
+                Platform.runLater(() -> Window.getWindows().stream().filter(window -> window instanceof Popup && window.getScene() != null)
+                        .map(window -> window.getScene().getRoot().lookup(".notification-bar .close-button")).filter(Objects::nonNull)
+                        .forEach(closeButton -> closeButton.setAccessibleText("Close")));
             }
         }
     }

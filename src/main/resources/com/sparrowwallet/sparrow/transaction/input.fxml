@@ -101,17 +101,17 @@
                         <ToggleGroup fx:id="locktimeToggleGroup" />
                     </toggleGroup>
                     <buttons>
-                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup">
+                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeNoneType" text="Disabled" accessibleText="Locktime: Disabled" userData="none" toggleGroup="$locktimeToggleGroup">
                             <tooltip>
                                 <Tooltip text="Disable time locks"/>
                             </tooltip>
                         </ToggleButton>
-                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeAbsoluteType" text="Absolute" userData="absolute" toggleGroup="$locktimeToggleGroup">
+                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeAbsoluteType" text="Absolute" accessibleText="Locktime: Absolute" userData="absolute" toggleGroup="$locktimeToggleGroup">
                             <tooltip>
                                 <Tooltip text="Enable absolute (transaction level) time lock only"/>
                             </tooltip>
                         </ToggleButton>
-                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeRelativeType" text="Relative" userData="relative" toggleGroup="$locktimeToggleGroup">
+                        <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeRelativeType" text="Relative" accessibleText="Locktime: Relative" userData="relative" toggleGroup="$locktimeToggleGroup">
                             <tooltip>
                                 <Tooltip text="Enable both absolute and relative time locks"/>
                             </tooltip>

@@ -507,6 +507,8 @@ public class HeadersController extends TransactionFormController implements Init
         blockStatus.accessibleTextProperty().bind(Bindings.concat("Transaction status: ", blockStatus.textProperty()));
         //A read-only text field rather than text, as VoiceOver keeps reading the first value it saw of text that later changes
         blockStatus.setAccessibleRole(AccessibleRole.TEXT_FIELD);
+        //A Tab stop, as confirmations are not announced as they arrive and the status is otherwise reached only once, on broadcast
+        blockStatus.setFocusTraversable(true);
 
         broadcastButton.managedProperty().bind(broadcastButton.visibleProperty());
         showTransactionButton.managedProperty().bind(showTransactionButton.visibleProperty());

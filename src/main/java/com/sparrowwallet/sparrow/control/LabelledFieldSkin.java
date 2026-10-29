@@ -14,6 +14,7 @@ import java.util.List;
 
 /**
  * Field skin that links the field's label to its input, so screen readers announce the label with the input.
+ * A field's accessible text, where set, is spoken for the label in place of its visible text.
  * Applied to every field with -fx-skin in general.css.
  */
 public class LabelledFieldSkin extends FieldSkin {
@@ -26,6 +27,7 @@ public class LabelledFieldSkin extends FieldSkin {
         label = (Label)field.getLabelContainer().getChildren().getFirst();
         field.getInputs().addListener(labelForListener);
         field.textProperty().addListener(labelForListener);
+        label.accessibleTextProperty().bind(field.accessibleTextProperty());
         updateLabelFor();
     }
 
@@ -34,6 +36,7 @@ public class LabelledFieldSkin extends FieldSkin {
         getSkinnable().getInputs().removeListener(labelForListener);
         getSkinnable().textProperty().removeListener(labelForListener);
         unwatchVisibility();
+        label.accessibleTextProperty().unbind();
         label.setLabelFor(null);
         super.dispose();
     }

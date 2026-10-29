@@ -111,9 +111,9 @@
                                     <ToggleGroup fx:id="locktimeToggleGroup" />
                                 </toggleGroup>
                                 <buttons>
-                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeNoneType" text="Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
-                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeBlockType" text="Block" userData="block" toggleGroup="$locktimeToggleGroup" />
-                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeDateType" text="Date" userData="date" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeNoneType" text="Disabled" accessibleText="Locktime: Disabled" userData="none" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeBlockType" text="Block" accessibleText="Locktime: Block" userData="block" toggleGroup="$locktimeToggleGroup" />
+                                    <ToggleButton accessibleRole="RADIO_BUTTON" fx:id="locktimeDateType" text="Date" accessibleText="Locktime: Date" userData="date" toggleGroup="$locktimeToggleGroup" />
                                 </buttons>
                             </SegmentedButton>
                         </Field>
@@ -166,10 +166,10 @@
 
                 <Form GridPane.columnIndex="1" GridPane.rowIndex="2" styleClass="details-lower">
                     <Fieldset text="Fee" inputGrow="SOMETIMES">
-                        <Field text="Amount:">
+                        <Field text="Amount:" accessibleText="Fee amount:">
                             <CopyableCoinLabel fx:id="fee" />
                         </Field>
-                        <Field text="Rate:">
+                        <Field text="Rate:" accessibleText="Fee rate:">
                             <CopyableLabel fx:id="feeRate" />
                         </Field>
                     </Fieldset>
