@@ -152,6 +152,7 @@ public class CardImportPane extends TitledDescriptionPane {
         confirmationBox.getChildren().add(confirmationPin);
 
         Button initializeButton = new Button("Initialize");
+        keepFocusWhenDisabled(initializeButton);
         initializeButton.setDefaultButton(true);
         initializeButton.setOnAction(event -> {
             initializeButton.setDisable(true);
@@ -225,6 +226,7 @@ public class CardImportPane extends TitledDescriptionPane {
         initTypeBox.getChildren().addAll(automatic, advanced, entropy);
 
         Button initializeButton = new Button("Initialize");
+        keepFocusWhenDisabled(initializeButton);
         initializeButton.setDefaultButton(true);
         initializeButton.setOnAction(event -> {
             initializeButton.setDisable(true);
@@ -280,6 +282,7 @@ public class CardImportPane extends TitledDescriptionPane {
         contentBox.setAlignment(Pos.TOP_RIGHT);
         contentBox.setSpacing(20);
         contentBox.getChildren().add(pinField);
+        labelPinField(pinField, contentBox);
         contentBox.setPadding(new Insets(10, 30, 0, 30));
         contentBox.setPrefHeight(50);
 

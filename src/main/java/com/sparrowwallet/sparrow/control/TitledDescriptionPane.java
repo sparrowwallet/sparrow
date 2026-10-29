@@ -7,11 +7,17 @@ import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.beans.binding.Bindings;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.ReadOnlyProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -21,6 +27,16 @@ import java.util.regex.Pattern;
 public class TitledDescriptionPane extends TitledPane {
     private Label mainLabel;
     private Label descriptionLabel;
+    private final BooleanProperty showingError = new SimpleBooleanProperty(false);
+
+    //An action button disables itself while its operation runs, which would move focus on to the dialog's buttons. Focus stays on this
+    //pane instead, whose name includes the status line, so the operation's progress and result are read.
+    private final ChangeListener<Boolean> keepFocusWhenDisabled = (observable, wasDisabled, disabled) -> {
+        Node node = (Node)((ReadOnlyProperty<?>)observable).getBean();
+        if(disabled && node.getScene() != null && node.getScene().getFocusOwner() == node) {
+            requestFocus();
+        }
+    };
     protected Hyperlink showHideLink;
     protected HBox buttonBox;
 
@@ -62,6 +78,8 @@ public class TitledDescriptionPane extends TitledPane {
         labelsBox.getChildren().add(descriptionBox);
 
         descriptionLabel = new Label(description);
+        //A read-only text field, as screen readers keep the first value of static text and the line changes with the pane's state
+        descriptionLabel.setAccessibleRole(AccessibleRole.TEXT_FIELD);
         descriptionLabel.getStyleClass().add("description-label");
         showHideLink = new Hyperlink("Details...");
         showHideLink.managedProperty().bind(showHideLink.visibleProperty());
@@ -82,6 +100,11 @@ public class TitledDescriptionPane extends TitledPane {
 
         buttonBox = new HBox();
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
+        buttonBox.getChildren().addListener((ListChangeListener<Node>)change -> {
+            while(change.next()) {
+                change.getAddedSubList().forEach(this::keepFocusWhenDisabled);
+            }
+        });
         Control button = createButton();
         if(button != null) {
             buttonBox.getChildren().add(button);
@@ -111,18 +134,63 @@ public class TitledDescriptionPane extends TitledPane {
             descriptionLabel.getStyleClass().add("description-label");
         }
         descriptionLabel.setText(text);
+        showingError.set(false);
+        descriptionLabel.setAccessibleText(null);
+        descriptionLabel.setFocusTraversable(false);
     }
 
     protected void setError(String title, String detail) {
+        //Checked before the content is replaced, as removing the old content with focus in it clears focus from the pane straight away.
+        //The window's focus owner is used rather than focusWithin, which is false while the window is inactive.
+        boolean hadFocus = hasFocusOwner();
         descriptionLabel.getStyleClass().remove("description-label");
         if(!descriptionLabel.getStyleClass().contains("description-error")) {
             descriptionLabel.getStyleClass().add("description-error");
         }
         descriptionLabel.setText(title);
+        showingError.set(true);
         if(detail != null && !detail.isEmpty()) {
             setContent(getContentBox(detail));
             setExpanded(true);
         }
+
+        //The error line is read as a named, read-only field holding the whole error, links included. A screen reader doesn't speak the
+        //new name of a pane that already has focus, so when focus is in this pane the error takes it to be read; focus elsewhere, such
+        //as another device, is left alone.
+        String spokenDetail = detail == null ? "" : detail.replaceAll("\\[(https?://\\S+)]", "$1").trim();
+        descriptionLabel.setAccessibleText(spokenDetail.isEmpty() ? title : title + ": " + spokenDetail);
+        descriptionLabel.setFocusTraversable(true);
+        if(hadFocus) {
+            Platform.runLater(descriptionLabel::requestFocus);
+        }
+    }
+
+    //A PIN entry shown again after a wrong PIN takes focus for the next try, so the field is named after the error while one is shown,
+    //which reads the error as focus arrives rather than the error line taking focus away from the field
+    protected void labelPinField(TextInputControl pinField, Pane container) {
+        Label pinLabel = new Label();
+        pinLabel.textProperty().bind(Bindings.createStringBinding(() -> showingError.get() ? descriptionLabel.getText() + ", PIN" : "PIN",
+                showingError, descriptionLabel.textProperty()));
+        pinLabel.setLabelFor(pinField);
+        pinLabel.setVisible(false);
+        pinLabel.setManaged(false);
+        container.getChildren().add(pinLabel);
+    }
+
+    private boolean hasFocusOwner() {
+        for(Node node = getScene() == null ? null : getScene().getFocusOwner(); node != null; node = node.getParent()) {
+            if(node == this) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    //Used for the button row, and for buttons in a pane's content that disable themselves, such as Enter PIN and Initialize
+    protected void keepFocusWhenDisabled(Node node) {
+        node.disabledProperty().removeListener(keepFocusWhenDisabled);
+        node.disabledProperty().addListener(keepFocusWhenDisabled);
     }
 
     protected Node getContentBox(String message) {

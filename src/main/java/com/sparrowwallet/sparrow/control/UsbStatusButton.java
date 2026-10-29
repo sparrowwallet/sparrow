@@ -19,6 +19,7 @@ public class UsbStatusButton extends MenuButton {
     public UsbStatusButton() {
         super("");
         setGraphic(getIcon());
+        setAccessibleText("Connected Devices");
 
         getStyleClass().add("status-bar-button");
         this.setPopupSide(Side.RIGHT);

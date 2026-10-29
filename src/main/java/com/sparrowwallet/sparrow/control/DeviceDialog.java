@@ -144,6 +144,8 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
                 DevicePane devicePane = getDevicePane(device, dialogDevices.size() == 1);
                 deviceAccordion.getPanes().add(devicePane);
             }
+            //Focus starts on the first device rather than the dialog's buttons, so the device and its state are read first
+            Platform.runLater(() -> deviceAccordion.getPanes().getFirst().requestFocus());
         }
     }
 
