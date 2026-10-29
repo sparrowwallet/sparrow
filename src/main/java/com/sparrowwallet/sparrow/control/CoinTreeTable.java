@@ -75,12 +75,13 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         });
 
         //Row actions are in the context menu of each row's entry cell, which a keyboard menu request to the table opens for the focused row.
-        //Windows and Linux send Shift-F10 and the Menu key as that request; macOS sends nothing, so those keys and Control-Return are handled here.
+        //Only Windows sends Shift-F10 and the Menu key as that request; Linux and macOS send it only for a right click, so those keys are handled here.
+        //macOS keyboards have no Menu key, so Control-Return is also handled there.
         boolean macOS = OsType.getCurrent() == OsType.MACOS;
-        if(macOS) {
+        if(OsType.getCurrent() != OsType.WINDOWS) {
             addEventHandler(KeyEvent.KEY_PRESSED, event -> {
                 boolean menuKey = event.getCode() == KeyCode.CONTEXT_MENU || (event.getCode() == KeyCode.F10 && event.isShiftDown())
-                        || (event.getCode() == KeyCode.ENTER && event.isControlDown() && !event.isShiftDown() && !event.isAltDown() && !event.isMetaDown());
+                        || (macOS && event.getCode() == KeyCode.ENTER && event.isControlDown() && !event.isShiftDown() && !event.isAltDown() && !event.isMetaDown());
                 if(menuKey && event.getTarget() == this && showRowMenu(getFocusModel().getFocusedIndex())) {
                     event.consume();
                 }
