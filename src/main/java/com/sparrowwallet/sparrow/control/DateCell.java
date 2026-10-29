@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.UtxoEntry;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -55,6 +56,16 @@ public class DateCell extends TreeTableCell<Entry, Entry> {
             }
             setGraphic(null);
         }
+    }
+
+    //In the UTXOs table the date is the first cell of each row, the one screen readers focus
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.HELP && getContextMenu() != null && getTreeTableView() instanceof CoinTreeTable) {
+            return CoinTreeTable.withRowActionsHelp(super.queryAccessibleAttribute(attribute, parameters));
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     private static class DateContextMenu extends HashIndexEntryContextMenu {

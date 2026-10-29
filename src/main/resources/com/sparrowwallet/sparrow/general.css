@@ -9,6 +9,11 @@
     -fx-focus-traversable: false;
 }
 
+/* Row actions are also in each row's context menu, opened from the keyboard in CoinTreeTable, so the buttons are not Tab stops in every row */
+.cell-actions .button {
+    -fx-focus-traversable: false;
+}
+
 .form .wideLabelFieldSet.fieldset:horizontal .label-container {
     -fx-pref-width: 170px;
     -fx-pref-height: 25px;

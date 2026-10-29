@@ -19,6 +19,7 @@ import javafx.application.Platform;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.geometry.Pos;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -202,6 +203,15 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 setGraphic(getTreeTableView().getStyleClass().contains("bip47") ? null : actionBox);
             }
         }
+    }
+
+    @Override
+    public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+        if(attribute == AccessibleAttribute.HELP && getContextMenu() != null && getTreeTableView() instanceof CoinTreeTable) {
+            return CoinTreeTable.withRowActionsHelp(super.queryAccessibleAttribute(attribute, parameters));
+        }
+
+        return super.queryAccessibleAttribute(attribute, parameters);
     }
 
     @Override

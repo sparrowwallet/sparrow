@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.SortDirection;
 import com.sparrowwallet.drongo.wallet.TableType;
@@ -27,15 +28,21 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
+import javafx.geometry.Side;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.input.ContextMenuEvent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -65,6 +72,83 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                 return super.queryAccessibleAttribute(attribute, parameters);
             }
         });
+
+        //Row actions are in the context menu of each row's entry cell, which a keyboard menu request to the table opens for the focused row.
+        //Windows and Linux send Shift-F10 and the Menu key as that request; macOS sends nothing, so those keys and Control-Return are handled here.
+        boolean macOS = OsType.getCurrent() == OsType.MACOS;
+        if(macOS) {
+            addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+                boolean menuKey = event.getCode() == KeyCode.CONTEXT_MENU || (event.getCode() == KeyCode.F10 && event.isShiftDown())
+                        || (event.getCode() == KeyCode.ENTER && event.isControlDown() && !event.isShiftDown() && !event.isAltDown() && !event.isMetaDown());
+                if(menuKey && event.getTarget() == this && showRowMenu(getFocusModel().getFocusedIndex())) {
+                    event.consume();
+                }
+            });
+        }
+        addEventHandler(ContextMenuEvent.CONTEXT_MENU_REQUESTED, event -> {
+            if(event.isKeyboardTrigger() && event.getTarget() == this && showRowMenu(getFocusModel().getFocusedIndex())) {
+                event.consume();
+            }
+        });
+    }
+
+    //Screen readers read the help of a row's focused cell, so the key that opens the row's actions follows the cell's own help
+    static Object withRowActionsHelp(Object help) {
+        String rowActionsHelp = OsType.getCurrent() == OsType.MACOS ? "Press Shift-F10 or Control-Return for row actions" : "Press Shift-F10 for row actions";
+        return help == null || help.toString().isEmpty() ? rowActionsHelp : help + ". " + rowActionsHelp;
+    }
+
+    private boolean showRowMenu(int index) {
+        //Some tables have no row menus (wallet summary, Whirlpool child wallet addresses), and there the keys leave the table as it is
+        if(getVisibleRows().stream().noneMatch(row -> getMenuCell(row) != null)) {
+            return false;
+        }
+
+        //Tabbing into a table focuses no row, so the menu is for the first row, which is then focused to show which row the menu is for
+        int rowIndex = Math.max(index, 0);
+        TreeTableRow<?> row = getVisibleRow(rowIndex);
+        if(row == null) {
+            //The focused row may have been scrolled out of view with the mouse or trackpad, and only rows on screen have cells
+            scrollTo(rowIndex);
+            layout();
+            row = getVisibleRow(rowIndex);
+        }
+
+        EntryCell menuCell = row == null ? null : getMenuCell(row);
+        if(menuCell == null) {
+            return false;
+        }
+
+        if(index < 0) {
+            getFocusModel().focus(rowIndex);
+        }
+        menuCell.getContextMenu().show(menuCell, Side.BOTTOM, 0, 0);
+        return true;
+    }
+
+    private List<TreeTableRow<?>> getVisibleRows() {
+        List<TreeTableRow<?>> rows = new ArrayList<>();
+        for(Node node : lookupAll(".tree-table-row-cell")) {
+            if(node instanceof TreeTableRow<?> row && row.isVisible() && !row.isEmpty()) {
+                rows.add(row);
+            }
+        }
+
+        return rows;
+    }
+
+    private TreeTableRow<?> getVisibleRow(int index) {
+        return getVisibleRows().stream().filter(row -> row.getIndex() == index).findFirst().orElse(null);
+    }
+
+    private static EntryCell getMenuCell(TreeTableRow<?> row) {
+        for(Node child : row.getChildrenUnmodifiable()) {
+            if(child instanceof EntryCell entryCell && entryCell.getContextMenu() != null) {
+                return entryCell;
+            }
+        }
+
+        return null;
     }
 
     public TableType getTableType() {
