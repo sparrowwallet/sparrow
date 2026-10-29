@@ -24,6 +24,7 @@ import java.util.List;
 public class WalletImportDialog extends Dialog<List<Wallet>> {
     private List<Wallet> wallets;
     private final Accordion importAccordion;
+    private final ScrollPane scrollPane;
     private final Button scanButton;
 
     public WalletImportDialog(List<WalletForm> selectedWalletForms) {
@@ -43,7 +44,7 @@ public class WalletImportDialog extends Dialog<List<Wallet>> {
         AnchorPane anchorPane = new AnchorPane();
         stackPane.getChildren().add(anchorPane);
 
-        ScrollPane scrollPane = new ScrollPane();
+        scrollPane = new ScrollPane();
         scrollPane.setPrefHeight(520);
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         anchorPane.getChildren().add(scrollPane);
@@ -117,12 +118,22 @@ public class WalletImportDialog extends Dialog<List<Wallet>> {
                 importAccordion.getPanes().add(0, devicePane);
             }
             Platform.runLater(() -> EventManager.get().post(new UsbDeviceEvent(devices)));
+
+            if(devices.isEmpty()) {
+                AppServices.showWarningDialog("No hardware wallets found", "Check that the device is connected and unlocked, then scan again.");
+            } else {
+                Platform.runLater(() -> {
+                    scrollPane.setVvalue(scrollPane.getVmin());
+                    importAccordion.getPanes().getFirst().requestFocus();
+                });
+            }
         });
         enumerateService.setOnFailed(workerStateEvent -> {
             Glyph glyph = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.EXCLAMATION_CIRCLE);
             glyph.getStyleClass().add("failure");
             scanButton.setGraphic(glyph);
             scanButton.setTooltip(new Tooltip(workerStateEvent.getSource().getException().getMessage()));
+            AppServices.showErrorDialog("Could not scan for hardware wallets", workerStateEvent.getSource().getException().getMessage());
         });
         enumerateService.start();
     }

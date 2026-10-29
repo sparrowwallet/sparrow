@@ -6,6 +6,7 @@ import com.sparrowwallet.drongo.wallet.WalletModel;
 import com.sparrowwallet.sparrow.AppServices;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -26,10 +27,11 @@ public class TitledDescriptionPane extends TitledPane {
     public TitledDescriptionPane(String title, String description, String content, WalletModel walletModel) {
         getStylesheets().add(AppServices.class.getResource("general.css").toExternalForm());
         getStyleClass().add("titled-description-pane");
-        setAccessibleText(title);
 
         setPadding(Insets.EMPTY);
         setGraphic(getTitle(title, description, walletModel));
+        accessibleTextProperty().bind(Bindings.createStringBinding(() -> descriptionLabel.getText() == null || descriptionLabel.getText().isEmpty() ?
+                mainLabel.getText() : mainLabel.getText() + ", " + descriptionLabel.getText(), mainLabel.textProperty(), descriptionLabel.textProperty()));
         setContent(getContentBox(content));
         removeArrow();
     }
