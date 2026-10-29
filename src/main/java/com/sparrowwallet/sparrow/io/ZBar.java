@@ -25,7 +25,7 @@ public class ZBar {
             String javaHome = System.getProperty("java.home");
             if(javaHome != null) {
                 File libDir = new File(javaHome, "lib");
-                File iconvFile = new File(libDir, "iconv-2.dll");
+                File iconvFile = new File(libDir, "libiconv-2.dll");
                 if(iconvFile.exists()) {
                     System.load(iconvFile.getAbsolutePath());
                 }
