@@ -28,7 +28,7 @@
             <center>
                 <VBox spacing="15">
                     <HBox styleClass="field-box">
-                        <Label text="PayNym:" styleClass="field-label" />
+                        <Label fx:id="payNymNameLabel" text="PayNym:" styleClass="field-label" />
                         <CopyableTextField fx:id="payNymName" promptText="Retrieving..." styleClass="field-control" editable="false"/>
                         <Button fx:id="payNymRetrieve" text="Retrieve PayNym" graphicTextGap="8" onAction="#retrievePayNym">
                             <graphic>
@@ -41,7 +41,7 @@
                         <ProgressIndicator fx:id="retrievePayNymProgress" />
                     </HBox>
                     <HBox styleClass="field-box">
-                        <Label text="Payment code:" styleClass="field-label" />
+                        <Label fx:id="paymentCodeLabel" text="Payment code:" styleClass="field-label" />
                         <HBox spacing="10">
                             <PaymentCodeTextField fx:id="paymentCode" styleClass="field-control" editable="false"/>
                             <Button accessibleText="Show QR Code" onAction="#showQR">
@@ -58,7 +58,7 @@
                         <padding>
                             <Insets top="35" />
                         </padding>
-                        <Label text="Find Contact:" styleClass="field-label" />
+                        <Label fx:id="searchPayNymsLabel" text="Find Contact:" styleClass="field-label" />
                         <HBox spacing="10">
                             <CopyableTextField fx:id="searchPayNyms" promptText="PayNym or Payment code" styleClass="field-control"/>
                             <Button accessibleText="Scan QR Code" fx:id="searchPayNymsScan" onAction="#scanQR">
@@ -92,7 +92,7 @@
             <BorderPane GridPane.columnIndex="0" GridPane.rowIndex="0">
                 <top>
                     <HBox alignment="CENTER_LEFT">
-                        <Label styleClass="listview-label" text="Contacts"/>
+                        <Label fx:id="followingLabel" styleClass="listview-label" text="Contacts"/>
                     </HBox>
                 </top>
                 <center>
@@ -102,7 +102,7 @@
             <BorderPane GridPane.columnIndex="1" GridPane.rowIndex="0">
                 <top>
                     <HBox alignment="CENTER_LEFT">
-                        <Label styleClass="listview-label" text="Followers"/>
+                        <Label fx:id="followersLabel" styleClass="listview-label" text="Followers"/>
                     </HBox>
                 </top>
                 <center>

@@ -80,6 +80,21 @@ public class PayNymController {
     @FXML
     private ListView<PayNym> followersList;
 
+    @FXML
+    private Label payNymNameLabel;
+
+    @FXML
+    private Label paymentCodeLabel;
+
+    @FXML
+    private Label searchPayNymsLabel;
+
+    @FXML
+    private Label followingLabel;
+
+    @FXML
+    private Label followersLabel;
+
     private final ObjectProperty<PayNym> payNymProperty = new SimpleObjectProperty<>(null);
 
     private final StringProperty findNymProperty = new SimpleStringProperty();
@@ -90,6 +105,13 @@ public class PayNymController {
 
     public void initializeView(String walletId) {
         this.walletId = walletId;
+
+        //The labels sit beside their controls rather than in form fields, so they are linked here to name the controls for screen readers
+        payNymNameLabel.setLabelFor(payNymName);
+        paymentCodeLabel.setLabelFor(paymentCode);
+        searchPayNymsLabel.setLabelFor(searchPayNyms);
+        followingLabel.setLabelFor(followingList);
+        followersLabel.setLabelFor(followersList);
 
         payNymName.managedProperty().bind(payNymName.visibleProperty());
         payNymRetrieve.managedProperty().bind(payNymRetrieve.visibleProperty());

@@ -12,7 +12,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.scene.image.Image;
-import javafx.scene.layout.StackPane;
 import javafx.scene.paint.ImagePattern;
 import javafx.scene.shape.Circle;
 import org.slf4j.Logger;
@@ -25,7 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PayNymAvatar extends StackPane {
+public class PayNymAvatar extends DecorativePane {
     private static final Logger log = LoggerFactory.getLogger(PayNymAvatar.class);
 
     private final ObjectProperty<PaymentCode> paymentCodeProperty = new SimpleObjectProperty<>(null);
