@@ -229,8 +229,18 @@ public class Storage {
         }
     }
 
+    public boolean isInWalletsDir() {
+        //Resolve the folder rather than the file, so that a wallet file symlinked into the wallets folder is treated as being in it
+        Path walletDir = walletFile.getAbsoluteFile().getParentFile().toPath();
+        try {
+            return walletDir.toRealPath().startsWith(getWalletsDir().toPath().toRealPath());
+        } catch(IOException e) {
+            return walletDir.normalize().startsWith(getWalletsDir().toPath().toAbsolutePath().normalize());
+        }
+    }
+
     public void backupWallet() throws IOException {
-        if(walletFile.toPath().startsWith(getWalletsDir().toPath())) {
+        if(isInWalletsDir()) {
             backupWallet(null);
         }
     }
@@ -269,7 +279,10 @@ public class Storage {
     }
 
     public void deleteBackups() {
-        deleteBackups(null);
+        //Backups are only written for wallets in the wallets folder, so any backups matching the name of a wallet elsewhere belong to another wallet
+        if(isInWalletsDir()) {
+            deleteBackups(null);
+        }
     }
 
     private void deleteBackups(String prefix) {

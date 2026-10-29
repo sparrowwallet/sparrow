@@ -25,10 +25,10 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     private boolean addingPassword;
 
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement) {
-        this(walletName, requirement, false);
+        this(walletName, requirement, false, false);
     }
 
-    public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword) {
+    public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword, boolean backupSupported) {
         this.requirement = requirement;
         this.password = new ViewPasswordField();
         this.passwordConfirm = new ViewPasswordField();
@@ -63,7 +63,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
             changePassword.setSelected(suggestChangePassword);
         }
 
-        if(requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_SET) {
+        if(backupSupported && (requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_SET)) {
             backupExisting.managedProperty().bind(backupExisting.visibleProperty());
             deleteBackups.managedProperty().bind(deleteBackups.visibleProperty());
             deleteBackups.visibleProperty().bind(backupExisting.visibleProperty().not());
