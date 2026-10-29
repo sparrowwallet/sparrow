@@ -3,7 +3,7 @@ plugins {
     id 'org.openjfx.javafxplugin' version '0.1.0'
     id 'org.beryx.jlink' version '4.0.2'
     id 'org.gradlex.extra-java-module-info' version '1.13.1'
-    id 'io.matthewnelson.kmp.tor.resource-filterjar' version '408.21.0'
+    id 'io.matthewnelson.kmp.tor.resource-filterjar' version '409.5.0'
 }
 
 def os = org.gradle.internal.os.OperatingSystem.current()
@@ -76,7 +76,7 @@ dependencies {
     implementation('co.nstant.in:cbor:0.9')
     implementation('io.github.doblon8:openpnp-capture-java:0.0.4')
     implementation("io.matthewnelson.kmp-tor:runtime:2.5.0")
-    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:408.21.0")
+    implementation("io.matthewnelson.kmp-tor:resource-exec-tor-gpl:409.5.0")
     implementation('org.jetbrains.kotlinx:kotlinx-coroutines-javafx:1.10.2') {
         exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-common'
     }
