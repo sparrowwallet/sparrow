@@ -36,7 +36,7 @@ public class TransactionIdDialog extends Dialog<Sha256Hash> {
 
         Glyph wallet = new Glyph("FontAwesome", FontAwesome.Glyph.BITCOIN);
         wallet.setFontSize(50);
-        dialogPane.setGraphic(wallet);
+        dialogPane.setGraphic(new DecorativePane(wallet));
 
         final VBox content = new VBox(10);
         content.getChildren().add(txid);

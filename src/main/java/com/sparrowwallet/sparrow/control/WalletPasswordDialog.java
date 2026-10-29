@@ -48,7 +48,7 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
 
         Glyph lock = new Glyph("FontAwesome", FontAwesome.Glyph.LOCK);
         lock.setFontSize(50);
-        dialogPane.setGraphic(lock);
+        dialogPane.setGraphic(new DecorativePane(lock));
 
         final VBox content = new VBox(10);
         content.setPrefHeight(100);

@@ -35,7 +35,7 @@ public class WalletBirthDateDialog extends Dialog<Date> {
 
         Glyph wallet = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.HISTORY);
         wallet.setFontSize(50);
-        dialogPane.setGraphic(wallet);
+        dialogPane.setGraphic(new DecorativePane(wallet));
 
         HBox datePickerBox = new HBox(10);
         Label label = new Label("Start scanning from:");

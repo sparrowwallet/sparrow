@@ -46,7 +46,7 @@ public class CardPinDialog extends Dialog<CardPinDialog.CardPinChange> {
 
         Glyph lock = new Glyph("FontAwesome", FontAwesome.Glyph.LOCK);
         lock.setFontSize(50);
-        dialogPane.setGraphic(lock);
+        dialogPane.setGraphic(new DecorativePane(lock));
 
         Form form = new Form();
         Fieldset fieldset = new Fieldset();

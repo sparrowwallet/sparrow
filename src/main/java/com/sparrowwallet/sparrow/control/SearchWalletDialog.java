@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.control;
 import com.csvreader.CsvWriter;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.KeyPurpose;
+import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.Utils;
 import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.address.InvalidAddressException;
@@ -17,6 +18,7 @@ import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.ListChangeListener;
 import javafx.event.ActionEvent;
+import javafx.scene.AccessibleAttribute;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -35,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class SearchWalletDialog extends Dialog<Entry> {
     private static final Logger log = LoggerFactory.getLogger(SearchWalletDialog.class);
@@ -137,6 +140,10 @@ public class SearchWalletDialog extends Dialog<Entry> {
         });
         amountCol.setCellFactory(p -> new CoinCell());
         results.getColumns().add(amountCol);
+
+        @SuppressWarnings("unchecked")
+        TreeTableColumn<Entry, String> firstColumn = (TreeTableColumn<Entry, String>)results.getColumns().getFirst();
+        firstColumn.setCellFactory(_ -> new RowSummaryCell());
 
         vBox.getChildren().addAll(form, results);
         dialogPane.setContent(vBox);
@@ -385,6 +392,32 @@ public class SearchWalletDialog extends Dialog<Entry> {
         @Override
         public Function getWalletFunction() {
             return null;
+        }
+    }
+
+    //Moving up and down the results reads the first cell of each row, which held only the wallet, account or entry type, so it also reads the
+    //rest of the row. On macOS its own text is left out, as VoiceOver reads the text inside the cell as well; other screen readers read only the name.
+    private static class RowSummaryCell extends TreeTableCell<Entry, String> {
+        private static final boolean OWN_TEXT_READ_SEPARATELY = OsType.getCurrent() == OsType.MACOS;
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty ? null : item);
+        }
+
+        @Override
+        public Object queryAccessibleAttribute(AccessibleAttribute attribute, Object... parameters) {
+            if(attribute == AccessibleAttribute.TEXT && getText() != null && getTableRow() != null) {
+                String summary = getTableRow().getChildrenUnmodifiable().stream()
+                        .filter(node -> node instanceof TreeTableCell<?, ?> && !(OWN_TEXT_READ_SEPARATELY && node == this))
+                        .map(node -> ((TreeTableCell<?, ?>)node).getText()).filter(text -> text != null && !text.isEmpty()).collect(Collectors.joining(", "));
+                if(!summary.isEmpty()) {
+                    return summary;
+                }
+            }
+
+            return super.queryAccessibleAttribute(attribute, parameters);
         }
     }
 

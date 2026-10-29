@@ -581,7 +581,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
             Glyph key = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.KEY);
             key.setFontSize(50);
-            dialogPane.setGraphic(key);
+            dialogPane.setGraphic(new DecorativePane(key));
 
             final VBox content = new VBox(10);
             content.setPrefHeight(50);

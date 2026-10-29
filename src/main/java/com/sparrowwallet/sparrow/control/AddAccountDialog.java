@@ -35,7 +35,7 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
 
         Glyph key = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SORT_NUMERIC_DOWN);
         key.setFontSize(50);
-        dialogPane.setGraphic(key);
+        dialogPane.setGraphic(new DecorativePane(key));
 
         final VBox content = new VBox(10);
         content.setPrefHeight(50);
@@ -110,7 +110,12 @@ public class AddAccountDialog extends Dialog<List<StandardAccount>> {
         } else {
             standardAccountCombo.getSelectionModel().select(0);
         }
-        content.getChildren().add(standardAccountCombo);
+        //The header names the choice, so a hidden label names the pop-up for screen readers, which still read its value
+        Label accountLabel = new Label("Account to add");
+        accountLabel.setLabelFor(standardAccountCombo);
+        accountLabel.setVisible(false);
+        accountLabel.setManaged(false);
+        content.getChildren().addAll(standardAccountCombo, accountLabel);
 
         dialogPane.setContent(content);
         setResultConverter(dialogButton -> dialogButton == ButtonType.OK ? List.of(standardAccountCombo.getValue()) : (dialogButton == discoverButtonType ? availableAccounts : null));

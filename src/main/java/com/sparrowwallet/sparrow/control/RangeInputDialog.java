@@ -20,7 +20,7 @@ public class RangeInputDialog extends Dialog<Integer> {
         Glyph key = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.SORT_NUMERIC_DOWN);
         key.setFontSize(50);
         key.setPadding(new Insets(0, 0, 0, 10));
-        dialogPane.setGraphic(key);
+        dialogPane.setGraphic(new DecorativePane(key));
         dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         spinner = new Spinner<>();
