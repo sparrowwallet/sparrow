@@ -59,7 +59,8 @@ public class SearchWalletDialog extends Dialog<Entry> {
         dialogPane.getStylesheets().add(AppServices.class.getResource("wallet/wallet.css").toExternalForm());
         dialogPane.getStylesheets().add(AppServices.class.getResource("search.css").toExternalForm());
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
-        dialogPane.setHeaderText(showWallet ? "Search All Wallets" : "Search Wallet " + walletForms.get(0).getMasterWallet().getName());
+        setTitle(showWallet ? "Search All Wallets" : "Search Wallet " + walletForms.get(0).getMasterWallet().getName());
+        dialogPane.setHeaderText(getTitle());
         dialogPane.setGraphic(new DialogImage(DialogImage.Type.SPARROW));
 
         VBox vBox = new VBox();
@@ -160,7 +161,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
         setResultConverter(buttonType -> buttonType == showButtonType ? results.getSelectionModel().getSelectedItem().getValue() : null);
 
         results.getSelectionModel().getSelectedIndices().addListener((ListChangeListener<Integer>) c -> {
-            showButton.setDisable(results.getSelectionModel().getSelectedCells().isEmpty()
+            showButton.setDisable(results.getSelectionModel().getSelectedItem() == null
                     || walletForms.stream().map(WalletForm::getWallet).noneMatch(wallet -> wallet == results.getSelectionModel().getSelectedItem().getValue().getWallet()));
         });
 

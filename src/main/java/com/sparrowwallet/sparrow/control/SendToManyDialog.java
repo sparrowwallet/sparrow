@@ -27,6 +27,7 @@ import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.scene.Node;
+import javafx.scene.TraversalDirection;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.KeyCode;
@@ -91,8 +92,39 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
         spreadsheetView.getColumns().get(1).setPrefWidth(150);
         spreadsheetView.getColumns().get(2).setPrefWidth(247);
 
+        //The grid uses Tab to move between cells, so Control-Tab leaves it, as for other controls that keep Tab for themselves
+        spreadsheetView.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if(event.getCode() == KeyCode.TAB && event.isControlDown() && event.getTarget() instanceof TableView<?> gridView) {
+                gridView.requestFocusTraversal(event.isShiftDown() ? TraversalDirection.PREVIOUS : TraversalDirection.NEXT);
+                event.consume();
+            }
+        });
+        //The view is a separate, invisible Tab stop before its grid, where Return reached the OK button
+        spreadsheetView.setFocusTraversable(false);
+        spreadsheetView.getChildrenUnmodifiable().stream().filter(TableView.class::isInstance).findFirst().ifPresent(gridView -> {
+            gridView.setAccessibleText("Recipients");
+            gridView.setAccessibleHelp("Press Control-Tab to leave the table");
+        });
+        //A grid reached from the keyboard has no cell to move from, so the arrow keys did nothing until a cell was clicked
+        spreadsheetView.focusWithinProperty().addListener((_, _, focused) -> {
+            if(focused && spreadsheetView.getSelectionModel().getSelectedCells().isEmpty()) {
+                spreadsheetView.getSelectionModel().clearAndSelect(0, spreadsheetView.getColumns().getFirst());
+            }
+        });
+        //A hidden label names the cell editor by column and row, as a name set on the editor itself would replace its text for screen readers
+        Label editorLabel = new Label();
+        editorLabel.setVisible(false);
+        editorLabel.setManaged(false);
+        spreadsheetView.editingCellProperty().addListener((_, _, position) -> {
+            if(position != null) {
+                SpreadsheetCell cell = spreadsheetView.getGrid().getRows().get(position.getRow()).get(position.getColumn());
+                editorLabel.setText(spreadsheetView.getGrid().getColumnHeaders().get(position.getColumn()) + ", row " + (position.getRow() + 1));
+                spreadsheetView.getEditor(cell.getCellType()).ifPresent(editor -> editorLabel.setLabelFor(editor.getEditor()));
+            }
+        });
+
         StackPane stackPane = new StackPane();
-        stackPane.getChildren().add(spreadsheetView);
+        stackPane.getChildren().addAll(spreadsheetView, editorLabel);
         dialogPane.setContent(stackPane);
 
         dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);

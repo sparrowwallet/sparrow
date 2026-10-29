@@ -112,6 +112,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         progressBar.setPadding(new Insets(0, 10, 0, 10));
         progressBar.setPrefWidth(Integer.MAX_VALUE);
         progressBar.progressProperty().bind(percentComplete);
+        progressBar.setAccessibleText("Scan progress");
 
         VBox vBox = new VBox(20);
         StackPane stackPane = new StackPane();
@@ -215,6 +216,15 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         final ButtonType deviceButtonType = new javafx.scene.control.ButtonType("Default Camera", ButtonBar.ButtonData.LEFT);
         final ButtonType resolutionButtonType = new javafx.scene.control.ButtonType("Resolution", ButtonBar.ButtonData.HELP_2);
         dialogPane.getButtonTypes().addAll(deviceButtonType, resolutionButtonType, cancelButtonType);
+
+        //The camera and resolution pop-ups have no visible label, so hidden labels name them for screen readers
+        for(Map.Entry<String, ButtonType> popup : Map.of("Camera", deviceButtonType, "Resolution", resolutionButtonType).entrySet()) {
+            Label label = new Label(popup.getKey());
+            label.setLabelFor(dialogPane.lookupButton(popup.getValue()));
+            label.setVisible(false);
+            label.setManaged(false);
+            vBox.getChildren().add(label);
+        }
         dialogPane.setPrefWidth(646);
         dialogPane.setPrefHeight(webcamResolutionProperty.get().isWidescreenAspect() ? 490 : 590);
         dialogPane.setMinHeight(dialogPane.getPrefHeight());

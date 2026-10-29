@@ -107,10 +107,10 @@ public class AppServices {
     private static final List<Double> LONG_FEE_RATES_RANGE = List.of(1d, 2d, 4d, 8d, 16d, 32d, 64d, 128d, 256d, 512d, 1024d, 2048d, 4096d, 8192d);
     public static final double FALLBACK_FEE_RATE = 20000d / 1000;
     public static final double TESTNET_FALLBACK_FEE_RATE = 1000d / 1000;
-    private static final EventHandler<javafx.scene.input.KeyEvent> FORWARD_ESCAPE_FROM_CLOSED_MENU_BUTTON = event -> {
-        if(event.getCode() == KeyCode.ESCAPE && event.getTarget() instanceof MenuButton menuButton && !menuButton.isShowing() && menuButton.getParent() != null) {
+    private static final EventHandler<javafx.scene.input.KeyEvent> FORWARD_UNUSED_ESCAPE = event -> {
+        if(event.getCode() == KeyCode.ESCAPE && event.getTarget() instanceof Node node && node.getParent() != null && isEscapeUnused(node)) {
             event.consume();
-            menuButton.getParent().fireEvent(event);
+            node.getParent().fireEvent(event);
         }
     };
     private static final ChangeListener<Boolean> NOT_FOCUS_TRAVERSABLE = (observable, wasTraversable, traversable) -> {
@@ -738,17 +738,26 @@ public class AppServices {
         });
     }
 
-    //Menu buttons consume Escape even when their menu is closed, so Escape on a split button did not close its dialog.
-    //Like a combo box, a closed menu button passes Escape on to its parent.
-    public static void forwardEscapeFromClosedMenuButtons() {
+    //Menu buttons consume Escape even when their menu is closed, and tables consume it even when no cell is being edited, so Escape on a
+    //split button or in a table such as the search results did not close its dialog. Like a combo box, these pass Escape on to their parent.
+    public static void forwardUnusedEscape() {
         Window.getWindows().addListener((ListChangeListener<Window>)change -> {
             while(change.next()) {
                 for(Window window : change.getAddedSubList()) {
-                    window.removeEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, FORWARD_ESCAPE_FROM_CLOSED_MENU_BUTTON);
-                    window.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, FORWARD_ESCAPE_FROM_CLOSED_MENU_BUTTON);
+                    window.removeEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, FORWARD_UNUSED_ESCAPE);
+                    window.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED, FORWARD_UNUSED_ESCAPE);
                 }
             }
         });
+    }
+
+    private static boolean isEscapeUnused(Node node) {
+        return switch(node) {
+            case MenuButton menuButton -> !menuButton.isShowing();
+            case TableView<?> tableView -> tableView.getEditingCell() == null;
+            case TreeTableView<?> treeTableView -> treeTableView.getEditingCell() == null;
+            default -> false;
+        };
     }
 
     //Charts make every data point a Tab stop while a screen reader is on, including points created before it started.

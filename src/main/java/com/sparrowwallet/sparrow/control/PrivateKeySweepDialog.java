@@ -267,7 +267,7 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
 
     private boolean isValidKey() {
         try {
-            DumpedPrivateKey privateKey = getPrivateKey();
+            getPrivateKey().getKey();
             return true;
         } catch(Exception e) {
             return false;
