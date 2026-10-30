@@ -105,9 +105,19 @@ public class BitcoindTransport implements Transport {
 
         log.debug("> " + request);
 
+        //From v32.1 Bitcoin Core closes the connection from a client outside rpcallowip without answering, where earlier versions answered 403 below
+        String closedMessage = "Bitcoin Core at " + bitcoindUrl.getAuthority() + " closed the connection without responding, check its rpcallowip settings";
+
         try(OutputStream os = connection.getOutputStream()) {
             byte[] jsonBytes = request.getBytes(StandardCharsets.UTF_8);
             os.write(jsonBytes);
+        } catch(SocketException e) {
+            //The close can also reset the connection before the connect completes, where other socket errors (unreachable network, local firewall) never reached the node,
+            //and a reset from a SOCKS proxy is the proxy's own failure
+            if(!useProxy && e.getMessage() != null && e.getMessage().contains("Connection reset")) {
+                throw new IOException(closedMessage, e);
+            }
+            throw e;
         }
 
         int statusCode;
@@ -116,8 +126,7 @@ public class BitcoindTransport implements Transport {
         } catch(InterruptedIOException e) {
             throw e;
         } catch(IOException e) {
-            //From v32.1 Bitcoin Core closes the connection from a client outside rpcallowip without answering, where earlier versions answered 403 below
-            throw new IOException("Bitcoin Core at " + bitcoindUrl.getAuthority() + " closed the connection without responding, check its rpcallowip settings", e);
+            throw new IOException(closedMessage, e);
         }
 
         //Trust on first use, as for non-CA-certified Electrum servers: the certificate presented by the node on the first connection is saved, and required on all connections thereafter
