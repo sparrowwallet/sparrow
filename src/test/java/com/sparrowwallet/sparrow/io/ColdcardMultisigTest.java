@@ -58,6 +58,14 @@ public class ColdcardMultisigTest extends IoTest {
     }
 
     @Test
+    public void importKeystoreWrongNetwork() {
+        Network.set(Network.MAINNET);
+        ColdcardMultisig ccMultisig = new ColdcardMultisig();
+        ImportException e = Assertions.assertThrows(ImportException.class, () -> ccMultisig.getKeystore(PolicyType.MULTI_HD, ScriptType.P2WSH, getInputStream("cc-multisig-keystore-2.json"), null));
+        Assertions.assertTrue(e.getCause().getMessage().contains("mainnet"));
+    }
+
+    @Test
     public void importWallet1() throws ImportException {
         ColdcardMultisig ccMultisig = new ColdcardMultisig();
         Wallet wallet = ccMultisig.importWallet(getInputStream("cc-multisig-export-1.txt"), null);

@@ -43,7 +43,15 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
             try {
                 keystore = getKeystoreMultisig(policyType, scriptType, firstClone, password);
             } catch(Exception e) {
-                keystore = getKeystoreSinglesig(policyType, scriptType, secondClone, password);
+                try {
+                    keystore = getKeystoreSinglesig(policyType, scriptType, secondClone, password);
+                } catch(ImportException singlesigException) {
+                    //The multisig fields for this script type were present but invalid, so the multisig error is the relevant one
+                    if(e instanceof IllegalArgumentException) {
+                        throw new ImportException("Error importing keystore for " + scriptType, e);
+                    }
+                    throw singlesigException;
+                }
             }
 
             return keystore;
