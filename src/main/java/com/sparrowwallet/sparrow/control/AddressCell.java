@@ -41,7 +41,6 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
             if(utxoEntry != null) {
                 Address address = addressStatus.getAddress();
                 setText(address.toString());
-                //Pass the wallet and node rather than a NodeEntry, which would eagerly create an entry for every transaction output of the address on each cell update
                 setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), utxoEntry.getWallet(), utxoEntry.getNode(),
                         () -> new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode(), false), false, getTreeTableView()));
                 Tooltip tooltip = new Tooltip();

@@ -19,9 +19,6 @@ public class NodeEntry extends Entry implements Comparable<NodeEntry> {
         this(wallet, node, true);
     }
 
-    /**
-     * @param createChildren false to skip creating an entry for every child node or transaction output, for uses that only need the node, address and label
-     */
     public NodeEntry(Wallet wallet, WalletNode node, boolean createChildren) {
         super(wallet, node.getLabel(), createChildren ? createChildren(wallet, node) : new ArrayList<>());
         this.node = node;

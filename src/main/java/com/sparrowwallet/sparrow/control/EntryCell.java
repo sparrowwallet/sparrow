@@ -34,6 +34,7 @@ import java.security.SecureRandom;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -717,11 +718,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
             this(address, outputDescriptor, nodeEntry == null ? null : nodeEntry.getWallet(), nodeEntry == null ? null : nodeEntry.getNode(), () -> nodeEntry, addUtxoItems, treetable);
         }
 
-        /**
-         * Creates the menu from the wallet and address node only. The NodeEntry, which eagerly creates an entry for every transaction output of the address,
-         * is only created by the supplier when an action that requires it is selected.
-         */
-        public AddressContextMenu(Address address, String outputDescriptor, Wallet wallet, WalletNode node, java.util.function.Supplier<NodeEntry> nodeEntrySupplier, boolean addUtxoItems, TreeTableView<Entry> treetable) {
+        public AddressContextMenu(Address address, String outputDescriptor, Wallet wallet, WalletNode node, Supplier<NodeEntry> nodeEntrySupplier, boolean addUtxoItems, TreeTableView<Entry> treetable) {
             if(node == null || (!wallet.isBip47() && wallet.getPolicyType() != PolicyType.SINGLE_SP)) {
                 MenuItem receiveToAddress = new MenuItem("Receive To");
                 receiveToAddress.setGraphic(getReceiveGlyph());
