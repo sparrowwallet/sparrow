@@ -7,7 +7,6 @@ import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.control.AddressTreeTable;
 import com.sparrowwallet.sparrow.event.WalletEntryLabelsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletHistoryChangedEvent;
-import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.WalletForm;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -76,10 +75,8 @@ public class PayNymAddressesController {
     @Subscribe
     public void walletEntryLabelChanged(WalletEntryLabelsChangedEvent event) {
         if(event.getWallet().equals(payNymWalletForms.getValue().getWallet())) {
-            for(Entry entry : event.getEntries()) {
-                receiveTable.updateLabel(entry);
-                sendTable.updateLabel(entry);
-            }
+            receiveTable.updateLabels(event.getEntries());
+            sendTable.updateLabels(event.getEntries());
         }
     }
 }

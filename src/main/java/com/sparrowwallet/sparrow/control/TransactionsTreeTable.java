@@ -7,6 +7,8 @@ import com.sparrowwallet.sparrow.wallet.WalletTransactionsEntry;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.scene.control.TreeTableColumn;
 
+import java.util.Collection;
+
 public class TransactionsTreeTable extends CoinTreeTable {
     public void initialize(WalletTransactionsEntry rootEntry) {
         getStyleClass().add("transactions-treetable");
@@ -71,8 +73,8 @@ public class TransactionsTreeTable extends CoinTreeTable {
         resetSortColumn();
     }
 
-    public void updateLabel(Entry entry) {
+    public void updateLabels(Collection<Entry> entries) {
         Entry rootEntry = getRoot().getValue();
-        rootEntry.updateLabel(entry);
+        rootEntry.updateLabels(entries);
     }
 }

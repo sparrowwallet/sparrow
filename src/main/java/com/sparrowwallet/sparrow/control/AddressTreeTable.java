@@ -172,9 +172,9 @@ public class AddressTreeTable extends CoinTreeTable {
         refresh();
     }
 
-    public void updateLabel(Entry entry) {
+    public void updateLabels(Collection<Entry> entries) {
         Entry rootEntry = getRoot().getValue();
-        rootEntry.updateLabel(entry);
+        rootEntry.updateLabels(entries);
     }
 
     public void showTransactionsCount(boolean show) {

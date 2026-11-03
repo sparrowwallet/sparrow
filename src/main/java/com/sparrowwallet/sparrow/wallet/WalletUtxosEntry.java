@@ -1,6 +1,9 @@
 package com.sparrowwallet.sparrow.wallet;
 
 import com.sparrowwallet.drongo.policy.PolicyType;
+import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.wallet.BlockTransaction;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.io.Config;
@@ -52,11 +55,13 @@ public class WalletUtxosEntry extends Entry {
     }
 
     protected void calculateDust() {
+        Map<Wallet, Map<Sha256Hash, BlockTransaction>> walletTransactions = new HashMap<>();
+        Map<Wallet, Map<BlockTransactionHashIndex, WalletNode>> walletTxos = new HashMap<>();
         if(getWallet().getPolicyType() == PolicyType.SINGLE_SP) {
             long dustAttackThreshold = Config.get().getDustAttackThresholdSp();
             for(Entry entry : getChildren()) {
                 UtxoEntry utxoEntry = (UtxoEntry) entry;
-                utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && !utxoEntry.getWallet().allInputsFromWallet(utxoEntry.getHashIndex().getHash()));
+                utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && !allInputsFromWallet(utxoEntry, walletTransactions, walletTxos));
             }
         } else {
             long dustAttackThreshold = Config.get().getDustAttackThreshold();
@@ -66,9 +71,16 @@ public class WalletUtxosEntry extends Entry {
 
             for(Entry entry : getChildren()) {
                 UtxoEntry utxoEntry = (UtxoEntry) entry;
-                utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && duplicateNodes.contains(utxoEntry.getNode()) && !utxoEntry.getWallet().allInputsFromWallet(utxoEntry.getHashIndex().getHash()));
+                utxoEntry.setDustAttack(utxoEntry.getValue() <= dustAttackThreshold && duplicateNodes.contains(utxoEntry.getNode()) && !allInputsFromWallet(utxoEntry, walletTransactions, walletTxos));
             }
         }
+    }
+
+    private static boolean allInputsFromWallet(UtxoEntry utxoEntry, Map<Wallet, Map<Sha256Hash, BlockTransaction>> walletTransactions,
+                                               Map<Wallet, Map<BlockTransactionHashIndex, WalletNode>> walletTxos) {
+        Wallet wallet = utxoEntry.getWallet();
+        return wallet.allInputsFromWallet(walletTransactions.computeIfAbsent(wallet, Wallet::getWalletTransactions), walletTxos.computeIfAbsent(wallet, Wallet::getWalletTxos),
+                utxoEntry.getHashIndex().getHash());
     }
 
     public void updateUtxos() {

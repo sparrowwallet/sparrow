@@ -24,6 +24,7 @@ import com.sparrowwallet.sparrow.io.Hwi;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -108,6 +109,8 @@ public class ReceiveController extends WalletFormController implements Initializ
 
     private NodeEntry currentEntry;
 
+    private final ChangeListener<String> entryLabelListener = (_, _, newValue) -> label.setText(newValue);
+
     private QRDisplayDialog addressQrDialog;
 
     @Override
@@ -136,6 +139,14 @@ public class ReceiveController extends WalletFormController implements Initializ
         updateFromWalletPolicy();
 
         initializeScriptField(scriptPubKeyArea);
+
+        //Commit the label once entered as the address tables do, since an address label is passed on to its unlabelled transactions as soon as it is set
+        label.setOnAction(_ -> commitLabel());
+        label.focusedProperty().addListener((_, _, focused) -> {
+            if(!focused) {
+                commitLabel();
+            }
+        });
 
         displayAddress.managedProperty().bind(displayAddress.visibleProperty());
         displayAddress.setVisible(false);
@@ -170,13 +181,12 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     public void setNodeEntry(NodeEntry nodeEntry) {
-        if(currentEntry != null) {
-            label.textProperty().unbindBidirectional(currentEntry.labelProperty());
-        }
+        releaseCurrentEntry();
 
         this.currentEntry = nodeEntry;
         address.setText(nodeEntry.getAddress().toString());
-        label.textProperty().bindBidirectional(nodeEntry.labelProperty());
+        label.setText(nodeEntry.getLabel());
+        nodeEntry.labelProperty().addListener(entryLabelListener);
         updateDerivationPath(nodeEntry);
 
         updateLastUsed();
@@ -193,6 +203,22 @@ public class ReceiveController extends WalletFormController implements Initializ
         outputDescriptor.append(nodeEntry.getOutputDescriptor(), "descriptor-text");
 
         updateDisplayAddress(AppServices.getDevices());
+    }
+
+    private void commitLabel() {
+        if(currentEntry != null) {
+            String text = label.getText() == null ? "" : label.getText();
+            if(!text.equals(currentEntry.getLabel() == null ? "" : currentEntry.getLabel())) {
+                currentEntry.labelProperty().set(text);
+            }
+        }
+    }
+
+    private void releaseCurrentEntry() {
+        if(currentEntry != null) {
+            commitLabel();
+            currentEntry.labelProperty().removeListener(entryLabelListener);
+        }
     }
 
     private void updateDerivationPath(NodeEntry nodeEntry) {
@@ -375,9 +401,7 @@ public class ReceiveController extends WalletFormController implements Initializ
     }
 
     public void clear() {
-        if(currentEntry != null) {
-            label.textProperty().unbindBidirectional(currentEntry.labelProperty());
-        }
+        releaseCurrentEntry();
 
         address.setText("");
         label.setText("");
@@ -426,10 +450,8 @@ public class ReceiveController extends WalletFormController implements Initializ
     @Subscribe
     public void walletNodesChanged(WalletNodesChangedEvent event) {
         if(event.getWallet().equals(walletForm.getWallet())) {
-            if(currentEntry != null) {
-                label.textProperty().unbindBidirectional(currentEntry.labelProperty());
-                currentEntry = null;
-            }
+            releaseCurrentEntry();
+            currentEntry = null;
             refreshAddress();
         }
     }

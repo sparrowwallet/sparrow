@@ -252,7 +252,7 @@ public class WalletTransactionsEntryTest {
                 .filter(entry -> entry.getBlockTransaction().getHash().equals(blockTransaction.getHash())).findFirst().orElseThrow();
     }
 
-    private static BlockTransaction receive(Wallet wallet, int index, long value) {
+    static BlockTransaction receive(Wallet wallet, int index, long value) {
         WalletNode node = receiveNode(wallet, index);
         Transaction transaction = new Transaction();
         transaction.addInput(FUNDING_TXID, index, new Script(new byte[0]));
@@ -265,11 +265,11 @@ public class WalletTransactionsEntryTest {
         return blockTransaction;
     }
 
-    private static WalletNode receiveNode(Wallet wallet, int index) {
+    static WalletNode receiveNode(Wallet wallet, int index) {
         return wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().filter(node -> node.getIndex() == index).findFirst().orElseThrow();
     }
 
-    private static Wallet testWallet() {
+    static Wallet testWallet() {
         Wallet wallet = new Wallet();
         wallet.setPolicyType(PolicyType.SINGLE_HD);
         wallet.setScriptType(ScriptType.P2WPKH);

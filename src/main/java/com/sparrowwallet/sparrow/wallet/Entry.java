@@ -5,7 +5,7 @@ import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-import java.util.List;
+import java.util.*;
 
 public abstract class Entry {
     private final Wallet wallet;
@@ -56,13 +56,34 @@ public abstract class Entry {
                 || (entry.wallet.isNested() && wallet.getChildWallets().contains(entry.wallet));
     }
 
-    public void updateLabel(Entry entry) {
-        if(this.equals(entry)) {
-            labelProperty.set(entry.getLabel());
+    public void updateLabels(Collection<Entry> entries) {
+        Map<Object, List<Entry>> entriesByKey = new HashMap<>();
+        for(Entry entry : entries) {
+            entriesByKey.computeIfAbsent(entry.getLabelKey(), key -> new ArrayList<>()).add(entry);
+        }
+
+        updateLabels(entriesByKey);
+    }
+
+    private void updateLabels(Map<Object, List<Entry>> entriesByKey) {
+        for(Entry entry : entriesByKey.getOrDefault(getLabelKey(), Collections.emptyList())) {
+            if(this.equals(entry)) {
+                labelProperty.set(entry.getLabel());
+            }
         }
 
         for(Entry child : getChildren()) {
-            child.updateLabel(entry);
+            child.updateLabels(entriesByKey);
         }
+    }
+
+    //Entries are equal across nested wallets and regardless of child count, so they are grouped by what they label and compared within each group
+    private Object getLabelKey() {
+        return switch(this) {
+            case TransactionEntry transactionEntry -> transactionEntry.getBlockTransaction().getHash();
+            case HashIndexEntry hashIndexEntry -> hashIndexEntry.getHashIndex().getHash();
+            case NodeEntry nodeEntry -> nodeEntry.getNode();
+            default -> getClass();
+        };
     }
 }
