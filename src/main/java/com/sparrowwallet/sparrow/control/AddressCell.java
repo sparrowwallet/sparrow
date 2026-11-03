@@ -32,6 +32,7 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
 
         UtxoEntry utxoEntry = addressStatus == null ? null : addressStatus.getUtxoEntry();
         EntryCell.applyRowStyles(this, utxoEntry);
+        setContextMenu(null);
 
         if (empty) {
             setText(null);
@@ -40,7 +41,9 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
             if(utxoEntry != null) {
                 Address address = addressStatus.getAddress();
                 setText(address.toString());
-                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode()), false, getTreeTableView()));
+                //Pass the wallet and node rather than a NodeEntry, which would eagerly create an entry for every transaction output of the address on each cell update
+                setContextMenu(new EntryCell.AddressContextMenu(address, utxoEntry.getOutputDescriptor(), utxoEntry.getWallet(), utxoEntry.getNode(),
+                        () -> new NodeEntry(utxoEntry.getWallet(), utxoEntry.getNode(), false), false, getTreeTableView()));
                 Tooltip tooltip = new Tooltip();
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate(), addressStatus.isDustAttack()));
