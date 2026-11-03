@@ -184,7 +184,7 @@ public class TransactionDiagram extends GridPane {
         setMaxHeight(getDiagramHeight());
 
         if(walletTx == null) {
-            getChildren().clear();
+            clear();
         } else {
             this.walletTx = walletTx;
             update();
@@ -192,10 +192,10 @@ public class TransactionDiagram extends GridPane {
             if(expandedDiagram != null) {
                 updateDerivedDiagram(expandedDiagram);
             }
-        }
 
-        if(getLabel() != null) {
-            getLabel().update(this);
+            if(getLabel() != null) {
+                getLabel().update(this);
+            }
         }
     }
 
@@ -203,7 +203,7 @@ public class TransactionDiagram extends GridPane {
         setMinHeight(getDiagramHeight());
         setMaxHeight(getDiagramHeight());
 
-        getChildren().clear();
+        clear();
 
         VBox messagePane = new VBox();
         messagePane.setPrefHeight(getDiagramHeight());
@@ -220,6 +220,9 @@ public class TransactionDiagram extends GridPane {
     }
 
     public void clear() {
+        walletTx = null;
+        setOnMouseClicked(null);
+        setOnContextMenuRequested(null);
         getChildren().clear();
     }
 
@@ -286,8 +289,8 @@ public class TransactionDiagram extends GridPane {
                 saveAsImage();
             });
             contextMenu.getItems().add(menuItem);
-            setOnContextMenuRequested(contextMenuHandler);
         }
+        setOnContextMenuRequested(contextMenuHandler);
     }
 
     private List<Map<BlockTransactionHashIndex, WalletNode>> getDisplayedUtxoSets() {
