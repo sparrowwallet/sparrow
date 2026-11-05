@@ -145,6 +145,100 @@ public class PagedBatchRequestBuilderTest {
         assertEquals(3, halved.requests.size());
     }
 
+    @Test
+    public void requestsSkippedForResponseSizeAreSentAgain() throws Exception {
+        //A server answering two requests per batch, as a size limit reached on every second response would, leaves the page incomplete twice
+        SizeLimitedBatchTransport transport = new SizeLimitedBatchTransport(2, Set.of());
+        Map<String, String> result = builder(transport, 6).execute(1);
+
+        assertEquals(6, result.size());
+        for(String id : List.of("a", "b", "c", "d", "e", "f")) {
+            assertEquals("result:" + id, result.get(id));
+        }
+        assertEquals(3, transport.requests.size());
+        assertEquals(12, transport.ids.size());
+        assertEquals(12, new HashSet<>(transport.ids).size(), "Each request sent again must carry a new id");
+    }
+
+    @Test
+    public void requestsSkippedForResponseSizeAreSentAgainInTolerantExecution() throws Exception {
+        SizeLimitedBatchTransport transport = new SizeLimitedBatchTransport(1, Set.of("e"));
+        Map<String, String> result = builder(transport, 3).executeTolerant(1, "ERROR", e -> {});
+
+        assertEquals(Set.of("a", "b", "c", "d", "e", "f"), result.keySet());
+        assertEquals("ERROR", result.get("e"));
+        assertEquals("result:f", result.get("f"));
+    }
+
+    @Test
+    public void otherErrorsAreReportedAlongsideRequestsSentAgain() {
+        //An error the server returns for an answered request is not resent, and is reported with the results of the requests that were resent
+        SizeLimitedBatchTransport transport = new SizeLimitedBatchTransport(2, Set.of("b", "e"));
+        JsonRpcBatchException e = assertThrows(JsonRpcBatchException.class, () -> builder(transport, 6).execute(1));
+
+        assertEquals(Set.of("b", "e"), new HashSet<>(e.getErrors().keySet()));
+        assertEquals(Set.of("a", "c", "d", "f"), new HashSet<>(e.getSuccesses().keySet()));
+        assertEquals(3, transport.requests.size());
+    }
+
+    @Test
+    public void pageWithEveryRequestSkippedIsNotSentAgain() {
+        //A server answering nothing would never let a resend shrink, so the errors are returned rather than the page sent again
+        SizeLimitedBatchTransport transport = new SizeLimitedBatchTransport(0, Set.of());
+        JsonRpcBatchException e = assertThrows(JsonRpcBatchException.class, () -> builder(transport, 6).execute(1));
+
+        assertEquals(6, e.getErrors().size());
+        assertEquals(1, transport.requests.size());
+    }
+
+    @Test
+    public void requestsSkippedByElectrumXAreSentAgain() throws Exception {
+        //ElectrumX skips in the order responses complete, so the skipped requests can be anywhere in the page rather than at its end
+        FirstSendErrorTransport transport = new FirstSendErrorTransport(Map.of("b", ELECTRUMX_TOO_LARGE, "d", ELECTRUMX_TOO_LARGE));
+        Map<String, String> result = builder(transport, 6).execute(1);
+
+        assertEquals(6, result.size());
+        for(String id : List.of("a", "b", "c", "d", "e", "f")) {
+            assertEquals("result:" + id, result.get(id));
+        }
+        assertEquals(2, transport.requests.size());
+    }
+
+    @Test
+    public void otherInvalidRequestErrorsAreNotSentAgain() {
+        FirstSendErrorTransport transport = new FirstSendErrorTransport(Map.of("c", new ErrorReply(ElectrumServerRpc.INVALID_REQUEST, "Invalid Request")));
+        JsonRpcBatchException e = assertThrows(JsonRpcBatchException.class, () -> builder(transport, 6).execute(1));
+
+        assertEquals(Set.of("c"), new HashSet<>(e.getErrors().keySet()));
+        assertEquals(5, e.getSuccesses().size());
+        assertEquals(1, transport.requests.size());
+    }
+
+    @Test
+    public void pageWithEveryRequestSkippedByElectrumXIsNotSentAgain() {
+        //A response over the limit on its own is refused however small the batch, so a page answering nothing is returned with its errors
+        Map<String, ErrorReply> errors = new java.util.HashMap<>();
+        for(String id : List.of("a", "b", "c", "d", "e", "f")) {
+            errors.put(id, ELECTRUMX_TOO_LARGE);
+        }
+        FirstSendErrorTransport transport = new FirstSendErrorTransport(errors);
+        JsonRpcBatchException e = assertThrows(JsonRpcBatchException.class, () -> builder(transport, 6).execute(1));
+
+        assertEquals(6, e.getErrors().size());
+        assertEquals(1, transport.requests.size());
+    }
+
+    @Test
+    public void requestsSkippedByFrigateAndElectrumXAreBothSentAgain() throws Exception {
+        FirstSendErrorTransport transport = new FirstSendErrorTransport(Map.of("b", ELECTRUMX_TOO_LARGE, "e", new ErrorReply(ElectrumServerRpc.RESPONSE_TOO_LARGE, "response too large")));
+        Map<String, String> result = builder(transport, 6).execute(1);
+
+        assertEquals(6, result.size());
+        assertEquals("result:b", result.get("b"));
+        assertEquals("result:e", result.get("e"));
+        assertEquals(2, transport.requests.size());
+    }
+
     private PagedBatchRequestBuilder<String, String> builder(Transport transport) {
         return builder(transport, 2);
     }
@@ -193,6 +287,89 @@ public class PagedBatchRequestBuilderTest {
                     ObjectNode error = response.putObject("error");
                     error.put("code", errorCode);
                     error.put("message", "failed for " + param);
+                } else {
+                    response.put("result", "result:" + param);
+                }
+            }
+
+            return MAPPER.writeValueAsString(responses);
+        }
+    }
+
+    /**
+     * Answers the given number of requests in each batch and returns the response too large error for the rest, as a server limiting the size
+     * of a batch response does, except those whose single parameter is named as failing.
+     */
+    private static class SizeLimitedBatchTransport implements Transport {
+        private final int answered;
+        private final Set<String> failingParams;
+        private final List<String> requests = new ArrayList<>();
+        private final List<Long> ids = new ArrayList<>();
+
+        SizeLimitedBatchTransport(int answered, Set<String> failingParams) {
+            this.answered = answered;
+            this.failingParams = failingParams;
+        }
+
+        @Override
+        public String pass(String request) throws IOException {
+            requests.add(request);
+            ArrayNode responses = MAPPER.createArrayNode();
+            int index = 0;
+            for(JsonNode node : MAPPER.readTree(request)) {
+                ids.add(node.get("id").asLong());
+                String param = node.get("params").get(0).asText();
+                ObjectNode response = responses.addObject();
+                response.put("jsonrpc", "2.0");
+                response.set("id", node.get("id"));
+                if(index++ >= answered) {
+                    ObjectNode error = response.putObject("error");
+                    error.put("code", ElectrumServerRpc.RESPONSE_TOO_LARGE);
+                    error.put("message", "response too large");
+                } else if(failingParams.contains(param)) {
+                    ObjectNode error = response.putObject("error");
+                    error.put("code", -32603);
+                    error.put("message", "failed for " + param);
+                } else {
+                    response.put("result", "result:" + param);
+                }
+            }
+
+            return MAPPER.writeValueAsString(responses);
+        }
+    }
+
+    private static final ErrorReply ELECTRUMX_TOO_LARGE = new ErrorReply(ElectrumServerRpc.INVALID_REQUEST, "response too large (over 8,100,000 bytes");
+
+    private record ErrorReply(int code, String message) {}
+
+    /**
+     * Returns the given error for a request the first time its single parameter is sent, and a result every time after, so that a request sent
+     * again succeeds and one not sent again stays an error.
+     */
+    private static class FirstSendErrorTransport implements Transport {
+        private final Map<String, ErrorReply> firstSendErrors;
+        private final Set<String> sentParams = new HashSet<>();
+        private final List<String> requests = new ArrayList<>();
+
+        FirstSendErrorTransport(Map<String, ErrorReply> firstSendErrors) {
+            this.firstSendErrors = firstSendErrors;
+        }
+
+        @Override
+        public String pass(String request) throws IOException {
+            requests.add(request);
+            ArrayNode responses = MAPPER.createArrayNode();
+            for(JsonNode node : MAPPER.readTree(request)) {
+                String param = node.get("params").get(0).asText();
+                ObjectNode response = responses.addObject();
+                response.put("jsonrpc", "2.0");
+                response.set("id", node.get("id"));
+                ErrorReply reply = firstSendErrors.get(param);
+                if(sentParams.add(param) && reply != null) {
+                    ObjectNode error = response.putObject("error");
+                    error.put("code", reply.code());
+                    error.put("message", reply.message());
                 } else {
                     response.put("result", "result:" + param);
                 }

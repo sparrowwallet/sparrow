@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.net;
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
+import com.github.arteam.simplejsonrpc.core.domain.ErrorMessage;
 import com.sparrowwallet.drongo.protocol.HeaderChainState;
 import com.sparrowwallet.drongo.protocol.VerificationException;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
@@ -17,6 +18,15 @@ import java.util.Set;
 public interface ElectrumServerRpc {
     /** The JSON-RPC standard code for a method the server does not implement, which bitcoind returns as well as Electrum servers. */
     int METHOD_NOT_FOUND = -32601;
+
+    /** Frigate's code for a batch request it did not process because the batch response had already reached its size limit. */
+    int RESPONSE_TOO_LARGE = -32006;
+
+    /** The JSON-RPC standard code for an invalid request, which ElectrumX also returns for a request whose response would exceed its MAX_SEND. */
+    int INVALID_REQUEST = -32600;
+
+    /** How ElectrumX begins the message of an INVALID_REQUEST error for a response over its MAX_SEND, which it follows with the configured limit. */
+    String ELECTRUMX_RESPONSE_TOO_LARGE_PREFIX = "response too large";
 
     /**
      * Checks the connection is alive with server.ping, throwing ElectrumServerRpcException if the server does not answer.
@@ -161,6 +171,12 @@ public interface ElectrumServerRpc {
 
     static boolean isMethodNotFound(JsonRpcException e) {
         return e.getErrorMessage() != null && e.getErrorMessage().getCode() == METHOD_NOT_FOUND;
+    }
+
+    /** Whether the server left a batch request unprocessed because the batch response had reached its size limit, as Frigate and ElectrumX report it. */
+    static boolean isResponseTooLarge(ErrorMessage error) {
+        return error != null && (error.getCode() == RESPONSE_TOO_LARGE
+                || (error.getCode() == INVALID_REQUEST && error.getMessage() != null && error.getMessage().startsWith(ELECTRUMX_RESPONSE_TOO_LARGE_PREFIX)));
     }
 
     /**
