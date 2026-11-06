@@ -7,7 +7,8 @@ import java.text.DecimalFormatSymbols;
 
 public enum UnitFormat {
     DOT('.', ','),
-    COMMA(',', '.');
+    COMMA(',', '.'),
+    SPACE(',', ' ');
 
     private final char decimalSeparator;
     private final char groupingSeparator;
