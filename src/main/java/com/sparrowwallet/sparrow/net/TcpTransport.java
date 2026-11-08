@@ -40,6 +40,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
+    private static final int MAX_RESPONSE_CHARS = 256 * 1024 * 1024; //Above a default page of transactions at the 1MB stored transaction limit, as hex
     private static final Pattern ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
@@ -66,6 +67,11 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private boolean firstRead = true;
     private int readTimeoutIndex;
     private int requestIdCount = 1;
+
+    private final char[] readBuffer = new char[8192];
+    private int readBufferPos;
+    private int readBufferEnd;
+    int maxResponseChars = MAX_RESPONSE_CHARS;
 
     private final JsonRpcServer jsonRpcServer = new JsonRpcServer();
     private final SubscriptionService subscriptionService = new SubscriptionService();
@@ -213,16 +219,15 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     }
 
     public void readInputLoop() throws ServerException {
-        BufferedReader in;
+        Reader in;
         try {
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            in = new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8);
         } catch(IOException e) {
             if(!closed) {
                 log.error("Error opening socket inputstream", e);
             }
             if(running) {
                 signalException(e);
-                running = false;
             }
             return;
         }
@@ -259,9 +264,8 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
                     log.trace("Connection error while reading", e);
                 }
                 if(running) {
-                    signalException(e);
                     //Allow this thread to terminate as we will need to reconnect with a new transport anyway
-                    running = false;
+                    signalException(e);
                 }
             }
         }
@@ -286,6 +290,8 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         readLock.lock();
         try {
             lastException = e;
+            //Set before the waiting caller wakes, so it sees the transport disconnected along with the exception
+            running = false;
             reading = false;
             readingCondition.signal();
         } finally {
@@ -293,7 +299,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         }
     }
 
-    protected String readInputStream(BufferedReader in) throws IOException {
+    protected String readInputStream(Reader in) throws IOException {
         String response = readLine(in);
 
         if(response == null) {
@@ -303,12 +309,42 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         return response;
     }
 
-    private String readLine(BufferedReader in) throws IOException {
+    //Unlike BufferedReader.readLine(), keeps the start of a line when a socket read times out partway through it
+    private String readLine(Reader in) throws IOException {
+        StringBuilder line = new StringBuilder();
         while(!socket.isClosed()) {
-            try {
-                return in.readLine();
-            } catch(SocketTimeoutException e) {
-                //ignore and continue
+            if(readBufferPos == readBufferEnd) {
+                int read;
+                try {
+                    read = in.read(readBuffer, 0, readBuffer.length);
+                } catch(SocketTimeoutException e) {
+                    continue;
+                }
+
+                if(read < 0) {
+                    return line.isEmpty() ? null : line.toString();
+                }
+
+                readBufferPos = 0;
+                readBufferEnd = read;
+            }
+
+            for(int i = readBufferPos; i < readBufferEnd; i++) {
+                if(readBuffer[i] == '\n') {
+                    line.append(readBuffer, readBufferPos, i - readBufferPos);
+                    readBufferPos = i + 1;
+                    if(!line.isEmpty() && line.charAt(line.length() - 1) == '\r') {
+                        line.setLength(line.length() - 1);
+                    }
+
+                    return line.toString();
+                }
+            }
+
+            line.append(readBuffer, readBufferPos, readBufferEnd - readBufferPos);
+            readBufferPos = readBufferEnd;
+            if(line.length() > maxResponseChars) {
+                throw new IOException("Server response exceeded " + maxResponseChars + " characters");
             }
         }
 
