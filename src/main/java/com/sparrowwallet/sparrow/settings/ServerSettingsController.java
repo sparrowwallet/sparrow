@@ -705,9 +705,11 @@ public class ServerSettingsController extends SettingsDetailController {
                     savedCrtFile = Storage.getCaCertificateFile(tlsServerException.getServer().getHost());
                 }
                 if(configCrtFile == null && savedCrtFile != null) {
-                    Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
-                            "\n\nThis may indicate a man-in-the-middle attack!" +
-                            "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
+                    Date expiredAt = TcpOverTlsTransport.getExpiredAt(savedCrtFile);
+                    String problem = expiredAt != null ? "The saved certificate for the server at " + tlsServerException.getServer().getHost() + " expired at " + expiredAt + ", and the certificate the server provided could not be verified." +
+                            "\n\nThis may be simply due to a certificate renewal, or it may indicate a man-in-the-middle attack."
+                            : "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed.\n\nThis may indicate a man-in-the-middle attack!";
+                    Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", problem + "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
                     if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
                         if(savedCrtFile.delete()) {
                             Platform.runLater(this::startElectrumConnection);
@@ -716,6 +718,15 @@ public class ServerSettingsController extends SettingsDetailController {
                             AppServices.showErrorDialog("Could not delete certificate", "The certificate file at " + savedCrtFile.getAbsolutePath() + " could not be deleted.\n\nPlease delete this file manually.");
                         }
                     }
+                }
+            } else if(exception.getCause().getCause() instanceof UnknownCertificateExpiredException expiredException) {
+                Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " has expired. "
+                        + tlsServerException.getMessage() + "." +
+                        "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
+                if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
+                    Storage.saveCertificate(tlsServerException.getServer().getHost(), expiredException.getCertificate());
+                    Platform.runLater(this::startElectrumConnection);
+                    return;
                 }
             }
 

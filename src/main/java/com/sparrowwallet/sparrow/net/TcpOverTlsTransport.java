@@ -15,6 +15,7 @@ import java.security.*;
 import java.security.cert.*;
 import java.security.cert.Certificate;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 
 public class TcpOverTlsTransport extends TcpTransport {
@@ -130,6 +131,21 @@ public class TcpOverTlsTransport extends TcpTransport {
         trustManagerFactory.init(keyStore);
 
         return trustManagerFactory.getTrustManagers();
+    }
+
+    /**
+     * Returns the expiry date of the certificate in the given file if it has expired, otherwise null.
+     */
+    public static Date getExpiredAt(File crtFile) {
+        try(FileInputStream fis = new FileInputStream(crtFile)) {
+            if(CertificateFactory.getInstance("X.509").generateCertificate(fis) instanceof X509Certificate x509Certificate && x509Certificate.getNotAfter().before(new Date())) {
+                return x509Certificate.getNotAfter();
+            }
+        } catch(IOException | CertificateException e) {
+            log.warn("Could not read certificate at " + crtFile.getAbsolutePath(), e);
+        }
+
+        return null;
     }
 
     protected void createSocket() throws IOException {

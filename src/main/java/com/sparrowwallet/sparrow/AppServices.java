@@ -357,7 +357,10 @@ public class AppServices {
                             crtFile = Storage.getCaCertificateFile(tlsServerException.getServer().getHost());
                         }
                         if(crtFile != null) {
-                            Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
+                            Date expiredAt = TcpOverTlsTransport.getExpiredAt(crtFile);
+                            String problem = expiredAt != null ? "The saved certificate for the server at " + tlsServerException.getServer().getHost() + " expired at " + expiredAt + ", and the certificate the server provided could not be verified."
+                                    : "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed.";
+                            Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", problem +
                                     "\n\nThis may be simply due to a certificate renewal, or it may indicate a man-in-the-middle attack." +
                                     "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
                             if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
