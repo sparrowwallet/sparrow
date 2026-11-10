@@ -504,8 +504,7 @@ public class SettingsController extends WalletFormController implements Initiali
                 String extKey = matcher.group(2);
                 String childDerivationPath = matcher.group(3);
 
-                if(ExtendedKey.Header.getHeaders(Network.get()).stream().anyMatch(header -> header.isPrivateKey() && extKey.startsWith(header.name())) &&
-                        (keyDerivationPath != null || (childDerivationPath != null && !(childDerivationPath.equals("/0/*") || childDerivationPath.equals("/1/*") || childDerivationPath.equals("/<0;1>/*"))))) {
+                if(keyDerivationPath != null && ExtendedKey.Header.getHeaders(Network.get()).stream().anyMatch(header -> header.isPrivateKey() && extKey.startsWith(header.name()))) {
                     AppServices.showWarningDialog("Private extended key detected", "Sparrow will convert the provided private key to a public key for use in a watch only wallet.\n\nTo import a private key, use the Master Private Key option when creating a Software Wallet.");
                 } else if(childDerivationPath != null && !(childDerivationPath.endsWith("/0/*") || childDerivationPath.endsWith("/1/*") || childDerivationPath.endsWith("/<0;1>/*"))) {
                     AppServices.showWarningDialog("Non standard child derivation detected", "Sparrow does not support non-BIP32 wallets without standard receive and change chains.\n\nThe provided descriptor will be amended if necessary.");
