@@ -61,6 +61,7 @@ public class BitcoindClient {
 
     private final JsonRpcClient jsonRpcClient;
     private final Timer timer = new Timer(true);
+    private final BitcoindTransport bitcoindTransport;
     private final Store store = new Store();
 
     private NetworkInfo networkInfo;
@@ -103,8 +104,6 @@ public class BitcoindClient {
     private long timerTaskCount;
 
     public BitcoindClient(boolean useWallets) {
-        BitcoindTransport bitcoindTransport;
-
         Config config = Config.get();
         if((config.getCoreAuthType() == CoreAuthType.COOKIE || config.getCoreAuth() == null || config.getCoreAuth().length() < 2) && config.getCoreDataDir() != null) {
             bitcoindTransport = new BitcoindTransport(config.getCoreServer(), CORE_WALLET_NAME, config.getCoreDataDir());
@@ -464,6 +463,7 @@ public class BitcoindClient {
 
     public void stop() {
         timer.cancel();
+        bitcoindTransport.close();
         pruneWarnedDescriptors.clear();
         importFailedDescriptors.clear();
         stopped = true;

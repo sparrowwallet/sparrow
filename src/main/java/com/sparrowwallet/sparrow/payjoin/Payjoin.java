@@ -16,6 +16,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.net.Protocol;
 import com.sparrowwallet.tern.http.client.HttpResponseException;
+import com.sparrowwallet.tern.http.client.HttpUsage;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.slf4j.Logger;
@@ -29,6 +30,8 @@ import java.util.*;
 
 public class Payjoin {
     private static final Logger log = LoggerFactory.getLogger(Payjoin.class);
+    //The PSBT is sent only to the payjoin url given in the payment request, which was checked to be https or onion
+    private static final HttpUsage HTTP_USAGE = new HttpUsage("Payjoin", false);
 
     private final BitcoinURI payjoinURI;
     private final Wallet wallet;
@@ -92,7 +95,7 @@ public class Payjoin {
                 throw new PayjoinReceiverException("Configure a Tor proxy to get a payjoin transaction from " + finalUri.getHost() + ".");
             }
 
-            String response = httpClientService.postString(finalUri.toString(), null, "text/plain", base64Psbt);
+            String response = httpClientService.postString(HTTP_USAGE, finalUri.toString(), null, "text/plain", base64Psbt);
             PSBT proposalPsbt = PSBT.fromString(response.trim());
             checkProposal(psbt, proposalPsbt, changeOutputIndex, maxAdditionalFeeContribution, minFeeRate, allowOutputSubstitution);
 

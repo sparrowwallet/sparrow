@@ -11,6 +11,9 @@ import com.sparrowwallet.sparrow.io.Server;
 import com.sparrowwallet.sparrow.io.Storage;
 import com.sparrowwallet.sparrow.net.Protocol;
 import com.sparrowwallet.sparrow.net.TcpOverTlsTransport;
+import com.sparrowwallet.tern.http.client.HttpEndpointClient;
+import com.sparrowwallet.tern.http.client.HttpProxy;
+import com.sparrowwallet.tern.http.client.HttpProxyProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,17 +24,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.cert.Certificate;
-import java.util.Base64;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 
-public class BitcoindTransport implements Transport {
+public class BitcoindTransport implements Transport, Closeable {
     private static final Logger log = LoggerFactory.getLogger(BitcoindTransport.class);
     public static final String COOKIE_FILENAME = ".cookie";
 
-    //Neither timeout was set, and HttpURLConnection defaults both to 0 (infinite), so a node that could not be reached, or that accepted the connection but never replied, hung
-    //the calling thread forever. A node is expected to be quickly reachable, but connecting to an onion address must first build a circuit.
-    private static final int CONNECT_TIMEOUT_MILLIS = 15_000;
-    private static final int ONION_CONNECT_TIMEOUT_MILLIS = 60_000;
+    //A node that cannot be reached must not hang the calling thread. A node is expected to be quickly reachable, but connecting to an onion address must first build a circuit.
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(15);
+    private static final Duration ONION_CONNECT_TIMEOUT = Duration.ofSeconds(60);
+    //Below Bitcoin Core's default rpcservertimeout of 30 seconds, so that the node does not close a connection as it is reused
+    private static final Duration IDLE_TIMEOUT = Duration.ofSeconds(10);
     //A backstop against a hung thread rather than a limit on how long the user waits, since TcpTransport already bounds the Electrum requests these calls serve. Set well beyond
     //any legitimate call, and never below the timeout the Electrum layer above allows.
     private static final int READ_TIMEOUT_MILLIS = 300_000;
@@ -42,11 +46,13 @@ public class BitcoindTransport implements Transport {
     private final Server bitcoindServer;
     //Package visible so tests need not wait it out
     int readTimeoutMillis;
-    private URL bitcoindUrl;
+    private URI bitcoindUri;
     private File cookieFile;
     private Long cookieFileTimestamp;
     private String bitcoindAuthEncoded;
-    private SSLSocketFactory sslSocketFactory;
+    private HttpEndpointClient httpClient;
+    private String httpClientProxy;
+    private boolean closed;
 
     public BitcoindTransport(Server bitcoindServer, String bitcoindWallet, String bitcoindAuth) {
         this(bitcoindServer, bitcoindWallet);
@@ -66,91 +72,57 @@ public class BitcoindTransport implements Transport {
             if(!bitcoindServer.getHostAndPort().hasPort()) {
                 serverUrl += ":" + Network.get().getDefaultPort();
             }
-            this.bitcoindUrl = new URI(serverUrl + "/wallet/" + bitcoindWallet).toURL();
-        } catch(MalformedURLException | URISyntaxException e) {
+            this.bitcoindUri = new URI(serverUrl + "/wallet/" + bitcoindWallet);
+        } catch(URISyntaxException e) {
             log.error("Malformed Bitcoin Core RPC URL", e);
         }
     }
 
     @Override
     public String pass(String request) throws IOException {
-        //Bitcoin Core RPC is a connection to the user's own node, expected to be on this computer or the local network, or reached over its onion service or a VPN or SSH tunnel.
-        //A configured proxy is therefore applied to onion addresses only - AppServices.getProxy() is also non-null whenever the internal Tor is running, and Tor can reach neither
-        //loopback nor private addresses, while routing a clearnet node through it would expose the RPC credentials below to an exit node.
-        //Configuring a node that is neither local nor onion warns the user on testing the connection or closing the dialog, see ServerSettingsController.
-        Proxy proxy = AppServices.getProxy();
-        boolean useProxy = proxy != null && Protocol.isOnionAddress(bitcoindServer);
-        HttpURLConnection connection = useProxy ? (HttpURLConnection)bitcoindUrl.openConnection(proxy) : (HttpURLConnection)bitcoindUrl.openConnection();
+        HttpProxy proxy = getHttpProxy();
+        HttpEndpointClient client = getHttpClient(proxy);
 
-        if(connection instanceof HttpsURLConnection httpsURLConnection) {
-            SSLSocketFactory sslSocketFactory = getSSLSocketFactory();
-            if(sslSocketFactory != null) {
-                httpsURLConnection.setSSLSocketFactory(sslSocketFactory);
-                //A private node's RPC certificate is necessarily self-signed, so the certificate pinned on first use below authenticates it - there is no hostname to verify
-                httpsURLConnection.setHostnameVerifier((_, _) -> true);
-            }
-        }
-
-        connection.setRequestMethod("POST");
-        connection.setRequestProperty("Content-Type", "application/json");
-
+        Map<String, String> headers = new HashMap<>();
         String auth = getBitcoindAuthEncoded();
         if(auth != null) {
-            connection.setRequestProperty("Authorization", "Basic " + auth);
+            headers.put("Authorization", "Basic " + auth);
         }
 
-        connection.setDoOutput(true);
-        connection.setConnectTimeout(useProxy ? ONION_CONNECT_TIMEOUT_MILLIS : CONNECT_TIMEOUT_MILLIS);
-        connection.setReadTimeout(isRescanningMethod(request) ? 0 : readTimeoutMillis);
+        Duration readTimeout = isRescanningMethod(request) ? Duration.ZERO : Duration.ofMillis(readTimeoutMillis);
 
         log.debug("> " + request);
 
         //From v32.1 Bitcoin Core closes the connection from a client outside rpcallowip without answering, where earlier versions answered 403 below
-        String closedMessage = "Bitcoin Core at " + bitcoindUrl.getAuthority() + " closed the connection without responding, check its rpcallowip settings";
+        String closedMessage = "Bitcoin Core at " + bitcoindUri.getAuthority() + " closed the connection without responding, check its rpcallowip settings";
 
-        try(OutputStream os = connection.getOutputStream()) {
-            byte[] jsonBytes = request.getBytes(StandardCharsets.UTF_8);
-            os.write(jsonBytes);
-        } catch(SocketException e) {
-            //The close can also reset the connection before the connect completes, where other socket errors (unreachable network, local firewall) never reached the node,
-            //and a reset from a SOCKS proxy is the proxy's own failure
-            if(!useProxy && e.getMessage() != null && e.getMessage().contains("Connection reset")) {
-                throw new IOException(closedMessage, e);
-            }
-            throw e;
-        }
-
-        int statusCode;
+        HttpEndpointClient.Response httpResponse;
         try {
-            statusCode = connection.getResponseCode();
-        } catch(InterruptedIOException e) {
-            throw e;
-        } catch(IOException e) {
+            httpResponse = client.send("POST", bitcoindUri, headers, "application/json", request.getBytes(StandardCharsets.UTF_8), readTimeout);
+        } catch(EOFException e) {
+            //Also thrown where the node resets the connection instead of closing it, as the client reports a failed read or write on a connected socket as its end
             throw new IOException(closedMessage, e);
         }
 
+        int statusCode = httpResponse.statusCode();
+
         //Trust on first use, as for non-CA-certified Electrum servers: the certificate presented by the node on the first connection is saved, and required on all connections thereafter
-        if(connection instanceof HttpsURLConnection httpsConn && Storage.getCertificateFile(bitcoindServer.getHost()) == null) {
-            try {
-                Certificate[] certs = httpsConn.getServerCertificates();
-                if(certs.length > 0) {
-                    Storage.saveCertificate(bitcoindServer.getHost(), certs[0]);
-                    sslSocketFactory = null;
-                }
-            } catch(SSLPeerUnverifiedException e) {
-                log.warn("Could not retrieve certificate for saving", e);
+        if(isHttps() && Storage.getCertificateFile(bitcoindServer.getHost()) == null) {
+            Certificate[] certs = httpResponse.serverCertificates();
+            if(certs.length > 0) {
+                Storage.saveCertificate(bitcoindServer.getHost(), certs[0]);
+                closeHttpClient();
             }
         }
 
         if(statusCode == 401) {
             throw new IOException((cookieFile == null ? "User/pass" : "Cookie file") + " authentication failed");
         } else if(statusCode == 403) {
-            throw new IOException("Bitcoin Core at " + bitcoindUrl.getAuthority() + " refused RPC access from this computer, check its rpcallowip and rpcwhitelist settings");
+            throw new IOException("Bitcoin Core at " + bitcoindUri.getAuthority() + " refused RPC access from this computer, check its rpcallowip and rpcwhitelist settings");
         }
-        InputStream inputStream = connection.getErrorStream() == null ? connection.getInputStream() : connection.getErrorStream();
 
         StringBuilder res = new StringBuilder();
-        try(BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+        try(BufferedReader br = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(httpResponse.body()), StandardCharsets.UTF_8))) {
             String responseLine;
             while((responseLine = br.readLine()) != null) {
                 //Bitcoin Core returns a null result alongside the error on a failed call, which the client deserializes to a null return value instead of throwing the error.
@@ -169,10 +141,59 @@ public class BitcoindTransport implements Transport {
         //A response carrying neither a result nor an error leaves the client constructing a JsonRpcException from a null error message, which throws a NullPointerException naming nothing.
         //Bitcoin Core always answers with a JSON-RPC object, so an empty or HTML body here comes from something else on the network path - typically a TLS terminating proxy sent a plain HTTP request.
         if(!response.startsWith("{")) {
-            throw new IOException("Bitcoin Core at " + bitcoindUrl.getAuthority() + " did not return a JSON-RPC response to the " + bitcoindUrl.getProtocol() + " request (HTTP " + statusCode + ")");
+            throw new IOException("Bitcoin Core at " + bitcoindUri.getAuthority() + " did not return a JSON-RPC response to the " + bitcoindUri.getScheme() + " request (HTTP " + statusCode + ")");
         }
 
         return response;
+    }
+
+    //Bitcoin Core RPC is a connection to the user's own node, expected to be on this computer or the local network, or reached over its onion service or a VPN or SSH tunnel.
+    //A configured proxy is therefore applied to onion addresses only - AppServices.getProxy() is also non-null whenever the internal Tor is running, and Tor can reach neither
+    //loopback nor private addresses, while routing a clearnet node through it would expose the RPC credentials to an exit node.
+    //Configuring a node that is neither local nor onion warns the user on testing the connection or closing the dialog, see ServerSettingsController.
+    private HttpProxy getHttpProxy() {
+        Proxy proxy = AppServices.getProxy();
+        if(proxy == null || !Protocol.isOnionAddress(bitcoindServer) || !(proxy.address() instanceof InetSocketAddress proxyAddress)) {
+            return null;
+        }
+
+        return new HttpProxy(HttpProxyProtocol.SOCKS5, proxyAddress.getHostString(), proxyAddress.getPort());
+    }
+
+    //The client keeps connections open between calls, and is replaced when the proxy changes or a certificate is saved on first use
+    private synchronized HttpEndpointClient getHttpClient(HttpProxy proxy) throws IOException {
+        if(closed) {
+            throw new IOException("Bitcoin Core connection to " + bitcoindUri.getAuthority() + " is closed");
+        }
+
+        String proxyKey = String.valueOf(proxy);
+        if(httpClient != null && !proxyKey.equals(httpClientProxy)) {
+            closeHttpClient();
+        }
+
+        if(httpClient == null) {
+            httpClient = new HttpEndpointClient("BitcoindTransport", proxy, isHttps() ? createSSLContext() : null, proxy == null ? CONNECT_TIMEOUT : ONION_CONNECT_TIMEOUT, IDLE_TIMEOUT);
+            httpClientProxy = proxyKey;
+        }
+
+        return httpClient;
+    }
+
+    private synchronized void closeHttpClient() {
+        if(httpClient != null) {
+            httpClient.close();
+            httpClient = null;
+        }
+    }
+
+    @Override
+    public synchronized void close() {
+        closed = true;
+        closeHttpClient();
+    }
+
+    private boolean isHttps() {
+        return "https".equalsIgnoreCase(bitcoindUri.getScheme());
     }
 
     //Parses the method as TcpTransport does for Electrum notifications, so that a parameter value cannot match
@@ -230,23 +251,16 @@ public class BitcoindTransport implements Transport {
         return bitcoindDir;
     }
 
-    private SSLSocketFactory getSSLSocketFactory() {
-        if(sslSocketFactory == null) {
-            sslSocketFactory = createSSLSocketFactory();
-        }
-
-        return sslSocketFactory;
-    }
-
-    private SSLSocketFactory createSSLSocketFactory() {
+    //A private node's RPC certificate is necessarily self-signed, so the certificate pinned on first use authenticates it - there is no hostname to verify
+    private SSLContext createSSLContext() {
         try {
             String host = bitcoindServer.getHost();
             TrustManager[] trustManagers = TcpOverTlsTransport.getTrustManagers(Storage.getCertificateFile(host), host);
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustManagers, null);
-            return sslContext.getSocketFactory();
+            return sslContext;
         } catch(Exception e) {
-            log.error("Error creating SSL socket factory", e);
+            log.error("Error creating SSL context", e);
             return null;
         }
     }

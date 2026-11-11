@@ -5,6 +5,7 @@ import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.PayNymImageLoadedEvent;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.paynym.PayNymService;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -17,9 +18,8 @@ import javafx.scene.shape.Circle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.net.Proxy;
-import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,14 +116,14 @@ public class PayNymAvatar extends DecorativePane {
                     }
 
                     synchronized(lock) {
-                        Proxy proxy = AppServices.getProxy();
-                        String url = PayNymService.getHostUrl(proxy != null) + "/" + paymentCodeStr + "/avatar";
+                        HttpClientService httpClientService = AppServices.getHttpClientService();
+                        String url = PayNymService.getHostUrl(httpClientService.getTorProxy() != null) + "/" + paymentCodeStr + "/avatar";
 
                         if(log.isDebugEnabled()) {
                             log.debug("Requesting PayNym avatar from " + url);
                         }
 
-                        try(InputStream is = (proxy == null ? new URI(url).toURL().openStream() : new URI(url).toURL().openConnection(proxy).getInputStream())) {
+                        try(InputStream is = new ByteArrayInputStream(httpClientService.requestBytes(url, null))) {
                             Image image = new Image(is, 150, 150, true, true);
                             if(image.getException() != null) {
                                 throw image.getException();

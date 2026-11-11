@@ -99,7 +99,7 @@ dependencies {
         exclude group: 'org.slf4j'
     }
     implementation('com.sparrowwallet.bokmakierie:bokmakierie:1.0')
-    implementation('com.sparrowwallet:tern:1.0.6')
+    implementation('com.sparrowwallet:tern:1.1.2')
     implementation('io.reactivex.rxjava2:rxjava:2.2.21')
     implementation('io.reactivex.rxjava2:rxjavafx:2.2.2')
     implementation('org.apache.commons:commons-lang3:3.20.0')
@@ -202,7 +202,6 @@ jlink {
         requires 'java.management'
         requires 'io.leangen.geantyref'
         requires 'static jdk.jfr'
-        uses 'org.eclipse.jetty.http.HttpFieldPreEncoder'
     }
 
     options = ['--strip-native-commands', '--strip-java-debug-attributes', '--compress', 'zip-6',

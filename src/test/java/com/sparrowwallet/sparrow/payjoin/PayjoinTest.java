@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.payjoin;
 
+import com.sparrowwallet.drongo.OutputDescriptor;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.Script;
@@ -14,11 +15,29 @@ import com.sparrowwallet.drongo.psbt.PSBTInput;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Wallet;
+import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.SparrowWallet;
+import com.sparrowwallet.sparrow.io.Config;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigInteger;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class PayjoinTest {
     private static final ECKey SENDER_KEY = ECKey.fromPrivate(BigInteger.valueOf(1001));
@@ -39,6 +58,45 @@ public class PayjoinTest {
     private static final int CHANGE_OUTPUT_INDEX = 1;
     private static final long MAX_ADDITIONAL_FEE_CONTRIBUTION = 5000L;
     private static final double MIN_FEE_RATE = 1.0d;
+    private static final String WATCH_ONLY_XPUB = "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8";
+    private static final String RECEIVER_ONION = "payjoinreceiver" + "a".repeat(40) + "d.onion";
+
+    @TempDir
+    private static Path tempHome;
+
+    @BeforeAll
+    public static void setUp() {
+        //Config.get() caches its instance for the life of the JVM, so keep these tests from loading the developer's real config and leaving it cached for those that follow
+        System.setProperty(SparrowWallet.APP_HOME_PROPERTY, tempHome.toString());
+    }
+
+    @AfterAll
+    public static void tearDown() {
+        System.clearProperty(SparrowWallet.APP_HOME_PROPERTY);
+    }
+
+    @Test
+    public void receiverRedirectIsNotFollowed() throws Exception {
+        try(RedirectingReceiver receiver = new RedirectingReceiver()) {
+            Config.get().setProxyServer("127.0.0.1:" + receiver.getPort());
+            Config.get().setUseProxy(true);
+            try {
+                //A watch-only wallet, so that the change output can be looked up before the request is sent
+                Wallet wallet = OutputDescriptor.getOutputDescriptor("wpkh([d34db33f/84h/0h/0h]" + WATCH_ONLY_XPUB + "/0/*)").toWallet();
+                BitcoinURI payjoinURI = new BitcoinURI("bitcoin:" + ScriptType.P2WPKH.getAddress(PAYMENT_KEY.getPubKeyHash()) + "?pj=http://" + RECEIVER_ONION + "/pj");
+                Payjoin payjoin = new Payjoin(payjoinURI, wallet, getOriginalPSBT());
+                PayjoinReceiverException thrown = Assertions.assertTimeoutPreemptively(Duration.ofSeconds(20),
+                        () -> Assertions.assertThrows(PayjoinReceiverException.class, () -> payjoin.requestPayjoinPSBT(true)));
+                Assertions.assertTrue(thrown.getMessage().contains("HTTP 307"), thrown.getMessage());
+                Assertions.assertEquals(List.of(RECEIVER_ONION + ":80"), receiver.connectTargets);
+            } finally {
+                Config.get().setUseProxy(false);
+                Config.get().setProxyServer(null);
+                //Reconfigures the shared client without the proxy, stopping the clients that used it
+                AppServices.getHttpClientService();
+            }
+        }
+    }
 
     @Test
     public void unsubstitutedProposalIsAccepted() throws Exception {
@@ -258,5 +316,86 @@ public class PayjoinTest {
 
     private Script getSubstituteScript() {
         return ScriptType.P2WPKH.getOutputScript(SUBSTITUTE_KEY.getPubKeyHash());
+    }
+
+    //Stands in for a SOCKS4a proxy and the payjoin receiver behind it: records each CONNECT target, then answers the request with a redirect to a local address
+    private static class RedirectingReceiver implements Closeable {
+        private final ServerSocket serverSocket = new ServerSocket(0, 50, InetAddress.getLoopbackAddress());
+        private final List<String> connectTargets = new CopyOnWriteArrayList<>();
+
+        RedirectingReceiver() throws IOException {
+            Thread acceptor = new Thread(() -> {
+                try {
+                    while(true) {
+                        Socket socket = serverSocket.accept();
+                        Thread handler = new Thread(() -> serve(socket));
+                        handler.setDaemon(true);
+                        handler.start();
+                    }
+                } catch(IOException e) {
+                    //Closed at the end of the test
+                }
+            });
+            acceptor.setDaemon(true);
+            acceptor.start();
+        }
+
+        int getPort() {
+            return serverSocket.getLocalPort();
+        }
+
+        private void serve(Socket socket) {
+            try(socket) {
+                DataInputStream in = new DataInputStream(socket.getInputStream());
+                OutputStream out = socket.getOutputStream();
+
+                //SOCKS4a CONNECT: version, command, port, address 0.0.0.x, user id, hostname. Reply: granted.
+                in.readUnsignedByte();
+                in.readUnsignedByte();
+                int port = in.readUnsignedShort();
+                byte[] address = in.readNBytes(4);
+                readNullTerminated(in);
+                String host = address[0] == 0 && address[1] == 0 && address[2] == 0 && address[3] != 0 ? readNullTerminated(in) : InetAddress.getByAddress(address).getHostAddress();
+                connectTargets.add(host + ":" + port);
+                out.write(new byte[] {0, 0x5A, 0, 0, 0, 0, 0, 0});
+
+                int contentLength = 0;
+                for(String line = readLine(in); line != null && !line.isEmpty(); line = readLine(in)) {
+                    if(line.toLowerCase().startsWith("content-length:")) {
+                        contentLength = Integer.parseInt(line.substring("content-length:".length()).trim());
+                    }
+                }
+                in.readNBytes(contentLength);
+                out.write(("HTTP/1.1 307 Temporary Redirect\r\nLocation: http://127.0.0.1:" + getPort() + "/pj\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
+                        .getBytes(StandardCharsets.US_ASCII));
+                out.flush();
+            } catch(IOException e) {
+                //Closed by the client
+            }
+        }
+
+        private static String readNullTerminated(InputStream in) throws IOException {
+            StringBuilder value = new StringBuilder();
+            for(int b = in.read(); b > 0; b = in.read()) {
+                value.append((char)b);
+            }
+            return value.toString();
+        }
+
+        private static String readLine(InputStream in) throws IOException {
+            StringBuilder line = new StringBuilder();
+            int b;
+            while((b = in.read()) != -1 && b != '\n') {
+                if(b != '\r') {
+                    line.append((char)b);
+                }
+            }
+            return b == -1 && line.isEmpty() ? null : line.toString();
+        }
+
+        @Override
+        public void close() throws IOException {
+            serverSocket.close();
+        }
     }
 }

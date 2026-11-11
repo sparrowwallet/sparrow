@@ -19,9 +19,12 @@ public class HttpClientService extends com.sparrowwallet.tern.http.client.HttpCl
 
     public void setTorProxy(HostAndPort torProxy) {
         if(getHttpProxySupplier() instanceof TorHttpProxySupplier torHttpProxySupplier) {
-            //Ensure all http clients are shutdown first
-            stop();
-            torHttpProxySupplier._setTorProxy(torProxy);
+            //A client takes its proxy when created, so the proxy is changed before the clients created with the previous one are stopped. Holding the lock that
+            //getHttpClient() takes ensures no client is created in between.
+            synchronized(this) {
+                torHttpProxySupplier._setTorProxy(torProxy);
+                stop();
+            }
         }
     }
 

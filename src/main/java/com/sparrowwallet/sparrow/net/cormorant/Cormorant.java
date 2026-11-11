@@ -42,7 +42,12 @@ public class Cormorant {
         }
 
         bitcoindClient = new BitcoindClient(useWallets);
-        bitcoindClient.initialize();
+        try {
+            bitcoindClient.initialize();
+        } catch(CormorantBitcoindException | RuntimeException e) {
+            bitcoindClient.stop();
+            throw e;
+        }
 
         Thread importThread = new Thread(() -> {
             try {
