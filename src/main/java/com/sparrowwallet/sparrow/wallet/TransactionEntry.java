@@ -180,10 +180,7 @@ public class TransactionEntry extends Entry implements Comparable<TransactionEnt
     public int compareTo(TransactionEntry other) {
         //This comparison must be identical to that of WalletTransactionsEntry.WalletTransaction
         if(blockTransaction.getHeight() != other.blockTransaction.getHeight()) {
-            int blockOrder = blockTransaction.getComparisonHeight() - other.blockTransaction.getComparisonHeight();
-            if(blockOrder != 0) {
-                return blockOrder;
-            }
+            return blockTransaction.compareHeight(other.blockTransaction);
         }
 
         int valueOrder = Long.compare(other.getValue(), getValue());

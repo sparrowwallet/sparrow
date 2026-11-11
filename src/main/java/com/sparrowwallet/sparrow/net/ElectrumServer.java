@@ -372,7 +372,7 @@ public class ElectrumServer {
         txos.removeIf(ref -> !unique.add(ref.getHash()));
         txos.sort((txo1, txo2) -> {
             if(txo1.getHeight() != txo2.getHeight()) {
-                return txo1.getComparisonHeight() - txo2.getComparisonHeight();
+                return txo1.compareHeight(txo2);
             }
 
             if(txo1.isSpent() && txo1.getSpentBy().equals(txo2)) {

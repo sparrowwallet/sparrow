@@ -285,10 +285,7 @@ public class WalletTransactionsEntry extends Entry {
         public int compareTo(WalletTransactionsEntry.WalletTransaction other) {
             //This comparison must be identical to that of TransactionEntry so we can avoid a resort calculating balances when creating WalletTransactionsEntry
             if(blockTransaction.getHeight() != other.blockTransaction.getHeight()) {
-                int blockOrder = blockTransaction.getComparisonHeight() - other.blockTransaction.getComparisonHeight();
-                if(blockOrder != 0) {
-                    return blockOrder;
-                }
+                return blockTransaction.compareHeight(other.blockTransaction);
             }
 
             int valueOrder = Long.compare(other.getValue(), getValue());
