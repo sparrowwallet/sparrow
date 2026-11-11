@@ -10,6 +10,7 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
 import org.junit.jupiter.api.AfterEach;
@@ -113,6 +114,33 @@ public class DbPersistenceTest {
     @Test
     public void domainRejected() throws Exception {
         assertRejected(buildWalletFile("create domain wallet_master.dm as int default 0"));
+    }
+
+    @Test
+    public void analyzedWalletWithChildWalletsLoads() throws Exception {
+        Storage storage = createUnencryptedWallet("Savings");
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+        storage.saveWallet(wallet.addChildWallet(StandardAccount.ACCOUNT_1));
+        Wallet namedAccount = wallet.addChildWallet(StandardAccount.ACCOUNT_2);
+        namedAccount.setName("Épargne");
+        storage.saveWallet(namedAccount);
+        storage.closeAndWait();
+
+        String path = storage.getWalletFile().getAbsolutePath();
+        String url = "jdbc:h2:" + path.substring(0, path.length() - ".mv.db".length()) + ";DATABASE_TO_UPPER=false;DB_CLOSE_ON_EXIT=FALSE";
+        try(Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement()) {
+            statement.execute("ANALYZE");
+        }
+
+        Storage loaded = new Storage(PersistenceType.DB, storage.getWalletFile());
+        try {
+            Wallet loadedWallet = loaded.loadUnencryptedWallet().getWallet();
+            Assertions.assertTrue(loadedWallet.isValid());
+            Assertions.assertEquals(2, loadedWallet.getChildWallets().size());
+        } finally {
+            loaded.closeAndWait();
+        }
     }
 
     private static final String TEST_XPUB = "xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy";

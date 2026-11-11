@@ -57,7 +57,7 @@ dependencies {
     implementation('org.jdbi:jdbi3-sqlobject:3.51.0') {
         exclude group: 'org.slf4j'
     }
-    implementation('org.flywaydb:flyway-core:9.22.3')
+    implementation('org.flywaydb:flyway-core:13.12.1')
     implementation('org.fxmisc.richtext:richtextfx:0.11.7')
     implementation('no.tornado:tornadofx-controls:1.0.4')
     implementation('com.google.zxing:javase:3.5.4') {
@@ -176,8 +176,7 @@ application {
                                  "--add-opens=javafx.graphics/javafx.scene.input=com.sparrowwallet.sparrow",
                                  "--add-opens=java.base/java.net=com.sparrowwallet.sparrow",
                                  "--add-opens=java.smartcardio/sun.security.smartcardio=com.sparrowwallet.sparrow",
-                                 "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
-                                 "--add-reads=org.flywaydb.core=java.desktop"]
+                                 "--add-reads=kotlin.stdlib=kotlinx.coroutines.core"]
 
     if(os.macOsX) {
         applicationDefaultJvmArgs += ["-Dprism.lcdtext=false", "-Dprism.maxTextureSize=8192", "-Xdock:name=Sparrow"]
@@ -270,8 +269,7 @@ jlink {
                    "--add-reads=com.sparrowwallet.merged.module=org.bouncycastle.provider",
                    "--add-reads=com.sparrowwallet.merged.module=kotlin.stdlib",
                    "--add-reads=com.sparrowwallet.merged.module=org.reactfx.reactfx",
-                   "--add-reads=kotlin.stdlib=kotlinx.coroutines.core",
-                   "--add-reads=org.flywaydb.core=java.desktop"]
+                   "--add-reads=kotlin.stdlib=kotlinx.coroutines.core"]
 
         if(os.windows) {
             jvmArgs.addAll(["-Djavax.accessibility.assistive_technologies", "-Djavax.accessibility.screen_magnifier_present=false"])
