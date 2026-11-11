@@ -332,7 +332,7 @@ public class DownloadVerifierDialog extends Dialog<ButtonBar.ButtonData> {
                 publicKeyDisabled.set(true);
             }
 
-            if(manifest.get().equals(release.get()) && !isSparrowManifest(manifest.get())) {
+            if(manifest.get().equals(release.get()) && !manifest.get().equals(signature.get()) && !isSparrowManifest(manifest.get())) {
                 manifestDisabled.set(true);
                 releaseHash.setText("No hash required, signature signs release file directly");
                 releaseHash.setGraphic(GlyphUtils.getSuccessGlyph());
