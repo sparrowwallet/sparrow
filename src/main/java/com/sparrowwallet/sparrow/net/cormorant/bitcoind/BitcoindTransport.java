@@ -93,8 +93,9 @@ public class BitcoindTransport implements Transport, Closeable {
 
         log.debug("> " + request);
 
-        //From v32.1 Bitcoin Core closes the connection from a client outside rpcallowip without answering, where earlier versions answered 403 below
-        String closedMessage = "Bitcoin Core at " + bitcoindUri.getAuthority() + " closed the connection without responding, check its rpcallowip settings";
+        //From v32.1 Bitcoin Core closes the connection from a client outside rpcallowip without answering, where earlier versions answered 403 below.
+        //Tor delivers connections to an onion node locally, which rpcallowip admits by default, so through a proxy a closed connection more likely failed on the way.
+        String closedMessage = "Bitcoin Core at " + bitcoindUri.getAuthority() + " closed the connection without responding" + (proxy == null ? ", check its rpcallowip settings" : "");
 
         HttpEndpointClient.Response httpResponse;
         try {
@@ -139,8 +140,9 @@ public class BitcoindTransport implements Transport, Closeable {
         log.debug("< " + response);
 
         //A response carrying neither a result nor an error leaves the client constructing a JsonRpcException from a null error message, which throws a NullPointerException naming nothing.
-        //Bitcoin Core always answers with a JSON-RPC object, so an empty or HTML body here comes from something else on the network path - typically a TLS terminating proxy sent a plain HTTP request.
-        if(!response.startsWith("{")) {
+        //Bitcoin Core always answers with a JSON-RPC object, or an array of them for a batch, so an empty or HTML body here comes from something else on the network path - typically
+        //a TLS terminating proxy sent a plain HTTP request.
+        if(!response.startsWith("{") && !response.startsWith("[")) {
             throw new IOException("Bitcoin Core at " + bitcoindUri.getAuthority() + " did not return a JSON-RPC response to the " + bitcoindUri.getScheme() + " request (HTTP " + statusCode + ")");
         }
 

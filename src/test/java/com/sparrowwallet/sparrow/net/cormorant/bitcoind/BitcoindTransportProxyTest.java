@@ -115,11 +115,20 @@ public class BitcoindTransportProxyTest {
     }
 
     @Test
-    public void closedConnectionPointsToRpcAllowIp() {
+    public void closedConnectionThroughProxyDoesNotPointToRpcAllowIp() {
         proxy.response = "";
         BitcoindTransport transport = new BitcoindTransport(new Server("http://" + onionHost('e') + ":8332"), "cormorant", RPC_AUTH);
         IOException thrown = assertPassThrows(transport);
-        assertTrue(thrown.getMessage().contains("rpcallowip"), thrown.toString());
+        assertTrue(thrown.getMessage().contains("closed the connection without responding"), thrown.toString());
+        assertFalse(thrown.getMessage().contains("rpcallowip"), thrown.toString());
+    }
+
+    @Test
+    public void batchResponseIsReturned() {
+        String batchResponse = "[" + RPC_RESPONSE + "," + RPC_RESPONSE.replace("\"id\":1", "\"id\":2") + "]";
+        proxy.response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: " + batchResponse.length() + "\r\n\r\n" + batchResponse;
+        BitcoindTransport transport = new BitcoindTransport(new Server("http://" + onionHost('k') + ":8332"), "cormorant", RPC_AUTH);
+        assertEquals(batchResponse, pass(transport));
     }
 
     @Test

@@ -1,8 +1,11 @@
 package com.sparrowwallet.sparrow.net.cormorant.bitcoind;
 
 import com.github.arteam.simplejsonrpc.client.JsonRpcClient;
+import com.github.arteam.simplejsonrpc.client.builder.BatchRequestBuilder;
+import com.github.arteam.simplejsonrpc.client.exception.JsonRpcBatchException;
 import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.OutputDescriptor;
@@ -41,6 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -49,6 +53,8 @@ public class BitcoindClient {
 
     public static final String CORE_WALLET_NAME = "cormorant";
     private static final int DEFAULT_GAP_LIMIT = 1000;
+    private static final int TRANSACTION_BATCH_SIZE = 100;
+    private static final int JSON_RPC_2_BATCH_VERSION = 280000;
     private static final int POSTMIX_GAP_LIMIT = 4000;
 
     private static final long PRUNED_RESCAN_TIMEGAP_MILLIS = 7200*1000;
@@ -64,7 +70,8 @@ public class BitcoindClient {
     private final BitcoindTransport bitcoindTransport;
     private final Store store = new Store();
 
-    private NetworkInfo networkInfo;
+    //Package visible so tests can set the node version
+    NetworkInfo networkInfo;
     private String lastBlock;
     private ElectrumBlockHeader tip;
 
@@ -75,6 +82,7 @@ public class BitcoindClient {
     private final Map<String, Integer> descriptorUsedIndexes = new ConcurrentHashMap<>();
 
     private boolean initialized;
+    private volatile boolean storeLoaded;
     private boolean stopped;
 
     private Exception lastPollException;
@@ -182,6 +190,7 @@ public class BitcoindClient {
 
         ListSinceBlock listSinceBlock = getListSinceBlock(null);
         updateStore(listSinceBlock);
+        storeLoaded = true;
     }
 
     private ListSinceBlock getListSinceBlock(String blockHash) {
@@ -512,12 +521,12 @@ public class BitcoindClient {
             }
         }
 
+        Map<String, Set<HashIndex>> storedSpentOutputs = store.getSpentOutputs();
+        List<String> uncachedTxids = sentTransactions.stream().map(ListTransaction::txid).distinct().filter(txid -> !storedSpentOutputs.containsKey(txid)).toList();
+        fetchSpentOutputs(uncachedTxids, storedSpentOutputs);
+
         for(ListTransaction sentTransaction : sentTransactions) {
-            Set<HashIndex> spentOutputs = store.getSpentOutputs().computeIfAbsent(sentTransaction.txid(), txid -> {
-                String txhex = getTransaction(txid);
-                Transaction tx = new Transaction(Utils.hexToBytes(txhex));
-                return tx.getInputs().stream().map(txInput -> new HashIndex(txInput.getOutpoint().getHash(), txInput.getOutpoint().getIndex())).collect(Collectors.toSet());
-            });
+            Set<HashIndex> spentOutputs = storedSpentOutputs.get(sentTransaction.txid());
 
             boolean foundFundingAddress = false;
             for(HashIndex spentOutput : spentOutputs) {
@@ -543,6 +552,44 @@ public class BitcoindClient {
 
         for(String updatedScriptHash : updatedScriptHashes) {
             Cormorant.getEventBus().post(new ScriptHashStatus(updatedScriptHash, store.getStatus(updatedScriptHash)));
+        }
+    }
+
+    //Requested in batches from Bitcoin Core v28 and later, as a wallet may hold hundreds of spends.
+    //Earlier versions answer a batch in the JSON-RPC 1.0 form, which the client rejects, so each transaction is requested on its own.
+    //Each transaction is added to spentOutputs as it is received, so that after a failure the next poll requests only those that remain.
+    void fetchSpentOutputs(List<String> txids, Map<String, Set<HashIndex>> spentOutputs) {
+        if(networkInfo.version() >= JSON_RPC_2_BATCH_VERSION) {
+            for(List<String> batch : Lists.partition(txids, TRANSACTION_BATCH_SIZE)) {
+                fetchTransactions(batch, (txid, txhex) -> spentOutputs.put(txid, getInputOutpoints(txhex)));
+            }
+        } else {
+            for(String txid : txids) {
+                spentOutputs.put(txid, getInputOutpoints(getTransaction(txid)));
+            }
+        }
+    }
+
+    private static Set<HashIndex> getInputOutpoints(String txhex) {
+        Transaction tx = new Transaction(Utils.hexToBytes(txhex));
+        return tx.getInputs().stream().map(txInput -> new HashIndex(txInput.getOutpoint().getHash(), txInput.getOutpoint().getIndex())).collect(Collectors.toSet());
+    }
+
+    @SuppressWarnings("rawtypes")
+    private void fetchTransactions(List<String> txids, BiConsumer<String, String> transactionReceived) {
+        BatchRequestBuilder<String, Map> batchRequest = jsonRpcClient.createBatchRequest().keysType(String.class).returnType(Map.class);
+        for(String txid : txids) {
+            batchRequest.add(txid, "gettransaction", txid, true, false);
+        }
+
+        try {
+            batchRequest.execute().forEach((txid, result) -> transactionReceived.accept(txid, result.get("hex").toString()));
+        } catch(JsonRpcBatchException e) {
+            e.getSuccesses().forEach((txid, result) -> transactionReceived.accept((String)txid, ((Map<?, ?>)result).get("hex").toString()));
+            //A transaction the wallet no longer holds is requested from the node's transaction index, as getTransaction() does once gettransaction fails
+            for(Object txid : e.getErrors().keySet()) {
+                transactionReceived.accept((String)txid, getBitcoindService().getRawTransaction((String)txid, false).toString());
+            }
         }
     }
 
@@ -730,6 +777,11 @@ public class BitcoindClient {
                             syncingLock.unlock();
                         }
                     }
+                }
+
+                //The store is first loaded with the wallet's full history by initialize(), which this would otherwise request again in full alongside it
+                if(!storeLoaded) {
+                    return;
                 }
 
                 if(lastBlock != null && tip != null) {
