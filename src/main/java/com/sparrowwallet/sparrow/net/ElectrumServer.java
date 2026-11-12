@@ -160,6 +160,10 @@ public class ElectrumServer {
 
     final static Map<String, BlockTransaction> confirmingRecent = new ConcurrentHashMap<>();
 
+    static final int RECENT_BROADCAST_MAX_DELAY_SECS = 600;
+
+    private static volatile RecentTransactions latestRecent;
+
     static ElectrumServerRpc electrumServerRpc = new SimpleElectrumServerRpc();
 
     private static Cormorant cormorant;
@@ -3453,6 +3457,7 @@ public class ElectrumServer {
                             }
                             initializeTip(tip);
                             subscribedScriptHashes.clear();
+                            latestRecent = null;
                         } else {
                             tip = new BlockHeaderTip();
                         }
@@ -4318,18 +4323,20 @@ public class ElectrumServer {
                 }
             }
 
+            latestRecent = new RecentTransactions(currentHeight, System.currentTimeMillis(), recentTransactions);
             if(!recentTransactions.isEmpty()) {
-                broadcastRecent(electrumServer, recentTransactions);
+                broadcastRecent(electrumServer);
             }
         }
 
-        private void broadcastRecent(ElectrumServer electrumServer, List<BlockTransaction> recentTransactions) {
+        private void broadcastRecent(ElectrumServer electrumServer) {
             ScheduledService<Void> broadcastService = new ScheduledService<>() {
                 @Override
                 protected Task<Void> createTask() {
                     return new Task<>() {
                         @Override
                         protected Void call() throws Exception {
+                            List<BlockTransaction> recentTransactions = getBroadcastableRecent(latestRecent, AppServices.getCurrentBlockHeight(), System.currentTimeMillis());
                             if(!recentTransactions.isEmpty()) {
                                 Random random = new Random();
                                 if(random.nextBoolean()) {
@@ -4345,13 +4352,23 @@ public class ElectrumServer {
                     };
                 }
             };
-            broadcastService.setDelay(Duration.seconds(Math.random() * 60 * 10));
+            broadcastService.setDelay(Duration.seconds(Math.random() * RECENT_BROADCAST_MAX_DELAY_SECS));
             broadcastService.setPeriod(Duration.hours(1));
             broadcastService.setOnSucceeded(_ -> broadcastService.cancel());
             broadcastService.setOnFailed(_ -> broadcastService.cancel());
             broadcastService.start();
         }
+
+        static List<BlockTransaction> getBroadcastableRecent(RecentTransactions recent, Integer currentHeight, long now) {
+            if(recent != null && currentHeight != null && recent.height() == currentHeight && now - recent.fetchedMillis() <= RECENT_BROADCAST_MAX_DELAY_SECS * 1000L) {
+                return recent.transactions();
+            }
+
+            return Collections.emptyList();
+        }
     }
+
+    record RecentTransactions(int height, long fetchedMillis, List<BlockTransaction> transactions) {}
 
     public static class WalletDiscoveryService extends Service<Optional<List<Wallet>>> {
         private final List<Wallet> wallets;
