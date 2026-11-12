@@ -1,0 +1,11 @@
+{
+  "hostStaticKeypair" : {
+    "private" : "vg5sMEFPwUcZua/iydp9Rj70IXlxdfm42NGJ8VCwkes="
+  },
+  "credentials" : {
+    "G0AAyAOLBOzoox7w3hXP0GfMb5r36TZ959mPU2ZYDD0=" : {
+      "credential" : "ChwKD2lkb21lbmV1cy5sb2NhbBAAGgdTcGFycm93EiAou9S+dnsu3Bx7Yus0QfXaS5ZIRmZVFV59SxHEkvhGHw==",
+      "createdAt" : 1794469292480
+    }
+  }
+}

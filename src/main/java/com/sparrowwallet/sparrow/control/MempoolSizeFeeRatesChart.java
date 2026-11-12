@@ -2,7 +2,9 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.MempoolRateSize;
 import javafx.application.Platform;
 import javafx.beans.NamedArg;
@@ -233,10 +235,11 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             @Override
             public String toString(Number object) {
                 long vSizeBytes = object.longValue();
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
                 if(maxMvB > Y_VALUE_BREAK_MVB) {
-                    return (vSizeBytes / (1000 * 1000)) + " MvB";
+                    return format.formatSatsValue(vSizeBytes / (1000 * 1000)) + " MvB";
                 } else {
-                    return (vSizeBytes / (1000)) + " kvB";
+                    return format.formatSatsValue(vSizeBytes / 1000) + " kvB";
                 }
             }
 
@@ -266,8 +269,9 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
         Optional<Set<MempoolRateSize>> latest = periodRateSizes.values().stream().reduce((first, second) -> second);
         if(latest.isPresent()) {
             long vSize = latest.get().stream().mapToLong(MempoolRateSize::getVSize).sum();
-            summary += vSize >= 1_000_000 ? String.format(Locale.ENGLISH, ", currently %.1f MvB", vSize / 1_000_000d)
-                    : String.format(Locale.ENGLISH, ", currently %,d kvB", vSize / 1000);
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+            summary += vSize >= 1_000_000 ? ", currently " + format.formatDecimalValue(vSize / 1_000_000d, 1) + " MvB"
+                    : ", currently " + format.formatSatsValue(vSize / 1000) + " kvB";
         }
 
         return summary;
@@ -331,6 +335,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
             title.setStyle("-fx-alignment: center; -fx-font-size: 12px; -fx-padding: 0 0 5 0;");
             getChildren().add(titleBox);
             double maxMvB = getMaxMvB(seriesList);
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
 
             for(int i = seriesList.size() - 1; i >= 0; i--) {
                 Series<String, Number> series = seriesList.get(i);
@@ -339,7 +344,7 @@ public class MempoolSizeFeeRatesChart extends StackedAreaChart<String, Number> {
                         double kvb = data.getYValue().doubleValue() / 1000;
                         double mvb = kvb / 1000;
                         if(mvb >= 0.01 || (maxMvB < Y_VALUE_BREAK_MVB && mvb > 0.001)) {
-                            String amount = (maxMvB < Y_VALUE_BREAK_MVB ? (int)kvb + " kvB" : String.format("%.2f", mvb) + " MvB");
+                            String amount = (maxMvB < Y_VALUE_BREAK_MVB ? format.formatSatsValue((long)kvb) + " kvB" : format.formatDecimalValue(mvb, 2) + " MvB");
                             Label label = new Label(series.getName() + " sats/vB: " + amount);
                             Glyph circle = new Glyph(FontAwesome5.FONT_NAME, FontAwesome5.Glyph.CIRCLE);
                             circle.setStyle("-fx-text-fill: VSIZE" + series.getName() + "_COLOR; -fx-opacity: 0.7;");

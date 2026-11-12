@@ -16,6 +16,7 @@ import javafx.application.Platform;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Currency;
 import java.util.List;
 
@@ -54,7 +55,7 @@ public class GeneralDialog extends DialogWindow {
         mainPanel.addComponent(bitcoinUnit);
 
         mainPanel.addComponent(new Label("Unit Format"));
-        unitFormat = new ComboBox<>("1,234.56", "1.235,56");
+        unitFormat = new ComboBox<>(Arrays.stream(UnitFormat.values()).map(format -> format.formatCurrencyValue(1234.56)).toList());
         mainPanel.addComponent(unitFormat);
 
         mainPanel.addComponent(new EmptySpace(TerminalSize.ONE));
@@ -69,7 +70,7 @@ public class GeneralDialog extends DialogWindow {
         mainPanel.addComponent(exchangeSource);
 
         bitcoinUnit.setSelectedItem(Config.get().getBitcoinUnit() == null ? BitcoinUnit.AUTO : Config.get().getBitcoinUnit());
-        unitFormat.setSelectedIndex(Config.get().getUnitFormat() == UnitFormat.COMMA ? 1 : 0);
+        unitFormat.setSelectedIndex(Config.get().getUnitFormat() == null ? 0 : Config.get().getUnitFormat().ordinal());
 
         if(Config.get().getExchangeSource() == null) {
             Config.get().setExchangeSource(ExchangeSource.COINGECKO);
@@ -85,7 +86,7 @@ public class GeneralDialog extends DialogWindow {
         });
 
         unitFormat.addListener((int selectedIndex, int previousSelection, boolean changedByUserInteraction) -> {
-            UnitFormat format = selectedIndex == 1 ? UnitFormat.COMMA : UnitFormat.DOT;
+            UnitFormat format = UnitFormat.values()[selectedIndex];
             Config.get().setUnitFormat(format);
             Platform.runLater(() -> {
                 EventManager.get().post(new UnitFormatChangedEvent(format));

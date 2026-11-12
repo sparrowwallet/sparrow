@@ -10,7 +10,6 @@ import javafx.scene.Node;
 import javafx.scene.control.Slider;
 import javafx.util.StringConverter;
 
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -18,8 +17,6 @@ import static com.sparrowwallet.sparrow.AppServices.*;
 
 public class FeeRangeSlider extends Slider {
     private static final double FEE_RATE_SCROLL_INCREMENT = 0.01;
-    private static final DecimalFormat INTEGER_FEE_RATE_FORMAT = new DecimalFormat("0");
-    private static final DecimalFormat FRACTIONAL_FEE_RATE_FORMAT = new DecimalFormat("0.###");
 
     public FeeRangeSlider() {
         super(0, AppServices.getFeeRatesRange().size() - 1, 0);
@@ -35,10 +32,11 @@ public class FeeRangeSlider extends Slider {
             @Override
             public String toString(Double object) {
                 Double feeRate = AppServices.getLongFeeRatesRange().get(object.intValue());
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
                 if(isLongFeeRange() && feeRate >= 1000) {
-                    return INTEGER_FEE_RATE_FORMAT.format(feeRate / 1000) + "k";
+                    return format.formatDecimalValue(feeRate / 1000, 0) + "k";
                 }
-                return feeRate > 0d && feeRate < Transaction.DEFAULT_MIN_RELAY_FEE ? FRACTIONAL_FEE_RATE_FORMAT.format(feeRate) : INTEGER_FEE_RATE_FORMAT.format(feeRate);
+                return feeRate > 0d && feeRate < Transaction.DEFAULT_MIN_RELAY_FEE ? format.formatDecimalValue(feeRate, 0, 3) : format.formatDecimalValue(feeRate, 0);
             }
 
             @Override
@@ -121,8 +119,13 @@ public class FeeRangeSlider extends Slider {
         if(minRelayFeeRate != null && previousMinRelayFeeRate != null) {
             setFeeRate(getFeeRate(previousMinRelayFeeRate), minRelayFeeRate);
         }
+        refreshTickLabels();
+    }
+
+    public void refreshTickLabels() {
         setMinorTickCount(1);
         setMinorTickCount(0);
+        updateAccessibleText();
     }
 
     private void updateMaxFeeRange(double value) {

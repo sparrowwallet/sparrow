@@ -10,8 +10,11 @@ import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
 import javafx.scene.chart.Axis;
 import javafx.scene.chart.LineChart;
+import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
+import javafx.util.StringConverter;
 
+import java.math.BigDecimal;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +41,29 @@ public class BlockTargetFeeRatesChart extends LineChart<String, Number> {
     public void initialize() {
         feeRateSeries = new XYChart.Series<>();
         getData().add(feeRateSeries);
+        setUnitFormat(Config.get().getUnitFormat());
+    }
+
+    public void setUnitFormat(UnitFormat unitFormat) {
+        UnitFormat format = unitFormat == null ? UnitFormat.DOT : unitFormat;
+        NumberAxis yAxis = (NumberAxis)getYAxis();
+        yAxis.setTickLabelFormatter(new StringConverter<>() {
+            @Override
+            public String toString(Number object) {
+                //Show as many fraction digits as the tick unit has, so ticks of 0.5 read 1.0 and 1.5 rather than 1 and 1.5
+                int fractionDigits = Math.max(0, BigDecimal.valueOf(yAxis.getTickUnit()).stripTrailingZeros().scale());
+                return format.formatDecimalValue(object.doubleValue(), fractionDigits);
+            }
+
+            @Override
+            public Number fromString(String string) {
+                throw new UnsupportedOperationException();
+            }
+        });
+
+        if(feeRateSeries != null) {
+            setAccessibleText(getSummary());
+        }
     }
 
     public void update(Map<Integer, Double> targetBlocksFeeRates) {

@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -156,7 +157,7 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
                 list.add(createCell(i, j, wordGrid[i][j]));
             }
             rows.add(list);
-            grid.getRowHeaders().add(String.format("%03d", i + 1));
+            grid.getRowHeaders().add(String.format(Locale.ROOT, "%03d", i + 1));
         }
         grid.setRows(rows);
 

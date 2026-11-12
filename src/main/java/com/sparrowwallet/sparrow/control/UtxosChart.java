@@ -18,7 +18,6 @@ import javafx.scene.control.Tooltip;
 import javafx.util.Duration;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -110,7 +109,8 @@ public class UtxosChart extends BarChart<String, Number> {
             return;
         }
 
-        String satsValue = String.format(Locale.ENGLISH, "%,d", item.getYValue());
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        String satsValue = format.formatSatsValue(item.getYValue().longValue());
         Tooltip tooltip = new Tooltip(item.getXValue() + "\n" + satsValue + " sats");
         tooltip.setShowDelay(Duration.millis(TOOLTIP_SHOW_DELAY));
         Tooltip.install(item.getNode(), tooltip);
@@ -148,6 +148,10 @@ public class UtxosChart extends BarChart<String, Number> {
 
         NumberAxis yaxis = (NumberAxis)getYAxis();
         yaxis.setTickLabelFormatter(new CoinAxisFormatter(yaxis, format, unit));
+
+        if(utxoSeries != null) {
+            refreshTooltips();
+        }
     }
 
     public void refreshAxisLabels() {

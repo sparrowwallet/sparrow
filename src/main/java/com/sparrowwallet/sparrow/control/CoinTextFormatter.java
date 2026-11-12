@@ -42,6 +42,11 @@ public class CoinTextFormatter extends TextFormatter<String> {
 
         @Override
         public Change apply(Change change) {
+            String text = unitFormat.normaliseGroupingSeparators(change.getText());
+            if(!text.equals(change.getText())) {
+                change.setText(text);
+            }
+
             String oldText = change.getControlText();
             String newText = change.getControlNewText();
             String deleted = null;

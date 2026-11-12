@@ -84,20 +84,32 @@ public abstract class TransactionFormController extends BaseController {
             return;
         }
 
-        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
         pie.setData(outputsPieData);
-        final double totalSum = outputsPieData.stream().map(PieChart.Data::getPieValue).mapToDouble(Double::doubleValue).sum();
+        final double totalSum = getPieTotal(pie);
         pie.getData().forEach(data -> {
-            Tooltip tooltip = new Tooltip();
-            double percent = 100.0 * (data.getPieValue() / totalSum);
-            String satsValue = format.formatSatsValue((long)data.getPieValue()) + " sats";
-            String btcValue = format.formatBtcValue((long)data.getPieValue()) + " BTC";
-            tooltip.setText(data.getName() + "\n" + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + " (" + String.format("%.1f", percent) + "%)");
+            Tooltip tooltip = new Tooltip(getPieTooltipText(data, totalSum));
             Tooltip.install(data.getNode(), tooltip);
             data.pieValueProperty().addListener((observable, oldValue, newValue) -> tooltip.setText(newValue + "%"));
         });
 
         Platform.runLater(() -> applyAddressLabelSkinToLegend(pie));
+    }
+
+    protected void refreshPieTooltips(PieChart pie) {
+        final double totalSum = getPieTotal(pie);
+        pie.getData().stream().filter(data -> data.getNode() != null).forEach(data -> Tooltip.install(data.getNode(), new Tooltip(getPieTooltipText(data, totalSum))));
+    }
+
+    private double getPieTotal(PieChart pie) {
+        return pie.getData().stream().map(PieChart.Data::getPieValue).mapToDouble(Double::doubleValue).sum();
+    }
+
+    private String getPieTooltipText(PieChart.Data data, double totalSum) {
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        double percent = 100.0 * (data.getPieValue() / totalSum);
+        String satsValue = format.formatSatsValue((long)data.getPieValue()) + " sats";
+        String btcValue = format.formatBtcValue((long)data.getPieValue()) + " BTC";
+        return data.getName() + "\n" + (Config.get().getBitcoinUnit() == BitcoinUnit.BTC ? btcValue : satsValue) + " (" + format.formatDecimalValue(percent, 1) + "%)";
     }
 
     private void applyAddressLabelSkinToLegend(PieChart pie) {

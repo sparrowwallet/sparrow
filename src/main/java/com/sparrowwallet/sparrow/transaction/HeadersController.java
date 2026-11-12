@@ -629,7 +629,8 @@ public class HeadersController extends TransactionFormController implements Init
 
     private void updateSize() {
         size.setText(headersForm.getTransaction().getSize() + " B");
-        virtualSize.setText(String.format("%.2f", getVirtualSize()) + " vB");
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        virtualSize.setText(format.formatDecimalValue(getVirtualSize(), 2) + " vB");
     }
 
     /**
@@ -692,7 +693,8 @@ public class HeadersController extends TransactionFormController implements Init
     private void updateFee(Long feeAmt) {
         fee.setValue(feeAmt);
         double feeRateAmt = feeAmt.doubleValue() / getVirtualSize();
-        feeRate.setText(String.format("%.2f", feeRateAmt) + " sats/vB" + (headersForm.isTransactionFinalized() ? "" : " (non-final)"));
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        feeRate.setText(format.formatDecimalValue(feeRateAmt, 2) + " sats/vB" + (headersForm.isTransactionFinalized() ? "" : " (non-final)"));
     }
 
     private WalletTransaction getWalletTransaction(Map<Sha256Hash, BlockTransaction> inputTransactions) {
@@ -1423,8 +1425,9 @@ public class HeadersController extends TransactionFormController implements Init
         if(fee.getValue() > 0) {
             double feeRateAmt = fee.getValue() / getVirtualSize();
             if(feeRateAmt > AppServices.getLongFeeRatesRange().getLast() || (AppServices.getTargetBlockFeeRates() != null && feeRateAmt > AppServices.getDefaultFeeRate() * FEE_MULTIPLE_LIMIT)) {
+                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
                 Optional<ButtonType> optType = AppServices.showWarningDialog("Very high fee rate!",
-                        "This transaction pays a very high fee rate of " + String.format("%.0f", feeRateAmt) + " sats/vB.\n\nBroadcast this transaction?", ButtonType.YES, ButtonType.NO);
+                        "This transaction pays a very high fee rate of " + format.formatDecimalValue(feeRateAmt, 0) + " sats/vB.\n\nBroadcast this transaction?", ButtonType.YES, ButtonType.NO);
                 if(optType.isPresent() && optType.get() == ButtonType.NO) {
                     broadcastButton.setDisable(false);
                     broadcastButton.requestFocus();
@@ -1769,6 +1772,10 @@ public class HeadersController extends TransactionFormController implements Init
     public void unitFormatChanged(UnitFormatChangedEvent event) {
         transactionDiagram.update(transactionDiagram.getWalletTransaction());
         fee.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+        updateSize();
+        if(fee.getValue() >= 0) {
+            updateFee(fee.getValue());
+        }
     }
 
     @Subscribe

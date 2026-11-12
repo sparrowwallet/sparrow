@@ -61,6 +61,7 @@ public class OutputsController extends TransactionFormController implements Init
     @Subscribe
     public void unitFormatChanged(UnitFormatChangedEvent event) {
         total.refresh(event.getUnitFormat(), event.getBitcoinUnit());
+        refreshPieTooltips(outputsPie);
     }
 
     @Subscribe

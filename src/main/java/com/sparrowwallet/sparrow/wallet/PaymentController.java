@@ -631,7 +631,7 @@ public class PaymentController extends WalletFormController implements Initializ
     private Long getRecipientValueSats(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
         if(amount.getText() != null && !amount.getText().isEmpty()) {
             UnitFormat format = unitFormat == null ? UnitFormat.DOT : unitFormat;
-            double fieldValue = Double.parseDouble(amount.getText().replaceAll(Pattern.quote(format.getGroupingSeparator()), "").replaceAll(",", "."));
+            double fieldValue = Double.parseDouble(amount.getText().replaceAll(Pattern.quote(format.getGroupingSeparator()), "").replaceAll(Pattern.quote(format.getDecimalSeparator()), "."));
             return bitcoinUnit.getSatsValue(fieldValue);
         }
 

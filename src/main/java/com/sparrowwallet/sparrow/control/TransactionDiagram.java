@@ -772,7 +772,8 @@ public class TransactionDiagram extends GridPane {
         boolean highFee = (walletTx.getFeePercentage() > 0.1);
         Label feeLabel = highFee ? new Label("High Fee", getFeeWarningGlyph()) : new Label("Fee", getFeeGlyph());
         feeLabel.getStyleClass().addAll("output-label", "fee-label");
-        String percentage = walletTx.getFeePercentage() < 0.0001d ? "<0.01" : String.format("%.2f", walletTx.getFeePercentage() * 100.0);
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+        String percentage = walletTx.getFeePercentage() < 0.0001d ? "<" + format.formatDecimalValue(0.01, 2) : format.formatDecimalValue(walletTx.getFeePercentage() * 100.0, 2);
         Tooltip feeTooltip = new Tooltip(walletTx.getFee() < 0 ? "Unknown fee" : "Fee of " + getCoinValue(walletTx.getFee()) + " (" + percentage + "%)");
         feeTooltip.getStyleClass().add("fee-tooltip");
         feeTooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
@@ -950,9 +951,10 @@ public class TransactionDiagram extends GridPane {
         String txDesc = "Transaction";
         Label txLabel = new Label(txDesc);
         boolean isFinalized = walletTx.getTransaction().hasScriptSigs() || walletTx.getTransaction().hasWitnesses();
+        UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
         Tooltip tooltip = new Tooltip(walletTx.getTransaction().getLength() + " bytes\n"
-                + String.format("%.2f", walletTx.getVirtualSize()) + " vBytes"
-                + (walletTx.getFee() < 0 ? "" : "\n" + String.format("%.2f", walletTx.getFee() / walletTx.getVirtualSize()) + " sats/vB" + (isFinalized ? "" : " (non-final)")));
+                + format.formatDecimalValue(walletTx.getVirtualSize(), 2) + " vBytes"
+                + (walletTx.getFee() < 0 ? "" : "\n" + format.formatDecimalValue(walletTx.getFee() / walletTx.getVirtualSize(), 2) + " sats/vB" + (isFinalized ? "" : " (non-final)")));
         tooltip.setShowDelay(new Duration(TOOLTIP_SHOW_DELAY));
         tooltip.setShowDuration(Duration.INDEFINITE);
         tooltip.getStyleClass().add("transaction-tooltip");

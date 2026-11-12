@@ -476,7 +476,7 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
             if(str == null || str.isEmpty()) {
                 return null;
             }
-            String normalised = str.trim().replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "").replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
+            String normalised = unitFormat.normaliseGroupingSeparators(str).trim().replaceAll(Pattern.quote(unitFormat.getGroupingSeparator()), "").replaceAll(Pattern.quote(unitFormat.getDecimalSeparator()), ".");
             try {
                 //Read as an exact decimal, which takes the exponent a script writes a small amount with, but not the hexadecimal, NaN or Infinity a double parses
                 BigDecimal sats = new BigDecimal(normalised).scaleByPowerOfTen(bitcoinUnit == BitcoinUnit.BTC ? 8 : 0);

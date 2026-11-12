@@ -2,12 +2,15 @@ package com.sparrowwallet.sparrow;
 
 import com.sparrowwallet.drongo.protocol.Transaction;
 
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public enum UnitFormat {
     DOT('.', ','),
-    COMMA(',', '.');
+    COMMA(',', '.'),
+    SPACE(',', ' ');
 
     private final char decimalSeparator;
     private final char groupingSeparator;
@@ -21,7 +24,8 @@ public enum UnitFormat {
     }
 
     public DecimalFormatSymbols getDecimalFormatSymbols() {
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        //Some system locales write numbers with their own digits, which amount fields could neither show consistently nor read back
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.ROOT);
         symbols.setDecimalSeparator(decimalSeparator);
         symbols.setGroupingSeparator(groupingSeparator);
         return symbols;
@@ -67,12 +71,29 @@ public enum UnitFormat {
         return getTableCurrencyFormat().format(amount);
     }
 
+    public String formatDecimalValue(double value, int fractionDigits) {
+        return formatDecimalValue(value, fractionDigits, fractionDigits);
+    }
+
+    public String formatDecimalValue(double value, int minimumFractionDigits, int maximumFractionDigits) {
+        DecimalFormat decimalFormat = new DecimalFormat("#,##0", getDecimalFormatSymbols());
+        decimalFormat.setMinimumFractionDigits(minimumFractionDigits);
+        decimalFormat.setMaximumFractionDigits(maximumFractionDigits);
+        decimalFormat.setRoundingMode(RoundingMode.HALF_UP);
+        return decimalFormat.format(value);
+    }
+
     public String getGroupingSeparator() {
         return Character.toString(groupingSeparator);
     }
 
     public String getDecimalSeparator() {
         return Character.toString(decimalSeparator);
+    }
+
+    //Locales that group digits with a space mostly write it as a no-break, narrow no-break or thin space, so an amount copied from a spreadsheet or bank reads the same
+    public String normaliseGroupingSeparators(String text) {
+        return groupingSeparator == ' ' && text != null ? text.replaceAll("[\\u00A0\\u2007\\u2009\\u202F]", " ") : text;
     }
 
     private static class Formats {

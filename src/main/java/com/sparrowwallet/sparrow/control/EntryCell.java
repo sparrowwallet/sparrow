@@ -11,6 +11,7 @@ import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.event.*;
 import com.sparrowwallet.sparrow.glyphfont.FontAwesome5;
 import com.sparrowwallet.sparrow.io.Config;
@@ -514,23 +515,24 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     private String getTooltip(TransactionEntry transactionEntry) {
         String tooltip = transactionEntry.getBlockTransaction().getHash().toString();
         if(transactionEntry.getBlockTransaction().getHeight() <= 0) {
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
             Double feeRate = transactionEntry.getBlockTransaction().getFeeRate();
             Long vSizefromTip = transactionEntry.getVSizeFromTip();
             if(feeRate != null && vSizefromTip != null) {
                 long blocksFromTip = (long)Math.ceil((double)vSizefromTip / Transaction.MAX_BLOCK_SIZE_VBYTES);
 
-                String amount = vSizefromTip + " vB";
+                String amount = format.formatSatsValue(vSizefromTip) + " vB";
                 if(vSizefromTip > 1000 * 1000) {
-                    amount = String.format("%.2f", (double)vSizefromTip / (1000 * 1000)) + " MvB";
+                    amount = format.formatDecimalValue((double)vSizefromTip / (1000 * 1000), 2) + " MvB";
                 } else if(vSizefromTip > 1000) {
-                    amount = String.format("%.2f", (double)vSizefromTip / 1000) + " kvB";
+                    amount = format.formatDecimalValue((double)vSizefromTip / 1000, 2) + " kvB";
                 }
 
                 tooltip += "\nConfirms in: " + (blocksFromTip > 1 ? blocksFromTip + "+ blocks" : "1 block") + " (" + amount + " from tip)";
             }
 
             if(feeRate != null) {
-                tooltip += "\nFee rate: " + String.format("%.2f", feeRate) + " sats/vB";
+                tooltip += "\nFee rate: " + format.formatDecimalValue(feeRate, 2) + " sats/vB";
             }
 
             tooltip += "\nRBF: " + (canRBF(transactionEntry.getBlockTransaction(), transactionEntry.getWallet()) ? "Enabled" : "Disabled");

@@ -209,7 +209,7 @@ public class PdfUtils {
                     for(int j = 0; j < columnCount + 2; j++) {
                         Cell cell;
                         if(j == 0 || j == columnCount + 1) {
-                            cell = new Cell(new Paragraph(String.format("%03d", i + 1), headerFont));
+                            cell = new Cell(new Paragraph(String.format(Locale.ROOT, "%03d", i + 1), headerFont));
                             cell.setBackgroundColor(new Color(218, 218, 218));
                         } else {
                             cell = new Cell(new Paragraph(wordGrid[i][j-1], font));

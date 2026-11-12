@@ -13,6 +13,8 @@ import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.UnitFormat;
+import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.net.HttpClientService;
 import com.sparrowwallet.sparrow.net.Protocol;
 import com.sparrowwallet.tern.http.client.HttpResponseException;
@@ -310,7 +312,9 @@ public class Payjoin {
         // Once signed, the fee rate of the payjoin transaction must not be less than the minfeerate we requested
         double proposalFeeRate = getProposalFeeRate(original, proposal);
         if(proposalFeeRate < minFeeRate) {
-            throw new PayjoinReceiverException("The fee rate of the payjoin transaction of " + String.format("%.2f", proposalFeeRate) + " sats/vB is less than the requested minimum of " + String.format("%.2f", minFeeRate) + " sats/vB");
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+            throw new PayjoinReceiverException("The fee rate of the payjoin transaction of " + format.formatDecimalValue(proposalFeeRate, 2) + " sats/vB is less than the requested minimum of "
+                    + format.formatDecimalValue(minFeeRate, 2) + " sats/vB");
         }
 
         //Add global pubkey map for signing
