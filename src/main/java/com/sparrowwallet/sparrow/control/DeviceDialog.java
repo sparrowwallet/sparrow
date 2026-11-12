@@ -8,11 +8,13 @@ import com.sparrowwallet.sparrow.io.Device;
 import com.sparrowwallet.sparrow.io.Hwi;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.TextAlignment;
 import org.controlsfx.glyphfont.Glyph;
 
 import java.util.ArrayList;
@@ -55,9 +57,12 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         scanBox = new VBox();
         scanBox.setSpacing(30);
         scanBox.setAlignment(Pos.CENTER);
+        scanBox.setPadding(new Insets(0, 20, 0, 20));
         Glyph usb = new Glyph(FontAwesome5Brands.FONT_NAME, FontAwesome5Brands.Glyph.USB);
         usb.setFontSize(50);
         scanLabel = new Label("Connect Hardware Wallet");
+        scanLabel.setWrapText(true);
+        scanLabel.setTextAlignment(TextAlignment.CENTER);
         scanButton = new Button("Scan...");
         scanButton.setPrefSize(120, 60);
         scanButton.setOnAction(event -> {
@@ -126,9 +131,14 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         List<Device> dialogDevices = new ArrayList<>(devices);
         dialogDevices.removeIf(Objects::isNull);
 
+        List<Device> mismatchedDevices = new ArrayList<>();
         if(operationFingerprints != null) {
             dialogDevices.removeIf(device -> {
-                return device.getFingerprint() != null && !operationFingerprints.contains(device.getFingerprint()) && !(device.isNeedsPinSent() || device.isNeedsPassphraseSent());
+                boolean mismatched = device.getFingerprint() != null && !operationFingerprints.contains(device.getFingerprint()) && !(device.isNeedsPinSent() || device.isNeedsPassphraseSent());
+                if(mismatched) {
+                    mismatchedDevices.add(device);
+                }
+                return mismatched;
             });
         }
 
@@ -137,7 +147,14 @@ public abstract class DeviceDialog<R> extends Dialog<R> {
         if(dialogDevices.isEmpty()) {
             scanButton.setDefaultButton(true);
             scanBox.setVisible(true);
-            scanLabel.setText("No matching devices found");
+            if(mismatchedDevices.isEmpty() || operationFingerprints.isEmpty()) {
+                scanLabel.setText("No matching devices found");
+            } else if(mismatchedDevices.size() == 1) {
+                Device device = mismatchedDevices.getFirst();
+                scanLabel.setText(device.getModel().toDisplayString() + " found, but its fingerprint " + device.getFingerprint() + " does not match. Check this is the right device and the passphrase is correct.");
+            } else {
+                scanLabel.setText("Devices found, but their fingerprints do not match. Check these are the right devices and the passphrases are correct.");
+            }
         } else {
             scanBox.setVisible(false);
             for(Device device : dialogDevices) {
