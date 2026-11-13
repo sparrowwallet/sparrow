@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.IOUtils;
 import com.sparrowwallet.drongo.wallet.MnemonicException;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class Sparrow implements WalletImport, WalletExport {
     private static final Logger log = LoggerFactory.getLogger(Sparrow.class);
@@ -121,6 +123,15 @@ public class Sparrow implements WalletImport, WalletExport {
             storage.restorePublicKeysFromSeed(wallet, null);
             for(Wallet childWallet : wallet.getChildWallets()) {
                 storage.restorePublicKeysFromSeed(childWallet, null);
+            }
+
+            for(Wallet importedWallet : Stream.concat(Stream.of(wallet), wallet.getChildWallets().stream()).toList()) {
+                for(WalletNode purposeNode : importedWallet.getPurposeNodes()) {
+                    purposeNode.setAddress(null);
+                    for(WalletNode addressNode : purposeNode.getChildren()) {
+                        addressNode.setAddress(null);
+                    }
+                }
             }
 
             return wallet;

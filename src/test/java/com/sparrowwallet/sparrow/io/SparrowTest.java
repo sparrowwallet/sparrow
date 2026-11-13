@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.io;
 
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.crypto.EncryptionType;
@@ -12,8 +13,10 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.DeterministicSeed;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
+import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -134,5 +137,58 @@ public class SparrowTest {
         Wallet imported = importWallet(walletFile, null);
         Assertions.assertEquals(ExtendedKey.fromDescriptor(TEST_XPUB), imported.getKeystores().getFirst().getExtendedPublicKey());
         Assertions.assertDoesNotThrow(imported::checkWallet);
+    }
+
+    @Test
+    public void importDerivesNodeAddresses() throws Exception {
+        Wallet wallet = createWatchOnlyWallet();
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+            wallet.getFreshNode(keyPurpose).setAddress(ScriptType.P2WPKH.getAddress(new byte[20]));
+        }
+        File walletFile = saveWallet(wallet, null);
+
+        Wallet imported = importWallet(walletFile, null);
+        for(KeyPurpose keyPurpose : KeyPurpose.DEFAULT_PURPOSES) {
+            WalletNode node = imported.getFreshNode(keyPurpose);
+            Assertions.assertEquals(imported.getAddress(node), node.getAddress());
+        }
+    }
+
+    @Test
+    public void importDerivesChildWalletNodeAddresses() throws Exception {
+        Wallet wallet = createSeedWallet();
+        Wallet childWallet = wallet.addChildWallet(StandardAccount.ACCOUNT_1);
+        childWallet.getFreshNode(KeyPurpose.RECEIVE).setAddress(ScriptType.P2WPKH.getAddress(new byte[20]));
+
+        Storage storage = new Storage(PersistenceType.DB, tempDir.resolve(wallet.getName() + "." + PersistenceType.DB.getExtension()).toFile());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+        try {
+            storage.saveWallet(wallet);
+            storage.saveWallet(childWallet);
+        } finally {
+            storage.closeAndWait();
+        }
+        File walletFile = storage.getWalletFile();
+
+        Wallet imported = importWallet(walletFile, null);
+        Assertions.assertEquals(1, imported.getChildWallets().size());
+        Wallet importedChild = imported.getChildWallets().getFirst();
+        WalletNode node = importedChild.getFreshNode(KeyPurpose.RECEIVE);
+        Assertions.assertEquals(importedChild.getAddress(node), node.getAddress());
+    }
+
+    @Test
+    public void importPreservesNodeLabels() throws Exception {
+        Wallet wallet = createWatchOnlyWallet();
+        WalletNode node = wallet.getFreshNode(KeyPurpose.RECEIVE);
+        node.setLabel("Invoice 1");
+        String expectedAddress = node.getAddress().toString();
+        File walletFile = saveWallet(wallet, null);
+
+        Wallet imported = importWallet(walletFile, null);
+        WalletNode importedNode = imported.getNode(KeyPurpose.RECEIVE).getChildren().stream().filter(n -> n.getIndex() == node.getIndex()).findFirst().orElseThrow();
+        Assertions.assertEquals(node.getDerivationPath(), importedNode.getDerivationPath());
+        Assertions.assertEquals(expectedAddress, importedNode.getAddress().toString());
+        Assertions.assertEquals("Invoice 1", importedNode.getLabel());
     }
 }
