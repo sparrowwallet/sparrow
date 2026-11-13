@@ -52,6 +52,7 @@ import tornadofx.control.Form;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -385,6 +386,11 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     private void createTransaction() {
         try {
             DumpedPrivateKey privateKey = getPrivateKey();
+            if(silentPaymentAddress != null && !privateKey.getKey().isCompressed()) {
+                AppServices.showErrorDialog("Cannot sweep to a silent payment address", "Silent payments cannot be sent from an uncompressed private key. Sweep to a regular address instead.");
+                return;
+            }
+
             ScriptType scriptType = keyScriptType.getValue();
             Address fromAddress = scriptType.getAddress(PolicyType.SINGLE_HD, privateKey.getKey());
             Payment payment = silentPaymentAddress != null ? new SilentPayment(silentPaymentAddress, null, 0, true)
@@ -525,10 +531,13 @@ public class PrivateKeySweepDialog extends Dialog<Transaction> {
     }
 
     private Address computeSilentPaymentAddress(ECKey privKey, ScriptType scriptType, List<TransactionOutput> txOutputs, SilentPayment silentPayment) {
-        ECKey summedPrivateKey = scriptType.getOutputKey(PolicyType.SINGLE_HD, privKey);
-        if(scriptType == P2TR && summedPrivateKey.hasOddYCoord()) {
-            summedPrivateKey = summedPrivateKey.negatePrivate();
+        ECKey inputPrivateKey = scriptType.getOutputKey(PolicyType.SINGLE_HD, privKey);
+        if(scriptType == P2TR && inputPrivateKey.hasOddYCoord()) {
+            inputPrivateKey = inputPrivateKey.negatePrivate();
         }
+
+        //Each swept output is spent by an input signed with the same key, so the summed input key is the key multiplied by the number of inputs
+        ECKey summedPrivateKey = ECKey.fromPrivate(inputPrivateKey.getPrivKey().multiply(BigInteger.valueOf(txOutputs.size())).mod(ECKey.CURVE_ORDER));
 
         Set<HashIndex> outpoints = new LinkedHashSet<>();
         for(TransactionOutput txOutput : txOutputs) {
