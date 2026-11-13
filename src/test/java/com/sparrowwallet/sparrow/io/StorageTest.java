@@ -131,9 +131,41 @@ public class StorageTest extends IoTest {
         File backupDir = createBackupDir("Savings-20250101120000.mv.db", "Savings-2025010112000.mv.db", "Savings-202501011200000.mv.db",
                 "Savings-20250101120000.json", "Savings-20250101120000", "Savings.mv.db", "Savings-notes.txt");
 
-        assertBackups(backupDir, PersistenceType.DB, "Savings.mv.db", "Savings-20250101120000.mv.db");
+        assertBackups(backupDir, PersistenceType.DB, "Savings.mv.db", "Savings-20250101120000.mv.db", "Savings-20250101120000.json", "Savings-20250101120000");
         assertBackups(backupDir, PersistenceType.JSON, "Savings.json", "Savings-20250101120000.json");
         assertBackups(backupDir, PersistenceType.JSON, "Savings", "Savings-20250101120000");
+    }
+
+    @Test
+    public void getBackupsIncludesBackupsMadeBeforeMigration() throws Exception {
+        File walletsDir = Files.createDirectory(tempDir.resolve("wallets")).toFile();
+        File backupDir = createBackupDir("Migrated-20250101120000.mv.db", "Migrated-20210101120000.json", "Migrated-20200101120000",
+                "Migrated-20210101120000.txt", "Migrated-2021-20210101120000.json", "MigratedX-20210101120000.json");
+        File json = writeJsonWallet(new File(walletsDir, "Migrated.json"), watchOnly("Migrated", existingXpub));
+
+        Storage storage = new Storage(json);
+        try {
+            Assertions.assertArrayEquals(new String[] {"Migrated-20210101120000.json"}, Arrays.stream(storage.getBackups(backupDir, null)).map(File::getName).toArray(String[]::new));
+            storage.loadUnencryptedWallet();
+            Assertions.assertEquals(PersistenceType.DB, storage.getType());
+            Assertions.assertArrayEquals(new String[] {"Migrated-20250101120000.mv.db", "Migrated-20210101120000.json", "Migrated-20200101120000"},
+                    Arrays.stream(storage.getBackups(backupDir, null)).map(File::getName).toArray(String[]::new));
+        } finally {
+            storage.closeAndWait();
+        }
+    }
+
+    @Test
+    public void getBackupsExcludesBackupsOfAnExistingJsonWallet() throws IOException {
+        File backupDir = createBackupDir("Separate-20250101120000.mv.db", "Separate-20210101120000.json", "Separate-20200101120000");
+
+        Assertions.assertTrue(new File(tempDir.toFile(), "Separate.json").createNewFile());
+        assertBackups(backupDir, PersistenceType.DB, "Separate.mv.db", "Separate-20250101120000.mv.db", "Separate-20200101120000");
+        assertBackups(backupDir, PersistenceType.JSON, "Separate.json", "Separate-20210101120000.json");
+
+        Assertions.assertTrue(new File(tempDir.toFile(), "Separate").createNewFile());
+        assertBackups(backupDir, PersistenceType.DB, "Separate.mv.db", "Separate-20250101120000.mv.db");
+        assertBackups(backupDir, PersistenceType.JSON, "Separate", "Separate-20200101120000");
     }
 
     @Test
@@ -241,7 +273,7 @@ public class StorageTest extends IoTest {
     }
 
     private void assertBackups(File backupDir, PersistenceType persistenceType, String walletFileName, String... expectedBackupNames) {
-        Storage storage = new Storage(persistenceType, new File(backupDir.getParentFile(), walletFileName));
+        Storage storage = new Storage(persistenceType, new File(tempDir.toFile(), walletFileName));
         File[] backups = storage.getBackups(backupDir, null);
         Assertions.assertArrayEquals(expectedBackupNames, Arrays.stream(backups).map(File::getName).toArray(String[]::new));
     }

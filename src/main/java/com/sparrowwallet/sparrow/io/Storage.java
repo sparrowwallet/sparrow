@@ -299,7 +299,18 @@ public class Storage {
     File[] getBackups(File backupDir, String prefix) {
         String walletName = persistence.getWalletName(walletFile, null);
         String extension = walletFile.getName().substring(walletName.length());
-        Pattern backupPattern = Pattern.compile(Pattern.quote((prefix == null ? "" : prefix + "_") + walletName + "-") + "[0-9]{14}" + Pattern.quote(extension));
+        List<String> extensions = new ArrayList<>(List.of(extension));
+        if(getType() == PersistenceType.DB) {
+            //Backups made before migration from JSON keep the JSON file name, unless that JSON wallet still exists alongside
+            for(String jsonExtension : List.of("." + PersistenceType.JSON.getExtension(), "")) {
+                if(!new File(walletFile.getParentFile(), walletName + jsonExtension).isFile()) {
+                    extensions.add(jsonExtension);
+                }
+            }
+        }
+
+        String extensionPattern = extensions.stream().map(Pattern::quote).collect(Collectors.joining("|", "(?:", ")"));
+        Pattern backupPattern = Pattern.compile(Pattern.quote((prefix == null ? "" : prefix + "_") + walletName + "-") + "[0-9]{14}" + extensionPattern);
         File[] backups = backupDir.listFiles((dir, name) -> backupPattern.matcher(name).matches());
 
         backups = backups == null ? new File[0] : backups;
