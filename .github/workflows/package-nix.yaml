@@ -1,0 +1,24 @@
+name: Nix Package
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  build-nix:
+    name: build-nix (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build in Nix development shell
+        run: nix develop -c gradle jpackage
