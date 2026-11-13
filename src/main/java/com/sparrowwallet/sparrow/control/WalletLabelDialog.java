@@ -44,11 +44,11 @@ public class WalletLabelDialog extends Dialog<String> {
 
         final VBox content = new VBox(20);
         label = (CustomTextField) TextFields.createClearableTextField();
-        label.setText(initialName);
         label.setTextFormatter(new TextFormatter<>((change) -> {
             change.setText(change.getText().replaceAll("[\\\\/:*?\"<>|]", "_"));
             return change;
         }));
+        label.setText(initialName);
         content.getChildren().add(label);
 
         dialogPane.setContent(content);

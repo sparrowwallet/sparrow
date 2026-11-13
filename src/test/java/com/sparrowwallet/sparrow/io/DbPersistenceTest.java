@@ -27,6 +27,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class DbPersistenceTest {
@@ -114,6 +115,20 @@ public class DbPersistenceTest {
     @Test
     public void domainRejected() throws Exception {
         assertRejected(buildWalletFile("create domain wallet_master.dm as int default 0"));
+    }
+
+    @Test
+    public void walletNamePunctuation() throws Exception {
+        for(String walletName : List.of("a;b", "Savings;", "Savings;ıd=1", "Savings;a\\b=1")) {
+            Assertions.assertThrows(StorageException.class, () -> createUnencryptedWallet(walletName), walletName);
+        }
+        try(Stream<Path> paths = Files.list(tempDir)) {
+            Assertions.assertEquals(0, paths.count());
+        }
+
+        Storage storage = createUnencryptedWallet("Savings (old), #2 & co.");
+        storage.closeAndWait();
+        Assertions.assertTrue(storage.getWalletFile().exists());
     }
 
     @Test
