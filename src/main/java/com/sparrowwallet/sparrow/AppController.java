@@ -1817,7 +1817,9 @@ public class AppController implements Initializable {
 
             File oldWalletFile = renamedWallets.remove(storage.getWalletFile());
             if(oldWalletFile != null) {
-                deleteStorage(new Storage(oldWalletFile), false);
+                Storage oldStorage = new Storage(oldWalletFile);
+                oldStorage.renameBackups(storage);
+                deleteStorage(oldStorage, false);
             }
         } else {
             for(Tab walletTab : tabs.getTabs()) {

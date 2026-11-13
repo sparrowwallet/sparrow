@@ -296,6 +296,25 @@ public class Storage {
         return getBackups(getWalletsBackupDir(), prefix);
     }
 
+    public void renameBackups(Storage renamedStorage) {
+        if(isInWalletsDir()) {
+            renameBackups(getWalletsBackupDir(), renamedStorage);
+        }
+    }
+
+    void renameBackups(File backupDir, Storage renamedStorage) {
+        String walletName = persistence.getWalletName(walletFile, null);
+        String renamedWalletName = renamedStorage.persistence.getWalletName(renamedStorage.walletFile, null);
+        for(File backup : getBackups(backupDir, null)) {
+            File renamedBackup = new File(backupDir, renamedWalletName + backup.getName().substring(walletName.length()));
+            try {
+                Files.move(backup.toPath(), renamedBackup.toPath());
+            } catch(IOException e) {
+                log.error("Error renaming wallet backup " + backup.getName() + " to " + renamedBackup.getName(), e);
+            }
+        }
+    }
+
     File[] getBackups(File backupDir, String prefix) {
         String walletName = persistence.getWalletName(walletFile, null);
         String extension = walletFile.getName().substring(walletName.length());

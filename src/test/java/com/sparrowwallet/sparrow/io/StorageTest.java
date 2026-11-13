@@ -169,6 +169,33 @@ public class StorageTest extends IoTest {
     }
 
     @Test
+    public void renameBackupsMovesBackupsToTheRenamedWallet() throws IOException {
+        File backupDir = createBackupDir("Old-20250101120000.mv.db", "Old-20210101120000.json", "Old-20200101120000",
+                "OldX-20250101120000.mv.db", "Old-2021-20250101120000.mv.db", "New-20240101120000.mv.db");
+
+        Storage oldStorage = new Storage(PersistenceType.DB, new File(tempDir.toFile(), "Old.mv.db"));
+        oldStorage.renameBackups(backupDir, new Storage(PersistenceType.DB, new File(tempDir.toFile(), "New.mv.db")));
+
+        assertBackups(backupDir, PersistenceType.DB, "Old.mv.db");
+        assertBackups(backupDir, PersistenceType.DB, "New.mv.db", "New-20250101120000.mv.db", "New-20240101120000.mv.db", "New-20210101120000.json", "New-20200101120000");
+        assertBackups(backupDir, PersistenceType.DB, "OldX.mv.db", "OldX-20250101120000.mv.db");
+        assertBackups(backupDir, PersistenceType.DB, "Old-2021.mv.db", "Old-2021-20250101120000.mv.db");
+    }
+
+    @Test
+    public void renameBackupsDoesNotReplaceAnExistingBackup() throws IOException {
+        File backupDir = createBackupDir("Old-20250101120000.mv.db", "New-20250101120000.mv.db");
+        Files.writeString(backupDir.toPath().resolve("Old-20250101120000.mv.db"), "old");
+        Files.writeString(backupDir.toPath().resolve("New-20250101120000.mv.db"), "new");
+
+        Storage oldStorage = new Storage(PersistenceType.DB, new File(tempDir.toFile(), "Old.mv.db"));
+        oldStorage.renameBackups(backupDir, new Storage(PersistenceType.DB, new File(tempDir.toFile(), "New.mv.db")));
+
+        Assertions.assertEquals("new", Files.readString(backupDir.toPath().resolve("New-20250101120000.mv.db")));
+        assertBackups(backupDir, PersistenceType.DB, "Old.mv.db", "Old-20250101120000.mv.db");
+    }
+
+    @Test
     public void getBackupsTreatsAWalletNameLiterally() throws IOException {
         File backupDir = createBackupDir("SavingsXold-20250101120000.mv.db");
 
