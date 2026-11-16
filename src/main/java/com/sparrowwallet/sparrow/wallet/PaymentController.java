@@ -811,6 +811,10 @@ public class PaymentController extends WalletFormController implements Initializ
         Optional<QRScanDialog.Result> optionalResult = qrScanDialog.showAndWait();
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
+            if(payNymProperty.get() != null && (result.uri != null || result.payload != null)) {
+                address.setText("");
+            }
+
             if(result.uri != null) {
                 updateFromURI(result.uri);
             } else if(result.payload != null) {
