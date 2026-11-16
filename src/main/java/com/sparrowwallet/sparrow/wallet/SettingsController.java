@@ -1071,11 +1071,8 @@ public class SettingsController extends WalletFormController implements Initiali
 
             if(password.get().length() == 0 && requirement != WalletPasswordDialog.PasswordRequirement.UPDATE_SET) {
                 try {
-                    walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+                    walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY, deleteBackups);
                     walletForm.saveAndRefresh();
-                    if(deleteBackups) {
-                        walletForm.deleteBackups();
-                    }
                     EventManager.get().post(new RequestOpenWalletsEvent());
                 } catch (IOException | StorageException e) {
                     log.error("Error saving wallet", e);
@@ -1130,11 +1127,8 @@ public class SettingsController extends WalletFormController implements Initiali
                                 childWallet.encrypt(key);
                             }
                         }
-                        walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
+                        walletForm.getStorage().setEncryptionPubKey(encryptionPubKey, deleteBackups || dlg.isDeleteBackups());
                         walletForm.saveAndRefresh();
-                        if(deleteBackups || dlg.isDeleteBackups()) {
-                            walletForm.deleteBackups();
-                        }
                         EventManager.get().post(new RequestOpenWalletsEvent());
                     } catch (Exception e) {
                         log.error("Error saving wallet", e);

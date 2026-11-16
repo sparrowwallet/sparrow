@@ -127,6 +127,7 @@ public class DbPersistence implements Persistence {
     private Wallet masterWallet;
     private final Map<Wallet, DirtyPersistables> dirtyPersistablesMap = new HashMap<>();
     private ExecutorService updateExecutor;
+    private volatile ECKey passwordFailureKey;  //the storage key a failed password change was last reported for, by a full save or the update thread
 
     public DbPersistence() {
         EventManager.get().register(this);
@@ -205,7 +206,7 @@ public class DbPersistence implements Persistence {
         File walletFile = storage.getWalletFile();
         walletFile = renameToDbFile(walletFile);
 
-        updatePassword(storage, null);
+        updatePasswordForSave(storage, null);
         cleanAndAddWallet(storage, wallet, null);
 
         return walletFile;
@@ -217,13 +218,24 @@ public class DbPersistence implements Persistence {
         walletFile = renameToDbFile(walletFile);
 
         boolean existing = walletFile.exists();
-        updatePassword(storage, encryptionPubKey);
+        updatePasswordForSave(storage, encryptionPubKey);
         cleanAndAddWallet(storage, wallet, getFilePassword(encryptionPubKey));
         if(!existing) {
             writeBinaryHeader(walletFile);
         }
 
         return walletFile;
+    }
+
+    private void updatePasswordForSave(Storage storage, ECKey encryptionPubKey) throws StorageException {
+        try {
+            updatePassword(storage, encryptionPubKey);
+            passwordFailureKey = null;
+        } catch(StorageException e) {
+            //The caller of a save reports this failure, so the update thread retrying the change does not report it again
+            passwordFailureKey = storage.getEncryptionPubKey();
+            throw e;
+        }
     }
 
     @Override
@@ -234,12 +246,14 @@ public class DbPersistence implements Persistence {
     @Override
     public void updateWallet(Storage storage, Wallet wallet, ECKey encryptionPubKey) throws StorageException {
         updateExecutor.execute(() -> {
+            //An update can wait behind others while the wallet is saved with a password added or removed. The key it was queued with is then
+            //no longer the key of the storage, and it leaves the encryption of the file as it finds it
+            ECKey storagePubKey = storage.getEncryptionPubKey();
+            boolean queuedWithStorageKey = Objects.equals(encryptionPubKey, Storage.NO_PASSWORD_KEY.equals(storagePubKey) ? null : storagePubKey);
+            String newPassword = getFilePassword(encryptionPubKey);
+            boolean passwordUpdated = false;
+
             try {
-                //An update can wait behind others while the wallet is saved with a password added or removed. The key it was queued with is then
-                //no longer the key of the storage, and it leaves the encryption of the file as it finds it
-                ECKey storagePubKey = storage.getEncryptionPubKey();
-                boolean queuedWithStorageKey = Objects.equals(encryptionPubKey, Storage.NO_PASSWORD_KEY.equals(storagePubKey) ? null : storagePubKey);
-                String newPassword = getFilePassword(encryptionPubKey);
                 String currentPassword = getDatasourcePassword();
 
                 if(!queuedWithStorageKey) {
@@ -247,14 +261,28 @@ public class DbPersistence implements Persistence {
                 } else if(dataSource != null && currentPassword != null && newPassword == null) {
                     //Removing encryption: write data first
                     update(storage, wallet, currentPassword);
+                    passwordUpdated = true;
                     updatePassword(storage, encryptionPubKey);
                 } else {
                     //Adding encryption or no change: change file first
+                    passwordUpdated = true;
                     updatePassword(storage, encryptionPubKey);
                     update(storage, wallet, newPassword);
                 }
+
+                if(queuedWithStorageKey) {
+                    passwordFailureKey = null;
+                    storage.encryptionKeySaved(storagePubKey);
+                }
             } catch(Exception e) {
                 log.error("Error updating wallet db", e);
+
+                //A password changed without a full save of the wallet reaches the file only here, after the change has been reported as made.
+                //Each later update tries the change again, so it is reported once for each password rather than on every attempt
+                if(passwordUpdated && !Objects.equals(getDatasourcePassword(), newPassword) && !Objects.equals(storagePubKey, passwordFailureKey)) {
+                    passwordFailureKey = storagePubKey;
+                    EventManager.get().post(new WalletPasswordChangeFailedEvent(wallet, newPassword == null, e));
+                }
             }
         });
     }

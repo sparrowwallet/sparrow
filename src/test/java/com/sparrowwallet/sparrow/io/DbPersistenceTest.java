@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.io;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
@@ -13,21 +14,30 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletPasswordChangeFailedEvent;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 public class DbPersistenceTest {
@@ -312,6 +322,245 @@ public class DbPersistenceTest {
 
         Assertions.assertTrue(Storage.isEncrypted(storage.getWalletFile()));
         Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
+    }
+
+    /**
+     * Backups requested deleted with a password change go once the update queued with the new key has written the file.
+     */
+    @Test
+    public void updateQueuedWithANewPasswordDeletesBackupsOnceWritten() throws Exception {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+
+        storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")), true);
+        Assertions.assertEquals(0, backupDeletions.get());
+        storage.updateWallet(wallet);
+        storage.updateWallet(wallet);
+        storage.closeAndWait();
+
+        Assertions.assertEquals(1, backupDeletions.get());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
+    }
+
+    /**
+     * A write that started before the password was last changed has not written the file with the new key, so it leaves the backups requested deleted.
+     */
+    @Test
+    public void backupsAreDeletedOnlyForTheKeyTheyWereRequestedWith() throws Exception {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        ECKey previousKey = ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("previous"));
+        ECKey requestedKey = ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass"));
+
+        storage.setEncryptionPubKey(requestedKey, true);
+        storage.encryptionKeySaved(previousKey);
+        storage.encryptionKeySaved(Storage.NO_PASSWORD_KEY);
+        Assertions.assertEquals(0, backupDeletions.get());
+
+        storage.encryptionKeySaved(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")));
+        storage.encryptionKeySaved(requestedKey);
+        Assertions.assertEquals(1, backupDeletions.get());
+    }
+
+    /**
+     * A save confirming the password while a change to it is still to reach the file keeps the deletion requested with the change, and a change to
+     * another password without deleting backups withdraws it.
+     */
+    @Test
+    public void backupDeletionSurvivesASaveKeepingThePassword() throws Exception {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        ECKey requestedKey = ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass"));
+
+        storage.setEncryptionPubKey(requestedKey, true);
+        storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")), false);
+        storage.encryptionKeySaved(requestedKey);
+        Assertions.assertEquals(1, backupDeletions.get());
+
+        ECKey otherKey = ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("other"));
+        storage.setEncryptionPubKey(requestedKey, true);
+        storage.setEncryptionPubKey(otherKey, false);
+        storage.encryptionKeySaved(requestedKey);
+        storage.encryptionKeySaved(otherKey);
+        Assertions.assertEquals(1, backupDeletions.get());
+    }
+
+    /**
+     * A password change that fails on the update thread is reported once, however many updates go on to try it, and leaves the file and its backups as
+     * they were.
+     */
+    @Test
+    public void updateFailingToChangeThePasswordIsReportedAndKeepsBackups() throws Throwable {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+
+        List<WalletPasswordChangeFailedEvent> events = failPasswordChange(() -> {
+            storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")), true);
+            storage.updateWallet(wallet);
+            storage.updateWallet(wallet);
+            storage.closeAndWait();
+        });
+
+        Assertions.assertEquals(1, events.size());
+        Assertions.assertSame(wallet, events.getFirst().getWallet());
+        Assertions.assertEquals(0, backupDeletions.get());
+        Assertions.assertFalse(Storage.isEncrypted(storage.getWalletFile()));
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), null));
+    }
+
+    /**
+     * A full save that fails to change the password throws to its caller, which reports it, so the updates that go on to retry the change do not.
+     */
+    @Test
+    public void fullSaveFailingToChangeThePasswordIsNotReportedAgain() throws Throwable {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+
+        List<WalletPasswordChangeFailedEvent> events = failPasswordChange(() -> {
+            storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")), true);
+            Assertions.assertThrows(StorageException.class, () -> storage.saveWallet(wallet));
+            storage.updateWallet(wallet);
+            storage.closeAndWait();
+        });
+
+        Assertions.assertEquals(0, events.size());
+        Assertions.assertEquals(0, backupDeletions.get());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), null));
+    }
+
+    /**
+     * The same for a full save removing the password.
+     */
+    @Test
+    public void fullSaveFailingToRemoveThePasswordIsNotReportedAgain() throws Throwable {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        Wallet wallet = createWallet("Savings");
+        storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")));
+        storage.saveWallet(wallet);
+
+        List<WalletPasswordChangeFailedEvent> events = failPasswordChange(() -> {
+            storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY, true);
+            Assertions.assertThrows(StorageException.class, () -> storage.saveWallet(wallet));
+            storage.updateWallet(wallet);
+            storage.closeAndWait();
+        });
+
+        Assertions.assertEquals(0, events.size());
+        Assertions.assertEquals(0, backupDeletions.get());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "pass"));
+    }
+
+    /**
+     * Removing a password writes the wallet before the file, so a removal failing on the update thread is reported as one, and the data still saved.
+     */
+    @Test
+    public void updateFailingToRemoveThePasswordIsReportedAsARemoval() throws Throwable {
+        AtomicInteger backupDeletions = new AtomicInteger();
+        Storage storage = createBackupCountingStorage("Savings", backupDeletions);
+        Wallet wallet = createWallet("Savings");
+        storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass")));
+        storage.saveWallet(wallet);
+
+        List<WalletPasswordChangeFailedEvent> events = failPasswordChange(() -> {
+            storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY, true);
+            EventManager.get().post(new WalletBlockHeightChangedEvent(wallet, 850000));
+            storage.updateWallet(wallet);
+            storage.closeAndWait();
+        });
+
+        Assertions.assertEquals(1, events.size());
+        Assertions.assertTrue(events.getFirst().isPasswordRemoved());
+        Assertions.assertEquals(0, backupDeletions.get());
+
+        Storage savedStorage = new Storage(PersistenceType.DB, storage.getWalletFile());
+        try {
+            Assertions.assertEquals(850000, savedStorage.loadEncryptedWallet("pass").getWallet().getStoredBlockHeight());
+        } finally {
+            savedStorage.closeAndWait();
+        }
+    }
+
+    /**
+     * A full save that succeeds with another password clears a failure recorded by an earlier one, so the same password failing again is reported.
+     */
+    @Test
+    public void passwordFailingAgainAfterASuccessfulSaveIsReported() throws Throwable {
+        Storage storage = createBackupCountingStorage("Savings", new AtomicInteger());
+        Wallet wallet = createWallet("Savings");
+        storage.saveWallet(wallet);
+        ECKey failingKey = ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("pass"));
+
+        List<WalletPasswordChangeFailedEvent> events = failPasswordChange(() -> {
+            storage.setEncryptionPubKey(failingKey);
+            Assertions.assertThrows(StorageException.class, () -> storage.saveWallet(wallet));
+        });
+        Assertions.assertEquals(0, events.size());
+
+        storage.setEncryptionPubKey(ECKey.fromPublicOnly(storage.getKeyDeriver().deriveECKey("other")));
+        storage.saveWallet(wallet);
+
+        events = failPasswordChange(() -> {
+            storage.setEncryptionPubKey(failingKey);
+            storage.updateWallet(wallet);
+            storage.closeAndWait();
+        });
+
+        Assertions.assertEquals(1, events.size());
+        Assertions.assertFalse(events.getFirst().isPasswordRemoved());
+        Assertions.assertTrue(isWalletValid(storage.getWalletFile(), "other"));
+    }
+
+    /**
+     * Runs the password change with the wallet folder unable to take new entries, which the new file is written as. Updates queued by the change
+     * run when the storage is closed, which must be done within it.
+     */
+    private List<WalletPasswordChangeFailedEvent> failPasswordChange(Executable passwordChange) throws Throwable {
+        List<WalletPasswordChangeFailedEvent> events = new CopyOnWriteArrayList<>();
+        Object subscriber = new Object() {
+            @Subscribe
+            public void walletPasswordChangeFailed(WalletPasswordChangeFailedEvent event) {
+                events.add(event);
+            }
+        };
+
+        Set<PosixFilePermission> permissions;
+        try {
+            permissions = Files.getPosixFilePermissions(tempDir);
+        } catch(UnsupportedOperationException e) {
+            throw Assumptions.<RuntimeException>abort("POSIX permissions are not supported: " + e.getMessage());
+        }
+
+        EventManager.get().register(subscriber);
+        Files.setPosixFilePermissions(tempDir, PosixFilePermissions.fromString("r-x------"));
+        try {
+            Assumptions.assumeFalse(Files.isWritable(tempDir), "folder permissions are not enforced for this user");
+            passwordChange.execute();
+        } finally {
+            Files.setPosixFilePermissions(tempDir, permissions);
+            EventManager.get().unregister(subscriber);
+        }
+
+        return events;
+    }
+
+    private Storage createBackupCountingStorage(String walletName, AtomicInteger backupDeletions) {
+        Storage storage = new Storage(PersistenceType.DB, tempDir.resolve(walletName + "." + PersistenceType.DB.getExtension()).toFile()) {
+            @Override
+            public void deleteBackups() {
+                backupDeletions.incrementAndGet();
+            }
+        };
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+
+        return storage;
     }
 
     @Test

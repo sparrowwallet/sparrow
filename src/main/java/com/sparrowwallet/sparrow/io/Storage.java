@@ -31,6 +31,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -50,6 +51,7 @@ public class Storage {
     private Persistence persistence;
     private File walletFile;
     private volatile ECKey encryptionPubKey;    //set where the wallet is saved, and read by the queued updates that follow on another thread
+    private final AtomicReference<ECKey> deleteBackupsKey = new AtomicReference<>();     //the key backups are to be deleted once the file is written with
 
     public Storage(File walletFile) {
         this(!walletFile.exists() || walletFile.getName().endsWith("." + PersistenceType.DB.getExtension()) ? PersistenceType.DB : PersistenceType.JSON, walletFile);
@@ -111,12 +113,14 @@ public class Storage {
             throw new IOException("Could not create folder " + parent);
         }
 
-        if(encryptionPubKey != null && !NO_PASSWORD_KEY.equals(encryptionPubKey)) {
-            walletFile = persistence.storeWallet(this, wallet, encryptionPubKey);
-            return;
+        ECKey savedKey = encryptionPubKey;
+        if(savedKey != null && !NO_PASSWORD_KEY.equals(savedKey)) {
+            walletFile = persistence.storeWallet(this, wallet, savedKey);
+        } else {
+            walletFile = persistence.storeWallet(this, wallet);
         }
 
-        walletFile = persistence.storeWallet(this, wallet);
+        encryptionKeySaved(savedKey);
     }
 
     public void updateWallet(Wallet wallet) throws IOException, StorageException {
@@ -395,7 +399,27 @@ public class Storage {
     }
 
     public void setEncryptionPubKey(ECKey encryptionPubKey) {
+        setEncryptionPubKey(encryptionPubKey, false);
+    }
+
+    /**
+     * Sets the key the wallet file is to be saved with. Backups made under the previous password are deleted only once the file has been written
+     * with this key, which for a password change made without a full save happens later on the update thread, and may not happen at all. Setting
+     * the same key again without deleting backups, as a save confirming the password does, leaves a deletion still waiting for that key in place.
+     */
+    public void setEncryptionPubKey(ECKey encryptionPubKey, boolean deleteBackups) {
         this.encryptionPubKey = encryptionPubKey;
+        deleteBackupsKey.getAndUpdate(requestedKey -> deleteBackups ? encryptionPubKey : (Objects.equals(requestedKey, encryptionPubKey) ? requestedKey : null));
+    }
+
+    /**
+     * Called once the wallet file has been written with the given encryption key, which a write that started before the key was last set may not be.
+     */
+    public void encryptionKeySaved(ECKey savedKey) {
+        ECKey requestedKey = deleteBackupsKey.get();
+        if(savedKey != null && savedKey.equals(requestedKey) && deleteBackupsKey.compareAndSet(requestedKey, null)) {
+            deleteBackups();
+        }
     }
 
     public ECKey getEncryptionKey(CharSequence password) throws IOException, StorageException {

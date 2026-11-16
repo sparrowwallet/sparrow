@@ -148,10 +148,6 @@ public class WalletForm {
         }
     }
 
-    public void deleteBackups() {
-        storage.deleteBackups();
-    }
-
     public void refreshHistory(Integer blockHeight) {
         refreshHistory(blockHeight, null, null);
     }

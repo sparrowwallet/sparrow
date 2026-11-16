@@ -1494,6 +1494,15 @@ public class AppServices {
     }
 
     @Subscribe
+    public void walletPasswordChangeFailed(WalletPasswordChangeFailedEvent event) {
+        //Removing a password writes the wallet first, so its changes are saved under the password the file keeps
+        String consequence = event.isPasswordRemoved() ? "The wallet file still has its previous password, and changes to the wallet continue to be saved with it."
+                : "The wallet file keeps its previous password, and changes to the wallet cannot be saved until the password has been changed.";
+        String content = event.getException().getMessage() + "\n\n" + consequence;
+        Platform.runLater(() -> showErrorDialog("Error saving " + event.getWallet().getMasterName(), content));
+    }
+
+    @Subscribe
     public void mempoolRateSizes(MempoolRateSizesUpdatedEvent event) {
         if(event.getMempoolRateSizes() != null) {
             addMempoolRateSizes(event.getMempoolRateSizes());
