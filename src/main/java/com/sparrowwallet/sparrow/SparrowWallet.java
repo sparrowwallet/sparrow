@@ -107,6 +107,11 @@ public class SparrowWallet {
             Network.set(Network.TESTNET4);
         }
 
+        File testnet5Flag = new File(Storage.getConfigHome(), "network-" + Network.TESTNET5.getName());
+        if(testnet5Flag.exists()) {
+            Network.set(Network.TESTNET5);
+        }
+
         File signetFlag = new File(Storage.getConfigHome(), "network-" + Network.SIGNET.getName());
         if(signetFlag.exists()) {
             Network.set(Network.SIGNET);

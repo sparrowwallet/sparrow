@@ -244,6 +244,8 @@ public class BitcoindTransport implements Transport, Closeable {
             return new File(bitcoindDir, "testnet3");
         } else if(Network.get() == Network.TESTNET4 && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "testnet4", COOKIE_FILENAME))) {
             return new File(bitcoindDir, "testnet4");
+        } else if(Network.get() == Network.TESTNET5 && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "testnet5", COOKIE_FILENAME))) {
+            return new File(bitcoindDir, "testnet5");
         } else if(Network.get() == Network.REGTEST && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "regtest", COOKIE_FILENAME))) {
             return new File(bitcoindDir, "regtest");
         } else if(Network.get() == Network.SIGNET && Files.exists(Path.of(bitcoindDir.getAbsolutePath(), "signet", COOKIE_FILENAME))) {

@@ -22,6 +22,8 @@ public enum PublicElectrumServer {
     SIGNET_MEMPOOL_SPACE("mempool.space", "ssl://mempool.space:60602", Network.SIGNET),
     TESTNET4_MEMPOOL_SPACE("mempool.space", "ssl://mempool.space:40002", Network.TESTNET4),
     TESTNET4_C3_SOFT("blackie.c3-soft.com", "ssl://blackie.c3-soft.com:57010", Network.TESTNET4),
+    TESTNET5_WORMER_LIBBITCOIN_NET("wormer.libbitcoin.net", "ssl://wormer.libbitcoin.net:58643", Network.TESTNET5, List.of(PolicyType.SINGLE_HD, PolicyType.MULTI_HD, PolicyType.SINGLE_SP)),
+    TESTNET5_CARMINE_LIBBITCOIN_NET("carmine.libbitcoin.net", "ssl://carmine.libbitcoin.net:58643", Network.TESTNET5, List.of(PolicyType.SINGLE_HD, PolicyType.MULTI_HD, PolicyType.SINGLE_SP)),
     FRIGATE_2140_DEV("frigate.2140.dev", "ssl://frigate.2140.dev:50002", Network.MAINNET, List.of(PolicyType.SINGLE_HD, PolicyType.MULTI_HD, PolicyType.SINGLE_SP));
 
     PublicElectrumServer(String name, String url, Network network) {
@@ -34,7 +36,7 @@ public enum PublicElectrumServer {
         this.supportedPolicyTypes = supportedPolicyTypes;
     }
 
-    public static final List<Network> SUPPORTED_NETWORKS = List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET, Network.TESTNET4);
+    public static final List<Network> SUPPORTED_NETWORKS = List.of(Network.MAINNET, Network.TESTNET, Network.SIGNET, Network.TESTNET4, Network.TESTNET5);
 
     private final Server server;
     private final Network network;

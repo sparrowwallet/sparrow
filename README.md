@@ -68,12 +68,12 @@ Usage: sparrow [options]
       Possible Values: [ERROR, WARN, INFO, DEBUG, TRACE]      
     --network, -n
       Network to use
-      Possible Values: [mainnet, testnet, regtest, signet, testnet4]
+      Possible Values: [mainnet, testnet, regtest, signet, testnet4, testnet5]
 ```
 
 Note that testnet currently refers to testnet3.
 
-As a fallback, the network (mainnet, testnet, testnet4, regtest or signet) can also be set using an environment variable `SPARROW_NETWORK`. For example:
+As a fallback, the network (mainnet, testnet, testnet4, testnet5, regtest or signet) can also be set using an environment variable `SPARROW_NETWORK`. For example:
 
 `export SPARROW_NETWORK=testnet`
 
@@ -89,7 +89,7 @@ When not explicitly configured using the command line argument above, Sparrow st
 | Linux    | ~/.sparrow |
 | Windows  | %APPDATA%/Sparrow |
 
-Testnet3, testnet4, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
+Testnet3, testnet4, testnet5, regtest and signet configurations (along with their wallets) are stored in subfolders to allow easy switching between networks.
 
 On macOS and Linux, Sparrow also supports the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/latest/). 
 This is opt in: for each category below, if the corresponding directory already exists, Sparrow uses it, otherwise it continues to use the home folder above. Categories are resolved independently, so files can be moved across one at a time.
