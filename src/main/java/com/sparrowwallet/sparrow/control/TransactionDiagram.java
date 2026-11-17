@@ -796,7 +796,7 @@ public class TransactionDiagram extends GridPane {
         outputsBox.getChildren().add(feeBox);
         outputsBox.getChildren().add(createSpacer());
 
-        if(walletTx.getFee() >= 0) {
+        if(walletTx.getFee() >= 0 && !Config.get().isHideAmounts()) {
             ContextMenu contextMenu = new LabelContextMenu(null, walletTx.getFee());
             feeLabel.setContextMenu(contextMenu);
         }
@@ -1273,22 +1273,24 @@ public class TransactionDiagram extends GridPane {
                 getItems().add(showAddress);
             }
 
-            MenuItem copySatsValue = new MenuItem("Copy Value in sats");
-            copySatsValue.setOnAction(event -> {
-                hide();
-                ClipboardContent content = new ClipboardContent();
-                content.putString(Long.toString(value));
-                Clipboard.getSystemClipboard().setContent(content);
-            });
-            MenuItem copyBtcValue = new MenuItem("Copy Value in BTC");
-            copyBtcValue.setOnAction(event -> {
-                hide();
-                ClipboardContent content = new ClipboardContent();
-                UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
-                content.putString(format.formatBtcValue(value));
-                Clipboard.getSystemClipboard().setContent(content);
-            });
-            getItems().addAll(copySatsValue, copyBtcValue);
+            if(!Config.get().isHideAmounts()) {
+                MenuItem copySatsValue = new MenuItem("Copy Value in sats");
+                copySatsValue.setOnAction(event -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    content.putString(Long.toString(value));
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                MenuItem copyBtcValue = new MenuItem("Copy Value in BTC");
+                copyBtcValue.setOnAction(event -> {
+                    hide();
+                    ClipboardContent content = new ClipboardContent();
+                    UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+                    content.putString(format.formatBtcValue(value));
+                    Clipboard.getSystemClipboard().setContent(content);
+                });
+                getItems().addAll(copySatsValue, copyBtcValue);
+            }
 
             if(paymentCode != null) {
                 MenuItem copyPaymentCode = new MenuItem("Copy Payment Code");
