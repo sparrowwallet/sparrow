@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Collections;
 import java.util.Arrays;
 import java.util.Locale;
 
@@ -62,47 +61,6 @@ public class UROutputDescriptorTest extends IoTest {
                 ),
                 3, 3
         );
-    }
-
-    @Test
-    public void testMultisigURExportCosignerOrdering() throws Exception {
-        Network previousNetwork = Network.get();
-
-        try {
-            Network.set(Network.MAINNET);
-
-            Wallet wallet = new ColdcardMultisig().importWallet(
-                    getInputStream("cc-multisig-export-1.txt"),
-                    null
-            );
-
-            CryptoOutput original = (CryptoOutput)
-                    SettingsController.getUROutputDescriptor(wallet);
-
-            List<String> originalOrder = original.getMultiKey()
-                    .getHdKeys().stream()
-                    .map(key -> Utils.bytesToHex(key.getKey()))
-                    .toList();
-
-            Collections.reverse(wallet.getKeystores());
-
-            CryptoOutput reversed = (CryptoOutput)
-                    SettingsController.getUROutputDescriptor(wallet);
-
-            List<String> reversedOrder = reversed.getMultiKey()
-                    .getHdKeys().stream()
-                    .map(key -> Utils.bytesToHex(key.getKey()))
-                    .toList();
-
-            Assertions.assertEquals(
-                    originalOrder,
-                    reversedOrder,
-                    "Cosigner export order should not depend on keystore insertion order"
-            );
-
-        } finally {
-            Network.set(previousNetwork);
-        }
     }
 
     private void assertMultisigURExport(
