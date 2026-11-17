@@ -264,7 +264,7 @@ public class ElectrumServerTest {
     public void rejectsAnAnnouncedTipRegressingBelowTheLastPin() {
         int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
         try {
-            ElectrumServer.updateTipReceived(maxCheckpointHeight);
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight, BLOCK_800000_HEADER_HEX));
             assertNotNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 1, BLOCK_800000_HEADER_HEX)));
 
             //The regression that would go unnoticed: a genuine current header paired with a height a couple of thousand blocks back
@@ -286,12 +286,12 @@ public class ElectrumServerTest {
             ElectrumServer.tipReachedCheckpoints = false;
             assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 2000, BLOCK_800000_HEADER_HEX)));
 
-            ElectrumServer.updateTipReceived(maxCheckpointHeight - 2000);
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight - 2000, BLOCK_800000_HEADER_HEX));
             assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight - 1999, BLOCK_800000_HEADER_HEX)));
             assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight, BLOCK_800000_HEADER_HEX)));
 
             //An ordinary reorg above the pin is not a regression
-            ElectrumServer.updateTipReceived(maxCheckpointHeight + 2);
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight + 2, BLOCK_800000_HEADER_HEX));
             assertNull(ElectrumServer.getAnnouncedTipValidationError(tip(maxCheckpointHeight + 1, BLOCK_800000_HEADER_HEX)));
         } finally {
             ElectrumServer.tipReachedCheckpoints = false;
@@ -307,7 +307,7 @@ public class ElectrumServerTest {
     public void acceptsAnAnnouncedTipFromANewServerBelowTheOneBefore() {
         int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
         try {
-            ElectrumServer.updateTipReceived(maxCheckpointHeight + 100);
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight + 100, BLOCK_800000_HEADER_HEX));
             AppServices.setAnnouncedTip(new ChainTip(maxCheckpointHeight + 100, Network.MAINNET.getGenesisHeader()));
 
             //Connecting to a server still catching up, which clears the record where the reading thread is started
@@ -316,6 +316,29 @@ public class ElectrumServerTest {
         } finally {
             ElectrumServer.tipReachedCheckpoints = false;
             AppServices.setAnnouncedTip(null);
+        }
+    }
+
+    /**
+     * The stale tip warning measures time since the chain last progressed, so a tip announced again leaves the clock where it was, and a new block
+     * restarts it.
+     */
+    @Test
+    public void refreshesTheStaleTipClockOnlyForANewBlock() {
+        int maxCheckpointHeight = Network.MAINNET.getHeaderCheckpoints().getMaxHeight();
+        long staleSince = System.currentTimeMillis() - 3 * 60 * 60 * 1000;
+        try {
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight, BLOCK_800000_HEADER_HEX));
+            ElectrumServer.lastTipReceivedAt = staleSince;
+
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight, BLOCK_800000_HEADER_HEX));
+            assertEquals(staleSince, ElectrumServer.lastTipReceivedAt);
+
+            ElectrumServer.updateTipReceived(tip(maxCheckpointHeight + 1, GENESIS_HEADER_HEX));
+            assertTrue(ElectrumServer.lastTipReceivedAt > staleSince);
+        } finally {
+            ElectrumServer.tipReachedCheckpoints = false;
+            ElectrumServer.lastTipReceivedAt = 0;
         }
     }
 

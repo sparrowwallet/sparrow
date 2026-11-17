@@ -27,7 +27,7 @@ public class SubscriptionService {
             return;
         }
 
-        ElectrumServer.updateTipReceived(header.height);
+        ElectrumServer.updateTipReceived(header);
         ElectrumServer.updateRetrievedBlockHeaders(header.height, header.getBlockHeader());
         Platform.runLater(() -> EventManager.get().post(new NewBlockEvent(header.height, header.getBlockHeader())));
     }

@@ -132,7 +132,9 @@ public class ElectrumServer {
 
     private static final long TIP_WARNING_INTERVAL_MILLIS = 60 * 1000;
 
-    private static volatile long lastTipReceivedAt;
+    static volatile long lastTipReceivedAt;
+
+    private static volatile Sha256Hash lastTipHash;
 
     private static volatile boolean staleTipWarned;
 
@@ -3207,18 +3209,24 @@ public class ElectrumServer {
     }
 
     private static void initializeTip(BlockHeaderTip tip) {
-        updateTipReceived(tip.height);
+        lastTipHash = null;
+        updateTipReceived(tip);
         //Public servers are never mid-sync, so seed the staleness clock from the tip timestamp to warn promptly on an already stale server
         if(Config.get().getServerType() == ServerType.PUBLIC_ELECTRUM_SERVER) {
             lastTipReceivedAt = Math.min(lastTipReceivedAt, tip.getBlockHeader().getTime() * 1000);
         }
     }
 
-    static void updateTipReceived(int height) {
-        lastTipReceivedAt = System.currentTimeMillis();
-        staleTipWarned = false;
+    static void updateTipReceived(BlockHeaderTip tip) {
+        //Only a block not seen before shows the server is still following the chain
+        Sha256Hash tipHash = tip.getBlockHeader().getHash();
+        if(!tipHash.equals(lastTipHash)) {
+            lastTipHash = tipHash;
+            lastTipReceivedAt = System.currentTimeMillis();
+            staleTipWarned = false;
+        }
         invalidTipWarned = false;
-        if(height >= Network.get().getHeaderCheckpoints().getMaxHeight()) {
+        if(tip.height >= Network.get().getHeaderCheckpoints().getMaxHeight()) {
             tipReachedCheckpoints = true;
         }
     }
