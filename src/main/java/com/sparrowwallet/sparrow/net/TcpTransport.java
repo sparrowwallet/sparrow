@@ -40,7 +40,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final int[] SLOW_READ_TIMEOUT_SECS = {34, 68, 124, 208};
     public static final long PER_REQUEST_READ_TIMEOUT_MILLIS = 50;
     public static final int SOCKET_READ_TIMEOUT_MILLIS = 5000;
-    private static final int MAX_RESPONSE_CHARS = 256 * 1024 * 1024; //Above a default page of transactions at the 1MB stored transaction limit, as hex
+    private static final int MAX_RESPONSE_CHARS = 256 * 1024 * 1024; //Above a default page of 1MB transactions as hex, and many times the largest valid transaction
     private static final Pattern ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 

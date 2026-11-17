@@ -695,7 +695,7 @@ public class ElectrumServer {
             Map<String, WalletNode> walletScriptHashes = getAllScriptHashes(wallet);
             for(BlockTransactionHash reference : newReferences) {
                 BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
-                if(blockTransaction == null) {
+                if(blockTransaction == null || blockTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
                     continue;
                 }
 
@@ -708,7 +708,7 @@ public class ElectrumServer {
 
                 for(TransactionInput txInput : blockTransaction.getTransaction().getInputs()) {
                     BlockTransaction inputBlockTransaction = wallet.getTransactions().get(txInput.getOutpoint().getHash());
-                    if(inputBlockTransaction != null) {
+                    if(inputBlockTransaction != null && !inputBlockTransaction.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
                         TransactionOutput txOutput = inputBlockTransaction.getTransaction().getOutputs().get((int)txInput.getOutpoint().getIndex());
                         WalletNode node = walletScriptHashes.get(getScriptHash(txOutput));
                         if(node != null && !historyNodes.contains(node)) {
@@ -2131,6 +2131,11 @@ public class ElectrumServer {
                     if(strRawTx.equals(strErrorTx)) {
                         transactionMap.put(hash, UNFETCHABLE_BLOCK_TRANSACTION);
                         checkReferences.removeIf(ref -> ref.getHash().equals(hash));
+                        continue;
+                    }
+
+                    if(strRawTx.length() > 2L * Transaction.MAX_BLOCK_SIZE_VBYTES * Transaction.WITNESS_SCALE_FACTOR) {
+                        log.error("Server returned transaction " + hash + " larger than the maximum block size");
                         continue;
                     }
 
