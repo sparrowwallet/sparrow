@@ -752,7 +752,11 @@ public class ElectrumServer {
         //The gap limit size takes the highest used index in the retrieved history and adds the gap limit (plus one to be comparable to the number of children since index is zero based)
         int gapLimitSize = getGapLimitSize(wallet, nodeTransactionMap, purposeNode);
         while(historySize < gapLimitSize) {
-            purposeNode.fillToIndex(wallet, gapLimitSize - 1);
+            //Silent payments nodes are added as payments are found rather than derived, so their indexes need not be contiguous and none can be added here
+            if(purposeNode.fillToIndex(wallet, gapLimitSize - 1).isEmpty()) {
+                break;
+            }
+
             subscribeWalletNodes(wallet, getAddressNodes(wallet, purposeNode), nodeTransactionMap, historySize);
             getReferences(wallet, nodeTransactionMap.keySet(), nodeTransactionMap, historySize);
             getReferencedTransactions(wallet, nodeTransactionMap);

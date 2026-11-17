@@ -2,6 +2,7 @@ package com.sparrowwallet.sparrow.net;
 
 import com.github.arteam.simplejsonrpc.client.Transport;
 import com.google.common.net.HostAndPort;
+import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
@@ -17,6 +18,7 @@ import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.silentpayments.SilentPayment;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentUtils;
+import com.sparrowwallet.drongo.wallet.BlockTransactionHash;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
@@ -31,6 +33,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +42,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -54,6 +59,7 @@ public class SilentPaymentsBatchTest {
     private CloseableTransport previousTransport;
     private ServerCapability previousServerCapability;
     private final Map<String, Transaction> served = new LinkedHashMap<>();
+    private final Set<String> usedScriptHashes = new HashSet<>();
 
     @BeforeAll
     public static void setUpAll() {
@@ -78,6 +84,20 @@ public class SilentPaymentsBatchTest {
             public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
                 Map<String, String> result = new LinkedHashMap<>();
                 txids.forEach(txid -> result.put(txid, served.containsKey(txid) ? Utils.bytesToHex(served.get(txid).bitcoinSerialize()) : Sha256Hash.ZERO_HASH.toString()));
+                return result;
+            }
+
+            @Override
+            public Map<String, String> subscribeScriptHashes(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes) {
+                Map<String, String> result = new LinkedHashMap<>();
+                pathScriptHashes.forEach((path, scriptHash) -> result.put(path, usedScriptHashes.contains(scriptHash) ? Sha256Hash.of(scriptHash.getBytes()).toString() : null));
+                return result;
+            }
+
+            @Override
+            public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
+                Map<String, ScriptHashTx[]> result = new LinkedHashMap<>();
+                pathScriptHashes.keySet().forEach(path -> result.put(path, new ScriptHashTx[0]));
                 return result;
             }
         };
@@ -153,6 +173,34 @@ public class SilentPaymentsBatchTest {
     }
 
     /**
+     * Silent payments nodes are not derived, so the wallet may hold a node without those below it. Fetching its history does not try to fill to it.
+     */
+    @Test
+    public void fetchesTheHistoryOfNodesWithoutContiguousIndexes() {
+        Wallet wallet = silentPaymentsWallet();
+        WalletNode node = wallet.getNode(KeyPurpose.RECEIVE).addSilentPaymentChild(wallet, 1, Utils.hexToBytes("c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"));
+        usedScriptHashes.add(ElectrumServer.getScriptHash(node));
+
+        Map<WalletNode, Set<BlockTransactionHash>> history = assertTimeoutPreemptively(Duration.ofSeconds(10), () -> new ElectrumServer().getHistory(wallet));
+        assertTrue(history.containsKey(node));
+        assertEquals(1, wallet.getNode(KeyPurpose.RECEIVE).getChildren().size());
+    }
+
+    /**
+     * A deterministic wallet still derives and fetches nodes to the gap limit past the highest used one.
+     */
+    @Test
+    public void fetchesTheHistoryOfDeterministicNodesToTheGapLimit() {
+        Wallet wallet = deterministicWallet();
+        WalletNode receiveNode = wallet.getNode(KeyPurpose.RECEIVE);
+        receiveNode.fillToIndex(wallet, 1);
+        usedScriptHashes.add(ElectrumServer.getScriptHash(receiveNode.getChildren().stream().filter(node -> node.getIndex() == 1).findFirst().orElseThrow()));
+
+        assertTimeoutPreemptively(Duration.ofSeconds(10), () -> new ElectrumServer().getHistory(wallet));
+        assertEquals(2 + wallet.getGapLimit(), receiveNode.getChildren().size());
+    }
+
+    /**
      * Builds a payment to the wallet's silent payment address, which the server then holds in its mempool, returning the entry a subscription reports for it.
      */
     private SilentPaymentsTx payment(Wallet wallet, int sender, long amount) throws Exception {
@@ -187,6 +235,18 @@ public class SilentPaymentsBatchTest {
         keystore.setKeyDerivation(new KeyDerivation("deadbeef", "m/352'/1'/0'"));
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_SP, ScriptType.P2TR, wallet.getKeystores(), 1));
+        return wallet;
+    }
+
+    private static Wallet deterministicWallet() {
+        Wallet wallet = new Wallet("deterministic");
+        wallet.setPolicyType(PolicyType.SINGLE_HD);
+        wallet.setScriptType(ScriptType.P2WPKH);
+        Keystore keystore = new Keystore();
+        keystore.setKeyDerivation(new KeyDerivation("00000000", "m/84'/1'/0'"));
+        keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor("tpubD6NzVbkrYhZ4XzL5Dhayo67Gorv1YMS7j8pRUvVMd5odC2LBPLAygka9p7748JtSq82FNGPppFEz5xxZUdasBRCqJqXvUHq6xpnsMcYJzeh"));
+        wallet.getKeystores().add(keystore);
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_HD, ScriptType.P2WPKH, wallet.getKeystores(), 1));
         return wallet;
     }
 }

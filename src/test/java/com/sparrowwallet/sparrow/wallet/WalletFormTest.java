@@ -1,18 +1,25 @@
 package com.sparrowwallet.sparrow.wallet;
 
+import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
+import com.sparrowwallet.drongo.silentpayments.SilentPaymentScanAddress;
 import com.sparrowwallet.drongo.wallet.BlockTransaction;
 import com.sparrowwallet.drongo.wallet.BlockTransactionHashIndex;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletNode;
+import com.sparrowwallet.sparrow.EventManager;
+import com.sparrowwallet.sparrow.event.WalletHistoryFailedEvent;
+import com.sparrowwallet.sparrow.net.ServerException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +28,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -165,6 +174,38 @@ public class WalletFormTest {
     }
 
     /**
+     * A silent payments scan adds the payments it finds to the wallet before fetching their history. Where that fetch fails, the nodes are reported
+     * against the copy taken before the refresh so that they are saved, since the next refresh copies a wallet already holding them. The stored block
+     * height, where the next scan starts, is left unchanged.
+     */
+    @Test
+    public void reportsTheNodesAddedByARefreshThatFailed() {
+        Wallet wallet = silentPaymentsWallet();
+        wallet.setStoredBlockHeight(HEIGHT - 1000);
+        WalletForm walletForm = new WalletForm(null, wallet);
+
+        Wallet previousWallet = wallet.copy();
+        wallet.updateTransactions(Map.of(TXID, blockTransaction(new Date(1600000000000L), ORPHANED_BLOCK)));
+        WalletNode node = wallet.getNode(KeyPurpose.RECEIVE).addSilentPaymentChild(wallet, 0, Utils.hexToBytes("c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4"));
+        node.updateTransactionOutputs(wallet, Set.of(new BlockTransactionHashIndex(TXID, HEIGHT, new Date(1600000000000L), 0L, 0, 50000)));
+
+        HistoryFailedListener listener = new HistoryFailedListener();
+        EventManager.get().register(listener);
+        try {
+            assertTrue(reportsChanges(() -> walletForm.handleHistoryFailed(previousWallet, new ServerException("Failed to subscribe"))));
+            assertEquals(1, listener.events);
+            assertEquals(HEIGHT - 1000, wallet.getStoredBlockHeight());
+
+            //A refresh that changed nothing before failing reports the failure alone
+            Wallet unchangedWallet = wallet.copy();
+            assertFalse(reportsChanges(() -> walletForm.handleHistoryFailed(unchangedWallet, new ServerException("Failed to subscribe"))));
+            assertEquals(2, listener.events);
+        } finally {
+            EventManager.get().unregister(listener);
+        }
+    }
+
+    /**
      * A labelled address with no history has already been given out, so the desktop and terminal receive views both pass over it rather than handing it to
      * a second payer.
      */
@@ -211,6 +252,29 @@ public class WalletFormTest {
         assertEquals(gapLimit + 6, wallet.getGapLimit());
     }
 
+    /**
+     * Returns whether the wallet form reported changed nodes. They are posted through Platform.runLater, and no test here starts the JavaFX toolkit,
+     * so reaching that call is observable as its refusal.
+     */
+    private static boolean reportsChanges(Runnable refreshHandler) {
+        try {
+            refreshHandler.run();
+            return false;
+        } catch(IllegalStateException e) {
+            assertEquals("Toolkit not initialized", e.getMessage());
+            return true;
+        }
+    }
+
+    private static class HistoryFailedListener {
+        private int events;
+
+        @Subscribe
+        public void walletHistoryFailed(WalletHistoryFailedEvent event) {
+            events++;
+        }
+    }
+
     private static NodeEntry entryAt(WalletForm walletForm, int index) {
         Wallet wallet = walletForm.getWallet();
         wallet.getNode(KeyPurpose.RECEIVE).fillToIndex(wallet, index);
@@ -223,6 +287,22 @@ public class WalletFormTest {
 
     private static WalletNode receiveNode(Wallet wallet, int index) {
         return wallet.getNode(KeyPurpose.RECEIVE).getChildren().stream().filter(node -> node.getIndex() == index).findFirst().orElseThrow();
+    }
+
+    private static Wallet silentPaymentsWallet() {
+        ECKey scanKey = ECKey.fromPrivate(Utils.hexToBytes("a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"));
+        ECKey spendKey = ECKey.fromPrivate(Utils.hexToBytes("b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3"));
+
+        Wallet wallet = new Wallet();
+        wallet.setPolicyType(PolicyType.SINGLE_SP);
+        wallet.setScriptType(ScriptType.P2TR);
+        Keystore keystore = new Keystore();
+        keystore.setSilentPaymentScanAddress(new SilentPaymentScanAddress(scanKey, ECKey.fromPublicOnly(spendKey)));
+        keystore.setKeyDerivation(new KeyDerivation("00000000", "m/352'/0'/0'"));
+        wallet.getKeystores().add(keystore);
+        wallet.setDefaultPolicy(Policy.getPolicy(PolicyType.SINGLE_SP, ScriptType.P2TR, wallet.getKeystores(), 1));
+
+        return wallet;
     }
 
     private static Wallet testWallet() {

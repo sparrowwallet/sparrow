@@ -246,6 +246,9 @@ public class WalletForm {
             if(scanService.getValue()) {
                 EventManager.get().post(new WalletHistoryFinishedEvent(wallet));
                 updateWallets(blockHeight, previousWallet);
+            } else {
+                //The payments a scan finds are added to the wallet before their history is fetched, and must be saved even where that fetch is not made
+                updateWallets(null, previousWallet);
             }
             firePendingRefreshIfRequested();
         });
@@ -275,7 +278,7 @@ public class WalletForm {
         }
     }
 
-    private void handleHistoryFailed(Wallet previousWallet, Throwable exception) {
+    void handleHistoryFailed(Wallet previousWallet, Throwable exception) {
         if(exception instanceof AllHistoryChangedException) {
             if(getWallet().isMasterWallet() && getWallet().getKeystores().stream().anyMatch(Keystore::needsPassphrase)) {
                 Optional<ButtonType> optType = AppServices.showWarningDialog("Reopen " + getWallet().getMasterName() + "?",
@@ -309,6 +312,10 @@ public class WalletForm {
             }
 
             EventManager.get().post(new WalletHistoryFailedEvent(wallet, exception));
+
+            //A refresh can change the wallet before failing, as a silent payments scan does in adding the payments it finds before fetching their history.
+            //The next refresh copies a wallet already holding those changes and would not report them, so they are saved here, without advancing the block height
+            updateWallets(null, previousWallet);
         }
     }
 
