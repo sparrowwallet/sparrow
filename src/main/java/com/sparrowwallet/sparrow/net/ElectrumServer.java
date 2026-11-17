@@ -2947,7 +2947,7 @@ public class ElectrumServer {
 
             tweakMap.putIfAbsent(txid, tweakKey);
             BlockTransaction existing = wallet.getWalletTransaction(txid);
-            if(existing != null) {
+            if(existing != null && !existing.equals(UNFETCHABLE_BLOCK_TRANSACTION)) {
                 transactionMap.put(txid, existing);
                 alreadyInWallet.add(txid);
             } else {
@@ -2966,6 +2966,9 @@ public class ElectrumServer {
                 Map<BlockTransactionHash, BlockHeader> proven = isVerifyingTransactions() ? verifySilentPaymentReferences(wallet, referencesToFetch) : Collections.emptyMap();
                 Map<Integer, BlockHeader> blockHeaderMap = getBlockHeaders(wallet, referencesToFetch.keySet());
                 Map<Sha256Hash, BlockTransaction> fetched = getTransactions(wallet, referencesToFetch, blockHeaderMap, proven);
+                //A transaction the server did not supply, as where it has left the mempool since it was announced, reaches neither the batch nor the wallet,
+                //and is asked for again on the next refresh
+                fetched.values().removeIf(blkTx -> blkTx.equals(UNFETCHABLE_BLOCK_TRANSACTION));
                 if(isVerifyingSignatures()) {
                     Function<Sha256Hash, Transaction> inputTransactions = txid -> {
                         BlockTransaction blockTransaction = fetched.containsKey(txid) ? fetched.get(txid) : wallet.getWalletTransaction(txid);
