@@ -2,18 +2,27 @@ package com.sparrowwallet.sparrow.control;
 
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.sparrow.UnitFormat;
+import javafx.application.Platform;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.control.TextInputControl;
 
 import java.text.DecimalFormat;
 import java.text.ParseException;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CoinTextFormatter extends TextFormatter<String> {
     public CoinTextFormatter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
-        super(new CoinFilter(unitFormat == null ? UnitFormat.DOT : unitFormat, bitcoinUnit));
+        this(unitFormat, bitcoinUnit, null);
+    }
+
+    /**
+     * @param btcAmountPasted called with a BTC amount below 1 pasted over the entire text of a sats field, which is left unchanged so the handler can switch the unit before entering it
+     */
+    public CoinTextFormatter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit, Consumer<String> btcAmountPasted) {
+        super(new CoinFilter(unitFormat == null ? UnitFormat.DOT : unitFormat, bitcoinUnit, btcAmountPasted));
     }
 
     public UnitFormat getUnitFormat() {
@@ -29,15 +38,19 @@ public class CoinTextFormatter extends TextFormatter<String> {
         private final DecimalFormat coinFormat;
         private final Pattern coinValidation;
         private final Pattern anyPrecisionAmount;
+        private final Pattern subUnitBtcAmount;
+        private final Consumer<String> btcAmountPasted;
 
-        public CoinFilter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit) {
+        public CoinFilter(UnitFormat unitFormat, BitcoinUnit bitcoinUnit, Consumer<String> btcAmountPasted) {
             this.unitFormat = unitFormat;
+            this.btcAmountPasted = bitcoinUnit == BitcoinUnit.SATOSHIS ? btcAmountPasted : null;
             this.coinFormat = new DecimalFormat("###,###.########", unitFormat.getDecimalFormatSymbols());
             String integer = "[\\d" + Pattern.quote(unitFormat.getGroupingSeparator()) + "]*";
             //A satoshi is indivisible, so a sats amount has no fractional part to validate
             String fraction = bitcoinUnit == BitcoinUnit.SATOSHIS ? "" : "(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d{0,8})?";
             this.coinValidation = Pattern.compile(integer + fraction);
             this.anyPrecisionAmount = Pattern.compile(integer + "(" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d*)?");
+            this.subUnitBtcAmount = Pattern.compile("0*" + Pattern.quote(unitFormat.getDecimalSeparator()) + "\\d+");
         }
 
         @Override
@@ -45,6 +58,17 @@ public class CoinTextFormatter extends TextFormatter<String> {
             String text = unitFormat.normaliseGroupingSeparators(change.getText());
             if(!text.equals(change.getText())) {
                 change.setText(text);
+            }
+
+            //A sats amount has no fraction, so a pasted amount below 1 with one is a BTC amount, such as one quoted by a merchant. Above 1 the separator
+            //may group the digits of a sats amount instead
+            if(btcAmountPasted != null && text.length() > 1 && change.getRangeStart() == 0 && change.getRangeEnd() == change.getControlText().length()) {
+                Matcher btcAmount = subUnitBtcAmount.matcher(text.strip());
+                if(btcAmount.lookingAt()) {
+                    String pastedAmount = btcAmount.group();
+                    Platform.runLater(() -> btcAmountPasted.accept(pastedAmount));
+                    return null;
+                }
             }
 
             String oldText = change.getControlText();
