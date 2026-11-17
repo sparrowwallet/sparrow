@@ -101,18 +101,13 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch (JsonRpcBatchException e) {
             if(failOnError) {
-                throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
+                return batchRequest.execute();
             }
 
-            Map<String, ScriptHashTx[]> result = (Map<String, ScriptHashTx[]>)e.getSuccesses();
-            for(Object key : e.getErrors().keySet()) {
-                result.put((String)key, new ScriptHashTx[] {ScriptHashTx.ERROR_TX});
-            }
-
-            return result;
+            return batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, new ScriptHashTx[] {ScriptHashTx.ERROR_TX}, e -> {});
+        } catch(JsonRpcBatchException e) {
+            throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve transaction history for paths: " + nodeRangesToString(pathScriptHashes.keySet()), e);
         }
@@ -128,18 +123,13 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch(JsonRpcBatchException e) {
             if(failOnError) {
-                throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
+                return batchRequest.execute();
             }
 
-            Map<String, ScriptHashTx[]> result = (Map<String, ScriptHashTx[]>)e.getSuccesses();
-            for(Object key : e.getErrors().keySet()) {
-                result.put((String)key, new ScriptHashTx[] {ScriptHashTx.ERROR_TX});
-            }
-
-            return result;
+            return batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, new ScriptHashTx[] {ScriptHashTx.ERROR_TX}, e -> {});
+        } catch(JsonRpcBatchException e) {
+            throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + nodeRangesToString((Collection<String>)e.getErrors().keySet()), e);
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve mempool transactions for paths: " + nodeRangesToString(pathScriptHashes.keySet()), e);
         }
@@ -209,7 +199,6 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<Integer, String> getBlockHeaders(Transport transport, Wallet wallet, Set<Integer> blockHeights) {
         PagedBatchRequestBuilder<Integer, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + blockHeights.size() + " block headers"));
@@ -219,16 +208,13 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch(JsonRpcBatchException e) {
-            return (Map<Integer, String>)e.getSuccesses();
+            return batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, null, e -> {});
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve block headers for block heights: " + blockHeights, e);
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<Integer, BlockStats> getBlockStats(Transport transport, Set<Integer> blockHeights) {
         PagedBatchRequestBuilder<Integer, BlockStats> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(Integer.class).returnType(BlockStats.class);
 
@@ -237,16 +223,13 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch(JsonRpcBatchException e) {
-            return (Map<Integer, BlockStats>)e.getSuccesses();
+            return batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, null, e -> {});
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve block stats for block heights: " + blockHeights, e);
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<String, String> getTransactions(Transport transport, Wallet wallet, Set<String> txids) {
         PagedBatchRequestBuilder<String, String> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(String.class);
         EventManager.get().post(new WalletHistoryStatusEvent(wallet, true, "Retrieving " + txids.size() + " transactions"));
@@ -256,24 +239,13 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
         }
 
         try {
-            return batchRequest.execute();
-        } catch(JsonRpcBatchException e) {
-            Map<String, String> result = (Map<String, String>)e.getSuccesses();
-
-            String strErrorTx = Sha256Hash.ZERO_HASH.toString();
-            for(Object hash : e.getErrors().keySet()) {
-                String txhash = (String)hash;
-                result.put(txhash, strErrorTx);
-            }
-
-            return result;
+            return batchRequest.executeTolerant(DEFAULT_MAX_ATTEMPTS, Sha256Hash.ZERO_HASH.toString(), e -> {});
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve transactions for txids: " + txids.stream().map(txid -> "[" + txid.substring(0, 6) + "]").collect(Collectors.toList()), e);
         }
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Map<String, VerboseTransaction> getVerboseTransactions(Transport transport, Set<String> txids, String scriptHash) {
         PagedBatchRequestBuilder<String, VerboseTransaction> batchRequest = PagedBatchRequestBuilder.create(transport, idCounter).keysType(String.class).returnType(VerboseTransaction.class);
         for(String txid : txids) {
@@ -282,10 +254,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
 
         try {
             //The server may return an error if the transaction has not yet been broadcasted - this is a valid state so only try once
-            return batchRequest.execute(1);
-        } catch(JsonRpcBatchException e) {
-            log.debug("Some errors retrieving transactions: " + e.getErrors());
-            return (Map<String, VerboseTransaction>)e.getSuccesses();
+            return batchRequest.executeTolerant(1, null, e -> log.debug("Some errors retrieving transactions: " + e.getErrors()));
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Failed to retrieve verbose transactions for txids: " + txids, e);
         }

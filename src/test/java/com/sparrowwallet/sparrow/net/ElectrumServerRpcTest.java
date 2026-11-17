@@ -18,11 +18,16 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -85,6 +90,86 @@ public class ElectrumServerRpcTest {
                 result.put("block_height", 800000);
                 result.put("pos", 0);
                 result.putArray("merkle");
+            }
+
+            return MAPPER.writeValueAsString(responses);
+        }
+    }
+
+    /**
+     * Where errors are tolerated, a path the server errored on is marked as such and every other path keeps its history, including those on pages
+     * before and after the one with the error.
+     */
+    @Test
+    public void tolerantHistoryCoversEveryPathAcrossPages() {
+        List<String> paths = new ArrayList<>();
+        for(int i = 0; i < PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE * 2 + 50; i++) {
+            paths.add("m/0/" + i);
+        }
+        Map<String, String> pathScriptHashes = new LinkedHashMap<>();
+        paths.forEach(path -> pathScriptHashes.put(path, "sh:" + path));
+        String failingPath = paths.get(PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE + 25);
+        ErroringTransport transport = new ErroringTransport(Set.of("sh:" + failingPath));
+
+        Map<String, ScriptHashTx[]> result = new BatchedElectrumServerRpc(0, 25).getScriptHashHistory(transport, null, pathScriptHashes, false);
+
+        assertEquals(new HashSet<>(paths), result.keySet());
+        assertSame(ScriptHashTx.ERROR_TX, result.get(failingPath)[0]);
+        assertEquals(800000, result.get(paths.getFirst())[0].height);
+        assertEquals(800000, result.get(paths.getLast())[0].height);
+    }
+
+    /**
+     * A transaction the server errored on is marked with the error sentinel, and every other transaction is returned, whichever page it was on.
+     */
+    @Test
+    public void tolerantTransactionsCoverEveryTxidAcrossPages() {
+        List<String> txids = new ArrayList<>();
+        for(int i = 1; i <= PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE * 2 + 50; i++) {
+            txids.add(String.format("%064x", i));
+        }
+        String failingTxid = txids.get(PagedBatchRequestBuilder.DEFAULT_PAGE_SIZE + 25);
+        ErroringTransport transport = new ErroringTransport(Set.of(failingTxid));
+
+        Map<String, String> result = new BatchedElectrumServerRpc(0, 25).getTransactions(transport, null, new LinkedHashSet<>(txids));
+
+        assertEquals(new HashSet<>(txids), result.keySet());
+        assertEquals(Sha256Hash.ZERO_HASH.toString(), result.get(failingTxid));
+        assertEquals("tx:" + txids.getFirst(), result.get(txids.getFirst()));
+        assertEquals("tx:" + txids.getLast(), result.get(txids.getLast()));
+    }
+
+    /**
+     * Answers history requests with a single confirmed entry and transaction requests with a placeholder, returning an error for the named parameters.
+     */
+    private static class ErroringTransport implements Transport {
+        private static final ObjectMapper MAPPER = new ObjectMapper();
+
+        private final Set<String> failingParams;
+
+        ErroringTransport(Set<String> failingParams) {
+            this.failingParams = failingParams;
+        }
+
+        @Override
+        public String pass(String request) throws java.io.IOException {
+            ArrayNode responses = MAPPER.createArrayNode();
+            for(JsonNode node : MAPPER.readTree(request)) {
+                String param = node.get("params").get(0).asText();
+                ObjectNode response = responses.addObject();
+                response.put("jsonrpc", "2.0");
+                response.set("id", node.get("id"));
+                if(failingParams.contains(param)) {
+                    ObjectNode error = response.putObject("error");
+                    error.put("code", -32603);
+                    error.put("message", "failed for " + param);
+                } else if(node.get("method").asText().equals("blockchain.scripthash.get_history")) {
+                    ObjectNode entry = response.putArray("result").addObject();
+                    entry.put("height", 800000);
+                    entry.put("tx_hash", String.format("%064x", 1));
+                } else {
+                    response.put("result", "tx:" + param);
+                }
             }
 
             return MAPPER.writeValueAsString(responses);

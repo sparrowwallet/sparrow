@@ -74,6 +74,17 @@ public class PagedBatchRequestBuilderTest {
     }
 
     @Test
+    public void tolerantExecutionWithoutAnErrorValueLeavesOutOnlyTheFailingKeys() throws Exception {
+        //Six requests over three pages, with the error in the middle page so that a page on each side of it must keep its results
+        FakeBatchTransport transport = new FakeBatchTransport(Set.of("c"), 0);
+        Map<String, String> result = builder(transport).executeTolerant(1, null, e -> {});
+
+        assertEquals(Set.of("a", "b", "d", "e", "f"), result.keySet());
+        assertFalse(result.containsValue(null));
+        assertEquals(3, transport.requests.size());
+    }
+
+    @Test
     public void existingExecutionDiscardsResultsOutsideTheFailingPage() {
         //The behaviour executeTolerant exists to avoid, asserted so that a change to either is a deliberate one
         FakeBatchTransport transport = new FakeBatchTransport(Set.of("b"), 0);

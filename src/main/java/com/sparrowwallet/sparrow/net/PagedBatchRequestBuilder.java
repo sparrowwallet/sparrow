@@ -150,9 +150,9 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
      * later pages from being sent, which is what makes a per-key error meaningful when the request spans more than one page.
      *
      * @param maxAttempts     number of times to try each page
-     * @param errorValue      the value to record for keys the server returned an error for
+     * @param errorValue      the value to record for keys the server returned an error for, or null to leave those keys out
      * @param batchErrorCheck applied to each page's errors before they are substituted, to let the caller classify whole-batch failures
-     * @return map of responses by request ids, covering every requested id
+     * @return map of responses by request ids, covering every requested id unless errorValue is null
      */
     @NotNull
     @SuppressWarnings("unchecked")
@@ -166,8 +166,10 @@ public class PagedBatchRequestBuilder<K, V> extends AbstractBuilder {
             } catch(JsonRpcBatchException e) {
                 batchErrorCheck.accept(e);
                 allResults.putAll((Map<K, V>)e.getSuccesses());
-                for(Object key : e.getErrors().keySet()) {
-                    allResults.put((K)key, errorValue);
+                if(errorValue != null) {
+                    for(Object key : e.getErrors().keySet()) {
+                        allResults.put((K)key, errorValue);
+                    }
                 }
             }
         }
