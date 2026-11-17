@@ -68,6 +68,11 @@ public class HeaderCheckpointVerificationTest {
     }
 
     @Test
+    public void verifyTestnet5Checkpoints() {
+        verifyCheckpoints(Network.TESTNET5);
+    }
+
+    @Test
     public void verifySignetCheckpoints() {
         verifyCheckpoints(Network.SIGNET);
     }
