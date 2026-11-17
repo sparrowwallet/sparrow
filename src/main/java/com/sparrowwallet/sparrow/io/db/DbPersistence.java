@@ -289,7 +289,7 @@ public class DbPersistence implements Persistence {
 
     private synchronized void createUpdateExecutor(Wallet masterWallet) {
         if(updateExecutor == null) {
-            BasicThreadFactory factory = BasicThreadFactory.builder().namingPattern(masterWallet.getFullName() + "-dbupdater").daemon(true).priority(Thread.NORM_PRIORITY).build();
+            BasicThreadFactory factory = BasicThreadFactory.builder().namingPattern(masterWallet.getFullName().replace("%", "%%") + "-dbupdater").daemon(true).priority(Thread.NORM_PRIORITY).build();
             updateExecutor = Executors.newSingleThreadExecutor(factory);
         }
     }
@@ -553,13 +553,18 @@ public class DbPersistence implements Persistence {
                         }
                     }
 
-                    MVMap.Builder<Long, VersionedValue<?>> metaTableBuilder = new MVMap.Builder<>();
+                    DataType<?> keyType;
+                    DataType<?> valueType;
                     if(undoRecords != null && undoRecords.mapIds.contains(metaTableId)) {
-                        metaTableBuilder.keyType((DataType)undoRecords.getKeyType(metaTableId)).valueType((DataType)undoRecords.getValueType(metaTableId));
+                        keyType = undoRecords.getKeyType(metaTableId);
+                        valueType = undoRecords.getValueType(metaTableId);
                     } else {
                         RowFactory rowFactory = RowFactory.getDefaultRowFactory().createRowFactory(null, CompareMode.getInstance(null, 0), null, H2_META_TABLE_COLUMNS, null, false);
-                        metaTableBuilder.keyType(LongDataType.INSTANCE).valueType((DataType)new VersionedValueType<>(rowFactory.getRowDataType()));
+                        keyType = LongDataType.INSTANCE;
+                        valueType = new VersionedValueType<>(rowFactory.getRowDataType());
                     }
+                    @SuppressWarnings("unchecked")
+                    MVMap.Builder<Long, VersionedValue<?>> metaTableBuilder = new MVMap.Builder<Long, VersionedValue<?>>().keyType((DataType<Long>)keyType).valueType((DataType<VersionedValue<?>>)valueType);
                     MVMap<Long, VersionedValue<?>> metaTable = store.openMap(H2_META_TABLE_MAP, metaTableBuilder);
                     List<String> statements = new ArrayList<>();
                     Cursor<Long, VersionedValue<?>> cursor = metaTable.cursor(null);
