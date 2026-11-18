@@ -264,6 +264,36 @@ public class DbPersistenceTest {
         Assertions.assertEquals(otherHash, getFileHash(otherFile), "another wallet file was written by a wallet name containing the extension");
     }
 
+    @Test
+    public void newWalletFileWithoutExtensionSaves() throws Exception {
+        Storage storage = new Storage(tempDir.resolve("newwallet").toFile());
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+        storage.saveWallet(createWallet("newwallet"));
+        storage.closeAndWait();
+
+        File walletFile = tempDir.resolve("newwallet." + PersistenceType.DB.getExtension()).toFile();
+        Assertions.assertTrue(walletFile.exists());
+        Assertions.assertTrue(isWalletValid(walletFile, null));
+    }
+
+    @Test
+    public void walletFileWithEmptyNameRejected() throws Exception {
+        File dir = tempDir.resolve("wallet").toFile();
+        Assertions.assertTrue(dir.mkdir());
+        File emptyNameFile = new File(dir, "." + PersistenceType.DB.getExtension());
+        File cleanFile = buildWalletFile();
+        Files.move(cleanFile.toPath(), emptyNameFile.toPath());
+
+        File marker = tempDir.resolve("output.csv").toFile();
+        String target = "jdbc:h2:" + tempDir.resolve("external") + ";INIT=CREATE TABLE IF NOT EXISTS PUB(ID INT)\\;CALL CSVWRITE('" + marker.getAbsolutePath().replace('\\', '/') + "','SELECT 1')";
+        buildWalletFile("create force linked table wallet_master.remote('','" + target.replace("'", "''") + "','sa','','PUB')");
+        marker.delete();
+
+        assertRejected(emptyNameFile);
+        Assertions.assertFalse(marker.exists());
+    }
+
     /**
      * An update is queued with the key the storage held at the time, and can still be waiting when the wallet is saved with a password added. Run
      * after that save, it must leave the file as the save left it.

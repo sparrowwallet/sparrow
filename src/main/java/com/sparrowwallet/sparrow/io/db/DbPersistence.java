@@ -1044,10 +1044,11 @@ public class DbPersistence implements Persistence {
 
     private HikariDataSource createDataSource(File walletFile, String password) throws StorageException {
         try {
-            validateStore(walletFile, password);
+            File dbName = getDbName(walletFile);
+            validateStore(new File(dbName.getPath() + "." + getType().getExtension()), password);
             Class.forName("org.h2.Driver");
             HikariConfig config = new HikariConfig();
-            config.setJdbcUrl(getUrl(walletFile, password));
+            config.setJdbcUrl(getUrl(dbName, password));
             config.setUsername(H2_USER);
             config.setPassword(password == null ? H2_PASSWORD : password + " " + H2_PASSWORD);
             return new HikariDataSource(config);
@@ -1067,7 +1068,7 @@ public class DbPersistence implements Persistence {
         }
     }
 
-    private String getUrl(File walletFile, String password) throws StorageException {
+    private File getDbName(File walletFile) throws StorageException {
         File dbFile = walletFile.getAbsoluteFile();
         if(JDBC_URL_INJECTION_PATTERN.matcher(dbFile.getPath()).find()) {
             throw new StorageException("Wallet file path contains invalid characters");
@@ -1075,7 +1076,15 @@ public class DbPersistence implements Persistence {
 
         //H2 appends the extension to the database name in the URL, so only a trailing extension can be removed - removing every occurrence would
         //open a different file to the one tracked here, as would removing one from a directory name
-        File dbName = new File(dbFile.getParentFile(), getWalletName(dbFile, null));
+        String walletName = getWalletName(dbFile, null);
+        if(walletName.isEmpty()) {
+            throw new StorageException("Invalid wallet file name " + dbFile.getName());
+        }
+
+        return new File(dbFile.getParentFile(), walletName);
+    }
+
+    private String getUrl(File dbName, String password) {
         return "jdbc:h2:" + dbName.getPath() + ";INIT=SET TRACE_LEVEL_FILE=4;TRACE_LEVEL_FILE=4;DEFRAG_ALWAYS=true;MAX_COMPACT_TIME=5000;DATABASE_TO_UPPER=false" + (password == null ? "" : ";CIPHER=AES");
     }
 
