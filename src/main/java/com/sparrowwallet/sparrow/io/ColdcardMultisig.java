@@ -1,6 +1,5 @@
 package com.sparrowwallet.sparrow.io;
 
-import com.google.common.io.CharStreams;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Utils;
@@ -14,12 +13,14 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ColdcardMultisig implements WalletImport, KeystoreFileImport, WalletExport {
     private static final Logger log = LoggerFactory.getLogger(ColdcardMultisig.class);
+    private static final Pattern POLICY_PATTERN = Pattern.compile("([0-9]+)\\s+of\\s+([0-9]+)", Pattern.CASE_INSENSITIVE);
 
     @Override
     public String getName() {
@@ -135,51 +136,61 @@ public class ColdcardMultisig implements WalletImport, KeystoreFileImport, Walle
         String derivation = null;
 
         try {
-            List<String> lines = CharStreams.readLines(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
-            for (String line : lines) {
+            String text = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            boolean policyFound = false;
+            boolean formatFound = false;
+            for(String line : text.split("\n")) {
+                if(line.endsWith("\r")) {
+                    line = line.substring(0, line.length() - 1);
+                }
+                if(line.chars().anyMatch(c -> (c < 0x20 && c != '\t') || c == 0x7f)) {
+                    throw new IllegalStateException("This file contains unexpected control characters");
+                }
+
                 line = line.trim();
-                if (line.isEmpty()) {
+                int separator = line.indexOf(':');
+                if(line.isEmpty() || separator < 0) {
                     continue;
                 }
 
-                String[] keyValue = line.split(":");
-                if (keyValue.length == 2) {
-                    String key = keyValue[0].trim();
-                    String value = keyValue[1].trim();
-
-                    switch (key) {
-                        case "Name":
-                            wallet.setName(value.trim());
-                            break;
-                        case "Policy":
-                            String[] policy = value.split("\\s+");
-                            if(policy.length != 3) {
-                                throw new IllegalStateException("Could not determine the multisig policy from \"" + line + "\"");
-                            }
-                            threshold = Integer.parseInt(policy[0]);
-                            cosigners = Integer.parseInt(policy[2]);
-                            break;
-                        case "Derivation":
-                        case "# derivation":
-                            derivation = value;
-                            break;
-                        case "Format":
-                            scriptType = ScriptType.valueOf(value.replace("P2WSH-P2SH", "P2SH_P2WSH"));
-                            break;
-                        default:
-                            if (key.length() == 8 && Utils.isHex(key)) {
-                                Keystore keystore = new Keystore("Coldcard");
-                                keystore.setSource(KeystoreSource.HW_AIRGAPPED);
-                                keystore.setWalletModel(WalletModel.COLDCARD);
-                                keystore.setKeyDerivation(new KeyDerivation(key, derivation, true));
-                                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(value));
-                                wallet.makeLabelsUnique(keystore);
-                                wallet.getKeystores().add(keystore);
-                            }
-                    }
+                String key = line.substring(0, separator).trim();
+                String value = line.substring(separator + 1).trim();
+                switch(key.toLowerCase(Locale.ROOT)) {
+                    case "name":
+                        wallet.setName(value);
+                        break;
+                    case "policy":
+                        Matcher policyMatcher = POLICY_PATTERN.matcher(value);
+                        if(policyFound || !policyMatcher.matches()) {
+                            throw new IllegalStateException("Could not determine the multisig policy from \"" + line + "\"");
+                        }
+                        policyFound = true;
+                        threshold = Integer.parseInt(policyMatcher.group(1));
+                        cosigners = Integer.parseInt(policyMatcher.group(2));
+                        break;
+                    case "derivation":
+                    case "# derivation":
+                        derivation = value;
+                        break;
+                    case "format":
+                        if(formatFound) {
+                            throw new IllegalStateException("This file specifies more than one script format");
+                        }
+                        formatFound = true;
+                        scriptType = ScriptType.valueOf(value.toUpperCase(Locale.ROOT).replace("P2WSH-P2SH", "P2SH_P2WSH"));
+                        break;
+                    default:
+                        if(key.length() == 8 && Utils.isHex(key)) {
+                            Keystore keystore = new Keystore("Coldcard");
+                            keystore.setSource(KeystoreSource.HW_AIRGAPPED);
+                            keystore.setWalletModel(WalletModel.COLDCARD);
+                            keystore.setKeyDerivation(new KeyDerivation(key, derivation, true));
+                            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(value));
+                            wallet.makeLabelsUnique(keystore);
+                            wallet.getKeystores().add(keystore);
+                        }
                 }
             }
-
 
             if(threshold == 0) {
                 throw new IllegalStateException("This file does not specify the multisig policy");

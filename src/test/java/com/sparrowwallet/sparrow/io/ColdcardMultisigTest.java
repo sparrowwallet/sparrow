@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 public class ColdcardMultisigTest extends IoTest {
@@ -75,6 +76,23 @@ public class ColdcardMultisigTest extends IoTest {
         Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
         Assertions.assertEquals("wsh(sortedmulti(2,coldcard1,coldcard2,coldcard3,coldcard4))", wallet.getDefaultPolicy().getMiniscript().getScript().toLowerCase(Locale.ROOT));
         Assertions.assertTrue(wallet.isValid());
+    }
+
+    private Wallet importEdited(String find, String replace) throws Exception {
+        String original = new String(ByteStreams.toByteArray(getInputStream("cc-multisig-export-1.txt")), StandardCharsets.UTF_8);
+        Assertions.assertTrue(original.contains(find));
+        return new ColdcardMultisig().importWallet(new ByteArrayInputStream(original.replace(find, replace).getBytes(StandardCharsets.UTF_8)), null);
+    }
+
+    @Test
+    public void importWalletPolicyVariants() throws Exception {
+        Assertions.assertEquals(2, importEdited("Policy: 2 of 4", "policy: 2 of 4").getDefaultPolicy().getNumSignaturesRequired());
+        Assertions.assertEquals(2, importEdited("\n", "\r\n").getDefaultPolicy().getNumSignaturesRequired());
+        Assertions.assertThrows(ImportException.class, () -> importEdited("Policy: 2 of 4", "Policy: 1 of 4\npolicy: 2 of 4"));
+        Assertions.assertThrows(ImportException.class, () -> importEdited("Policy: 2 of 4", "Policy: 2 of 4\n# note\rPolicy: 1 of 4"));
+        Assertions.assertThrows(ImportException.class, () -> importEdited("Policy: 2 of 4", "Policy: 1 2of 4"));
+        Assertions.assertThrows(ImportException.class, () -> importEdited("Policy: 2 of 4", "Policy: \uFF11 of 4"));
+        Assertions.assertThrows(ImportException.class, () -> importEdited("Format: P2WSH", "Format: P2WSH\nFormat: P2SH"));
     }
 
     @Test
