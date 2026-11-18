@@ -673,6 +673,7 @@ public class ElectrumServer {
         Set<WalletNode> mempoolNodes = wallet.getWalletTxos().entrySet().stream()
                 .filter(entry -> entry.getKey().getHeight() <= 0 || (entry.getKey().getSpentBy() != null && entry.getKey().getSpentBy().getHeight() <= 0))
                 .map(Map.Entry::getValue)
+                .filter(node -> node.getWallet().equals(wallet))
                 .collect(Collectors.toSet());
         historyNodes.addAll(mempoolNodes);
 
@@ -1048,7 +1049,7 @@ public class ElectrumServer {
                 //its stored block was orphaned, so it must be rebuilt to carry the block it is now proven against. Its transaction comes from the wallet below,
                 //so nothing is fetched for it
                 if(reference.getHeight() == blockTransaction.getHeight() && (reference.getFee() == null || blockTransaction.getFee() != null)
-                        && !proven.containsKey(reference)) {
+                        && !proven.containsKey(reference) && wallet.getTransactions().containsKey(reference.getHash())) {
                     iter.remove();
                 } else {
                     entry.setValue(blockTransaction.getTransaction());
