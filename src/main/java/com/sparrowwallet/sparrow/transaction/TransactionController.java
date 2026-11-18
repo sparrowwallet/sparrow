@@ -760,6 +760,12 @@ public class TransactionController implements Initializable {
 
     @Subscribe
     public void newConnection(ConnectionEvent event) {
+        //The server now connected need not be the one that reported the status, so it is asked again
+        if(txdata.isServerReported(AppServices.get().getOpenWallets().keySet())) {
+            txdata.setBlockTransaction(null);
+            transactionsFetched = false;
+        }
+
         if(!transactionsFetched) {
             fetchTransactions();
         }

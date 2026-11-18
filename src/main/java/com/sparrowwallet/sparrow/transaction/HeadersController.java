@@ -1011,11 +1011,18 @@ public class HeadersController extends TransactionFormController implements Init
             }
         });
         transactionVerificationService.setOnFailed(workerStateEvent -> {
-            log.debug("Could not reach the server to verify transaction " + blockTransaction.getHashAsString(), workerStateEvent.getSource().getException());
+            log.debug("Could not verify transaction " + blockTransaction.getHashAsString(), workerStateEvent.getSource().getException());
             //Only the request still outstanding releases the pair: one a reconnect has already replaced is asking about the same pair, so the pair
             //cannot tell them apart, and letting the older failure release it would put a third request behind the one in flight
             if(verificationService == transactionVerificationService) {
-                verificationRequestedPair = null;
+                //A server still connected has not substantiated the height it reported, whatever the reason, and is not asked again until a reconnect
+                if(AppServices.isConnected() && ElectrumServer.isVerifyingTransactions() && headersForm.getTransaction().getTxId().equals(blockTransaction.getHash())) {
+                    verificationUnprovenPair = pair;
+                    BlockTransaction shown = headersForm.getBlockTransaction() == null ? blockTransaction : headersForm.getBlockTransaction();
+                    updateBlockchainForm(shown, AppServices.getCurrentBlockHeight());
+                } else {
+                    verificationRequestedPair = null;
+                }
             }
         });
         transactionVerificationService.start();
@@ -2075,8 +2082,15 @@ public class HeadersController extends TransactionFormController implements Init
     @Subscribe
     public void connection(ConnectionEvent event) {
         broadcastProgressBar.setDisable(false);
-        if(headersForm.getBlockTransaction() != null) {
+        boolean serverReported = headersForm.getTransactionData().isServerReported(AppServices.get().getOpenWallets().keySet());
+        if(headersForm.getBlockTransaction() != null && !serverReported) {
             updateBlockchainForm(headersForm.getBlockTransaction(), event.getBlockHeight());
+        } else if(headersForm.getPsbt() == null) {
+            //What an earlier server reported is fetched again from this one, so nothing is shown until it answers
+            verificationRequestedPair = null;
+            verificationUnprovenPair = null;
+            verificationService = null;
+            blockchainForm.setVisible(false);
         }
     }
 

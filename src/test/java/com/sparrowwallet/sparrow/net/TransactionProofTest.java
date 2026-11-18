@@ -238,6 +238,15 @@ public class TransactionProofTest {
         assertEquals(Set.of(reference(transaction, PROVEN_HEIGHT)), listener.getFailed());
     }
 
+    @Test
+    public void doesNotProveATransactionWithAnEmptyProof() throws Exception {
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveEmptyProof(transaction, PROVEN_HEIGHT);
+
+        assertNull(new ElectrumServer().getProvenHeader(transaction.getTxId(), PROVEN_HEIGHT));
+        assertEquals(Set.of(reference(transaction, PROVEN_HEIGHT)), listener.getRefused());
+    }
+
     /**
      * A server that refuses once and proves on a retry is one momentarily unable to answer rather than one contradicting itself. The tab spends the
      * retry budget a wallet pass spends, so what recovers within it is never put to the user at all.
@@ -1634,6 +1643,10 @@ public class TransactionProofTest {
             proofs.put(transaction.getTxId() + ":" + height, proof);
 
             return proof;
+        }
+
+        public void serveEmptyProof(Transaction transaction, int height) {
+            proofs.put(transaction.getTxId() + ":" + height, null);
         }
 
         /**

@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.psbt.PSBTOutput;
 import com.sparrowwallet.drongo.silentpayments.SilentPaymentAddress;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.io.Storage;
+import com.sparrowwallet.sparrow.net.ElectrumServer;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
@@ -68,6 +69,18 @@ public class TransactionData {
 
     public void setBlockTransaction(BlockTransaction blockTransaction) {
         this.blockTransaction = blockTransaction;
+    }
+
+    /**
+     * Whether the status held for this transaction rests only on the word of the server that reported it: not proven to be in a block, not held by an
+     * open wallet, which keeps its own copy current, and not that of a PSBT, which is never asked of a server.
+     */
+    public boolean isServerReported(Collection<Wallet> openWallets) {
+        if(blockTransaction == null || psbt != null || ElectrumServer.isProven(blockTransaction)) {
+            return false;
+        }
+
+        return openWallets.stream().noneMatch(wallet -> blockTransaction.equals(wallet.getWalletTransaction(blockTransaction.getHash())));
     }
 
     public Map<Sha256Hash, BlockTransaction> getInputTransactions() {

@@ -1402,7 +1402,7 @@ public class ElectrumServer {
                 BlockTransactionHash reference = outstanding.get(entry.getKey());
                 TransactionMerkleProof proof = entry.getValue();
                 //An error, or a proof for some other block, leaves the pair outstanding: the server has not substantiated the height it reported
-                if(reference != null && proof != TransactionMerkleProof.ERROR_PROOF && proof.block_height == reference.getHeight()) {
+                if(reference != null && proof != null && proof != TransactionMerkleProof.ERROR_PROOF && proof.block_height == reference.getHeight()) {
                     outstanding.remove(entry.getKey());
                     BlockHeader header = getVerifiedHeader(reference.getHeight());
                     if(header == null) {
