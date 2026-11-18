@@ -34,7 +34,7 @@ public class TorStatusLabel extends Label {
     }
 
     public void update() {
-        if(!Config.get().isUseProxy()) {
+        if(!Config.get().isUseProxy() || !AppServices.onlineProperty().get()) {
             torConnectionTest.cancel();
             if(AppServices.isTorRunning()) {
                 setTooltip(new Tooltip("Internal Tor proxy enabled"));

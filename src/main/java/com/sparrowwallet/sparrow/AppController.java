@@ -255,7 +255,10 @@ public class AppController implements Initializable {
     private final Map<File, File> renamedWallets = new HashMap<>();
 
     private final ChangeListener<Boolean> serverToggleOnlineListener = (observable, oldValue, newValue) -> {
-        Platform.runLater(() -> setServerToggleTooltip(getCurrentBlockHeight()));
+        Platform.runLater(() -> {
+            setServerToggleTooltip(getCurrentBlockHeight());
+            setTorIcon();
+        });
     };
 
     private final ListChangeListener<Tab> tabsChangeListener = (c) -> {
