@@ -35,6 +35,7 @@ import java.security.SecureRandom;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -471,28 +472,31 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                 .anyMatch(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT));
     }
 
-    private static void sendSelectedUtxos(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
+    /**
+     * The outputs a row's menu action applies to: the selected outputs where the selection includes that row, and otherwise the row alone, since a
+     * menu opened from the keyboard is for the focused row whether or not it is selected.
+     */
+    private static List<HashIndexEntry> getMenuUtxoEntries(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry, Predicate<HashIndexEntry> filter) {
         List<HashIndexEntry> utxoEntries = treeTableView.getSelectionModel().getSelectedCells().stream()
                 .map(tp -> tp.getTreeItem().getValue())
                 .filter(e -> e instanceof HashIndexEntry)
                 .map(e -> (HashIndexEntry)e)
-                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && e.isSpendable())
+                .filter(e -> e.getType().equals(HashIndexEntry.Type.OUTPUT) && filter.test(e))
                 .collect(Collectors.toList());
 
-        if(!utxoEntries.contains(hashIndexEntry)) {
-            utxoEntries = List.of(hashIndexEntry);
-        }
+        return utxoEntries.contains(hashIndexEntry) ? utxoEntries : List.of(hashIndexEntry);
+    }
 
+    private static void sendSelectedUtxos(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
+        List<HashIndexEntry> utxoEntries = getMenuUtxoEntries(treeTableView, hashIndexEntry, HashIndexEntry::isSpendable);
         final List<BlockTransactionHashIndex> spendingUtxos = utxoEntries.stream().map(HashIndexEntry::getHashIndex).collect(Collectors.toList());
         EventManager.get().post(new SendActionEvent(hashIndexEntry.getWallet(), spendingUtxos));
         Platform.runLater(() -> EventManager.get().post(new SpendUtxoEvent(hashIndexEntry.getWallet(), spendingUtxos)));
     }
 
     private static void freezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<BlockTransactionHashIndex> utxos = treeTableView.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
-                .filter(e -> e instanceof HashIndexEntry && ((HashIndexEntry)e).getType().equals(HashIndexEntry.Type.OUTPUT))
-                .map(e -> ((HashIndexEntry)e).getHashIndex())
+        List<BlockTransactionHashIndex> utxos = getMenuUtxoEntries(treeTableView, hashIndexEntry, e -> !e.getHashIndex().isSpent()).stream()
+                .map(HashIndexEntry::getHashIndex)
                 .filter(ref -> ref.getStatus() != Status.FROZEN)
                 .collect(Collectors.toList());
 
@@ -501,10 +505,8 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     }
 
     private static void unfreezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<BlockTransactionHashIndex> utxos = treeTableView.getSelectionModel().getSelectedCells().stream()
-                .map(tp -> tp.getTreeItem().getValue())
-                .filter(e -> e instanceof HashIndexEntry && ((HashIndexEntry)e).getType().equals(HashIndexEntry.Type.OUTPUT))
-                .map(e -> ((HashIndexEntry)e).getHashIndex())
+        List<BlockTransactionHashIndex> utxos = getMenuUtxoEntries(treeTableView, hashIndexEntry, e -> !e.getHashIndex().isSpent()).stream()
+                .map(HashIndexEntry::getHashIndex)
                 .filter(ref -> ref.getStatus() == Status.FROZEN)
                 .collect(Collectors.toList());
 
