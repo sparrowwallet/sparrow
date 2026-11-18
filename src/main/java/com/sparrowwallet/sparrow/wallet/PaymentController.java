@@ -177,7 +177,7 @@ public class PaymentController extends WalletFormController implements Initializ
                 dnsPaymentProperty.set(null);
             }
 
-            if(silentPaymentAddressProperty.get() != null && !newValue.equals(silentPaymentAddressProperty.get().getAddress())) {
+            if(silentPaymentAddressProperty.get() != null && !newValue.equals(silentPaymentAddressProperty.get().getAddress()) && dnsPaymentProperty.get() == null) {
                 silentPaymentAddressProperty.set(null);
             }
 
@@ -185,7 +185,8 @@ public class PaymentController extends WalletFormController implements Initializ
                 payjoinURIProperty.set(null);
             }
 
-            if(payNymProperty.get() == null) {
+            //A name already resolved is shown in place of its recipient, which is not parsed again from it
+            if(payNymProperty.get() == null && dnsPaymentProperty.get() == null) {
                 try {
                     BitcoinURI bitcoinURI = new BitcoinURI(newValue);
                     Platform.runLater(() -> updateFromURI(bitcoinURI));
@@ -745,8 +746,11 @@ public class PaymentController extends WalletFormController implements Initializ
         if(getRecipientValueSats() == null || payment.getAmount() != getRecipientValueSats()) {
             if(payment.getAddress() != null) {
                 DnsPayment dnsPayment = DnsPaymentCache.getDnsPayment(payment);
-                if(dnsPayment != null) {
+                if(dnsPayment != null && (!(payment instanceof SilentPayment) || sendController.getWalletForm().getWallet().canSendSilentPayments())) {
+                    dnsPaymentProperty.set(dnsPayment);
+                    silentPaymentAddressProperty.set(payment instanceof SilentPayment silentPayment ? silentPayment.getSilentPaymentAddress() : null);
                     address.setText(dnsPayment.hrn());
+                    address.leftProperty().set(getBitcoinCharacter());
                 } else if(payment instanceof SilentPayment silentPayment) {
                     address.setText(silentPayment.getSilentPaymentAddress().getAddress());
                 } else {
