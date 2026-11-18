@@ -112,7 +112,7 @@ public class WatchOnlyDialog extends NewWalletDialog {
         try {
             return getWalletFromOutputDescriptor(text);
         } catch(Exception e) {
-            log.error("Could not determine wallet from descriptor: " + text, e);
+            log.error("Could not determine wallet from descriptor", e);
             throw new ImportException("Could not determine wallet from descriptor: " + e.getMessage(), e);
         }
     }

@@ -46,6 +46,7 @@ import org.h2.value.Value;
 import org.h2.value.VersionedValue;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.h2.H2DatabasePlugin;
+import org.jdbi.v3.core.statement.StatementExceptions;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -998,6 +999,7 @@ public class DbPersistence implements Persistence {
         Jdbi jdbi = Jdbi.create(getDataSource(storage, password));
         jdbi.installPlugin(new H2DatabasePlugin());
         jdbi.installPlugin(new SqlObjectPlugin());
+        jdbi.getConfig(StatementExceptions.class).setMessageRendering(StatementExceptions.MessageRendering.NONE);
 
         return jdbi;
     }
