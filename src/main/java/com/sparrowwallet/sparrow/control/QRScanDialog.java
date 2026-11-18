@@ -612,12 +612,17 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
 
             if(cryptoOutput.getMultiKey() != null) {
                 MultiKey multiKey = cryptoOutput.getMultiKey();
+                if(multiKey.getEcKeys() != null && !multiKey.getEcKeys().isEmpty()) {
+                    throw new IllegalArgumentException("EC keys are currently unsupported");
+                }
                 Map<ExtendedKey, KeyDerivation> extendedPublicKeys = new LinkedHashMap<>();
                 Map<ExtendedKey, String> extendedPublicKeyLabels = new LinkedHashMap<>();
                 for(CryptoHDKey cryptoHDKey : multiKey.getHdKeys()) {
                     ExtendedKey extendedKey = getExtendedKey(cryptoHDKey);
                     KeyDerivation keyDerivation = getKeyDerivation(cryptoHDKey.getOrigin());
-                    extendedPublicKeys.put(extendedKey, keyDerivation);
+                    if(extendedPublicKeys.put(extendedKey, keyDerivation) != null) {
+                        throw new IllegalArgumentException("Duplicate extended keys are not supported");
+                    }
                     if(cryptoHDKey.getName() != null) {
                         extendedPublicKeyLabels.put(extendedKey, cryptoHDKey.getName());
                     }
@@ -707,10 +712,10 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                     KeyDerivation keyDerivation = getKeyDerivation(urhdKey.getOrigin());
                     if(urhdKey.getChainCode() == null) {
                         ECKey ecKey = getKey(urhdKey);
-                        source = source.replaceAll("@" + i, OutputDescriptor.writeKey(ecKey, keyDerivation, true, true));
+                        source = source.replaceAll("@" + i + "(?!\\d)", Matcher.quoteReplacement(OutputDescriptor.writeKey(ecKey, keyDerivation, true, true)));
                     } else {
                         ExtendedKey extendedKey = getExtendedKey(urhdKey);
-                        source = source.replaceAll("@" + i, OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true));
+                        source = source.replaceAll("@" + i + "(?!\\d)", Matcher.quoteReplacement(OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true)));
                         if(urhdKey.getName() != null) {
                             mapExtendedPublicKeyLabels.put(extendedKey, urhdKey.getName());
                         }

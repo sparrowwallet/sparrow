@@ -136,7 +136,12 @@ public class Descriptor implements WalletImport, WalletExport {
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         for(String line : reader.lines().map(String::trim).toArray(String[]::new)) {
             if(!line.isEmpty() && !line.startsWith("#")) {
-                paragraphs.add(line.replaceFirst("^.+:", "").trim());
+                String last = paragraphs.isEmpty() ? null : paragraphs.getLast();
+                if(last != null && last.chars().filter(c -> c == '(').count() > last.chars().filter(c -> c == ')').count()) {
+                    paragraphs.set(paragraphs.size() - 1, last + line);
+                } else {
+                    paragraphs.add(line.replaceFirst("^.+:", "").trim());
+                }
             }
         }
 

@@ -35,9 +35,12 @@ import java.awt.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PdfUtils {
     private static final Logger log = LoggerFactory.getLogger(PdfUtils.class);
+    private static final Pattern DESCRIPTOR_SUFFIX_PATTERN = Pattern.compile("(?:\\?[a-zA-Z]+=[0-9]+(?:&[a-zA-Z]+=[0-9]+)*)?(?:#[qpzry9x8gf2tvdw0s3jn54khce6mua7l]{8})?");
 
     private static final int QR_WIDTH = 480;
     private static final int QR_HEIGHT = 480;
@@ -89,6 +92,20 @@ public class PdfUtils {
         }
     }
 
+    private static String getDescriptorText(String text) {
+        int depth = 0;
+        for(int i = 0; i < text.length(); i++) {
+            if(text.charAt(i) == '(') {
+                depth++;
+            } else if(text.charAt(i) == ')' && --depth == 0) {
+                Matcher suffixMatcher = DESCRIPTOR_SUFFIX_PATTERN.matcher(text).region(i + 1, text.length());
+                return text.substring(0, suffixMatcher.lookingAt() ? suffixMatcher.end() : i + 1);
+            }
+        }
+
+        return text;
+    }
+
     public static OutputDescriptor getOutputDescriptor(InputStream inputStream) throws IOException {
         try {
             PdfReader pdfReader = new PdfReader(inputStream);
@@ -110,7 +127,7 @@ public class PdfUtils {
             }
 
             if(descriptor != null) {
-                return OutputDescriptor.getOutputDescriptor(descriptor);
+                return OutputDescriptor.getOutputDescriptor(getDescriptorText(descriptor));
             }
         } catch(Exception e) {
             throw new IllegalArgumentException("Not a valid PDF or output descriptor");

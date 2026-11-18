@@ -108,4 +108,15 @@ public class DescriptorTest extends IoTest {
         Assertions.assertEquals(ExtendedKey.fromDescriptor("xpub6DM7CYgaTMdMbhTcLTUWmNUE5WLXK5hx8ZMa4sRw8qYJPqtqKYiKnwsmT8A6AijDVAUZRivdBnXdR8QE7Y9vVnqvzPL3fXCmu1WtCRLdAoz"), keystore.getExtendedPublicKey());
         Assertions.assertTrue(keystore.isValid());
     }
+
+    @Test
+    public void testImportWrappedMultisigDescriptor() throws ImportException {
+        String text = "wsh(sortedmulti(2,[04fefef0/48h/0h/0h/2h]xpub661MyMwAqRbcFW31YEwpkMuc5THy2PSt5bDMsktWQcFF8syAmRUapSCGu8ED9W6oDMSgv6Zz8idoc4a6mr8BDzTJY47LJhkJ8UB7WEGuduB/0/*,\n"
+                + "[04ba1ef0/48h/0h/0h/2h]xpub69H7F5d8KSRgmmdJg2KhpAK8SR3DjMwAdkxj3ZuxV27CprR9LgpeyGmXUbC6wb7ERfvrnKZjXoUmmDznezpbZb7ap6r1D3tgFxHmwMkQTPH/0/*,\n"
+                + "[04fefef1/48h/0h/0h/2h]xpub6ERApfZwUNrhLCkDtcHTcxd75RbzS1ed54G1LkBUHQVHQKqhMkhgbmJbZRkrgZw4koxb5JaHWkY4ALHY2grBGRjaDMzQLcgJvLJuZZvRcEL/0/*))\n";
+        Wallet wallet = new Descriptor().importWallet(new ByteArrayInputStream(text.getBytes()), null);
+
+        Assertions.assertEquals(3, wallet.getKeystores().size());
+        Assertions.assertEquals(2, wallet.getDefaultPolicy().getNumSignaturesRequired());
+    }
 }
