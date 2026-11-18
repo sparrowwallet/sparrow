@@ -332,6 +332,8 @@ public class ServerSettingsController extends SettingsDetailController {
                         coreHost.setText(hostAndPort.getHost());
                     }
                     coreHost.positionCaret(coreHost.getText().length());
+                    //A server differing from the one shown only in its protocol changes neither field, so the field listeners do not save it
+                    setCoreServerInConfig(config);
                 }
             }
         });
