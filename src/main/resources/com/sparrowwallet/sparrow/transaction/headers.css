@@ -149,6 +149,10 @@
     -fx-padding: 10 20 10 20;
 }
 
+HBox.signatures-buttons {
+    -fx-spacing: 20;
+}
+
 .signatures-buttons .segmented-button, .signatures-buttons .button, .signatures-buttons .toggle-button {
     -fx-pref-height: 65px;
     -fx-max-width: Infinity;

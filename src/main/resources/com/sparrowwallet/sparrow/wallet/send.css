@@ -2,6 +2,14 @@
     -fx-padding: 0 0 0 0;
 }
 
+.send-fields {
+    -fx-padding: 25 25 0 25;
+}
+
+.send-actions {
+    -fx-padding: 0 25 25 25;
+}
+
 .form .fieldset:horizontal .field {
     -fx-pref-height: 40px;
 }

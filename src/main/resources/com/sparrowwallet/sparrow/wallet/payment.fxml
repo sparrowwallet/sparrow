@@ -28,7 +28,7 @@
     <rowConstraints>
         <RowConstraints />
     </rowConstraints>
-    <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2" styleClass="payment-inputs">
         <Fieldset inputGrow="ALWAYS">
             <Field text="Pay to:">
                 <StackPane>
@@ -57,7 +57,7 @@
                         </FXCollections>
                     </items>
                 </ComboBox>
-                <Region style="-fx-pref-width: 15" />
+                <Region styleClass="payment-spacing,fiat-payment-gap" />
                 <FiatLabel fx:id="fiatAmount" />
                 <Group managed="false" translateY="38">
                     <Label fx:id="amountStatus" text="Insufficient funds">
@@ -77,7 +77,7 @@
                         </graphic>
                     </Label>
                 </Group>
-                <Region style="-fx-pref-width: 5" />
+                <Region styleClass="payment-spacing,max-payment-gap" />
                 <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
             </Field>
         </Fieldset>

@@ -9,6 +9,8 @@
 <?import com.sparrowwallet.drongo.BitcoinUnit?>
 <?import com.sparrowwallet.sparrow.UnitFormat?>
 <?import com.sparrowwallet.sparrow.Theme?>
+<?import com.sparrowwallet.sparrow.Appearance?>
+<?import javafx.geometry.Insets?>
 <?import impl.org.controlsfx.skin.DecorationPane?>
 
 <VBox fx:id="rootBox" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="200" minWidth="350" prefHeight="770.0" prefWidth="1070.0" fx:controller="com.sparrowwallet.sparrow.AppController" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1">
@@ -63,6 +65,7 @@
                 </fx:define>
                 <fx:define>
                     <ToggleGroup fx:id="theme"/>
+                    <ToggleGroup fx:id="appearanceMenu"/>
                 </fx:define>
                 <Menu fx:id="viewMenu" mnemonicParsing="false" text="View">
                     <items>
@@ -125,6 +128,20 @@
                                 <RadioMenuItem mnemonicParsing="false" text="Dark" toggleGroup="$theme" onAction="#setTheme">
                                     <userData>
                                         <Theme fx:constant="DARK" />
+                                    </userData>
+                                </RadioMenuItem>
+                            </items>
+                        </Menu>
+                        <Menu mnemonicParsing="false" text="Appearance">
+                            <items>
+                                <RadioMenuItem mnemonicParsing="false" text="Classic" toggleGroup="$appearanceMenu" onAction="#setMenuAppearance">
+                                    <userData>
+                                        <Appearance fx:constant="CLASSIC"/>
+                                    </userData>
+                                </RadioMenuItem>
+                                <RadioMenuItem mnemonicParsing="false" text="Modern" toggleGroup="$appearanceMenu" onAction="#setMenuAppearance">
+                                    <userData>
+                                        <Appearance fx:constant="MODERN"/>
                                     </userData>
                                 </RadioMenuItem>
                             </items>
@@ -199,6 +216,15 @@
         </DecorationPane>
 
         <StatusBar fx:id="statusBar" text="" minHeight="36" focusTraversable="false">
+            <leftItems>
+                <HBox alignment="CENTER_LEFT" spacing="6" styleClass="appearance-control">
+                    <padding><Insets right="8"/></padding>
+                    <children>
+                        <Label fx:id="appearanceLabel" text="Appearance" minWidth="-Infinity"/>
+                        <ChoiceBox fx:id="appearanceChoice" minWidth="-Infinity"/>
+                    </children>
+                </HBox>
+            </leftItems>
             <rightItems>
                 <UnlabeledToggleSwitch fx:id="serverToggle" accessibleText="Server connection">
                     <tooltip>

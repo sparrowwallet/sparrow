@@ -1,0 +1,786 @@
+/*
+ * Modern is installed on opted-in scene roots. Light and Dark share layout.
+ * Use Sparrow's existing semantic states and retain the original skin,
+ * text metrics for dynamic values, and transaction hex masking rules.
+ */
+.sparrow-modern {
+    -modern-canvas: #f5f7fb;
+    -modern-surface: #ffffff;
+    -modern-alt-surface: #f2f6fb;
+    -modern-chrome: #eaf0f8;
+    -modern-line: #c7d3e2;
+    -modern-control-edge: #7489a3;
+    -modern-text: #182a40;
+    -modern-muted: #48617d;
+    -modern-accent: #225ba6;
+    -modern-on-accent: #ffffff;
+    -modern-accent-hover: #174c90;
+    -modern-accent-surface: #dce9f9;
+    -modern-focus: #2f6ebc;
+    -modern-focus-halo: #2f6ebc30;
+    -modern-selection: #225ba6;
+    -modern-selection-inactive: #365d8a;
+    -modern-selected-text: #ffffff;
+    -modern-selected-muted: #e2efff;
+    -modern-error: #ac1943;
+    -modern-success: #207448;
+    -modern-warning: #835900;
+    -modern-shadow: #142b4e29;
+
+    -fx-base: -modern-chrome;
+    -fx-background: -modern-canvas;
+    -fx-control-inner-background: -modern-surface;
+    -fx-control-inner-background-alt: -modern-alt-surface;
+    -fx-accent: -modern-accent;
+    -fx-default-button: -modern-accent;
+    -fx-focus-color: -modern-focus;
+    -fx-faint-focus-color: -modern-focus-halo;
+    -fx-text-base-color: -modern-text;
+    -fx-text-background-color: -modern-text;
+    -fx-text-inner-color: -modern-text;
+    -fx-text-box-border: -modern-control-edge;
+    -fx-box-border: -modern-line;
+    -fx-mark-color: -modern-muted;
+    -fx-selection-bar: -modern-selection;
+    -fx-selection-bar-non-focused: -modern-selection-inactive;
+    -fx-selection-bar-text: -modern-selected-text;
+    -fx-background-color: -modern-canvas;
+}
+
+.sparrow-modern.sparrow-modern-dark {
+    -modern-canvas: #141e2c;
+    -modern-surface: #1a2738;
+    -modern-alt-surface: #202e40;
+    -modern-chrome: #222f43;
+    -modern-line: #3c5069;
+    -modern-control-edge: #7c92ae;
+    -modern-text: #eff5ff;
+    -modern-muted: #afc2d8;
+    -modern-accent: #a3cdff;
+    -modern-on-accent: #102b4e;
+    -modern-accent-hover: #c4dfff;
+    -modern-accent-surface: #293f5a;
+    -modern-focus: #a3cdff;
+    -modern-focus-halo: #a3cdff38;
+    -modern-selection: #295e98;
+    -modern-selection-inactive: #3d506b;
+    -modern-error: #ff9bac;
+    -modern-success: #9adeb7;
+    -modern-warning: #ffd387;
+    -modern-shadow: #00000055;
+}
+
+.sparrow-modern.popup {
+    -fx-background-color: transparent;
+}
+
+/* Window chrome, wallet/account tabs, and navigation. */
+.sparrow-modern > .menu-bar,
+.sparrow-modern .status-bar {
+    -fx-background-color: -modern-chrome;
+    -fx-background-insets: 0;
+    -fx-border-color: -modern-line;
+}
+
+.sparrow-modern > .menu-bar {
+    -fx-border-width: 0 0 1 0;
+}
+
+.sparrow-modern .status-bar {
+    -fx-border-width: 1 0 0 0;
+}
+
+.sparrow-modern .status-bar .status-label,
+.sparrow-modern .status-bar .appearance-control > .label {
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern #tabs > .tab-header-area > .tab-header-background > HBox > .label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern .tab-pane > .tab-header-area > .tab-header-background {
+    -fx-background-color: -modern-line, -modern-chrome;
+    -fx-background-insets: 0, 0 0 1 0;
+}
+
+.sparrow-modern .tab-pane > .tab-header-area > .headers-region > .tab {
+    -fx-background-color: -modern-chrome;
+    -fx-background-insets: 0;
+    -fx-background-radius: 6 6 0 0;
+}
+
+.sparrow-modern .tab-pane > .tab-header-area > .headers-region > .tab:hover {
+    -fx-background-color: -modern-accent-surface;
+}
+
+.sparrow-modern .tab-pane > .tab-header-area > .headers-region > .tab:selected {
+    -fx-background-color: -modern-accent, -modern-surface;
+    -fx-background-insets: 0, 2 0 0 0;
+    -fx-background-radius: 6 6 0 0, 4 4 0 0;
+}
+
+.sparrow-modern #tabs > .tab-header-area > .headers-region > .tab .tab-label,
+.sparrow-modern .tab-pane > .tab-header-area > .headers-region > .tab .tab-label .label {
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern #tabs > .tab-header-area > .headers-region > .tab:selected .tab-label,
+.sparrow-modern .tab-pane > .tab-header-area > .headers-region > .tab:selected .tab-label .label {
+    -fx-text-fill: -modern-text;
+    -fx-font-weight: bold;
+}
+
+.sparrow-modern .tab-pane .tab-close-button {
+    -fx-background-color: -modern-muted;
+}
+
+.sparrow-modern .wallet-subtabs > .tab-header-area .tab {
+    -fx-background-radius: 6;
+}
+
+.sparrow-modern .list-menu {
+    -fx-background-color: -modern-chrome;
+    -fx-border-color: -modern-line;
+    -fx-border-width: 0 1 0 0;
+}
+
+.sparrow-modern .wallet-workspace > .list-menu {
+    -fx-padding: 12 7;
+    -fx-spacing: 5;
+}
+
+.sparrow-modern .list-menu .list-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 7;
+    -fx-border-color: transparent;
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern .wallet-workspace > .list-menu .list-item {
+    -fx-alignment: center-left;
+    -fx-content-display: left;
+    -fx-graphic-text-gap: 8;
+    -fx-pref-width: 166;
+    -fx-max-width: Infinity;
+    -fx-min-height: 40;
+    -fx-pref-height: 40;
+    -fx-max-height: 40;
+    -fx-padding: 5 9;
+}
+
+.sparrow-modern .list-menu .list-item .text {
+    -fx-fill: -modern-muted;
+}
+
+.sparrow-modern .list-menu .list-item:hover {
+    -fx-background-color: -modern-surface;
+}
+
+.sparrow-modern .list-menu .list-item:selected {
+    -fx-background-color: -modern-accent, -modern-accent-surface;
+    -fx-background-insets: 0, 0 0 0 3;
+    -fx-background-radius: 7, 5 7 7 5;
+    -fx-font-weight: bold;
+}
+
+.sparrow-modern .list-menu .list-item:selected .text {
+    -fx-fill: -modern-accent;
+}
+
+.sparrow-modern .list-menu .list-item:focused {
+    -fx-border-color: -modern-focus;
+    -fx-border-radius: 7;
+    -fx-border-insets: -2;
+}
+
+.sparrow-modern .list-menu .list-item:disabled {
+    -fx-opacity: 0.55;
+}
+
+/* Workspace and forms. Keep monospace and fixed-width data controls as-is. */
+.sparrow-modern .wallet-pane,
+.sparrow-modern .tx-pane,
+.sparrow-modern #settingsPane,
+.sparrow-modern #importPane {
+    -fx-background-color: -modern-canvas;
+}
+
+.sparrow-modern .background-box {
+    -fx-fill: -modern-surface;
+    -fx-stroke: -modern-control-edge;
+}
+
+.sparrow-modern .drag-over .background-box {
+    -fx-stroke: -modern-focus;
+    -fx-fill: -modern-accent-surface;
+}
+
+.sparrow-modern .background-text {
+    -fx-fill: -modern-muted;
+}
+
+.sparrow-modern .form .fieldset .legend,
+.sparrow-modern .addresses-treetable-label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -modern-text;
+}
+
+.sparrow-modern .form .fieldset.header .legend,
+.sparrow-modern .title-form .fieldset .legend {
+    -fx-font-size: 16px;
+}
+
+.sparrow-modern .form .fieldset.header .legend {
+    -fx-padding: 0 0 9 0;
+}
+
+.sparrow-modern .form .field .label-container > .label,
+.sparrow-modern .buttonRowLabel {
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern .wallet-overview {
+    -fx-background-color: -modern-line, -modern-surface;
+    -fx-background-insets: -7, -6;
+    -fx-background-radius: 9, 8;
+}
+
+.sparrow-modern .wallet-overview .form .fieldset.header .legend {
+    -fx-font-size: 14px;
+    -fx-padding: 0 0 13 0;
+}
+
+.sparrow-modern #balance,
+.sparrow-modern #feeRate {
+    -fx-text-fill: -modern-accent;
+}
+
+.sparrow-modern #feeRate.unfinalized-txid {
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern #balanceChart .chart-plot-background,
+.sparrow-modern #utxosChart .chart-plot-background,
+.sparrow-modern .feeRatesChart .chart-plot-background {
+    -fx-background-color: -modern-surface;
+}
+
+.sparrow-modern .chart .axis {
+    -fx-tick-label-fill: -modern-muted;
+}
+
+.sparrow-modern .chart-horizontal-grid-lines,
+.sparrow-modern .chart-vertical-grid-lines {
+    -fx-stroke: -modern-line;
+}
+
+.sparrow-modern #balanceChart .chart-series-line {
+    -fx-stroke: -modern-accent;
+    -fx-stroke-width: 2;
+}
+
+.sparrow-modern #balanceChart .chart-line-symbol.selected,
+.sparrow-modern .feeRatesChart .chart-line-symbol.selected {
+    -fx-background-color: -modern-focus;
+}
+
+.sparrow-modern #utxosChart .chart-bar {
+    -fx-bar-fill: -modern-control-edge;
+}
+
+.sparrow-modern #utxosChart .chart-bar.selected {
+    -fx-bar-fill: -modern-accent;
+}
+
+.sparrow-modern #paymentTabs.multiple-tabs {
+    -fx-background-color: -modern-surface;
+    -fx-border-color: -modern-line;
+}
+
+.sparrow-modern #transactionDiagram .inputs-type,
+.sparrow-modern #transactionDiagram .input-line,
+.sparrow-modern #transactionDiagram .output-line {
+    -fx-stroke: -modern-muted;
+    -fx-text-fill: -modern-muted;
+}
+
+.sparrow-modern #transactionDiagram .coins-icon,
+.sparrow-modern #transactionDiagram .user-icon {
+    -fx-text-fill: -modern-text;
+}
+
+.sparrow-modern .qr-code {
+    -fx-effect: dropshadow(three-pass-box, -modern-shadow, 8, 0, 0, 2);
+}
+
+.sparrow-modern .qr-code:hover {
+    -fx-effect: dropshadow(three-pass-box, -modern-shadow, 10, 0.08, 0, 2);
+}
+
+/* Controls, including popups and keyboard focus. */
+.sparrow-modern .button,
+.sparrow-modern .toggle-button,
+.sparrow-modern .choice-box,
+.sparrow-modern .combo-box-base {
+    -fx-background-color: -modern-control-edge, -modern-surface;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 6, 5;
+}
+
+.sparrow-modern .button:hover,
+.sparrow-modern .toggle-button:hover,
+.sparrow-modern .choice-box:hover,
+.sparrow-modern .combo-box-base:hover {
+    -fx-background-color: -modern-control-edge, -modern-alt-surface;
+    -fx-text-fill: -modern-text;
+}
+
+.sparrow-modern .button:focused,
+.sparrow-modern .toggle-button:focused,
+.sparrow-modern .choice-box:focused,
+.sparrow-modern .combo-box-base:focused {
+    -fx-border-color: -modern-focus;
+    -fx-border-insets: -2;
+    -fx-border-radius: 8;
+}
+
+.sparrow-modern .toggle-button:selected,
+.sparrow-modern .choice-box:showing,
+.sparrow-modern .combo-box-base:showing {
+    -fx-background-color: -modern-accent, -modern-accent-surface;
+    -fx-text-fill: -modern-accent;
+}
+
+.sparrow-modern .button:default {
+    -fx-background-color: -modern-accent;
+    -fx-text-fill: -modern-on-accent;
+}
+
+.sparrow-modern .button:default:hover,
+.sparrow-modern .button:default:armed {
+    -fx-background-color: -modern-accent-hover;
+    -fx-text-fill: -modern-on-accent;
+}
+
+.sparrow-modern .button:default > .glyph-font {
+    -fx-text-fill: -modern-on-accent;
+}
+
+.sparrow-modern .icon-button,
+.sparrow-modern .cell-actions .button,
+.sparrow-modern #transactionDiagram .utxo-label .button,
+.sparrow-modern #transactionDiagram .replace-change-label .button,
+.sparrow-modern #transactionDiagramLabel .button {
+    -fx-background-color: transparent;
+}
+
+.sparrow-modern .icon-button:hover,
+.sparrow-modern .cell-actions .button:hover {
+    -fx-background-color: -modern-accent-surface;
+}
+
+.sparrow-modern .icon-button .glyph-font {
+    -fx-text-fill: -modern-accent;
+}
+
+/* Focus also applies to copyable fields, without adding horizontal padding. */
+.sparrow-modern .text-input {
+    -fx-prompt-text-fill: -modern-muted;
+}
+
+.sparrow-modern .copyable-label:focused {
+    -fx-background-color: -modern-focus, -modern-surface;
+    -fx-background-insets: -1, 0;
+    -fx-background-radius: 4, 3;
+}
+
+.sparrow-modern .readonly.text-input {
+    -fx-text-fill: -modern-text;
+}
+
+.sparrow-modern .hyperlink,
+.sparrow-modern .hyperlink:visited,
+.sparrow-modern .status-bar .status-label .hyperlink {
+    -fx-text-fill: -modern-accent;
+}
+
+.sparrow-modern .separator > .line {
+    -fx-background-color: -modern-line;
+    -fx-border-width: 0;
+}
+
+/* Dense tables. Keep the action targets and row/column sizing policy. */
+.sparrow-modern .table-view,
+.sparrow-modern .tree-table-view,
+.sparrow-modern .tree-view,
+.sparrow-modern .list-view {
+    -fx-background-color: -modern-line, -modern-surface;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 7, 6;
+    -fx-padding: 1;
+}
+
+.sparrow-modern .table-view:focused,
+.sparrow-modern .tree-table-view:focused,
+.sparrow-modern .tree-view:focused,
+.sparrow-modern .list-view:focused {
+    -fx-background-color: -modern-focus, -modern-surface;
+}
+
+.sparrow-modern .tree-view .tree-cell:filled:selected {
+    -fx-background-color: -modern-selection-inactive;
+}
+
+.sparrow-modern .tree-view:focused .tree-cell:filled:selected {
+    -fx-background-color: -modern-selection;
+}
+
+.sparrow-modern .tree-view .tree-cell:filled:selected,
+.sparrow-modern .tree-view .tree-cell:filled:selected .label,
+.sparrow-modern .tree-view .tree-cell:filled:selected .glyph-font {
+    -fx-text-fill: -modern-selected-text;
+}
+
+.sparrow-modern .tree-view .tree-cell:filled:selected > .tree-disclosure-node > .arrow {
+    -fx-background-color: -modern-selected-text;
+}
+
+.sparrow-modern .column-header-background,
+.sparrow-modern .column-header-background .column-header,
+.sparrow-modern .column-header-background .filler {
+    -fx-background-color: -modern-line, -modern-chrome;
+    -fx-background-insets: 0, 0 1 1 0;
+}
+
+.sparrow-modern .column-header-background .column-header > .label {
+    -fx-font-weight: bold;
+    -fx-text-fill: -modern-text;
+}
+
+.sparrow-modern .table-view .column-header > .label,
+.sparrow-modern .tree-table-view .column-header > .label {
+    -fx-alignment: center-left;
+    -fx-padding: 0 6;
+}
+
+.sparrow-modern .table-view .column-header > .number-value,
+.sparrow-modern .tree-table-view .column-header > .number-value {
+    -fx-alignment: center-right;
+}
+
+.sparrow-modern .table-row-cell:filled:even,
+.sparrow-modern .tree-table-row-cell:filled:even {
+    -fx-background: -modern-surface;
+}
+
+.sparrow-modern .table-row-cell:filled:odd,
+.sparrow-modern .tree-table-row-cell:filled:odd {
+    -fx-background: -modern-alt-surface;
+}
+
+.sparrow-modern .table-row-cell:filled:selected,
+.sparrow-modern .tree-table-row-cell:filled:selected,
+.sparrow-modern .tree-table-row-cell:filled > .tree-table-cell:selected {
+    -fx-background: -modern-selection-inactive;
+    -fx-table-cell-border-color: -modern-selection-inactive;
+}
+
+.sparrow-modern .table-view:focused .table-row-cell:filled:selected,
+.sparrow-modern .tree-table-view:focused .tree-table-row-cell:filled:selected,
+.sparrow-modern .tree-table-view:focused .tree-table-row-cell:filled > .tree-table-cell:selected {
+    -fx-background: -modern-selection;
+    -fx-table-cell-border-color: -modern-selection;
+}
+
+.sparrow-modern .tree-table-row-cell:selected .tree-table-cell,
+.sparrow-modern .tree-table-row-cell:selected .tree-table-cell .label,
+.sparrow-modern .tree-table-row-cell:selected .tree-table-cell .hyperlink,
+.sparrow-modern .table-row-cell:selected .table-cell,
+.sparrow-modern .table-row-cell:selected .table-cell .label,
+.sparrow-modern .table-row-cell:selected .table-cell .hyperlink {
+    -fx-text-fill: -modern-selected-text;
+}
+
+.sparrow-modern .tree-table-row-cell:selected .address-chunk {
+    -fx-fill: -modern-selected-text;
+}
+
+.sparrow-modern.chunk-addresses .tree-table-view .address-chunk.alternate,
+.sparrow-modern.chunk-addresses .text-field .address-chunk.alternate,
+.sparrow-modern.chunk-addresses .label .address-chunk.alternate {
+    -fx-fill: -modern-muted;
+}
+
+.sparrow-modern.chunk-addresses .tree-table-view .tree-table-row-cell:selected .address-chunk.alternate {
+    -fx-fill: -modern-selected-muted;
+}
+
+.sparrow-modern .tree-table-row-cell:selected .cell-actions .button:hover {
+    -fx-background-color: -modern-selection-inactive;
+}
+
+.sparrow-modern .table-view .placeholder > .label,
+.sparrow-modern .tree-table-view .placeholder .label {
+    -fx-text-fill: -modern-muted;
+}
+
+/* Status and validation use the same existing labels, icons and states. */
+.sparrow-modern .failure,
+.sparrow-modern .failure.hyperlink:visited,
+.sparrow-modern #tabs .tab-label .glyph-font.failure,
+.sparrow-modern .status-bar .tor-status.failure .glyph-font,
+.sparrow-modern .coin-cell.negative-amount,
+.sparrow-modern .duplicate-warning,
+.sparrow-modern .fail-warning,
+.sparrow-modern #unverifiedWarning,
+.sparrow-modern #unverifiedWarning .glyph-font,
+.sparrow-modern #noWalletsWarning .glyph-font,
+.sparrow-modern #transactionDiagram .fee-warning-icon {
+    -fx-text-fill: -modern-error;
+}
+
+.sparrow-modern .tree-table-row-cell:selected .coin-cell.negative-amount {
+    -fx-text-fill: -modern-selected-text;
+}
+
+.sparrow-modern .success,
+.sparrow-modern .unused-check {
+    -fx-text-fill: -modern-success;
+}
+
+.sparrow-modern .warn-icon,
+.sparrow-modern .field-warning,
+.sparrow-modern .future-warning,
+.sparrow-modern .public-warning,
+.sparrow-modern .gap-warning,
+.sparrow-modern .dust-attack-warning,
+.sparrow-modern #transactionDiagram .change-warning-icon,
+.sparrow-modern #transactionDiagram .payment-warning-icon,
+.sparrow-modern #transactionDiagramLabel .payment-warning-icon {
+    -fx-text-fill: -modern-warning;
+}
+
+.sparrow-modern .tree-table-row-cell:selected .glyph-font {
+    -fx-text-fill: -modern-selected-text;
+}
+
+.sparrow-modern .titled-description-pane > .title {
+    -fx-background-color: -modern-surface;
+    -fx-border-color: -modern-line;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.sparrow-modern .titled-description-pane .status-label .text,
+.sparrow-modern .titled-description-pane .description-label .text {
+    -fx-fill: -modern-muted;
+}
+
+.sparrow-modern .titled-description-pane .status-error .text,
+.sparrow-modern .titled-description-pane .description-error .text {
+    -fx-fill: -modern-error;
+}
+
+/* Preferences, About, dialogs, menus and transient surfaces. */
+.sparrow-modern.dialog-pane,
+.sparrow-modern .dialog-pane {
+    -fx-background-color: -modern-surface;
+}
+
+.sparrow-modern.dialog-pane > .header-panel,
+.sparrow-modern .dialog-pane > .header-panel,
+.sparrow-modern .title-area {
+    -fx-background-color: -modern-chrome;
+    -fx-border-color: -modern-line;
+    -fx-border-width: 0 0 1 0;
+}
+
+.sparrow-modern.dialog-pane > .header-panel .label,
+.sparrow-modern .dialog-pane > .header-panel .label,
+.sparrow-modern .title-label {
+    -fx-text-fill: -modern-text;
+    -fx-font-weight: bold;
+}
+
+.sparrow-modern .etched-raised-border,
+.sparrow-modern .line-border {
+    -fx-border-color: -modern-line;
+    -fx-border-width: 1;
+}
+
+.sparrow-modern.context-menu,
+.sparrow-modern .context-menu,
+.sparrow-modern .notification-bar > .pane,
+.sparrow-modern .box-overlay {
+    -fx-background-color: -modern-line, -modern-surface;
+    -fx-background-insets: 0, 1;
+    -fx-background-radius: 7, 6;
+    -fx-effect: dropshadow(three-pass-box, -modern-shadow, 10, 0, 0, 3);
+}
+
+.sparrow-modern.context-menu .menu-item:focused,
+.sparrow-modern .context-menu .menu-item:focused,
+.sparrow-modern .menu-bar .menu:showing {
+    -fx-background-color: -modern-selection;
+    -fx-background-radius: 4;
+}
+
+.sparrow-modern.tooltip,
+.sparrow-modern .tooltip {
+    -fx-background-color: #14283e;
+    -fx-background-radius: 6;
+    -fx-text-fill: #ffffff;
+}
+
+/* Small windows keep the existing controls and order. Reclaim space from
+ * fixed chrome and empty fiat values before shrinking form and table content. */
+.sparrow-modern.sparrow-modern-compact .wallet-workspace,
+.sparrow-modern.sparrow-modern-compact #walletPane,
+.sparrow-modern.sparrow-modern-compact .wallet-overview-content,
+.sparrow-modern.sparrow-modern-compact .wallet-overview,
+.sparrow-modern.sparrow-modern-compact .wallet-overview .chart,
+.sparrow-modern.sparrow-modern-compact .wallet-pane,
+.sparrow-modern.sparrow-modern-compact .send-workspace-content,
+.sparrow-modern.sparrow-modern-compact .send-workspace-content > StackPane,
+.sparrow-modern.sparrow-modern-compact .send-fields,
+.sparrow-modern.sparrow-modern-compact .send-fields > BorderPane,
+.sparrow-modern.sparrow-modern-compact .send-fields #paymentTabs,
+.sparrow-modern.sparrow-modern-compact .send-fields .send-form,
+.sparrow-modern.sparrow-modern-compact .send-fields .payment-inputs,
+.sparrow-modern.sparrow-modern-compact .send-fields .fee-mode-controls,
+.sparrow-modern.sparrow-modern-compact .send-fields .fee-chart-area,
+.sparrow-modern.sparrow-modern-compact .send-fields .feeRatesChart {
+    -fx-min-width: 0;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-workspace > .list-menu {
+    -fx-pref-width: 128;
+    -fx-padding: 12 5;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-workspace > .list-menu .list-item {
+    -fx-pref-width: 117;
+    -fx-padding: 5 5;
+    -fx-graphic-text-gap: 5;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-subtabs > .tab-header-area .tab,
+.sparrow-modern.sparrow-modern-compact .wallet-subtabs > .tab-header-area .tab-label {
+    -fx-pref-height: 34;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-overview-content {
+    -fx-padding: 17 15 15;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-overview .form .fieldset:horizontal .label-container {
+    -fx-pref-width: 90;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-overview FiatLabel:empty {
+    -fx-min-width: 0;
+}
+
+.sparrow-modern.sparrow-modern-compact .address-treetable {
+    -fx-address-column-width-limit: 208;
+}
+
+.sparrow-modern.sparrow-modern-compact .transactions-treetable .coin-cell {
+    -fx-graphic-text-gap: 2;
+}
+
+.sparrow-modern.sparrow-modern-compact .transactions-treetable .coin-cell .confirmation-progress {
+    -fx-padding: 0 3 0 0;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields {
+    -fx-padding: 16 13 8;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields .form .fieldset:horizontal .label-container,
+.sparrow-modern.sparrow-modern-compact .send-actions .buttonRowLabel {
+    -fx-pref-width: 70;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields .amount-field {
+    -fx-min-width: 108;
+    -fx-pref-width: 108;
+    -fx-max-width: 108;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields .fee-mode-controls .segmented-button {
+    -fx-min-width: 226;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields .fee-mode-controls .toggle-button {
+    -fx-padding: 4 5;
+    -fx-font-size: 11px;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields .feeRatesChart {
+    -fx-pref-width: 150;
+    -fx-max-width: 150;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields #recentBlocksView {
+    -fx-translate-x: -74;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields #scanQrButton,
+.sparrow-modern.sparrow-modern-compact .send-fields #addPaymentButton {
+    -fx-padding: 3 5;
+    -fx-graphic-text-gap: 2;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields #scanQrButton {
+    -fx-min-width: 27;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields #addPaymentButton {
+    -fx-min-width: 50;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields .payment-spacing {
+    -fx-pref-width: 0;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-fields #maxButton {
+    -fx-font-size: 11px;
+    -fx-wrap-text: true;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-actions {
+    -fx-padding: 0 13 43;
+}
+
+.sparrow-modern.sparrow-modern-compact .send-transaction-actions {
+    -fx-translate-y: 30;
+}
+
+.sparrow-modern.sparrow-modern-compact .wallet-pane #transactionDiagram,
+.sparrow-modern.sparrow-modern-compact .tx-pane #transactionDiagram {
+    -fx-connector-width: 37;
+    -fx-min-width: 0;
+    -fx-padding: 0 0 0 8;
+}
+
+.sparrow-modern.sparrow-modern-compact #signingWalletForm .fieldset:horizontal .label-container {
+    -fx-pref-width: 98;
+}
+
+.sparrow-modern.sparrow-modern-compact #sigHashForm .fieldset:horizontal .label-container {
+    -fx-pref-width: 64;
+}
+
+.sparrow-modern.sparrow-modern-compact #signingWallet > .arrow-button,
+.sparrow-modern.sparrow-modern-compact #sigHash > .arrow-button {
+    -fx-padding: 0 5;
+}
+
+.sparrow-modern.sparrow-modern-compact .signatures-buttons,
+.sparrow-modern.sparrow-modern-compact #finalizeButtonBox.signatures-buttons {
+    -fx-spacing: 8;
+    -fx-padding: 8;
+}

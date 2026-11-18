@@ -653,6 +653,7 @@ public class AppServices {
             stage.getIcons().add(getWindowIcon());
 
             appController.initializeView();
+            AppearanceStyles.applyTo(scene);
             stage.show();
             return appController;
         } catch(IOException e) {
@@ -1043,6 +1044,17 @@ public class AppServices {
         } catch(Exception e) {
             log.warn("Could not read the system color scheme", e);
         }
+
+        AppearanceStyles.observeWindows();
+    }
+
+    @Subscribe
+    public void themeChanged(ThemeChangedEvent event) {
+        refreshAppearance();
+    }
+
+    public static void refreshAppearance() {
+        runAfterDelay(0, AppearanceStyles::refreshWindows);
     }
 
     public static Theme getActiveTheme() {
@@ -1085,6 +1097,7 @@ public class AppServices {
                 dialogPane.graphicProperty().addListener((_, _, graphic) -> nameAlertIcon.accept(graphic));
                 nameAlertIcon.accept(dialogPane.getGraphic());
             }
+            AppearanceStyles.applyTo(stage.getScene());
         }
     }
 

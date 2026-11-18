@@ -1,8 +1,12 @@
 package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
 import com.sparrowwallet.drongo.BitcoinUnit;
 import com.sparrowwallet.drongo.protocol.Transaction;
+import com.sparrowwallet.sparrow.Appearance;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.Mode;
 import com.sparrowwallet.sparrow.Theme;
@@ -46,6 +50,7 @@ public class Config {
     private boolean notifyNewTransactions = true;
     private boolean checkNewVersions = true;
     private Theme theme;
+    private Appearance appearance;
     private boolean openWalletsInNewWindows = false;
     private boolean chunkAddresses = true;
     private boolean hideEmptyUsedAddresses = false;
@@ -102,6 +107,7 @@ public class Config {
 
     private static Gson getGson() {
         GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.registerTypeAdapter(Appearance.class, new AppearanceAdapter());
         gsonBuilder.registerTypeAdapter(File.class, new FileSerializer());
         gsonBuilder.registerTypeAdapter(File.class, new FileDeserializer());
         gsonBuilder.registerTypeAdapter(Server.class, new ServerSerializer());
@@ -292,6 +298,41 @@ public class Config {
     public void setTheme(Theme theme) {
         this.theme = theme;
         flush();
+    }
+
+    public Appearance getAppearance() {
+        return appearance == null ? Appearance.CLASSIC : appearance;
+    }
+
+    public void setAppearance(Appearance appearance) {
+        Objects.requireNonNull(appearance);
+        if(getAppearance() != appearance) {
+            this.appearance = appearance;
+            flush();
+        }
+    }
+
+    private static class AppearanceAdapter extends TypeAdapter<Appearance> {
+        @Override
+        public void write(JsonWriter out, Appearance value) throws IOException {
+            out.value(value == null ? null : value.name());
+        }
+
+        @Override
+        public Appearance read(JsonReader in) throws IOException {
+            if(in.peek() == JsonToken.STRING) {
+                String value = in.nextString();
+                return switch(value) {
+                    case "CLASSIC" -> Appearance.CLASSIC;
+                    case "MODERN" -> Appearance.MODERN;
+                    default -> null;
+                };
+            }
+
+            // Appearance is optional. An unexpected value must leave the rest of the profile readable.
+            in.skipValue();
+            return null;
+        }
     }
 
     public boolean isOpenWalletsInNewWindows() {

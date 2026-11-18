@@ -26,6 +26,11 @@ import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableDoubleProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleablePropertyFactory;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
@@ -72,12 +77,19 @@ public class TransactionDiagram extends GridPane {
     private static final int TOOLTIP_SHOW_DELAY = 50;
     private static final int RELATIVE_SIZE_MAX_RADIUS = 7;
     private static final int ROW_HEIGHT = 27;
+    private static final double DEFAULT_CONNECTOR_WIDTH = 140.0;
+    private static final StyleablePropertyFactory<TransactionDiagram> STYLEABLES =
+            new StyleablePropertyFactory<>(GridPane.getClassCssMetaData());
+    private static final CssMetaData<TransactionDiagram, Number> CONNECTOR_WIDTH =
+            STYLEABLES.createSizeCssMetaData("-fx-connector-width", diagram -> diagram.connectorWidth, DEFAULT_CONNECTOR_WIDTH, false);
 
     private WalletTransaction walletTx;
     private final BooleanProperty finalProperty = new SimpleBooleanProperty(false);
     private final ObjectProperty<TransactionDiagramLabel> labelProperty = new SimpleObjectProperty<>(null);
     private final ObjectProperty<OptimizationStrategy> optimizationStrategyProperty = new SimpleObjectProperty<>(OptimizationStrategy.EFFICIENCY);
     private final ObjectProperty<BitcoinURI> payjoinURIProperty = new SimpleObjectProperty<>(null);
+    private final StyleableDoubleProperty connectorWidth =
+            new SimpleStyleableDoubleProperty(CONNECTOR_WIDTH, this, "connectorWidth", DEFAULT_CONNECTOR_WIDTH);
     private boolean expanded;
     private TransactionDiagram expandedDiagram;
     private ContextMenu contextMenu;
@@ -157,7 +169,7 @@ public class TransactionDiagram extends GridPane {
         col2.setFillWidth(true);
 
         ColumnConstraints col3 = new ColumnConstraints();
-        col3.setPrefWidth(140);
+        col3.prefWidthProperty().bind(connectorWidth);
         col3.setHgrow(Priority.NEVER);
 
         ColumnConstraints col4 = new ColumnConstraints();
@@ -167,7 +179,7 @@ public class TransactionDiagram extends GridPane {
         col4.setHalignment(HPos.CENTER);
 
         ColumnConstraints col5 = new ColumnConstraints();
-        col5.setPrefWidth(140);
+        col5.prefWidthProperty().bind(connectorWidth);
         col5.setHgrow(Priority.NEVER);
 
         ColumnConstraints col6 = new ColumnConstraints();
@@ -176,7 +188,11 @@ public class TransactionDiagram extends GridPane {
         col6.setFillWidth(true);
 
         getColumnConstraints().addAll(col1, col2, col3, col4, col5, col6);
-        setPadding(new Insets(0, 0, 0, 40));
+    }
+
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getCssMetaData() {
+        return STYLEABLES.getCssMetaData();
     }
 
     public void update(WalletTransaction walletTx) {
@@ -607,7 +623,7 @@ public class TransactionDiagram extends GridPane {
         yaxisLine.getStyleClass().add("boundary");
         group.getChildren().add(yaxisLine);
 
-        double width = 140.0;
+        var curveWidth = connectorWidth.subtract(RELATIVE_SIZE_MAX_RADIUS);
         List<BlockTransactionHashIndex> inputs = new ArrayList<>(displayedUtxos.keySet());
         long sum = walletTx.getTotal();
         int numUtxos = displayedUtxos.size();
@@ -626,12 +642,12 @@ public class TransactionDiagram extends GridPane {
             int nodeHeight = 17;
             double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
             curve.setStartY(scale(getDiagramHeight(), scaleFactor, additional));
-            curve.setEndX(width);
+            curve.endXProperty().bind(connectorWidth);
             curve.setEndY(scale(getDiagramHeight(), 0.5, 0));
 
-            curve.setControlX1(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.2, 0));
+            curve.controlX1Property().bind(curveWidth.multiply(1.0 - 0.2));
             curve.setControlY1(curve.getStartY());
-            curve.setControlX2(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.8, 0));
+            curve.controlX2Property().bind(curveWidth.multiply(1.0 - 0.8));
             curve.setControlY2(curve.getEndY());
 
             group.getChildren().add(curve);
@@ -706,7 +722,7 @@ public class TransactionDiagram extends GridPane {
         yaxisLine.getStyleClass().add("boundary");
         group.getChildren().add(yaxisLine);
 
-        double width = 140.0;
+        var curveWidth = connectorWidth.subtract(RELATIVE_SIZE_MAX_RADIUS);
         long sum = walletTx.getTotal();
         List<Long> values = displayedOutputs.stream().map(o -> o.getTransactionOutput().getValue()).collect(Collectors.toList());
         values.add(walletTx.getFee());
@@ -717,22 +733,23 @@ public class TransactionDiagram extends GridPane {
 
             curve.setStartX(0);
             curve.setStartY(scale(getDiagramHeight(), 0.5, 0));
-            curve.setEndX(width - RELATIVE_SIZE_MAX_RADIUS);
+            curve.endXProperty().bind(curveWidth);
             double scaleFactor = (double)i / (numOutputs + 1);
             int nodeHeight = 20;
             double additional = (0.5 - scaleFactor) * ((double)nodeHeight);
             curve.setEndY(scale(getDiagramHeight(), scaleFactor, additional));
 
-            curve.setControlX1(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.2, 0));
+            curve.controlX1Property().bind(curveWidth.multiply(1.0 - 0.2));
             curve.controlY1Property().bind(curve.startYProperty());
-            curve.setControlX2(scale(width - RELATIVE_SIZE_MAX_RADIUS, 0.8, 0));
+            curve.controlX2Property().bind(curveWidth.multiply(1.0 - 0.8));
             curve.controlY2Property().bind(curve.endYProperty());
 
             group.getChildren().add(curve);
 
             if(sum > 0) {
                 long radius = Math.min(RELATIVE_SIZE_MAX_RADIUS, Math.round((double)values.get(numOutputs-i) * (RELATIVE_SIZE_MAX_RADIUS - 1) / sum) + 1);
-                Circle circle = new Circle(curve.getEndX(), curve.getEndY(), radius);
+                Circle circle = new Circle(0, curve.getEndY(), radius);
+                circle.centerXProperty().bind(curveWidth);
                 circle.getStyleClass().add("size-indicator");
                 group.getChildren().add(circle);
             }

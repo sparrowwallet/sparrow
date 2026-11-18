@@ -30,11 +30,8 @@
 
 <BorderPane stylesheets="@send.css, @wallet.css, @../script.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.SendController">
     <center>
-        <VBox>
-            <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
-                <padding>
-                    <Insets left="25.0" right="25.0" top="25.0" />
-                </padding>
+        <VBox styleClass="send-workspace-content">
+            <GridPane styleClass="send-form,send-fields" hgap="10.0" vgap="10.0">
                 <columnConstraints>
                     <ColumnConstraints prefWidth="410" hgrow="SOMETIMES" />
                     <ColumnConstraints prefWidth="200" />
@@ -56,7 +53,7 @@
                 <Form styleClass="title-form" GridPane.columnIndex="0" GridPane.rowIndex="1">
                     <Fieldset inputGrow="ALWAYS" text="Fee"/>
                 </Form>
-                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.halignment="RIGHT" alignment="CENTER_RIGHT">
+                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.halignment="RIGHT" alignment="CENTER_RIGHT" styleClass="fee-mode-controls">
                     <padding>
                         <Insets right="10.0" />
                     </padding>
@@ -132,7 +129,7 @@
                         </Field>
                     </Fieldset>
                 </Form>
-                <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="2">
+                <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="2" styleClass="fee-chart-area">
                     <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false" minHeight="135">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
@@ -158,10 +155,7 @@
         </VBox>
     </center>
     <bottom>
-        <AnchorPane>
-            <padding>
-                <Insets left="25.0" right="25.0" bottom="25.0" />
-            </padding>
+        <AnchorPane styleClass="send-actions">
             <HBox AnchorPane.leftAnchor="5" alignment="CENTER_LEFT">
                 <Label text="Optimize:" styleClass="buttonRowLabel" />
                 <SegmentedButton>
@@ -194,7 +188,7 @@
                     </graphic>
                 </Label>
             </HBox>
-            <HBox AnchorPane.rightAnchor="10">
+            <HBox AnchorPane.rightAnchor="10" styleClass="send-transaction-actions">
                 <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
                 <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
                 <Button fx:id="notificationButton" text="Broadcast Notification" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastNotification">

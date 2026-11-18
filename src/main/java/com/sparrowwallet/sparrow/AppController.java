@@ -155,6 +155,15 @@ public class AppController implements Initializable {
     private ToggleGroup theme;
 
     @FXML
+    private ToggleGroup appearanceMenu;
+
+    @FXML
+    private Label appearanceLabel;
+
+    @FXML
+    private ChoiceBox<Appearance> appearanceChoice;
+
+    @FXML
     private CheckMenuItem openWalletsInNewWindows;
     private static final BooleanProperty openWalletsInNewWindowsProperty = new SimpleBooleanProperty();
 
@@ -407,6 +416,11 @@ public class AppController implements Initializable {
         Optional<Toggle> selectedThemeToggle = theme.getToggles().stream().filter(toggle -> selectedTheme.equals(toggle.getUserData())).findFirst();
         selectedThemeToggle.ifPresent(toggle -> theme.selectToggle(toggle));
         setTheme(null);
+
+        appearanceLabel.setLabelFor(appearanceChoice);
+        appearanceChoice.getItems().setAll(Appearance.values());
+        appearanceChanged(new AppearanceChangedEvent(Config.get().getAppearance()));
+        appearanceChoice.setOnAction(event -> applyAppearance(appearanceChoice.getValue()));
 
         openWalletsInNewWindowsProperty.set(Config.get().isOpenWalletsInNewWindows());
         openWalletsInNewWindows.selectedProperty().bindBidirectional(openWalletsInNewWindowsProperty);
@@ -2678,6 +2692,32 @@ public class AppController implements Initializable {
         }
 
         EventManager.get().post(new ThemeChangedEvent(AppServices.getActiveTheme()));
+    }
+
+    @FXML
+    private void setMenuAppearance(ActionEvent event) {
+        applyAppearance((Appearance)((RadioMenuItem)event.getSource()).getUserData());
+    }
+
+    private void applyAppearance(Appearance selected) {
+        Config config = Config.get();
+        if(selected != null && config.getAppearance() != selected) {
+            config.setAppearance(selected);
+            AppServices.refreshAppearance();
+            EventManager.get().post(new AppearanceChangedEvent(selected));
+        }
+    }
+
+    @Subscribe
+    public void appearanceChanged(AppearanceChangedEvent event) {
+        Appearance selected = event.appearance();
+        appearanceChoice.setValue(selected);
+        for(Toggle toggle : appearanceMenu.getToggles()) {
+            if(toggle.getUserData() == selected) {
+                appearanceMenu.selectToggle(toggle);
+                break;
+            }
+        }
     }
 
     private void serverToggleStartAnimation() {

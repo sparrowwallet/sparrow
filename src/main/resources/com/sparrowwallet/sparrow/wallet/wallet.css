@@ -8,6 +8,11 @@
     -fx-background-color: #3da0e3;
 }
 
+.wallet-workspace > .list-menu .list-item {
+    -fx-max-height: Infinity;
+    -fx-content-display: top;
+}
+
 .list-item * {
     -fx-fill: #fff;
 }
@@ -27,6 +32,14 @@
 
 .wallet-pane {
     -fx-background-color: -fx-background;
+}
+
+.wallet-overview-content {
+    -fx-padding: 25;
+}
+
+.wallet-overview FiatLabel {
+    -fx-min-width: 110;
 }
 
 .address-cell, .utxo-row.entry-cell {

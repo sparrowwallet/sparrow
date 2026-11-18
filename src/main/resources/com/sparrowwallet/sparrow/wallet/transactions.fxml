@@ -6,7 +6,6 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import com.sparrowwallet.sparrow.control.TransactionsTreeTable?>
-<?import javafx.geometry.Insets?>
 <?import com.sparrowwallet.sparrow.control.BalanceChart?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import tornadofx.control.Form?>
@@ -20,11 +19,8 @@
 
 <BorderPane stylesheets="@transactions.css, @wallet.css, @../general.css" styleClass="wallet-pane" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.sparrowwallet.sparrow.wallet.TransactionsController">
     <center>
-        <VBox spacing="10">
-            <padding>
-                <Insets left="25.0" right="25.0" top="25.0" bottom="25.0" />
-            </padding>
-            <GridPane styleClass="send-form" hgap="10.0" vgap="10.0">
+        <VBox spacing="10" styleClass="wallet-overview-content">
+            <GridPane styleClass="send-form,wallet-overview" hgap="10.0" vgap="10.0">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50" />
                     <ColumnConstraints percentWidth="50" />
@@ -35,10 +31,10 @@
                 <Form GridPane.columnIndex="0" GridPane.rowIndex="0">
                     <Fieldset inputGrow="SOMETIMES" text="Transactions" styleClass="header">
                         <Field text="Balance:">
-                            <CopyableCoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" minWidth="110" />
+                            <CopyableCoinLabel fx:id="balance"/><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatBalance" />
                         </Field>
                         <Field text="Mempool:">
-                            <CopyableCoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" minWidth="110" />
+                            <CopyableCoinLabel fx:id="mempoolBalance" /><Region HBox.hgrow="ALWAYS"/><FiatLabel fx:id="fiatMempoolBalance" />
                         </Field>
                         <Field text="Transactions:">
                             <CopyableLabel fx:id="transactionCount" />

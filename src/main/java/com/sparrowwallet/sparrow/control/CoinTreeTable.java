@@ -7,6 +7,7 @@ import com.sparrowwallet.drongo.wallet.SortDirection;
 import com.sparrowwallet.drongo.wallet.TableType;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletTable;
+import com.sparrowwallet.sparrow.Appearance;
 import com.sparrowwallet.sparrow.CurrencyRate;
 import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.AppServices;
@@ -32,11 +33,14 @@ import javafx.geometry.Side;
 import javafx.scene.AccessibleAttribute;
 import javafx.scene.AccessibleRole;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.StackPane;
+import javafx.stage.Window;
+import javafx.util.Callback;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -375,9 +379,14 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             column.setPrefWidth(savedWidths != null && getColumns().size() == savedWidths.length ? savedWidths[i] : STANDARD_WIDTH);
         }
 
-        setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        WalletColumnResizePolicy resizePolicy = new WalletColumnResizePolicy();
+        setColumnResizePolicy(resizePolicy);
 
-        getColumns().getLast().widthProperty().addListener((_, _, _) -> walletTableChanged());
+        getColumns().getLast().widthProperty().addListener((_, _, _) -> {
+            if(!resizePolicy.applyingAppearanceLayout) {
+                walletTableChanged();
+            }
+        });
 
         //Ignore initial resizes during layout
         walletTableEvents.skip(3, TimeUnit.SECONDS).subscribe(event -> {
@@ -391,6 +400,108 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                 column.setPrefWidth(widths != null && getColumns().size() == widths.length ? widths[i] : STANDARD_WIDTH);
             }
         });
+    }
+
+    private class WalletColumnResizePolicy extends ConstrainedColumnResizeBase implements Callback<ResizeFeatures, Boolean> {
+        private Appearance fittedAppearance = Config.get().getAppearance();
+        private double fittedWindowWidth;
+        private double fittedWindowHeight;
+        private double fittedContentWidth;
+        private Scene transitionScene;
+        private boolean applyingAppearanceLayout;
+        private int remainingQuietPulses;
+        private ColumnLayout classicLayout;
+        private final Runnable observePulse = this::finishFitAfterLayout;
+
+        @Override
+        public Boolean call(ResizeFeatures resize) {
+            Scene scene = getScene();
+            Window window = scene == null ? null : scene.getWindow();
+            if(window == null) {
+                return CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN.call(resize);
+            }
+
+            double width = window.getWidth();
+            double height = window.getHeight();
+            Appearance appearance = Config.get().getAppearance();
+            if(width != fittedWindowWidth || height != fittedWindowHeight) {
+                stopAppearanceFit();
+                if(appearance == Appearance.MODERN) {
+                    classicLayout = null;
+                }
+            } else if(appearance != fittedAppearance) {
+                stopAppearanceFit();
+                transitionScene = scene;
+                scene.addPostLayoutPulseListener(observePulse);
+            }
+            fittedAppearance = appearance;
+            fittedWindowWidth = width;
+            fittedWindowHeight = height;
+            fittedContentWidth = resize.getContentWidth();
+
+            // A hidden table can reflow when it next becomes visible. Wait for layout
+            // to settle, retaining the original behavior for explicit or window resizes.
+            boolean previous = applyingAppearanceLayout;
+            applyingAppearanceLayout = transitionScene == scene && resize.getColumn() == null;
+            if(applyingAppearanceLayout) {
+                remainingQuietPulses = 2;
+                Platform.requestNextPulse();
+            }
+            try {
+                boolean resized = CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN.call(resize);
+                if(appearance == Appearance.CLASSIC) {
+                    if(applyingAppearanceLayout) {
+                        restoreClassicLayout(resize);
+                    } else {
+                        rememberClassicLayout();
+                    }
+                } else if(resized && resize.getColumn() != null) {
+                    classicLayout = null;
+                }
+                return resized;
+            } finally {
+                applyingAppearanceLayout = previous;
+            }
+        }
+
+        private void rememberClassicLayout() {
+            if(fittedContentWidth > 0) {
+                List<TreeTableColumn<Entry, ?>> columns = List.copyOf(getVisibleLeafColumns());
+                classicLayout = new ColumnLayout(fittedContentWidth, columns,
+                        columns.stream().map(TableColumnBase::getWidth).toList());
+            }
+        }
+
+        private void restoreClassicLayout(ResizeFeatures resize) {
+            if(classicLayout != null && classicLayout.contentWidth() == resize.getContentWidth()
+                    && classicLayout.columns().equals(getVisibleLeafColumns())) {
+                ResizeFeatures<Entry> restore = new ResizeFeatures<>(CoinTreeTable.this, null, 0d);
+                for(int i = 0; i < classicLayout.columns().size(); i++) {
+                    restore.setColumnWidth(classicLayout.columns().get(i), classicLayout.widths().get(i));
+                }
+            }
+        }
+
+        private void finishFitAfterLayout() {
+            if(--remainingQuietPulses <= 0) {
+                stopAppearanceFit();
+                if(fittedAppearance == Appearance.CLASSIC) {
+                    rememberClassicLayout();
+                }
+            } else {
+                Platform.requestNextPulse();
+            }
+        }
+
+        private void stopAppearanceFit() {
+            if(transitionScene != null) {
+                transitionScene.removePostLayoutPulseListener(observePulse);
+                transitionScene = null;
+            }
+        }
+    }
+
+    private record ColumnLayout(double contentWidth, List<TreeTableColumn<Entry, ?>> columns, List<Double> widths) {
     }
 
     private void walletTableChanged() {

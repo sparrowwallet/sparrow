@@ -10,14 +10,32 @@ import com.sparrowwallet.sparrow.io.Config;
 import com.sparrowwallet.sparrow.wallet.Entry;
 import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.ListChangeListener;
+import javafx.css.CssMetaData;
+import javafx.css.SimpleStyleableDoubleProperty;
+import javafx.css.Styleable;
+import javafx.css.StyleableDoubleProperty;
+import javafx.css.StyleablePropertyFactory;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 
 import java.util.*;
 
 public class AddressTreeTable extends CoinTreeTable {
+    private static final StyleablePropertyFactory<AddressTreeTable> STYLEABLES =
+            new StyleablePropertyFactory<>(CoinTreeTable.getClassCssMetaData());
+    private static final CssMetaData<AddressTreeTable, Number> ADDRESS_COLUMN_WIDTH_LIMIT =
+            STYLEABLES.createSizeCssMetaData("-fx-address-column-width-limit", table -> table.addressColumnWidthLimit, Double.MAX_VALUE, false);
+    private final StyleableDoubleProperty addressColumnWidthLimit =
+            new SimpleStyleableDoubleProperty(ADDRESS_COLUMN_WIDTH_LIMIT, this, "addressColumnWidthLimit", Double.MAX_VALUE);
+
+    @Override
+    public List<CssMetaData<? extends Styleable, ?>> getControlCssMetaData() {
+        return STYLEABLES.getCssMetaData();
+    }
+
     public void initialize(NodeEntry rootEntry) {
         getStyleClass().add("address-treetable");
         setUnitFormat(rootEntry.getWallet());
@@ -39,7 +57,9 @@ public class AddressTreeTable extends CoinTreeTable {
         getColumns().add(addressCol);
 
         if(address != null && !rootEntry.getWallet().isWhirlpoolChildWallet()) {
-            addressCol.setMinWidth(TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0));
+            double fullAddressWidth = TextUtils.computeTextWidth(AppServices.getMonospaceFont(), address, 0.0);
+            addressCol.minWidthProperty().bind(Bindings.min(fullAddressWidth, addressColumnWidthLimit));
+            addressCol.maxWidthProperty().bind(Bindings.min(addressCol.getMaxWidth(), addressColumnWidthLimit));
         }
 
         TreeTableColumn<Entry, String> labelCol = new TreeTableColumn<>("Label");

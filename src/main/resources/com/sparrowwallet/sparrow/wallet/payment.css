@@ -1,3 +1,11 @@
 #address .paynym-icon {
     -fx-padding: 0 0 0 5;
 }
+
+.fiat-payment-gap {
+    -fx-pref-width: 15;
+}
+
+.max-payment-gap {
+    -fx-pref-width: 5;
+}
