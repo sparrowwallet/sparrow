@@ -56,6 +56,10 @@ public class SatochipParser {
     }
 
     public byte[][] parseBip32GetExtendedKey(APDUResponse rapdu) throws CardException {
+        if(rapdu.getSw() != APDUResponse.SW_OK) {
+            throw new CardException("Satochip returned status 0x" + Integer.toHexString(rapdu.getSw()) + " for extended key");
+        }
+
         try {
             byte[][] extendedkey = new byte[2][];
             extendedkey[0] = new byte[33]; // pubkey
