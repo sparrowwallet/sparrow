@@ -725,7 +725,7 @@ public class WalletForm {
                     if(entry instanceof NodeEntry nodeEntry) {
                         for(BlockTransactionHashIndex receivedRef : nodeEntry.getNode().getTransactionOutputs()) {
                             BlockTransaction blockTransaction = event.getWallet().getTransactions().get(receivedRef.getHash());
-                            if(blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) {
+                            if(blockTransaction != null && (blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty())) {
                                 blockTransaction.setLabel(entry.getLabel());
                                 labelChangedEntries.put(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()), entry);
                             }
@@ -734,7 +734,7 @@ public class WalletForm {
                     if(entry instanceof HashIndexEntry hashIndexEntry) {
                         BlockTransaction blockTransaction = hashIndexEntry.getBlockTransaction();
                         //Avoid recursive changes from hashIndexEntries
-                        if((blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) && event.getSource(entry) == null) {
+                        if(blockTransaction != null && (blockTransaction.getLabel() == null || blockTransaction.getLabel().isEmpty()) && event.getSource(entry) == null) {
                             blockTransaction.setLabel(entry.getLabel());
                             labelChangedEntries.put(new TransactionEntry(event.getWallet(), blockTransaction, Collections.emptyMap(), Collections.emptyMap()), entry);
                         }
