@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow;
 
+import com.sparrowwallet.sparrow.control.CoinTreeTable;
 import com.sparrowwallet.sparrow.io.Config;
 import javafx.beans.property.ReadOnlyProperty;
 import javafx.beans.value.ChangeListener;
@@ -93,6 +94,13 @@ final class AppearanceStyles {
         // Scene stylesheets and leave the existing author stylesheet order intact.
         if(!modern) {
             root.getStylesheets().remove(MODERN_CSS);
+        } else if(!root.getStyleClass().contains(MODERN_ROOT)) {
+            // Read the Classic widths before the author CSS can change column bounds.
+            root.lookupAll(".tree-table-view").forEach(node -> {
+                if(node instanceof CoinTreeTable table) {
+                    table.captureClassicColumnLayout();
+                }
+            });
         }
         updateEntry(root.getStyleClass(), MODERN_ROOT, modern);
         updateEntry(root.getStyleClass(), MODERN_DARK_ROOT, modern && activeTheme == Theme.DARK);

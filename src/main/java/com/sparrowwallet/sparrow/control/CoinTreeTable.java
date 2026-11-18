@@ -402,6 +402,12 @@ public class CoinTreeTable extends TreeTableView<Entry> {
         });
     }
 
+    public void captureClassicColumnLayout() {
+        if(getColumnResizePolicy() instanceof WalletColumnResizePolicy resizePolicy) {
+            resizePolicy.captureClassicLayout();
+        }
+    }
+
     private class WalletColumnResizePolicy extends ConstrainedColumnResizeBase implements Callback<ResizeFeatures, Boolean> {
         private Appearance fittedAppearance = Config.get().getAppearance();
         private double fittedWindowWidth;
@@ -451,7 +457,7 @@ public class CoinTreeTable extends TreeTableView<Entry> {
                 boolean resized = CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN.call(resize);
                 if(appearance == Appearance.CLASSIC) {
                     if(applyingAppearanceLayout) {
-                        restoreClassicLayout(resize);
+                        restoreClassicLayout();
                     } else {
                         rememberClassicLayout();
                     }
@@ -464,6 +470,17 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             }
         }
 
+        private void captureClassicLayout() {
+            Scene scene = getScene();
+            Window window = scene == null ? null : scene.getWindow();
+            if(fittedAppearance == Appearance.CLASSIC && window != null && window.isShowing()) {
+                fittedWindowWidth = window.getWidth();
+                fittedWindowHeight = window.getHeight();
+                fittedContentWidth = new ResizeFeatures<>(CoinTreeTable.this, null, 0d).getContentWidth();
+                rememberClassicLayout();
+            }
+        }
+
         private void rememberClassicLayout() {
             if(fittedContentWidth > 0) {
                 List<TreeTableColumn<Entry, ?>> columns = List.copyOf(getVisibleLeafColumns());
@@ -472,22 +489,33 @@ public class CoinTreeTable extends TreeTableView<Entry> {
             }
         }
 
-        private void restoreClassicLayout(ResizeFeatures resize) {
+        private void restoreClassicLayout() {
+            ResizeFeatures<Entry> resize = new ResizeFeatures<>(CoinTreeTable.this, null, 0d);
             if(classicLayout != null && classicLayout.contentWidth() == resize.getContentWidth()
                     && classicLayout.columns().equals(getVisibleLeafColumns())) {
-                ResizeFeatures<Entry> restore = new ResizeFeatures<>(CoinTreeTable.this, null, 0d);
                 for(int i = 0; i < classicLayout.columns().size(); i++) {
-                    restore.setColumnWidth(classicLayout.columns().get(i), classicLayout.widths().get(i));
+                    resize.setColumnWidth(classicLayout.columns().get(i), classicLayout.widths().get(i));
                 }
             }
         }
 
         private void finishFitAfterLayout() {
             if(--remainingQuietPulses <= 0) {
-                stopAppearanceFit();
-                if(fittedAppearance == Appearance.CLASSIC) {
+                Window window = transitionScene == null ? null : transitionScene.getWindow();
+                if(fittedAppearance == Appearance.CLASSIC && Config.get().getAppearance() == Appearance.CLASSIC
+                        && getScene() == transitionScene && window != null
+                        && window.getWidth() == fittedWindowWidth && window.getHeight() == fittedWindowHeight) {
+                    // The old compact CSS bounds may still have clamped a width during the fit.
+                    boolean previous = applyingAppearanceLayout;
+                    applyingAppearanceLayout = true;
+                    try {
+                        restoreClassicLayout();
+                    } finally {
+                        applyingAppearanceLayout = previous;
+                    }
                     rememberClassicLayout();
                 }
+                stopAppearanceFit();
             } else {
                 Platform.requestNextPulse();
             }
