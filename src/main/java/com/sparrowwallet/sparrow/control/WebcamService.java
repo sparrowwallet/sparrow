@@ -160,16 +160,10 @@ public class WebcamService extends ScheduledService<Image> {
                                 }
                             }
                         } else if(Config.get().getWebcamDevice() != null) {
-                            for(CaptureDevice webcam : availableDevices) {
-                                if(webcam.getUniqueId().equals(Config.get().getWebcamDeviceId())) {
-                                    selectedDevice = webcam;
-                                    break;
-                                }
-                                if(webcam.getName().equals(Config.get().getWebcamDevice())) {
-                                    selectedDevice = webcam;
-                                    break;
-                                }
-                            }
+                            //Identical cameras share a name, so the saved ID is looked for first, and the name only where no camera has that ID
+                            selectedDevice = availableDevices.stream().filter(webcam -> webcam.getUniqueId().equals(Config.get().getWebcamDeviceId())).findFirst()
+                                    .or(() -> availableDevices.stream().filter(webcam -> webcam.getName().equals(Config.get().getWebcamDevice())).findFirst())
+                                    .orElse(selectedDevice);
                         }
 
                         device = selectedDevice;
