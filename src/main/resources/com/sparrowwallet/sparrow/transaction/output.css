@@ -11,6 +11,7 @@
 
 .num-outputs { -fx-fill: color-grey }
 .output-other { -fx-fill: color-grey }
+.output-other-value { -fx-fill: color-grey }
 
 .output-value { -fx-fill: color-8 }
 .output-pubkeyscript-length { -fx-fill: color-6 }

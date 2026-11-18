@@ -148,7 +148,7 @@ public class TransactionHexArea extends ReadOnlyCodeArea {
         //Outputs
         for(int i = 0; i < transaction.getOutputs().size(); i++) {
             TransactionOutput output = transaction.getOutputs().get(i);
-            cursor = addSegment(segments, cursor, 8 * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value"));
+            cursor = addSegment(segments, cursor, 8 * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "value", "other-value"));
             VarInt scriptLen = new VarInt(output.getScriptBytes().length);
             cursor = addSegment(segments, cursor, scriptLen.getSizeInBytes() * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript-length"));
             cursor = addSegment(segments, cursor, (int) scriptLen.value * 2, i, "output-" + getIndexedStyleClass(i, selectedOutputIndex, "pubkeyscript"));
@@ -196,11 +196,15 @@ public class TransactionHexArea extends ReadOnlyCodeArea {
     }
 
     private String getIndexedStyleClass(int iterableIndex, int selectedIndex, String styleClass) {
+        return getIndexedStyleClass(iterableIndex, selectedIndex, styleClass, "other");
+    }
+
+    private String getIndexedStyleClass(int iterableIndex, int selectedIndex, String styleClass, String otherStyleClass) {
         if (selectedIndex == -1 || selectedIndex == iterableIndex) {
             return styleClass;
         }
 
-        return "other";
+        return otherStyleClass;
     }
 
     private boolean isSignature(byte[] data) {

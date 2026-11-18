@@ -35,3 +35,5 @@
 .change-warning-icon, .payment-warning-icon {
     -fx-text-fill: rgb(238, 210, 2);
 }
+
+.hide-amounts .output-value, .hide-amounts .output-other-value { -fx-fill: -fx-control-inner-background }
