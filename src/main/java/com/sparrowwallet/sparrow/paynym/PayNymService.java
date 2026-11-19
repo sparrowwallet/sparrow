@@ -9,6 +9,7 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.net.Auth47;
 import io.reactivex.Observable;
 import io.reactivex.rxjavafx.schedulers.JavaFxScheduler;
 import io.reactivex.schedulers.Schedulers;
@@ -18,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -249,6 +251,10 @@ public class PayNymService {
     }
 
     public static String getSignature(Wallet wallet, String authToken) {
+        if(authToken.toLowerCase(Locale.ROOT).startsWith(Auth47.SCHEME + ":") || authToken.contains("://")) {
+            throw new IllegalArgumentException("Invalid PayNym authentication token");
+        }
+
         Wallet masterWallet = wallet.isMasterWallet() ? wallet : wallet.getMasterWallet();
         Keystore keystore = masterWallet.getKeystores().get(0);
         List<ChildNumber> derivation = keystore.getKeyDerivation().getDerivation();
