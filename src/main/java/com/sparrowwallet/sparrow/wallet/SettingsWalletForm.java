@@ -27,8 +27,7 @@ public class SettingsWalletForm extends WalletForm {
 
     public SettingsWalletForm(Storage storage, Wallet currentWallet, WalletForm appWalletForm) {
         super(storage, currentWallet);
-        this.walletCopy = currentWallet.copy();
-        this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
+        this.walletCopy = copyWallet(currentWallet);
         this.appWalletForm = appWalletForm;
         disposeRefreshNodes();
     }
@@ -40,7 +39,29 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void setWallet(Wallet wallet) {
+        //An account replaced in settings takes the place of the one in the master copy, so that changes made to the master copy's accounts reach it
+        if(!wallet.isMasterWallet() && walletCopy != null && !walletCopy.isMasterWallet() && wallet.getMasterWallet() == walletCopy.getMasterWallet()) {
+            List<Wallet> childWallets = wallet.getMasterWallet().getChildWallets();
+            for(int i = 0; i < childWallets.size(); i++) {
+                if(childWallets.get(i) == walletCopy) {
+                    childWallets.set(i, wallet);
+                }
+            }
+        }
+
         this.walletCopy = wallet;
+    }
+
+    //An account is copied as the child of a copy of its master wallet, rather than as a copy of its own, so that a change made to the master copy and
+    //its accounts, such as encrypting them all, also applies to it
+    private static Wallet copyWallet(Wallet wallet) {
+        if(wallet.isMasterWallet()) {
+            return wallet.copy();
+        }
+
+        Wallet masterWalletCopy = wallet.getMasterWallet().copy();
+        int childIndex = wallet.getMasterWallet().getChildWallets().indexOf(wallet);
+        return masterWalletCopy.getChildWallets().get(childIndex);
     }
 
     public WalletForm getAppWalletForm() {
@@ -64,8 +85,7 @@ public class SettingsWalletForm extends WalletForm {
 
     @Override
     public void revert() {
-        this.walletCopy = super.getWallet().copy();
-        this.walletCopy.setMasterWallet(walletCopy.isMasterWallet() ? null : walletCopy.getMasterWallet().copy());
+        this.walletCopy = copyWallet(super.getWallet());
     }
 
     @Override
@@ -103,6 +123,9 @@ public class SettingsWalletForm extends WalletForm {
             save();
 
             EventManager.get().post(new WalletAddressesChangedEvent(wallet, addressChange ? null : pastWallet, getWalletId()));
+
+            //A password changed along with a change needing a refresh must still reach the keystores the save above does not write
+            postEncryptionChangedKeystores();
         } else {
             List<Keystore> labelChangedKeystores = getLabelChangedKeystores(wallet, walletCopy);
             if(!labelChangedKeystores.isEmpty()) {
@@ -113,28 +136,36 @@ public class SettingsWalletForm extends WalletForm {
                 EventManager.get().post(new WalletWatchLastChangedEvent(wallet, pastWallet, getWalletId(), walletCopy.getWatchLast()));
             }
 
-            Wallet masterWallet = getMasterWallet();
-            Wallet masterWalletCopy = walletCopy.isMasterWallet() ? walletCopy : walletCopy.getMasterWallet();
-            List<Keystore> encryptionChangedKeystores = getEncryptionChangedKeystores(masterWallet, masterWalletCopy);
-            if(!encryptionChangedKeystores.isEmpty()) {
-                EventManager.get().post(new KeystoreEncryptionChangedEvent(masterWallet, masterWallet.copy(), getStorage().getWalletId(masterWallet), encryptionChangedKeystores));
-            }
-
-            for(Wallet childWallet : masterWallet.getChildWallets()) {
-                Wallet childWalletCopy = masterWalletCopy.getChildWallet(childWallet.getName());
-                if(childWalletCopy != null) {
-                    List<Keystore> childEncryptionChangedKeystores = getEncryptionChangedKeystores(childWallet, childWalletCopy);
-                    if(!childEncryptionChangedKeystores.isEmpty()) {
-                        EventManager.get().post(new KeystoreEncryptionChangedEvent(childWallet, childWallet.copy(), getStorage().getWalletId(childWallet), childEncryptionChangedKeystores));
-                    }
-                }
-            }
+            List<Keystore> encryptionChangedKeystores = postEncryptionChangedKeystores();
 
             if(labelChangedKeystores.isEmpty() && encryptionChangedKeystores.isEmpty()) {
                 //Can only be a wallet password change on a wallet without private keys
                 EventManager.get().post(new WalletPasswordChangedEvent(wallet, pastWallet, getWalletId()));
             }
         }
+    }
+
+    //Posts the keystores of the master wallet and its accounts whose encryption the copy changed, returning those of the master wallet
+    private List<Keystore> postEncryptionChangedKeystores() {
+        Wallet masterWallet = getMasterWallet();
+        Wallet masterWalletCopy = walletCopy.isMasterWallet() ? walletCopy : walletCopy.getMasterWallet();
+        List<Keystore> encryptionChangedKeystores = getEncryptionChangedKeystores(masterWallet, masterWalletCopy);
+        if(!encryptionChangedKeystores.isEmpty()) {
+            EventManager.get().post(new KeystoreEncryptionChangedEvent(masterWallet, masterWallet.copy(), getStorage().getWalletId(masterWallet), encryptionChangedKeystores));
+        }
+
+        for(Wallet childWallet : masterWallet.getChildWallets()) {
+            Wallet childWalletCopy = masterWalletCopy.getChildWallet(childWallet.getName());
+            if(childWalletCopy != null) {
+                List<Keystore> childEncryptionChangedKeystores = getEncryptionChangedKeystores(childWallet, childWalletCopy);
+                if(!childEncryptionChangedKeystores.isEmpty()) {
+                    EventManager.get().post(new KeystoreEncryptionChangedEvent(childWallet, childWallet.copy(), getStorage().getWalletId(childWallet),
+                            childEncryptionChangedKeystores));
+                }
+            }
+        }
+
+        return encryptionChangedKeystores;
     }
 
     //Returns true for any change, other than a keystore label change, to trigger a full wallet refresh
@@ -244,7 +275,8 @@ public class SettingsWalletForm extends WalletForm {
 
     private List<Keystore> getEncryptionChangedKeystores(Wallet original, Wallet changed) {
         List<Keystore> changedKeystores = new ArrayList<>();
-        for(int i = 0; i < original.getKeystores().size(); i++) {
+        //A wallet whose keystores were replaced may have a different number of them
+        for(int i = 0; i < Math.min(original.getKeystores().size(), changed.getKeystores().size()); i++) {
             Keystore originalKeystore = original.getKeystores().get(i);
             Keystore changedKeystore = changed.getKeystores().get(i);
 
@@ -277,7 +309,7 @@ public class SettingsWalletForm extends WalletForm {
         if(childWalletCopy == null) {
             childWalletCopy = childWallet.copy();
             childWalletCopy.setMasterWallet(masterWalletCopy);
-            masterWalletCopy.getChildWallets().add(childWallet.copy());
+            masterWalletCopy.getChildWallets().add(childWalletCopy);
         }
     }
 
