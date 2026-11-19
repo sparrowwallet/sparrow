@@ -780,9 +780,34 @@ public class ElectrumServer {
     }
 
     private int getGapLimitSize(Wallet wallet, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, WalletNode purposeNode) {
-        int highestIndex = nodeTransactionMap.keySet().stream().filter(node -> node.getDerivation().size() > 1 && purposeNode.getKeyPurpose() == node.getKeyPurpose())
-                .map(WalletNode::getIndex).max(Comparator.comparing(Integer::valueOf)).orElse(-1);
+        //Taken from the highest index down, so that only the nodes above the highest used one are checked
+        int highestIndex = nodeTransactionMap.entrySet().stream()
+                .filter(entry -> entry.getKey().getDerivation().size() > 1 && purposeNode.getKeyPurpose() == entry.getKey().getKeyPurpose())
+                .sorted(Comparator.comparingInt((Map.Entry<WalletNode, Set<BlockTransactionHash>> entry) -> entry.getKey().getIndex()).reversed())
+                .filter(entry -> isPaidByFetchedTransaction(wallet, entry.getKey(), entry.getValue()))
+                .map(entry -> entry.getKey().getIndex()).findFirst().orElse(-1);
         return highestIndex + wallet.getGapLimit() + 1;
+    }
+
+    //An address is used once a transaction pays it, rather than once a status is reported for it
+    private static boolean isPaidByFetchedTransaction(Wallet wallet, WalletNode node, Set<BlockTransactionHash> references) {
+        if(references == null || references.isEmpty()) {
+            return false;
+        }
+
+        byte[] outputScript = node.getOutputScript().getProgram();
+        for(BlockTransactionHash reference : references) {
+            BlockTransaction blockTransaction = wallet.getTransactions().get(reference.getHash());
+            if(blockTransaction != null && blockTransaction.getTransaction() != null) {
+                for(TransactionOutput txOutput : blockTransaction.getTransaction().getOutputs()) {
+                    if(Arrays.equals(txOutput.getScript().getProgram(), outputScript)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     public void getReferences(Wallet wallet, Collection<WalletNode> nodes, Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap, int startIndex) throws ServerException {

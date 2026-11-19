@@ -34,6 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.math.BigInteger;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,6 +61,7 @@ public class SilentPaymentsBatchTest {
     private ServerCapability previousServerCapability;
     private final Map<String, Transaction> served = new LinkedHashMap<>();
     private final Set<String> usedScriptHashes = new HashSet<>();
+    private final Map<String, String> paymentTxids = new HashMap<>();
 
     @BeforeAll
     public static void setUpAll() {
@@ -97,7 +99,8 @@ public class SilentPaymentsBatchTest {
             @Override
             public Map<String, ScriptHashTx[]> getScriptHashHistory(Transport transport, Wallet wallet, Map<String, String> pathScriptHashes, boolean failOnError) {
                 Map<String, ScriptHashTx[]> result = new LinkedHashMap<>();
-                pathScriptHashes.keySet().forEach(path -> result.put(path, new ScriptHashTx[0]));
+                pathScriptHashes.forEach((path, scriptHash) -> result.put(path, paymentTxids.containsKey(scriptHash)
+                        ? new ScriptHashTx[] {new ScriptHashTx(0, paymentTxids.get(scriptHash), 0L)} : new ScriptHashTx[0]));
                 return result;
             }
         };
@@ -194,7 +197,13 @@ public class SilentPaymentsBatchTest {
         Wallet wallet = deterministicWallet();
         WalletNode receiveNode = wallet.getNode(KeyPurpose.RECEIVE);
         receiveNode.fillToIndex(wallet, 1);
-        usedScriptHashes.add(ElectrumServer.getScriptHash(receiveNode.getChildren().stream().filter(node -> node.getIndex() == 1).findFirst().orElseThrow()));
+        WalletNode usedNode = receiveNode.getChildren().stream().filter(node -> node.getIndex() == 1).findFirst().orElseThrow();
+        Transaction transaction = new Transaction();
+        transaction.addInput(Sha256Hash.of(new byte[] {1}), 0, new Script(new byte[0]));
+        transaction.addOutput(10000L, usedNode.getAddress());
+        served.put(transaction.getTxId().toString(), transaction);
+        usedScriptHashes.add(ElectrumServer.getScriptHash(usedNode));
+        paymentTxids.put(ElectrumServer.getScriptHash(usedNode), transaction.getTxId().toString());
 
         assertTimeoutPreemptively(Duration.ofSeconds(10), () -> new ElectrumServer().getHistory(wallet));
         assertEquals(2 + wallet.getGapLimit(), receiveNode.getChildren().size());
