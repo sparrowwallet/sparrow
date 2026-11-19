@@ -201,6 +201,15 @@ public class ElectrumServer {
 
     private static synchronized CloseableTransport getTransport() throws ServerException {
         if(transport == null) {
+            throw new ServerException("Not connected to a server");
+        }
+
+        return transport;
+    }
+
+    //Only a connection creates the transport, from the settings of that moment, so that one created by a call made after a disconnection cannot be reused
+    private static synchronized CloseableTransport getConnectionTransport() throws ServerException {
+        if(transport == null) {
             try {
                 Server electrumServer = null;
                 File electrumServerCert = null;
@@ -284,7 +293,7 @@ public class ElectrumServer {
     }
 
     public void connect() throws ServerException {
-        CloseableTransport closeableTransport = getTransport();
+        CloseableTransport closeableTransport = getConnectionTransport();
         closeableTransport.connect();
     }
 
@@ -3781,7 +3790,7 @@ public class ElectrumServer {
         /**
          * The body of a run, which happens on a background thread: the connection check is therefore the transport level one, since AppServices reads
          * a JavaFX Service and may only be called from the application thread. Without the check a retry firing after the connection closed would
-         * have getTransport() open a transport of its own, outside the connection lifecycle.
+         * fail for want of a transport, and be taken as the server failing to substantiate the tip it announced.
          */
         static void syncAnnouncedHeaders(ChainTip tip) throws ServerException {
             if(!isConnected()) {
@@ -4183,7 +4192,7 @@ public class ElectrumServer {
                 @Override
                 protected Map<String, TransactionMerkleProof> call() {
                     try {
-                        //getTransport() opens one where there is none, so a task running after the connection closed must not reach it
+                        //A task running after the connection closed has no transport to fetch with
                         if(isConnected()) {
                             return electrumServerRpc.getTransactionMerkleProofs(getTransport(), null, List.of(reference));
                         }
@@ -4218,7 +4227,7 @@ public class ElectrumServer {
             return new Task<>() {
                 @Override
                 protected BlockHeader call() throws ServerException {
-                    //getTransport() opens one where there is none, so a task running after the connection closed must not reach it
+                    //A task running after the connection closed has no transport to fetch with
                     if(!isConnected()) {
                         throw new ServerException("Not connected");
                     }
