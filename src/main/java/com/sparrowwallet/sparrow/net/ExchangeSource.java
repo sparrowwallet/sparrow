@@ -22,6 +22,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public enum ExchangeSource {
@@ -165,13 +166,13 @@ public enum ExchangeSource {
 
         @Override
         public Map<Date, Double> getHistoricalExchangeRates(Currency currency, Date start, Date end) {
-            long startDate = start.getTime() / 1000;
-            long endDate = end.getTime() / 1000;
-
-            Calendar cal = Calendar.getInstance();
-            cal.add(Calendar.YEAR, -1);
-            startDate = Math.max(cal.getTimeInMillis() / 1000, startDate);
-            endDate = Math.max(cal.getTimeInMillis() / 1000, endDate);
+            //Requested in whole UTC days, the rates being used by day, and starting no earlier than the first whole day within the last 365
+            long daySeconds = TimeUnit.DAYS.toSeconds(1);
+            long now = System.currentTimeMillis() / 1000;
+            long firstDay = Math.max(Math.ceilDiv(now - 365 * daySeconds, daySeconds), Math.floorDiv(start.getTime() / 1000, daySeconds));
+            long lastDay = Math.max(firstDay, Math.ceilDiv(end.getTime() / 1000, daySeconds));
+            long startDate = firstDay * daySeconds;
+            long endDate = Math.min(lastDay * daySeconds, now);
 
             String url = "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart/range?vs_currency=" + currency.getCurrencyCode() + "&from=" + startDate + "&to=" + endDate;
 
