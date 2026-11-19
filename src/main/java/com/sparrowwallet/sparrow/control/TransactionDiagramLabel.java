@@ -87,6 +87,16 @@ public class TransactionDiagramLabel extends HBox {
             List<Payment> badbankOutputs = walletTx.getPayments().stream().filter(walletTx::isBadbankSend).collect(Collectors.toList());
             List<OutputLabel> badbankOutputLabels = badbankOutputs.stream().map(payment -> getBadbankOutputLabel(transactionDiagram, payment)).collect(Collectors.toList());
             outputLabels.addAll(badbankOutputLabels);
+
+            for(WalletTransaction.Output output : walletTx.getOutputs()) {
+                if(transactionDiagram.isPaymentAndNotChange(output)) {
+                    Payment payment = output instanceof WalletTransaction.PaymentOutput po ? po.getPayment()
+                            : ((WalletTransaction.ConsolidationOutput)output).getWalletNodePayment();
+                    if(!walletTx.isPremixSend(payment) && payment.getType() != Payment.Type.WHIRLPOOL_FEE && !walletTx.isBadbankSend(payment)) {
+                        outputLabels.add(getOutputLabel(transactionDiagram, output));
+                    }
+                }
+            }
         } else if(walletTx.getPayments().size() >= 5 && walletTx.getPayments().stream().mapToLong(Payment::getAmount).distinct().count() <= 1 && walletTx.getWallet() != null
                 && walletTx.getWallet().getStandardAccountType() == StandardAccount.WHIRLPOOL_PREMIX  && walletTx.getPayments().stream().anyMatch(walletTx::isPostmixSend)) {
             OutputLabel mixOutputLabel = getMixOutputLabel(transactionDiagram, walletTx.getPayments());
