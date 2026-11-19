@@ -790,7 +790,7 @@ public class ServerSettingsController extends SettingsDetailController {
 
         validationSupport.registerValidator(proxyHost, Validator.combine(
                 (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Proxy host required", useProxy.isSelected() && newValue.isBlank()),
-                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid host name", getHost(newValue) == null)
+                (Control c, String newValue) -> ValidationResult.fromErrorIf( c, "Invalid host name", getHost(newValue) == null && getHostWithPort(newValue) == null)
         ));
 
         validationSupport.registerValidator(proxyPort, Validator.combine(
@@ -994,6 +994,14 @@ public class ServerSettingsController extends SettingsDetailController {
     private void setProxyConfig(Config config) {
         String hostAsString = getHost(proxyHost.getText());
         Integer portAsInteger = getPort(proxyPort.getText());
+        HostAndPort hostWithPort = hostAsString == null ? getHostWithPort(proxyHost.getText()) : null;
+        if(hostWithPort != null) {
+            hostAsString = hostWithPort.getHost();
+            if(proxyPort.getText().isBlank()) {
+                portAsInteger = hostWithPort.getPort();
+            }
+        }
+
         String proxyServer = null;
         if(hostAsString != null && !hostAsString.isBlank() && portAsInteger != null && isValidPort(portAsInteger)) {
             proxyServer = HostAndPort.fromParts(hostAsString, portAsInteger).toString();
@@ -1003,6 +1011,9 @@ public class ServerSettingsController extends SettingsDetailController {
             proxyServer = config.getProxyServer() != null ? config.getProxyServer() : HostAndPort.fromHost(hostAsString).toString();
         } else if(hostAsString != null && !hostAsString.isBlank()) {
             proxyServer = HostAndPort.fromHost(hostAsString).toString();
+        } else if(hostAsString == null && !proxyHost.getText().isBlank()) {
+            //An invalid host leaves the proxy as it was, as an invalid port does
+            proxyServer = config.getProxyServer();
         }
 
         config.setProxyServer(proxyServer);
@@ -1016,6 +1027,16 @@ public class ServerSettingsController extends SettingsDetailController {
     private String getHost(String text) {
         try {
             return HostAndPort.fromHost(text.trim()).getHost();
+        } catch(IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    //A port given with the proxy host is taken as the port where the port field is empty, the port field otherwise taking precedence
+    private HostAndPort getHostWithPort(String text) {
+        try {
+            HostAndPort hostAndPort = HostAndPort.fromString(text.trim());
+            return hostAndPort.hasPort() ? hostAndPort : null;
         } catch(IllegalArgumentException e) {
             return null;
         }
