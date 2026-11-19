@@ -202,7 +202,7 @@ public class SettingsDialog extends WalletDialog {
             Platform.runLater(() -> {
                 if(password.length() == 0 && requirement != PasswordRequirement.UPDATE_SET) {
                     try {
-                        walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+                        walletForm.getStorage().setEncryptionPubKey(Storage.NO_PASSWORD_KEY, changePassword);
                         walletForm.saveAndRefresh();
                         EventManager.get().post(new RequestOpenWalletsEvent());
                     } catch (IOException | StorageException e) {
@@ -264,7 +264,8 @@ public class SettingsDialog extends WalletDialog {
                                     childWallet.encrypt(key);
                                 }
                             }
-                            walletForm.getStorage().setEncryptionPubKey(encryptionPubKey);
+                            //Backups made without this password are deleted once the wallet is saved with it, as on the desktop by default
+                            walletForm.getStorage().setEncryptionPubKey(encryptionPubKey, changePassword || requirement == PasswordRequirement.UPDATE_EMPTY);
                             walletForm.saveAndRefresh();
                             EventManager.get().post(new RequestOpenWalletsEvent());
                         } catch (Exception e) {
