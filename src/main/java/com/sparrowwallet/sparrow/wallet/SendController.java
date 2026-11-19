@@ -1393,8 +1393,9 @@ public class SendController extends WalletFormController implements Initializabl
         Wallet masterWallet = getWalletForm().getMasterWallet();
         Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
         List<ScriptType> scriptTypes = PayNym.getSegwitScriptTypes();
+        String nymName = PayNym.getChildWalletNymName(masterWallet, externalPaymentCode, payNym);
         for(ScriptType childScriptType : scriptTypes) {
-            String label = (payNym == null ? externalPaymentCode.toAbbreviatedString() : payNym.nymName()) + " " + childScriptType.getName();
+            String label = nymName + " " + childScriptType.getName();
             Wallet addedWallet = masterWallet.addChildWallet(externalPaymentCode, childScriptType, label);
             if(!storage.isPersisted(addedWallet)) {
                 try {

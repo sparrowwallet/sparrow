@@ -109,6 +109,18 @@ public class PayNym {
         return new PayNym(externalPaymentCode, null, nymName, segwit, Collections.emptyList(), Collections.emptyList());
     }
 
+    public static String getChildWalletNymName(Wallet masterWallet, PaymentCode externalPaymentCode, PayNym payNym) {
+        if(payNym == null || payNym.nymName() == null) {
+            return externalPaymentCode.toAbbreviatedString();
+        }
+
+        //A name already given to a stored contact with another payment code would show two contacts under it
+        Address notificationAddress = externalPaymentCode.getNotificationAddress();
+        boolean nameInUse = masterWallet.getChildWallets().stream().filter(Wallet::isBip47).anyMatch(childWallet -> payNym.nymName().equals(getNymName(childWallet))
+                && !childWallet.getKeystores().get(0).getExternalPaymentCode().getNotificationAddress().equals(notificationAddress));
+        return nameInUse ? externalPaymentCode.toAbbreviatedString() : payNym.nymName();
+    }
+
     public static String getNymName(Wallet bip47Wallet) {
         if(bip47Wallet.getLabel() != null) {
             String suffix = " " + bip47Wallet.getScriptType().getName();

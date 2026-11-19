@@ -68,7 +68,7 @@ public class PayNymCell extends ListCell<PayNym> {
                 pane.setRight(hBox);
                 button.setOnAction(event -> {
                     button.setDisable(true);
-                    payNymController.followPayNym(payNym.paymentCode());
+                    payNymController.followPayNym(payNym);
                 });
             } else if(contact && payNymController != null) {
                 HBox hBox = new HBox();

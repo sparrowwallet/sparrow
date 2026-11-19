@@ -2,6 +2,8 @@ package com.sparrowwallet.sparrow.paynym;
 
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.SecureString;
+import com.sparrowwallet.drongo.address.Address;
+import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.bip47.SecretPoint;
 import com.sparrowwallet.drongo.crypto.ECKey;
@@ -31,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -42,12 +43,12 @@ import static com.sparrowwallet.sparrow.wallet.PaymentController.MINIMUM_P2PKH_O
 public class PayNymController {
     private static final Logger log = LoggerFactory.getLogger(PayNymController.class);
 
-    public static final Pattern SAMOURAI_PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9a-fA-F][0-9a-fA-F]");
     public static final Pattern ASHIGARU_PAYNYM_REGEX = Pattern.compile("\\+[a-z]+[0-9][0-9]");
     public static final String INVALID_PAYMENT_CODE_LABEL = "Invalid Payment Code";
 
     private String walletId;
     private PayNym walletPayNym;
+    private final List<PayNym> followedPayNyms = new ArrayList<>();
     private boolean requestingPassword;
 
     @FXML
@@ -243,7 +244,7 @@ public class PayNymController {
     }
 
     private void searchFollowing(String nymIdentifier) {
-        Optional<PayNym> optExisting = walletPayNym.following().stream().filter(payNym -> payNym.nymName().equals(nymIdentifier) || payNym.paymentCode().toString().equals(nymIdentifier)).findFirst();
+        Optional<PayNym> optExisting = findFollowing(nymIdentifier);
         if(optExisting.isPresent()) {
             followingList.setUserData(Boolean.FALSE);
             List<PayNym> existingPayNym = new ArrayList<>();
@@ -307,12 +308,15 @@ public class PayNymController {
         });
     }
 
-    public void followPayNym(PaymentCode contact) {
+    public void followPayNym(PayNym contact) {
         Wallet masterWallet = getMasterWallet();
         retrievePayNymProgress.setVisible(true);
         PayNymService.getAuthToken(masterWallet, new HashMap<>()).subscribe(authToken -> {
             String signature = PayNymService.getSignature(masterWallet, authToken);
-            PayNymService.followPaymentCode(contact, authToken, signature).subscribe(followMap -> {
+            PayNymService.followPaymentCode(contact.paymentCode(), authToken, signature).subscribe(followMap -> {
+                Address notificationAddress = contact.notificationAddress();
+                followedPayNyms.removeIf(followed -> followed.notificationAddress().equals(notificationAddress));
+                followedPayNyms.add(contact);
                 refresh();
             }, error -> {
                 retrievePayNymProgress.setVisible(false);
@@ -340,7 +344,8 @@ public class PayNymController {
 
     public Boolean isFollowing(PayNym payNym) {
         if(followingList.getItems() != null) {
-            return followingList.getItems().stream().anyMatch(following -> payNym.paymentCode().equals(following.paymentCode()));
+            Address notificationAddress = payNym.notificationAddress();
+            return followingList.getItems().stream().anyMatch(following -> notificationAddress.equals(following.notificationAddress()));
         }
 
         return null;
@@ -354,34 +359,63 @@ public class PayNymController {
     }
 
     public void updateFollowing() {
-        List<PayNym> followingPayNyms = new ArrayList<>();
-        if(walletPayNym != null) {
-            followingPayNyms.addAll(walletPayNym.following());
-        }
-
-        Map<PaymentCode, PayNym> payNymMap = followingPayNyms.stream().collect(Collectors.toMap(PayNym::paymentCode, Function.identity(), (u, v) -> u, LinkedHashMap::new));
-        followingList.setItems(FXCollections.observableList(getExistingWalletPayNyms(payNymMap)));
+        followingList.setItems(FXCollections.observableList(getFollowing()));
     }
 
-    private List<PayNym> getExistingWalletPayNyms(Map<PaymentCode, PayNym> payNymMap) {
+    //The directory names contacts, but the payment codes followed in this session and the contacts stored in the wallet are not replaced by what it lists
+    private List<PayNym> getFollowing() {
+        Map<Address, PayNym> payNymMap = new LinkedHashMap<>();
+        if(walletPayNym != null) {
+            for(PayNym payNym : walletPayNym.following()) {
+                payNymMap.putIfAbsent(payNym.notificationAddress(), payNym);
+            }
+        }
+
+        for(PayNym followed : followedPayNyms) {
+            Address notificationAddress = followed.notificationAddress();
+            if(followed.nymName() != null) {
+                payNymMap.entrySet().removeIf(entry -> !entry.getKey().equals(notificationAddress) && followed.nymName().equals(entry.getValue().nymName()));
+            }
+            payNymMap.put(notificationAddress, followed);
+        }
+
+        Set<Address> storedAddresses = new HashSet<>();
+        Set<String> storedNames = new HashSet<>();
         List<Wallet> childWallets = new ArrayList<>(getMasterWallet().getChildWallets());
         childWallets.sort(Comparator.comparingInt(o -> -o.getScriptType().ordinal()));
         for(Wallet childWallet : childWallets) {
             if(childWallet.isBip47()) {
                 PaymentCode externalPaymentCode = childWallet.getKeystores().get(0).getExternalPaymentCode();
-                String walletNymName = PayNym.getNymName(childWallet);
-                if(payNymMap.get(externalPaymentCode) == null || (walletNymName != null && !walletNymName.equals(payNymMap.get(externalPaymentCode).nymName()))) {
-                    if(walletNymName != null && payNymMap.get(externalPaymentCode) != null && SAMOURAI_PAYNYM_REGEX.matcher(walletNymName).matches()) {
-                        childWallet.setLabel(payNymMap.get(externalPaymentCode).nymName() + " " + childWallet.getScriptType().getName());
-                        EventManager.get().post(new WalletLabelChangedEvent(childWallet));
-                    } else {
-                        payNymMap.put(externalPaymentCode, PayNym.fromWallet(childWallet));
+                Address notificationAddress = externalPaymentCode.getNotificationAddress();
+                if(storedAddresses.add(notificationAddress)) {
+                    PayNym listed = payNymMap.get(notificationAddress);
+                    String walletNymName = PayNym.getNymName(childWallet);
+                    boolean listedAsStored = listed != null && listed.paymentCode().toString().equals(externalPaymentCode.toString())
+                            && (walletNymName == null || walletNymName.equals(listed.nymName()));
+                    if(!listedAsStored) {
+                        payNymMap.put(notificationAddress, PayNym.fromWallet(childWallet));
+                    }
+                    if(payNymMap.get(notificationAddress).nymName() != null) {
+                        storedNames.add(payNymMap.get(notificationAddress).nymName());
                     }
                 }
             }
         }
 
+        Set<Address> followedAddresses = followedPayNyms.stream().map(PayNym::notificationAddress).collect(Collectors.toSet());
+        payNymMap.entrySet().removeIf(entry -> !storedAddresses.contains(entry.getKey()) && !followedAddresses.contains(entry.getKey())
+                && storedNames.contains(entry.getValue().nymName()));
+
         return new ArrayList<>(payNymMap.values());
+    }
+
+    private Optional<PayNym> findFollowing(String nymIdentifier) {
+        try {
+            Address notificationAddress = new PaymentCode(nymIdentifier).getNotificationAddress();
+            return getFollowing().stream().filter(payNym -> payNym.notificationAddress().equals(notificationAddress)).findFirst();
+        } catch(InvalidPaymentCodeException | IllegalArgumentException e) {
+            return getFollowing().stream().filter(payNym -> nymIdentifier.equals(payNym.nymName())).findFirst();
+        }
     }
 
     private void addWalletIfNotificationTransactionPresent(List<PayNym> following) {
@@ -477,8 +511,9 @@ public class PayNymController {
         Wallet masterWallet = getMasterWallet();
         Storage storage = AppServices.get().getOpenWallets().get(masterWallet);
         List<ScriptType> scriptTypes = masterWallet.getScriptType() != ScriptType.P2PKH ? PayNym.getSegwitScriptTypes() : payNym.getScriptTypes();
+        String nymName = PayNym.getChildWalletNymName(masterWallet, externalPaymentCode, payNym);
         for(ScriptType childScriptType : scriptTypes) {
-            String label = payNym.nymName() + " " + childScriptType.getName();
+            String label = nymName + " " + childScriptType.getName();
             Wallet addedWallet = masterWallet.addChildWallet(externalPaymentCode, childScriptType, label);
             if(!storage.isPersisted(addedWallet)) {
                 try {
@@ -498,8 +533,11 @@ public class PayNymController {
     public void linkPayNym(PayNym payNym) {
         ButtonType previewType = new ButtonType("Preview", ButtonBar.ButtonData.LEFT);
         ButtonType sendType = new ButtonType("Send", ButtonBar.ButtonData.YES);
+        String abbreviatedPaymentCode = payNym.paymentCode().toAbbreviatedString();
+        boolean named = payNym.nymName() != null && !payNym.nymName().equals(abbreviatedPaymentCode);
+        String contact = named ? payNym.nymName() + " (" + abbreviatedPaymentCode + ")" : abbreviatedPaymentCode;
         Optional<ButtonType> optButtonType = AppServices.showAlertDialog("Link PayNym?",
-                "Linking to this contact will allow you to send to it directly (non-collaboratively) through unique private addresses you can generate independently.\n\n" +
+                "Linking to " + contact + " will allow you to send to it directly (non-collaboratively) through unique private addresses you can generate independently.\n\n" +
                 "It will cost " + MINIMUM_P2PKH_OUTPUT_SATS + " sats to create the link through a notification transaction, plus the mining fee. Send transaction?", Alert.AlertType.CONFIRMATION, previewType, ButtonType.CANCEL, sendType);
         if(optButtonType.isPresent() && optButtonType.get() == sendType) {
             broadcastNotificationTransaction(payNym);

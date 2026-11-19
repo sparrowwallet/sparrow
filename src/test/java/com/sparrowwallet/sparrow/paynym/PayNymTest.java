@@ -1,5 +1,8 @@
 package com.sparrowwallet.sparrow.paynym;
 
+import com.sparrowwallet.drongo.bip47.PaymentCode;
+import com.sparrowwallet.drongo.protocol.ScriptType;
+import com.sparrowwallet.drongo.wallet.Wallet;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -14,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class PayNymTest {
     private static final String PAYMENT_CODE = "PM8TJTLJbPRGxSbc8EJi42Wrr6QbNSaSSVJ5Y3E4pbCYiTHUskHg13935Ubb7q8tx9GVbh2UuRnBc3WSyJHhUrw8KhprKnn9eDznYGieTzFcwQRya4GA";
+    private static final String OTHER_PAYMENT_CODE = "PM8TJS2JxQ5ztXUpBBRnpTbcUXbUHy2T1abfrb3KkAAtMEGNbey4oumH7Hc578WgQJhPjBxteQ5GHHToTYHE3A1w6p7tU6KSoFmWBVbFGjKPisZDbP97";
 
     @Test
     public void parsesAValidPaymentCode() {
@@ -36,6 +40,23 @@ public class PayNymTest {
         //Parses and passes its checksum, but the key's x coordinate is not on the curve
         String invalidKey = "PM8TJWnHNrXcofmpzddV4aoaZMMN3C7QhbymGxWYBQVKjs1fochBZk1dZ7ZnoqMkg2YwtACR3eRMipK7KqvQ6cG9dyc2eLFuwsA8SSuUHxRERKBFNx5G";
         assertTrue(PayNym.fromString(invalidKey, "id", "+name", true, Collections.emptyList(), Collections.emptyList()).isEmpty());
+    }
+
+    @Test
+    public void childWalletNameNotReusedForAnotherPaymentCode() throws Exception {
+        Wallet masterWallet = PayNymServiceTest.getWallet();
+        PaymentCode alice = new PaymentCode(PAYMENT_CODE);
+        PaymentCode bob = new PaymentCode(OTHER_PAYMENT_CODE);
+        masterWallet.addChildWallet(alice, ScriptType.P2WPKH, "+alice " + ScriptType.P2WPKH.getName());
+
+        PayNym namedAlice = PayNym.fromString(OTHER_PAYMENT_CODE, "id", "+alice", true, Collections.emptyList(), Collections.emptyList()).orElseThrow();
+        assertEquals(bob.toAbbreviatedString(), PayNym.getChildWalletNymName(masterWallet, bob, namedAlice));
+
+        PayNym namedBob = PayNym.fromString(OTHER_PAYMENT_CODE, "id", "+bob", true, Collections.emptyList(), Collections.emptyList()).orElseThrow();
+        assertEquals("+bob", PayNym.getChildWalletNymName(masterWallet, bob, namedBob));
+
+        PayNym aliceAgain = PayNym.fromString(PAYMENT_CODE, "id", "+alice", true, Collections.emptyList(), Collections.emptyList()).orElseThrow();
+        assertEquals("+alice", PayNym.getChildWalletNymName(masterWallet, alice, aliceAgain));
     }
 
     @Test
