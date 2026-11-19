@@ -49,6 +49,10 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final Pattern ID_PATTERN = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
     private static final JsonFactory JSON_FACTORY = new JsonFactory();
 
+    //The replies of a working proxy that could not reach the server, as SocksSocketImpl words them, which say nothing against the proxy itself
+    private static final Set<String> SOCKS_DESTINATION_FAILURES = Set.of("SOCKS server general failure", "SOCKS: Network unreachable", "SOCKS: Host unreachable",
+            "SOCKS: Connection refused", "SOCKS: TTL expired", "SOCKS server couldn't reach destination");
+
     private static final AtomicLong deliveredResponses = new AtomicLong(); //Counts the responses delivered to callers ordering notifications with responses
     private static final ThreadLocal<Long> lastResponseSequence = new ThreadLocal<>(); //Sequence of the response this thread's last RPC received
 
@@ -368,7 +372,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         } catch(SSLHandshakeException e) {
             throw new TlsServerException(server, e);
         } catch(IOException e) {
-            if(e.getStackTrace().length > 0 && e.getStackTrace()[0].getClassName().contains("SocksSocketImpl")) {
+            if(e.getStackTrace().length > 0 && e.getStackTrace()[0].getClassName().contains("SocksSocketImpl") && !SOCKS_DESTINATION_FAILURES.contains(e.getMessage())) {
                 throw new ProxyServerException(e);
             }
 
