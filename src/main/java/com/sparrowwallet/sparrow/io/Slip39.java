@@ -4,9 +4,9 @@ import com.sparrowwallet.drongo.crypto.ChildNumber;
 import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.drongo.wallet.slip39.RecoveryState;
+import com.sparrowwallet.drongo.wallet.slip39.Slip39MnemonicCode;
 import com.sparrowwallet.drongo.wallet.slip39.Share;
 
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class Slip39 implements KeystoreMnemonicShareImport {
@@ -35,8 +35,9 @@ public class Slip39 implements KeystoreMnemonicShareImport {
             }
 
             if(recoveryState.isComplete()) {
-                byte[] secret = recoveryState.recover(passphrase.getBytes(StandardCharsets.UTF_8));
-                DeterministicSeed seed = new DeterministicSeed(secret, passphrase, System.currentTimeMillis(), DeterministicSeed.Type.SLIP39);
+                //The secret is kept encrypted as it was created, so that the wallet decrypts it with any passphrase as the shares do
+                List<String> singleShare = Slip39MnemonicCode.INSTANCE.toSingleShareMnemonic(recoveryState.recoverEms());
+                DeterministicSeed seed = new DeterministicSeed(singleShare, passphrase, System.currentTimeMillis(), DeterministicSeed.Type.SLIP39);
                 return Keystore.fromSeed(seed, policyType, derivation);
             } else {
                 throw new Slip39ProgressException(recoveryState.getShortStatus(), recoveryState.getStatus());
