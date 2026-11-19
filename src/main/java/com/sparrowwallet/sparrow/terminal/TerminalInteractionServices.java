@@ -55,7 +55,7 @@ public class TerminalInteractionServices implements InteractionServices {
                 && !ButtonType.NO.equals(buttonType) && !ButtonType.CLOSE.equals(buttonType);
     }
 
-    private String formatLines(String input, int maxLength) {
+    static String formatLines(String input, int maxLength) {
         StringBuilder builder = new StringBuilder();
         BreakIterator boundary = BreakIterator.getLineInstance(Locale.ROOT);
         boundary.setText(input);
@@ -65,12 +65,18 @@ public class TerminalInteractionServices implements InteractionServices {
 
         while(end != BreakIterator.DONE) {
             String word = input.substring(start,end);
-            lineLength = lineLength + word.length();
+            //A line break in the text ends the line, so only what comes before it counts towards this line and only what follows towards the next
+            int lineBreak = word.lastIndexOf('\n');
+            int wordLength = lineBreak < 0 ? word.length() : lineBreak;
+            lineLength = lineLength + wordLength;
             if (lineLength >= maxLength) {
                 builder.append("\n");
-                lineLength = word.length();
+                lineLength = wordLength;
             }
             builder.append(word);
+            if(lineBreak >= 0) {
+                lineLength = word.length() - lineBreak - 1;
+            }
             start = end;
             end = boundary.next();
         }
