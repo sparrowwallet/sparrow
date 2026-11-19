@@ -22,6 +22,7 @@ import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.protocol.Sha256Hash;
 import com.sparrowwallet.drongo.protocol.Transaction;
 import com.sparrowwallet.drongo.psbt.PSBT;
+import com.sparrowwallet.drongo.silentpayments.InvalidSilentPaymentException;
 import com.sparrowwallet.drongo.uri.BitcoinURI;
 import com.sparrowwallet.sparrow.control.TrayManager;
 import com.sparrowwallet.sparrow.event.*;
@@ -786,6 +787,19 @@ public class AppServices {
         }
 
         return openWallets;
+    }
+
+    public static void verifySilentPaymentScripts(Wallet signingWallet, PSBT psbt) throws InvalidSilentPaymentException {
+        if(signingWallet != null) {
+            signingWallet.verifySilentPaymentScripts(psbt);
+        } else if(psbt != null && psbt.hasSilentPaymentOutputs()) {
+            //A PSBT has no signing wallet until it is finalized, so its outputs are proven against the open wallet providing all of its inputs
+            Optional<Wallet> optInputWallet = get().getOpenWallets().keySet().stream()
+                    .filter(wallet -> wallet.getSigningNodes(psbt).size() == psbt.getPsbtInputs().size()).findFirst();
+            if(optInputWallet.isPresent()) {
+                optInputWallet.get().verifySilentPaymentScripts(psbt);
+            }
+        }
     }
 
     public Wallet getWallet(String walletId) {

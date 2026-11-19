@@ -1363,7 +1363,7 @@ public class HeadersController extends TransactionFormController implements Init
             try {
                 PSBT combinedPsbt = headersForm.getPsbt().verifyCombinedSignatures(signedPsbt);
                 //A device can resolve a silent payment output script, which is only valid if the metadata provided with it proves the claimed address
-                verifySilentPaymentScripts(headersForm.getSigningWallet(), combinedPsbt);
+                AppServices.verifySilentPaymentScripts(headersForm.getSigningWallet(), combinedPsbt);
                 headersForm.getPsbt().combine(signedPsbt);
                 EventManager.get().post(new PSBTCombinedEvent(headersForm.getPsbt()));
             } catch(PSBTSignatureException e) {
@@ -1376,19 +1376,13 @@ public class HeadersController extends TransactionFormController implements Init
 
     private boolean verifyPSBT(Wallet signingWallet, PSBT psbt) {
         try {
-            verifySilentPaymentScripts(signingWallet, psbt);
+            AppServices.verifySilentPaymentScripts(signingWallet, psbt);
         } catch(InvalidSilentPaymentException e) {
             showErrorDialog("Unverified Silent Payment Outputs", e.getMessage());
             return false;
         }
 
         return true;
-    }
-
-    private void verifySilentPaymentScripts(Wallet signingWallet, PSBT psbt) throws InvalidSilentPaymentException {
-        if(signingWallet != null) {
-            signingWallet.verifySilentPaymentScripts(psbt);
-        }
     }
 
     private void updateSignedKeystores(Wallet signingWallet) {

@@ -2222,7 +2222,7 @@ public class AppController implements Initializable {
                 try {
                     PSBT combinedPsbt = currentPsbt.verifyCombinedSignatures(psbt);
                     //A combine can resolve a silent payment output script, which is only valid if the metadata provided with it proves the claimed address
-                    verifySilentPaymentScripts(transactionTabData.getTransactionData().getSigningWallet(), combinedPsbt);
+                    AppServices.verifySilentPaymentScripts(transactionTabData.getTransactionData().getSigningWallet(), combinedPsbt);
                     currentPsbt.combine(psbt);
                     setTabName(tab, name);
                     EventManager.get().post(new PSBTCombinedEvent(currentPsbt));
@@ -2250,19 +2250,13 @@ public class AppController implements Initializable {
 
     private boolean verifyPSBT(Wallet signingWallet, PSBT psbt) {
         try {
-            verifySilentPaymentScripts(signingWallet, psbt);
+            AppServices.verifySilentPaymentScripts(signingWallet, psbt);
         } catch(InvalidSilentPaymentException e) {
             showErrorDialog("Unverified Silent Payment Outputs", e.getMessage());
             return false;
         }
 
         return true;
-    }
-
-    private void verifySilentPaymentScripts(Wallet signingWallet, PSBT psbt) throws InvalidSilentPaymentException {
-        if(signingWallet != null) {
-            signingWallet.verifySilentPaymentScripts(psbt);
-        }
     }
 
     private boolean verifyTransactionContext(PSBT contextPsbt, Transaction transaction, PSBT psbt, String source) {
