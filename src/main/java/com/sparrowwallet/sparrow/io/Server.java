@@ -34,7 +34,7 @@ public class Server {
             throw new IllegalArgumentException("Server alias cannot be an empty string");
         }
 
-        this.url = url;
+        this.url = Protocol.normalizeOnionUrl(url);
         this.alias = alias;
     }
 

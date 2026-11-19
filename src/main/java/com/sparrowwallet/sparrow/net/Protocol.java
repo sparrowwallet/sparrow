@@ -150,8 +150,38 @@ public enum Protocol {
         return toUrlString() + hostAndPort.toString();
     }
 
+    //A trailing dot names the same host, so an onion host written with one must still be reached over Tor
     public static boolean isOnionHost(String host) {
-        return host != null && host.toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX);
+        return host != null && stripTrailingDot(host).toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX);
+    }
+
+    private static String stripTrailingDot(String host) {
+        return host.endsWith(".") ? host.substring(0, host.length() - 1) : host;
+    }
+
+    /**
+     * Returns the url with the trailing dot removed from an onion host, the form Tor expects, leaving any other url unchanged.
+     */
+    public static String normalizeOnionUrl(String url) {
+        Protocol protocol = getProtocol(url);
+        if(protocol == null) {
+            return url;
+        }
+
+        HostAndPort hostAndPort = protocol.getServerHostAndPort(url);
+        if(!hostAndPort.getHost().endsWith(".") || !isOnionHost(hostAndPort.getHost())) {
+            return url;
+        }
+
+        String current = hostAndPort.toString();
+        HostAndPort normalized = hostAndPort.hasPort() ? HostAndPort.fromParts(stripTrailingDot(hostAndPort.getHost()), hostAndPort.getPort())
+                : HostAndPort.fromHost(stripTrailingDot(hostAndPort.getHost()));
+        int position = url.startsWith(protocol.toUrlString()) ? protocol.toUrlString().length() : 0;
+        if(!url.startsWith(current, position)) {
+            return url;
+        }
+
+        return url.substring(0, position) + normalized + url.substring(position + current.length());
     }
 
     public static boolean isOnionAddress(Server server) {

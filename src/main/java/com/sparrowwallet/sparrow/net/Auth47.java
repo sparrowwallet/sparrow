@@ -94,7 +94,7 @@ public class Auth47 {
         }
 
         HttpClientService httpClientService = AppServices.getHttpClientService();
-        if(httpClientService.getTorProxy() == null && callback.getHost().toLowerCase(Locale.ROOT).endsWith(Tor.TOR_ADDRESS_SUFFIX)) {
+        if(httpClientService.getTorProxy() == null && Protocol.isOnionHost(callback.getHost())) {
             throw new Auth47Exception("A Tor proxy must be configured to authenticate this resource.");
         }
 
