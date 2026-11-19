@@ -582,7 +582,7 @@ public class ElectrumServer {
                             if(retrievedScriptHashes.get(scriptHash) == null && !node.getTransactionOutputs().isEmpty()
                                     && (invalidatedBeforeFetch.contains(scriptHash) || !invalidatedScriptHashes.contains(scriptHash))) {
                                 log.debug("Clearing transaction history for " + node);
-                                node.getTransactionOutputs().clear();
+                                node.updateTransactionOutputs(node.getWallet(), Collections.emptySet());
                             }
                         }
                     }
