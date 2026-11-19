@@ -23,7 +23,9 @@ import com.sparrowwallet.hummingbird.ResultType;
 import com.sparrowwallet.hummingbird.UR;
 import com.sparrowwallet.hummingbird.URDecoder;
 import com.sparrowwallet.hummingbird.registry.pathcomponent.IndexPathComponent;
+import com.sparrowwallet.hummingbird.registry.pathcomponent.PairPathComponent;
 import com.sparrowwallet.hummingbird.registry.pathcomponent.PathComponent;
+import com.sparrowwallet.hummingbird.registry.pathcomponent.WildcardPathComponent;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WebcamResolutionChangedEvent;
@@ -233,7 +235,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
         setResultConverter(dialogButton -> dialogButton != cancelButtonType ? result : null);
     }
 
-    private class QRResultListener implements ChangeListener<com.google.zxing.Result> {
+    class QRResultListener implements ChangeListener<com.google.zxing.Result> {
         @Override
         public void changed(ObservableValue<? extends com.google.zxing.Result> observable, com.google.zxing.Result oldValue, com.google.zxing.Result qrResult) {
             if(result != null) {
@@ -556,6 +558,9 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             } catch(UR.InvalidCBORException e) {
                 log.error("Invalid CBOR in UR", e);
                 return new Result(new URException("Invalid CBOR in UR", e));
+            } catch(IllegalStateException e) {
+                log.error("Error converting UR", e);
+                return new Result(new URException(e.getMessage(), e));
             } catch(Exception e) {
                 log.error("Error parsing UR CBOR", e);
                 return new Result(new URException("Error parsing UR CBOR", e));
@@ -574,7 +579,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             return address;
         }
 
-        private ExtendedKey getExtendedKey(CryptoHDKey cryptoHDKey) {
+        private static ExtendedKey getExtendedKey(CryptoHDKey cryptoHDKey) {
             if(cryptoHDKey.isPrivateKey()) {
                 DeterministicKey prvKey = HDKeyDerivation.createMasterPrivKeyFromBytes(Arrays.copyOfRange(cryptoHDKey.getKey(), 1, 33), cryptoHDKey.getChainCode(), List.of(ChildNumber.ZERO));
                 return new ExtendedKey(prvKey, new byte[4], ChildNumber.ZERO);
@@ -583,7 +588,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             return getExtendedPublicKey(cryptoHDKey);
         }
 
-        private ExtendedKey getExtendedPublicKey(CryptoHDKey cryptoHDKey) {
+        private static ExtendedKey getExtendedPublicKey(CryptoHDKey cryptoHDKey) {
             byte[] publicKey = cryptoHDKey.isPrivateKey() ? ECKey.fromPrivate(new BigInteger(1, cryptoHDKey.getKey())).getPubKey() : cryptoHDKey.getKey();
             ChildNumber lastChild = ChildNumber.ZERO;
             int depth = 1;
@@ -604,7 +609,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             return new ExtendedKey(pubKey, parentFingerprint, lastChild);
         }
 
-        private ECKey getKey(CryptoHDKey cryptoHDKey) {
+        private static ECKey getKey(CryptoHDKey cryptoHDKey) {
             if(cryptoHDKey.isPrivateKey()) {
                 return ECKey.fromPrivate(new BigInteger(1, cryptoHDKey.getKey()));
             } else {
@@ -612,51 +617,116 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             }
         }
 
-        private OutputDescriptor getOutputDescriptor(CryptoOutput cryptoOutput) {
+        static OutputDescriptor getOutputDescriptor(CryptoOutput cryptoOutput) {
             ScriptType scriptType = getScriptType(cryptoOutput.getScriptExpressions());
 
+            List<CryptoHDKey> cryptoHDKeys;
+            int threshold = 0;
             if(cryptoOutput.getMultiKey() != null) {
                 MultiKey multiKey = cryptoOutput.getMultiKey();
                 if(multiKey.getEcKeys() != null && !multiKey.getEcKeys().isEmpty()) {
                     throw new IllegalArgumentException("EC keys are currently unsupported");
                 }
-                Map<ExtendedKey, KeyDerivation> extendedPublicKeys = new LinkedHashMap<>();
-                Map<ExtendedKey, String> extendedPublicKeyLabels = new LinkedHashMap<>();
-                for(CryptoHDKey cryptoHDKey : multiKey.getHdKeys()) {
-                    ExtendedKey extendedKey = getExtendedPublicKey(cryptoHDKey);
-                    KeyDerivation keyDerivation = getKeyDerivation(cryptoHDKey.getOrigin());
-                    if(extendedPublicKeys.put(extendedKey, keyDerivation) != null) {
-                        throw new IllegalArgumentException("Duplicate extended keys are not supported");
-                    }
-                    if(cryptoHDKey.getName() != null) {
-                        extendedPublicKeyLabels.put(extendedKey, cryptoHDKey.getName());
-                    }
-                }
-                return new OutputDescriptor(scriptType, multiKey.getThreshold(), extendedPublicKeys, new LinkedHashMap<>(), extendedPublicKeyLabels);
+                cryptoHDKeys = multiKey.getHdKeys();
+                threshold = multiKey.getThreshold();
             } else if(cryptoOutput.getEcKey() != null) {
                 throw new IllegalArgumentException("EC keys are currently unsupported");
             } else if(cryptoOutput.getHdKey() != null) {
-                ExtendedKey extendedKey = getExtendedPublicKey(cryptoOutput.getHdKey());
-                KeyDerivation keyDerivation = getKeyDerivation(cryptoOutput.getHdKey().getOrigin());
-                return new OutputDescriptor(scriptType, extendedKey, keyDerivation, cryptoOutput.getHdKey().getName());
+                cryptoHDKeys = List.of(cryptoOutput.getHdKey());
+            } else {
+                throw new IllegalStateException("CryptoOutput did not contain sufficient information");
             }
 
-            throw new IllegalStateException("CryptoOutput did not contain sufficient information");
+            Map<ExtendedKey, KeyDerivation> extendedPublicKeys = new LinkedHashMap<>();
+            Map<ExtendedKey, String> childDerivations = new LinkedHashMap<>();
+            Map<ExtendedKey, String> extendedPublicKeyLabels = new LinkedHashMap<>();
+            for(CryptoHDKey cryptoHDKey : cryptoHDKeys) {
+                ExtendedKey extendedKey = getExtendedPublicKey(cryptoHDKey);
+                KeyDerivation keyDerivation = getKeyDerivation(cryptoHDKey.getOrigin());
+                if(extendedPublicKeys.put(extendedKey, keyDerivation) != null) {
+                    throw new IllegalArgumentException("Duplicate extended keys are not supported");
+                }
+                String childDerivation = getChildDerivationPath(cryptoHDKey.getChildren());
+                if(childDerivation != null) {
+                    childDerivations.put(extendedKey, childDerivation);
+                }
+                if(cryptoHDKey.getName() != null) {
+                    extendedPublicKeyLabels.put(extendedKey, cryptoHDKey.getName());
+                }
+            }
+
+            OutputDescriptor outputDescriptor = new OutputDescriptor(scriptType, threshold, extendedPublicKeys, childDerivations, extendedPublicKeyLabels);
+            if(!childDerivations.isEmpty()) {
+                //Parsed from text, so that the child derivations are applied to the keys as they are for a descriptor entered as text. The keys of a
+                //multisig descriptor are written in sorted order, so their labels are listed in that order
+                List<String> labels = outputDescriptor.sortExtendedPubKeys(extendedPublicKeys.keySet()).stream().map(extendedPublicKeyLabels::get).toList();
+                outputDescriptor = getLabelledOutputDescriptor(outputDescriptor.toString(), labels);
+            }
+
+            return outputDescriptor;
         }
 
-        private List<Wallet> getWallets(CryptoAccount cryptoAccount) {
+        /**
+         * Parses a descriptor whose keys may be replaced by those derived through their child derivations, labelling them in the order they appear.
+         */
+        private static OutputDescriptor getLabelledOutputDescriptor(String descriptor, List<String> labels) {
+            Map<ExtendedKey, String> extendedPublicKeyLabels = new LinkedHashMap<>();
+            Iterator<String> labelIterator = labels.iterator();
+            for(ExtendedKey extendedKey : OutputDescriptor.getOutputDescriptor(descriptor).getExtendedPublicKeys()) {
+                String label = labelIterator.hasNext() ? labelIterator.next() : null;
+                if(label != null) {
+                    extendedPublicKeyLabels.put(extendedKey, label);
+                }
+            }
+
+            return OutputDescriptor.getOutputDescriptor(descriptor, extendedPublicKeyLabels);
+        }
+
+        static String getChildDerivationPath(CryptoKeypath children) {
+            if(children == null || children.getComponents() == null || children.getComponents().isEmpty()) {
+                return null;
+            }
+
+            StringBuilder childDerivation = new StringBuilder();
+            for(PathComponent component : children.getComponents()) {
+                childDerivation.append("/");
+                if(component instanceof IndexPathComponent indexPathComponent) {
+                    childDerivation.append(indexPathComponent.getIndex()).append(indexPathComponent.isHardened() ? "h" : "");
+                } else if(component instanceof PairPathComponent pair && !pair.getExternal().isHardened() && !pair.getInternal().isHardened()) {
+                    childDerivation.append("<").append(pair.getExternal().getIndex()).append(";").append(pair.getInternal().getIndex()).append(">");
+                } else if(component instanceof WildcardPathComponent wildcard && !wildcard.isHardened()) {
+                    childDerivation.append("*");
+                } else {
+                    throw new IllegalStateException("The child derivation of a key in this QR code is not supported");
+                }
+            }
+
+            return childDerivation.toString();
+        }
+
+        static List<Wallet> getWallets(CryptoAccount cryptoAccount) {
             List<Wallet> wallets = new ArrayList<>();
             String masterFingerprint = Utils.bytesToHex(cryptoAccount.getMasterFingerprint());
+            IllegalStateException unconverted = null;
             for(CryptoOutput cryptoOutput : cryptoAccount.getOutputDescriptors()) {
-                OutputDescriptor outputDescriptor = getOutputDescriptor(cryptoOutput);
-                Wallet wallet = outputDescriptor.toKeystoreWallet(masterFingerprint);
-                wallets.add(wallet);
+                //Only the key and its origin are taken from each output, so one that cannot be converted leaves the others for the user to choose from
+                try {
+                    OutputDescriptor outputDescriptor = getOutputDescriptor(cryptoOutput);
+                    wallets.add(outputDescriptor.toKeystoreWallet(masterFingerprint));
+                } catch(IllegalStateException e) {
+                    log.warn("Could not convert an output descriptor of the account: " + e.getMessage());
+                    unconverted = e;
+                }
+            }
+
+            if(wallets.isEmpty() && unconverted != null) {
+                throw unconverted;
             }
 
             return wallets;
         }
 
-        private ScriptType getScriptType(List<ScriptExpression> scriptExpressions) {
+        private static ScriptType getScriptType(List<ScriptExpression> scriptExpressions) {
             List<ScriptExpression> expressions = new ArrayList<>(scriptExpressions);
             if(expressions.get(expressions.size() - 1) == ScriptExpression.MULTISIG
                     || expressions.get(expressions.size() - 1) == ScriptExpression.SORTED_MULTISIG
@@ -683,7 +753,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             throw new IllegalArgumentException("Unknown script of " + expressions);
         }
 
-        private KeyDerivation getKeyDerivation(CryptoKeypath cryptoKeypath) {
+        private static KeyDerivation getKeyDerivation(CryptoKeypath cryptoKeypath) {
             if(cryptoKeypath != null) {
                 if(!cryptoKeypath.getComponents().stream().allMatch(pathComponent -> pathComponent instanceof IndexPathComponent)) {
                     throw new IllegalArgumentException("Only indexed derivation path components are supported");
@@ -706,10 +776,22 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             return new DeterministicSeed(cryptoBip39.getWords(), null, System.currentTimeMillis(), DeterministicSeed.Type.BIP39);
         }
 
-        private OutputDescriptor getOutputDescriptor(UROutputDescriptor urOutputDescriptor) {
+        static OutputDescriptor getOutputDescriptor(UROutputDescriptor urOutputDescriptor) {
             String source = urOutputDescriptor.getSource();
             List<RegistryItem> keys = urOutputDescriptor.getKeys();
-            Map<ExtendedKey, String> mapExtendedPublicKeyLabels = new LinkedHashMap<>();
+
+            //Labelled in the order the extended keys first appear in the source, which is the order of the keys of the descriptor parsed from it
+            Set<Integer> placeholderIndexes = new LinkedHashSet<>();
+            Matcher placeholderMatcher = Pattern.compile("@(\\d+)").matcher(source);
+            while(placeholderMatcher.find()) {
+                placeholderIndexes.add(Integer.parseInt(placeholderMatcher.group(1)));
+            }
+            List<String> labels = new ArrayList<>();
+            for(int index : placeholderIndexes) {
+                if(index < keys.size() && keys.get(index) instanceof URHDKey urhdKey && urhdKey.getChainCode() != null) {
+                    labels.add(urhdKey.getName());
+                }
+            }
 
             for(int i = 0; i < keys.size(); i++) {
                 RegistryItem key = keys.get(i);
@@ -720,26 +802,36 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                         source = source.replaceAll("@" + i + "(?!\\d)", Matcher.quoteReplacement(OutputDescriptor.writeKey(ecKey, keyDerivation, true, true)));
                     } else {
                         ExtendedKey extendedKey = getExtendedKey(urhdKey);
-                        source = source.replaceAll("@" + i + "(?!\\d)", Matcher.quoteReplacement(OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true)));
-                        if(urhdKey.getName() != null) {
-                            mapExtendedPublicKeyLabels.put(extendedKey, urhdKey.getName());
-                        }
+                        String childDerivation = getChildDerivationPath(urhdKey.getChildren());
+                        source = source.replaceAll("@" + i + "(?=/)", Matcher.quoteReplacement(OutputDescriptor.writeKey(extendedKey, keyDerivation, null, true, true)));
+                        String keyExpression = OutputDescriptor.writeKey(extendedKey, keyDerivation, childDerivation, true, true);
+                        source = source.replaceAll("@" + i + "(?![\\d/])", Matcher.quoteReplacement(keyExpression));
                     }
                 } else {
                     throw new IllegalArgumentException("Only extended HD keys are supported in output descriptors");
                 }
             }
 
-            return OutputDescriptor.getOutputDescriptor(source, mapExtendedPublicKeyLabels);
+            return getLabelledOutputDescriptor(source, labels);
         }
 
-        private List<Wallet> getWallets(URAccountDescriptor urAccountDescriptor) {
+        static List<Wallet> getWallets(URAccountDescriptor urAccountDescriptor) {
             List<Wallet> wallets = new ArrayList<>();
             String masterFingerprint = Utils.bytesToHex(urAccountDescriptor.getMasterFingerprint());
+            IllegalStateException unconverted = null;
             for(UROutputDescriptor urOutputDescriptor : urAccountDescriptor.getOutputDescriptors()) {
-                OutputDescriptor outputDescriptor = getOutputDescriptor(urOutputDescriptor);
-                Wallet wallet = outputDescriptor.toKeystoreWallet(masterFingerprint);
-                wallets.add(wallet);
+                //Only the key and its origin are taken from each output, so one that cannot be converted leaves the others for the user to choose from
+                try {
+                    OutputDescriptor outputDescriptor = getOutputDescriptor(urOutputDescriptor);
+                    wallets.add(outputDescriptor.toKeystoreWallet(masterFingerprint));
+                } catch(IllegalStateException e) {
+                    log.warn("Could not convert an output descriptor of the account: " + e.getMessage());
+                    unconverted = e;
+                }
+            }
+
+            if(wallets.isEmpty() && unconverted != null) {
+                throw unconverted;
             }
 
             return wallets;

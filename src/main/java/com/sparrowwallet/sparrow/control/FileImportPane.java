@@ -167,9 +167,10 @@ public abstract class FileImportPane extends TitledDescriptionPane {
                 }
             } else if(result.outputDescriptor != null) {
                 try {
+                    result.outputDescriptor.verifyStandardChildDerivations();
                     wallets = List.of(result.outputDescriptor.toWallet());
                     importFile(importer.getName(), null, null);
-                } catch(ImportException e) {
+                } catch(ImportException | IllegalStateException e) {
                     log.error("Error importing QR", e);
                     setError("Import Error", e.getMessage());
                 }
