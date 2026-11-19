@@ -23,14 +23,10 @@ public class Auth47 {
 
     public static final String SCHEME = "auth47";
     public static final String VERSION = "1.0";
-    public static final String HTTPS_PROTOCOL = "https://";
-    public static final String SRBN_PROTOCOL = "srbn://";
 
     private final String nonce;
     private final URL callback;
     private final String expiry;
-    private boolean srbn;
-    private String srbnName;
     private String resource;
     private boolean resourceSpecified;
 
@@ -60,27 +56,18 @@ public class Auth47 {
         if(strCallback == null) {
             throw new IllegalArgumentException("No callback parameter provided.");
         }
-        if(strCallback.startsWith(SRBN_PROTOCOL)) {
-            String srbnCallback = HTTPS_PROTOCOL + strCallback.substring(SRBN_PROTOCOL.length());
-            URL srbnUrl = new URI(srbnCallback).toURL();
-            this.srbn = true;
-            this.srbnName = srbnUrl.getUserInfo();
-            this.callback = new URI(HTTPS_PROTOCOL + srbnUrl.getHost()).toURL();
-        } else {
-            URI callbackUri = new URI(strCallback);
-            if(!Utils.isSecureUrl(callbackUri)) {
-                throw new IllegalArgumentException("Invalid callback parameter (not https, http .onion or srbn): " + strCallback);
-            }
-            this.callback = callbackUri.toURL();
+        URI callbackUri = new URI(strCallback);
+        if(!Utils.isSecureUrl(callbackUri)) {
+            throw new IllegalArgumentException("Invalid callback parameter (not https or http .onion): " + strCallback);
         }
+        this.callback = callbackUri.toURL();
 
         this.expiry = parameterMap.get("e");
         this.resource = parameterMap.get("r");
-        String defaultResource = srbn ? "srbn" : strCallback;
         if(resource == null) {
-            this.resource = defaultResource;
+            this.resource = strCallback;
         } else {
-            this.resourceSpecified = !resource.equals(defaultResource);
+            this.resourceSpecified = !resource.equals(strCallback);
         }
     }
 
@@ -89,27 +76,7 @@ public class Auth47 {
             throw new Auth47Exception("A software wallet is required to authenticate.");
         }
 
-        if(srbn) {
-            sendSorobanResponse(wallet);
-        } else {
-            sendHttpResponse(wallet);
-        }
-    }
-
-    public void sendHttpResponse(Wallet wallet) throws Exception {
-        String json = getJsonResponse(wallet);
-
-        send(json);
-    }
-
-    public void sendSorobanResponse(Wallet wallet) throws Exception {
-        String json = getJsonResponse(wallet);
-
-        SorobanResponse sorobanResponse = new SorobanResponse(srbnName, json);
-        Gson gson = new GsonBuilder().disableHtmlEscaping().create();
-        String jsonRpc = gson.toJson(sorobanResponse);
-
-        send(jsonRpc);
+        send(getJsonResponse(wallet));
     }
 
     private String getJsonResponse(Wallet wallet) {
@@ -204,28 +171,6 @@ public class Auth47 {
         public String signature;
         public String nym;
         public String address;
-    }
-
-    private static class SorobanResponse {
-        public SorobanResponse(String name, String response) {
-            params.add(new SorobanParam(name, response));
-        }
-
-        public String jsonrpc = "2.0";
-        public int id = 0;
-        public String method = "directory.Add";
-        public List<SorobanParam> params = new ArrayList<>();
-    }
-
-    private static class SorobanParam {
-        public SorobanParam(String name, String entry) {
-            Name = name;
-            Entry = entry;
-        }
-
-        public String Name;
-        public String Entry;
-        public String Mode = "short";
     }
 
     public static final class Auth47Exception extends Exception {

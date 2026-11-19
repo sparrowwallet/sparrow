@@ -17,11 +17,9 @@ public class Auth47Test {
     }
 
     @Test
-    public void acceptsSrbnCallbacks() throws Exception {
-        Auth47 auth47 = new Auth47(new URI("auth47://nonce?c=srbn://alice@relay.example.com"));
-
-        assertEquals("https", auth47.getCallback().getProtocol());
-        assertEquals("relay.example.com", auth47.getCallback().getHost());
+    public void rejectsSrbnCallbacks() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new Auth47(new URI("auth47://nonce?c=srbn://alice@relay.example.com")));
     }
 
     @Test
