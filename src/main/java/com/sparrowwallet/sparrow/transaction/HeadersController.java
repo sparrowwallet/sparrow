@@ -289,6 +289,7 @@ public class HeadersController extends TransactionFormController implements Init
         tx.setLocktime(locktime);
         if(headersForm.getPsbt() != null) {
             headersForm.getPsbt().setFallbackLocktime(locktime);
+            tx.setLocktime(headersForm.getPsbt().getTransaction().getLocktime());
         }
     }
 
@@ -877,7 +878,9 @@ public class HeadersController extends TransactionFormController implements Init
     private void updateEditable(boolean editable) {
         version.setDisable(!editable);
 
-        boolean locktimeEnabled = editable && headersForm.getTransaction().isLocktimeSequenceEnabled();
+        boolean requiredLocktime = headersForm.getPsbt() != null
+                && headersForm.getPsbt().getPsbtInputs().stream().anyMatch(psbtInput -> psbtInput.getRequiredTimeLocktime() != null || psbtInput.getRequiredHeightLocktime() != null);
+        boolean locktimeEnabled = editable && headersForm.getTransaction().isLocktimeSequenceEnabled() && !requiredLocktime;
         locktimeNoneType.setDisable(!locktimeEnabled);
         locktimeBlockType.setDisable(!locktimeEnabled);
         locktimeDateType.setDisable(!locktimeEnabled);
