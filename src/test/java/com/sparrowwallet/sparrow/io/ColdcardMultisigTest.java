@@ -96,6 +96,15 @@ public class ColdcardMultisigTest extends IoTest {
     }
 
     @Test
+    public void importWalletRefusesExtendedPrivateKey() {
+        String xpub = "xpub6FMGmJccz6dqLo9TMmXYPpZ7HUDm71RHHSTXqTUgkyP9TZmF2uexoB7qttEBtHaotopPwfAVfKfwmdEjCGabVpND1m7ix2AW2LxPuNfLZhi";
+        String xprv = "xprv9uHRZZhk6KAJC1avXpDAp4MDc3sQKNxDiPvvkX8Br5ngLNv1TxvUxt4cV1rGL5hj6KCesnDYUhd7oWgT11eZG7XnxHrnYeSvkzY7d2bhkJ7";
+        ImportException e = Assertions.assertThrows(ImportException.class, () -> importEdited(xpub, xprv));
+        Throwable cause = e.getCause() == null ? e : e.getCause();
+        Assertions.assertTrue(cause.getMessage().contains("extended private key"));
+    }
+
+    @Test
     public void importWallet2() throws ImportException {
         Network.set(Network.TESTNET);
         ColdcardMultisig ccMultisig = new ColdcardMultisig();

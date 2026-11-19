@@ -53,7 +53,7 @@ public class CoboVaultSinglesig implements KeystoreFileImport, WalletImport {
             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
             keystore.setWalletModel(getWalletModel());
             keystore.setKeyDerivation(new KeyDerivation(coboKeystore.MasterFingerprint.toLowerCase(Locale.ROOT), "m/" + coboKeystore.AccountKeyPath, true));
-            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(coboKeystore.ExtPubKey));
+            keystore.setExtendedPublicKey(getExtendedPublicKey(coboKeystore.ExtPubKey));
 
             ExtendedKey.Header header = ExtendedKey.Header.fromExtendedKey(coboKeystore.ExtPubKey);
             if(header.getDefaultScriptType() != scriptType) {

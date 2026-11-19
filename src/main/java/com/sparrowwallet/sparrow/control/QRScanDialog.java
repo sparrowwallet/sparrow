@@ -578,25 +578,30 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             if(cryptoHDKey.isPrivateKey()) {
                 DeterministicKey prvKey = HDKeyDerivation.createMasterPrivKeyFromBytes(Arrays.copyOfRange(cryptoHDKey.getKey(), 1, 33), cryptoHDKey.getChainCode(), List.of(ChildNumber.ZERO));
                 return new ExtendedKey(prvKey, new byte[4], ChildNumber.ZERO);
-            } else {
-                ChildNumber lastChild = ChildNumber.ZERO;
-                int depth = 1;
-                byte[] parentFingerprint = new byte[4];
-                if(cryptoHDKey.getOrigin() != null) {
-                    if(!cryptoHDKey.getOrigin().getComponents().isEmpty()) {
-                        PathComponent lastComponent = cryptoHDKey.getOrigin().getComponents().get(cryptoHDKey.getOrigin().getComponents().size() - 1);
-                        if(lastComponent instanceof IndexPathComponent indexPathComponent) {
-                            lastChild = new ChildNumber(indexPathComponent.getIndex(), indexPathComponent.isHardened());
-                        }
-                        depth = cryptoHDKey.getOrigin().getComponents().size();
-                    }
-                    if(cryptoHDKey.getParentFingerprint() != null) {
-                        parentFingerprint = cryptoHDKey.getParentFingerprint();
-                    }
-                }
-                DeterministicKey pubKey = new DeterministicKey(List.of(lastChild), cryptoHDKey.getChainCode(), cryptoHDKey.getKey(), depth, parentFingerprint);
-                return new ExtendedKey(pubKey, parentFingerprint, lastChild);
             }
+
+            return getExtendedPublicKey(cryptoHDKey);
+        }
+
+        private ExtendedKey getExtendedPublicKey(CryptoHDKey cryptoHDKey) {
+            byte[] publicKey = cryptoHDKey.isPrivateKey() ? ECKey.fromPrivate(new BigInteger(1, cryptoHDKey.getKey())).getPubKey() : cryptoHDKey.getKey();
+            ChildNumber lastChild = ChildNumber.ZERO;
+            int depth = 1;
+            byte[] parentFingerprint = new byte[4];
+            if(cryptoHDKey.getOrigin() != null) {
+                if(!cryptoHDKey.getOrigin().getComponents().isEmpty()) {
+                    PathComponent lastComponent = cryptoHDKey.getOrigin().getComponents().get(cryptoHDKey.getOrigin().getComponents().size() - 1);
+                    if(lastComponent instanceof IndexPathComponent indexPathComponent) {
+                        lastChild = new ChildNumber(indexPathComponent.getIndex(), indexPathComponent.isHardened());
+                    }
+                    depth = cryptoHDKey.getOrigin().getComponents().size();
+                }
+                if(cryptoHDKey.getParentFingerprint() != null) {
+                    parentFingerprint = cryptoHDKey.getParentFingerprint();
+                }
+            }
+            DeterministicKey pubKey = new DeterministicKey(List.of(lastChild), cryptoHDKey.getChainCode(), publicKey, depth, parentFingerprint);
+            return new ExtendedKey(pubKey, parentFingerprint, lastChild);
         }
 
         private ECKey getKey(CryptoHDKey cryptoHDKey) {
@@ -618,7 +623,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
                 Map<ExtendedKey, KeyDerivation> extendedPublicKeys = new LinkedHashMap<>();
                 Map<ExtendedKey, String> extendedPublicKeyLabels = new LinkedHashMap<>();
                 for(CryptoHDKey cryptoHDKey : multiKey.getHdKeys()) {
-                    ExtendedKey extendedKey = getExtendedKey(cryptoHDKey);
+                    ExtendedKey extendedKey = getExtendedPublicKey(cryptoHDKey);
                     KeyDerivation keyDerivation = getKeyDerivation(cryptoHDKey.getOrigin());
                     if(extendedPublicKeys.put(extendedKey, keyDerivation) != null) {
                         throw new IllegalArgumentException("Duplicate extended keys are not supported");
@@ -631,7 +636,7 @@ public class QRScanDialog extends Dialog<QRScanDialog.Result> {
             } else if(cryptoOutput.getEcKey() != null) {
                 throw new IllegalArgumentException("EC keys are currently unsupported");
             } else if(cryptoOutput.getHdKey() != null) {
-                ExtendedKey extendedKey = getExtendedKey(cryptoOutput.getHdKey());
+                ExtendedKey extendedKey = getExtendedPublicKey(cryptoOutput.getHdKey());
                 KeyDerivation keyDerivation = getKeyDerivation(cryptoOutput.getHdKey().getOrigin());
                 return new OutputDescriptor(scriptType, extendedKey, keyDerivation, cryptoOutput.getHdKey().getName());
             }

@@ -2,7 +2,6 @@ package com.sparrowwallet.sparrow.io;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.policy.Policy;
@@ -66,7 +65,7 @@ public class CaravanMultisig implements WalletImport, WalletExport {
                     keystore.setKeyDerivation(new KeyDerivation(extKey.xfp, scriptType.getDefaultDerivationPath()));
                 }
 
-                keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(extKey.xpub));
+                keystore.setExtendedPublicKey(getExtendedPublicKey(extKey.xpub));
 
                 WalletModel walletModel = WalletModel.fromType(extKey.method);
                 if(walletModel == null) {

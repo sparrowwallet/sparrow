@@ -3,7 +3,6 @@ package com.sparrowwallet.sparrow.io;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.reflect.TypeToken;
-import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.policy.Policy;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -96,7 +95,7 @@ public class ColdcardSinglesig implements KeystoreFileImport, WalletImport {
                             keystore.setSource(KeystoreSource.HW_AIRGAPPED);
                             keystore.setWalletModel(getWalletModel());
                             keystore.setKeyDerivation(new KeyDerivation(masterFingerprint, ck.deriv, true));
-                            keystore.setExtendedPublicKey(ExtendedKey.fromDescriptor(ck.xpub));
+                            keystore.setExtendedPublicKey(getExtendedPublicKey(ck.xpub));
 
                             return keystore;
                         }

@@ -134,7 +134,7 @@ public class Electrum implements KeystoreFileImport, WalletImport, WalletExport 
 
             for(ElectrumKeystore ek : ew.keystores.values()) {
                 Keystore keystore = new Keystore();
-                ExtendedKey xPub = ExtendedKey.fromDescriptor(ek.xpub);
+                ExtendedKey xPub = getExtendedPublicKey(ek.xpub);
                 String derivationPath = ek.derivation;
                 if(derivationPath == null) {
                     derivationPath = "m/0";
