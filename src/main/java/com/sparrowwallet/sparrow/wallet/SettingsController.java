@@ -366,7 +366,7 @@ public class SettingsController extends WalletFormController implements Initiali
         if(optionalResult.isPresent()) {
             QRScanDialog.Result result = optionalResult.get();
             if(result.outputDescriptor != null) {
-                rederiveAndReplaceWallet(result.outputDescriptor.toWallet());
+                replaceWalletFromDescriptor(result.outputDescriptor);
             } else if(result.wallets != null) {
                 for(Wallet wallet : result.wallets) {
                     if(scriptType.getValue().equals(wallet.getScriptType()) && !wallet.getKeystores().isEmpty()) {
@@ -502,12 +502,9 @@ public class SettingsController extends WalletFormController implements Initiali
                     }
                 }
                 String extKey = matcher.group(2);
-                String childDerivationPath = matcher.group(3);
 
                 if(keyDerivationPath != null && ExtendedKey.Header.getHeaders(Network.get()).stream().anyMatch(header -> header.isPrivateKey() && extKey.startsWith(header.name()))) {
                     AppServices.showWarningDialog("Private extended key detected", "Sparrow will convert the provided private key to a public key for use in a watch only wallet.\n\nTo import a private key, use the Master Private Key option when creating a Software Wallet.");
-                } else if(childDerivationPath != null && !(childDerivationPath.endsWith("/0/*") || childDerivationPath.endsWith("/1/*") || childDerivationPath.endsWith("/<0;1>/*"))) {
-                    AppServices.showWarningDialog("Non standard child derivation detected", "Sparrow does not support non-BIP32 wallets without standard receive and change chains.\n\nThe provided descriptor will be amended if necessary.");
                 }
             }
 
@@ -517,12 +514,19 @@ public class SettingsController extends WalletFormController implements Initiali
 
     private void setDescriptorText(String text) {
         try {
-            OutputDescriptor editedOutputDescriptor = OutputDescriptor.getOutputDescriptor(text.trim().replace("\\", ""));
-            Wallet editedWallet = editedOutputDescriptor.toWallet();
-            rederiveAndReplaceWallet(editedWallet);
+            replaceWalletFromDescriptor(OutputDescriptor.getOutputDescriptor(text.trim().replace("\\", "")));
         } catch(Exception e) {
             AppServices.showErrorDialog("Invalid output descriptor", e.getMessage());
         }
+    }
+
+    private void replaceWalletFromDescriptor(OutputDescriptor outputDescriptor) {
+        if(!outputDescriptor.hasStandardChildDerivations()) {
+            AppServices.showWarningDialog("Non standard child derivation detected",
+                    "Sparrow does not support non-BIP32 wallets without standard receive and change chains.\n\nThe provided descriptor will be amended if necessary.");
+        }
+
+        rederiveAndReplaceWallet(outputDescriptor.toWallet());
     }
 
     private void rederiveAndReplaceWallet(Wallet editedWallet) {

@@ -42,6 +42,7 @@ public class Jade implements KeystoreFileImport {
                         + ". Select " + scriptType.getDescription() + " in the options when using Export Xpub on your Jade, and export again.");
             }
 
+            outputDescriptor.verifyStandardChildDerivations();
             Wallet wallet = outputDescriptor.toWallet();
             if(wallet.getKeystores().size() != 1) {
                 throw new IllegalArgumentException("Could not determine keystore from import");

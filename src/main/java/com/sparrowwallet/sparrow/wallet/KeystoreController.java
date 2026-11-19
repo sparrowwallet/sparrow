@@ -706,6 +706,7 @@ public class KeystoreController extends WalletFormController implements Initiali
             } else if(result.payload != null) {
                 try {
                     OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor("sh(" + result.payload + ")");
+                    outputDescriptor.verifyStandardChildDerivations();
                     Wallet wallet = outputDescriptor.toWallet();
                     Keystore keystore = wallet.getKeystores().get(0);
                     fingerprint.setText(keystore.getKeyDerivation().getMasterFingerprint());

@@ -175,6 +175,7 @@ public class Bip129 implements KeystoreFileExport, KeystoreFileImport, WalletExp
 
     private Keystore getKeystore(String header, String token, String descriptor, String label, String signature) throws ImportException {
         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor("sh(" + descriptor + ")");
+        outputDescriptor.verifyStandardChildDerivations();
         Wallet wallet = outputDescriptor.toWallet();
         Keystore keystore = wallet.getKeystores().get(0);
         keystore.setLabel(label);

@@ -113,7 +113,9 @@ public class Descriptor implements WalletImport, WalletExport {
             InputStream secondClone = new ByteArrayInputStream(baos.toByteArray());
 
             try {
-                return checkWallet(ensureKeyDerivations(PdfUtils.getOutputDescriptor(firstClone).toWallet()));
+                OutputDescriptor pdfDescriptor = PdfUtils.getOutputDescriptor(firstClone);
+                pdfDescriptor.verifyStandardChildDerivations();
+                return checkWallet(ensureKeyDerivations(pdfDescriptor.toWallet()));
             } catch(Exception e) {
                 //ignore
             }
@@ -121,6 +123,7 @@ public class Descriptor implements WalletImport, WalletExport {
             List<String> paragraphs = getParagraphs(secondClone);
             for(String paragraph : paragraphs) {
                 OutputDescriptor descriptor = OutputDescriptor.getOutputDescriptor(paragraph);
+                descriptor.verifyStandardChildDerivations();
                 return checkWallet(ensureKeyDerivations(descriptor.toWallet()));
             }
 

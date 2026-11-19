@@ -53,6 +53,7 @@ public class KeystoneSinglesig implements KeystoreFileImport, WalletImport {
                 throw new IllegalArgumentException("Output descriptor describes a " + descriptor.getScriptType().getDescription() + " wallet");
             }
 
+            descriptor.verifyStandardChildDerivations();
             Wallet wallet = descriptor.toWallet();
             Keystore keystore = wallet.getKeystores().getFirst();
             keystore.setLabel(getName());

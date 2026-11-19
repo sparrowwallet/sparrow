@@ -146,6 +146,7 @@ public class WatchOnlyDialog extends NewWalletDialog {
 
     private List<Wallet> getWalletFromOutputDescriptor(String text) {
         OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(text);
+        outputDescriptor.verifyStandardChildDerivations();
         Wallet wallet = outputDescriptor.toWallet();
         wallet.setName(walletName);
         if(wallet.getPolicyType() == PolicyType.SINGLE_SP && wallet.getBirthDate() == null && wallet.getBirthHeight() == null) {

@@ -95,6 +95,7 @@ public class SpecterDesktop implements WalletImport, WalletExport {
 
             if(specterWallet.descriptor != null) {
                 OutputDescriptor outputDescriptor = OutputDescriptor.getOutputDescriptor(specterWallet.descriptor);
+                outputDescriptor.verifyStandardChildDerivations();
                 Wallet wallet = outputDescriptor.toWallet();
                 wallet.setName(specterWallet.label);
 
