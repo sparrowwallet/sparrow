@@ -50,7 +50,7 @@ public class DefaultInteractionServices implements InteractionServices {
 
         String[] lines = content.split("\r\n|\r|\n");
         if(lines.length > 3 || OsType.getCurrent() == OsType.WINDOWS) {
-            double numLines = Arrays.stream(lines).mapToDouble(line -> Math.ceil(TextUtils.computeTextWidth(Font.getDefault(), line, 0) / 300)).sum();
+            double numLines = Arrays.stream(lines).mapToDouble(line -> Math.max(1, Math.ceil(TextUtils.computeTextWidth(Font.getDefault(), line, 0) / 300))).sum();
             alert.getDialogPane().setPrefHeight(200 + numLines * 20);
         }
 

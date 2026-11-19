@@ -952,6 +952,8 @@ public class SettingsController extends WalletFormController implements Initiali
         if(event.getExistingWalletId().equals(getWalletForm().getWalletId())) {
             Wallet importedWallet = event.getImportedWallet();
             List<Keystore> importedKeystores = importedWallet.getKeystores();
+            importedKeystores.stream().filter(keystore -> keystore.getLabel() != null)
+                    .forEach(keystore -> keystore.setLabel(keystore.getLabel().replaceAll("[\\p{Cc}\\p{Cf}]+", " ").trim()));
             List<Keystore> nonWatchKeystores = walletForm.getWallet().getKeystores().stream().filter(k -> k.isValid() && k.getSource() != KeystoreSource.SW_WATCH).collect(Collectors.toList());
 
             //BIP129 requires a signer to verify its own key is present in the imported descriptor by an exact match, and not by a shortcut such as the master fingerprint
