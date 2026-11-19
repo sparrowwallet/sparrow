@@ -391,13 +391,16 @@ public class InputController extends TransactionFormController implements Initia
             if(new_toggle == null) {
                 old_toggle.setSelected(true);
             } else {
+                //The first selection shows the sequence the input already has, which is not written until the selection changes
                 String selection = locktimeToggleGroup.getSelectedToggle().getUserData().toString();
                 if(selection.equals("none")) {
                     locktimeFieldset.getChildren().removeAll(locktimeRelativeField, locktimeAbsoluteField);
                     locktimeFieldset.getChildren().add(locktimeAbsoluteField);
                     updateAbsoluteLocktimeField(transaction);
                     locktimeAbsoluteField.setDisable(true);
-                    setInputSequenceNumber(txInput, TransactionInput.SEQUENCE_LOCKTIME_DISABLED);
+                    if(old_toggle != null) {
+                        setInputSequenceNumber(txInput, TransactionInput.SEQUENCE_LOCKTIME_DISABLED);
+                    }
                     rbf.setSelected(false);
                     if(old_toggle != null) {
                         EventManager.get().post(new TransactionChangedEvent(transaction));
@@ -407,12 +410,8 @@ public class InputController extends TransactionFormController implements Initia
                     locktimeFieldset.getChildren().add(locktimeAbsoluteField);
                     updateAbsoluteLocktimeField(transaction);
                     locktimeAbsoluteField.setDisable(false);
-                    if(rbf.selectedProperty().getValue()) {
-                        setInputSequenceNumber(txInput, TransactionInput.SEQUENCE_RBF_ENABLED);
-                    } else {
-                        setInputSequenceNumber(txInput, TransactionInput.SEQUENCE_RBF_DISABLED);
-                    }
                     if(old_toggle != null) {
+                        setInputSequenceNumber(txInput, rbf.selectedProperty().getValue() ? TransactionInput.SEQUENCE_RBF_ENABLED : TransactionInput.SEQUENCE_RBF_DISABLED);
                         EventManager.get().post(new TransactionChangedEvent(transaction));
                     }
                 } else {
@@ -420,9 +419,8 @@ public class InputController extends TransactionFormController implements Initia
                     locktimeFieldset.getChildren().add(locktimeRelativeField);
                     if(locktimeRelativeCombo.getValue() == null) {
                         locktimeRelativeCombo.getSelectionModel().select(0);
-                    } else {
-                        setRelativeLocktime(txInput, transaction, old_toggle != null);
                     }
+                    setRelativeLocktime(txInput, transaction, old_toggle != null);
                     rbf.setSelected(true);
                 }
             }
@@ -486,6 +484,10 @@ public class InputController extends TransactionFormController implements Initia
     }
 
     private void setRelativeLocktime(TransactionInput txInput, Transaction transaction, boolean changed) {
+        if(!changed) {
+            return;
+        }
+
         String relativeSelection = locktimeRelativeCombo.getValue();
         if(relativeSelection.equals("blocks")) {
             Integer value = locktimeRelativeBlocks.getValue();
@@ -494,9 +496,7 @@ public class InputController extends TransactionFormController implements Initia
             long value = locktimeRelativeSeconds.getValue().toSeconds() / TransactionInput.RELATIVE_TIMELOCK_SECONDS_INCREMENT;
             setInputSequenceNumber(txInput, (value & TransactionInput.RELATIVE_TIMELOCK_VALUE_MASK) | TransactionInput.RELATIVE_TIMELOCK_TYPE_FLAG);
         }
-        if(changed) {
-            EventManager.get().post(new TransactionChangedEvent(transaction));
-        }
+        EventManager.get().post(new TransactionChangedEvent(transaction));
     }
 
     public void setModel(InputForm form) {

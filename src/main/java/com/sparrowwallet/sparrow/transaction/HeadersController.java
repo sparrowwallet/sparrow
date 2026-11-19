@@ -319,14 +319,15 @@ public class HeadersController extends TransactionFormController implements Init
             if(new_toggle == null) {
                 old_toggle.setSelected(true);
             } else {
+                //The first selection shows the locktime the transaction already has, so neither it nor a PSBT's fallback locktime is written until the selection changes
                 String selection = locktimeToggleGroup.getSelectedToggle().getUserData().toString();
                 if(selection.equals("none")) {
                     locktimeFieldset.getChildren().remove(locktimeDateField);
                     locktimeFieldset.getChildren().remove(locktimeBlockField);
                     locktimeFieldset.getChildren().remove(locktimeNoneField);
                     locktimeFieldset.getChildren().add(locktimeNoneField);
-                    setTransactionLocktime(tx, 0);
                     if(old_toggle != null) {
+                        setTransactionLocktime(tx, 0);
                         EventManager.get().post(new TransactionChangedEvent(tx));
                     }
                 } else if(selection.equals("block")) {
@@ -338,8 +339,8 @@ public class HeadersController extends TransactionFormController implements Init
                     if(block != null) {
                         locktimeCurrentHeight.setVisible(headersForm.isEditable() && AppServices.getCurrentBlockHeight() != null && block < AppServices.getCurrentBlockHeight());
                         futureBlockWarning.setVisible(AppServices.getCurrentBlockHeight() != null && block > AppServices.getCurrentBlockHeight());
-                        setTransactionLocktime(tx, block);
                         if(old_toggle != null) {
+                            setTransactionLocktime(tx, block);
                             EventManager.get().post(new TransactionChangedEvent(tx));
                         }
                     }
@@ -352,8 +353,8 @@ public class HeadersController extends TransactionFormController implements Init
                     if(date != null) {
                         locktimeDate.setDateTimeValue(date);
                         futureDateWarning.setVisible(date.isAfter(LocalDateTime.now()));
-                        setTransactionLocktime(tx, date.atZone(ZoneId.systemDefault()).toEpochSecond());
                         if(old_toggle != null) {
+                            setTransactionLocktime(tx, date.atZone(ZoneId.systemDefault()).toEpochSecond());
                             EventManager.get().post(new TransactionChangedEvent(tx));
                         }
                     }
