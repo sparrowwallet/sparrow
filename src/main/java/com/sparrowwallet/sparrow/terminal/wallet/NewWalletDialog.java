@@ -1,6 +1,7 @@
 package com.sparrowwallet.sparrow.terminal.wallet;
 
 import com.googlecode.lanterna.gui2.*;
+import com.googlecode.lanterna.gui2.dialogs.ActionListDialogBuilder;
 import com.googlecode.lanterna.gui2.dialogs.DialogWindow;
 import com.googlecode.lanterna.gui2.dialogs.TextInputDialogBuilder;
 import com.sparrowwallet.drongo.SecureString;
@@ -26,7 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 
 import static com.sparrowwallet.sparrow.AppServices.showErrorDialog;
 
@@ -99,11 +99,25 @@ public abstract class NewWalletDialog extends DialogWindow {
         Platform.runLater(() -> {
             ElectrumServer.WalletDiscoveryService walletDiscoveryService = new ElectrumServer.WalletDiscoveryService(wallets);
             walletDiscoveryService.setOnSucceeded(successEvent -> {
-                Optional<List<Wallet>> optWallets = walletDiscoveryService.getValue();
-                wallet = optWallets.orElseGet(() -> wallets).getFirst();
+                List<Wallet> discoveredWallets = walletDiscoveryService.getValue().orElseGet(() -> wallets);
                 SparrowTerminal.get().getGuiThread().invokeLater(() -> {
                     SparrowTerminal.get().getGui().removeWindow(discoveringDialog);
-                    saveWallet(wallet);
+                    if(discoveredWallets.size() > 1) {
+                        ActionListDialogBuilder builder = new ActionListDialogBuilder();
+                        builder.setTitle(walletName);
+                        builder.setDescription("Transactions were found for more than one script type");
+                        builder.setCanCancel(false);
+                        for(Wallet discoveredWallet : discoveredWallets) {
+                            builder.addAction(discoveredWallet.getScriptType().getDescription(), () -> {
+                                wallet = discoveredWallet;
+                                saveWallet(wallet);
+                            });
+                        }
+                        builder.build().showDialog(SparrowTerminal.get().getGui());
+                    } else {
+                        wallet = discoveredWallets.getFirst();
+                        saveWallet(wallet);
+                    }
                 });
             });
             walletDiscoveryService.setOnFailed(failedEvent -> {
