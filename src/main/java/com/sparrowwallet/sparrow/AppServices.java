@@ -1032,6 +1032,58 @@ public class AppServices {
         return showAlertDialog(title, content, Alert.AlertType.WARNING, buttons);
     }
 
+    /**
+     * Warns, without blocking the connection, that the configured Bitcoin Core node is neither on this computer or local network nor an onion address.
+     * Returns whether the warning was shown, so that each settings view can show it once.
+     */
+    public static boolean showRemoteCoreServerWarning(Config config) {
+        Server coreServer = config.getCoreServer();
+        if(config.getServerType() == ServerType.BITCOIN_CORE && isRemoteNode(coreServer)) {
+            //A host that is not an IP literal is not resolved here, so it can only be reported as unconfirmed
+            String location = IpAddressMatcher.isIpLiteral(coreServer.getHost()) ? " is not on" : " could not be confirmed to be on";
+            StringBuilder warning = new StringBuilder("Bitcoin Core at " + coreServer.getHostAndPort() + location + " this computer or your local network.\n");
+            if(isUsingProxy()) {
+                String proxy = config.isUseProxy() ? "configured proxy" : "internal Tor proxy";
+                warning.append("\nConnections to Bitcoin Core are made directly, and the " + proxy + " is only used for onion addresses. ");
+                warning.append("Your IP address will be visible to the node.\n");
+            }
+            if(coreServer.getProtocol() == Protocol.HTTP) {
+                warning.append("\nThe RPC credentials and wallet descriptors sent to it are unencrypted, and can be read by anyone on the network path.\n");
+            } else if(Storage.getCertificateFile(coreServer.getHost()) == null) {
+                warning.append("\nThe certificate presented by the node on the first connection will be trusted and required on all connections thereafter.\n");
+            }
+            warning.append("\nConnecting to the Bitcoin Core RPC interface over an untrusted network is not recommended by either Sparrow or Bitcoin Core. ");
+            warning.append("Consider using a node on this computer or your local network, connecting over a Tor onion address, or tunnelling to it over a VPN or SSH.");
+
+            showWarningDialog("Remote Bitcoin Core node", warning.toString());
+            return true;
+        }
+
+        return false;
+    }
+
+    private static boolean isRemoteNode(Server coreServer) {
+        if(coreServer == null || coreServer.isOnionAddress()) {
+            return false;
+        }
+
+        String host = coreServer.getHost();
+        if(IpAddressMatcher.isLocalNetworkName(host)) {
+            return false;
+        }
+
+        if(!IpAddressMatcher.isIpLiteral(host)) {
+            //Resolving a hostname here would block the user interface thread, and an unresolved host cannot be shown to be local
+            return true;
+        }
+
+        try {
+            return !IpAddressMatcher.isLocalNetworkAddress(host);
+        } catch(IllegalArgumentException e) {
+            return true;
+        }
+    }
+
     public static Optional<ButtonType> showErrorDialog(String title, String content, ButtonType... buttons) {
         return showAlertDialog(title, content == null ? "See log file (Help menu)" : content, Alert.AlertType.ERROR, buttons);
     }

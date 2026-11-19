@@ -28,6 +28,7 @@ public abstract class ServerProxyDialog extends DialogWindow {
 
     protected void onDone() {
         close();
+        AppServices.showRemoteCoreServerWarning(Config.get());
 
         Platform.runLater(() -> {
             if(Config.get().getMode() == Mode.ONLINE && !(AppServices.isConnecting() || AppServices.isConnected())) {
@@ -38,6 +39,7 @@ public abstract class ServerProxyDialog extends DialogWindow {
 
     protected void onTest() {
         close();
+        AppServices.showRemoteCoreServerWarning(Config.get());
 
         ServerTestDialog serverTestDialog = new ServerTestDialog();
         serverTestDialog.showDialog(SparrowTerminal.get().getGui());
