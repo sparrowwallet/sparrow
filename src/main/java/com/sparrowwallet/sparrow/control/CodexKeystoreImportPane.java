@@ -108,7 +108,7 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
         int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
         for(int i = 0; i < scriptAccountsLength; i++) {
             MenuItem item = new MenuItem(accounts[i]);
-            final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
+            final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType(), i);
             item.setOnAction(event -> {
                 importButton.setDisable(true);
                 importKeystore(derivation);
@@ -121,7 +121,8 @@ public class CodexKeystoreImportPane extends TitledDescriptionPane {
     }
 
     private List<ChildNumber> getDefaultDerivation() {
-        return defaultDerivation == null || defaultDerivation.getDerivation().isEmpty() ? wallet.getScriptType().getDefaultDerivation() : defaultDerivation.getDerivation();
+        return defaultDerivation == null || defaultDerivation.getDerivation().isEmpty() ? wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType())
+                : defaultDerivation.getDerivation();
     }
 
     private void onInputChange(boolean empty, boolean validChecksum) {

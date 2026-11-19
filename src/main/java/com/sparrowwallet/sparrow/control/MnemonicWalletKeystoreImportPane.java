@@ -222,7 +222,7 @@ public class MnemonicWalletKeystoreImportPane extends MnemonicKeystorePane {
             setExpanded(false);
             try {
                 PolicyAndScriptType type = comboBox.getValue();
-                Wallet wallet = getWallet(type.policyType(), type.scriptType(), type.scriptType().getDefaultDerivation());
+                Wallet wallet = getWallet(type.policyType(), type.scriptType(), type.scriptType().getDefaultDerivation(type.policyType()));
                 if(passphraseProperty.get() != null && !passphraseProperty.get().isEmpty()) {
                     KeystorePassphraseDialog keystorePassphraseDialog = new KeystorePassphraseDialog(null, wallet.getKeystores().getFirst(), true);
                     keystorePassphraseDialog.initOwner(this.getScene().getWindow());

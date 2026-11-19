@@ -69,7 +69,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
         int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
         for(int i = 0; i < scriptAccountsLength; i++) {
             MenuItem item = new MenuItem(accounts[i]);
-            final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
+            final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType(), i);
             item.setOnAction(event -> {
                 importButton.setDisable(true);
                 importKeystore(derivation, false);
@@ -82,7 +82,8 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     }
 
     private List<ChildNumber> getDefaultDerivation() {
-        return defaultDerivation == null || defaultDerivation.getDerivation().isEmpty() ? wallet.getScriptType().getDefaultDerivation() : defaultDerivation.getDerivation();
+        return defaultDerivation == null || defaultDerivation.getDerivation().isEmpty() ? wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType())
+                : defaultDerivation.getDerivation();
     }
 
     protected void enterMnemonic(int numWords) {
@@ -143,7 +144,8 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
     protected void onWordChange(boolean empty, boolean validWords, boolean validChecksum) {
         if(!empty && validWords) {
             try {
-                importer.getKeystore(wallet.getPolicyType(), wallet.getScriptType().getDefaultDerivation(), wordEntriesProperty.get(), passphraseProperty.get());
+                importer.getKeystore(wallet.getPolicyType(), wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType()), wordEntriesProperty.get(),
+                        passphraseProperty.get());
                 validChecksum = true;
             } catch(ImportException e) {
                 if(e.getCause() instanceof MnemonicException.MnemonicTypeException) {
@@ -245,7 +247,7 @@ public class MnemonicKeystoreImportPane extends MnemonicKeystorePane {
             return;
         }
 
-        if(importKeystore(wallet.getScriptType().getDefaultDerivation(), true)) {
+        if(importKeystore(wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType()), true)) {
             setExpanded(true);
             enterMnemonicButton.setVisible(false);
             importButton.setVisible(true);

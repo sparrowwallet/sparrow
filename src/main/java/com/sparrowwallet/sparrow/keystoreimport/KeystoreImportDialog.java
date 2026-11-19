@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.keystoreimport;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Network;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.protocol.ScriptType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.KeystoreSource;
@@ -23,6 +24,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
     private final KeystoreImportController keystoreImportController;
     private Keystore keystore;
     private final ScriptType scriptType;
+    private final PolicyType policyType;
     private final String existingLabel;
 
     public KeystoreImportDialog(Wallet wallet, KeystoreSource initialSource, KeyDerivation currentDerivation, WalletModel currentModel, String currentLabel, boolean restrictImport) {
@@ -35,6 +37,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
         AppServices.setStageIcon(dialogPane.getScene().getWindow());
         setTitle("Import Keystore");
         scriptType = wallet.getScriptType();
+        policyType = wallet.getPolicyType();
         existingLabel = currentLabel;
 
         try {
@@ -75,7 +78,7 @@ public class KeystoreImportDialog extends Dialog<Keystore> {
         keystore.setLabel(existingLabel);
         keystore.setSource(KeystoreSource.SW_WATCH);
         keystore.setWalletModel(WalletModel.SPARROW);
-        keystore.setKeyDerivation(new KeyDerivation(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath()));
+        keystore.setKeyDerivation(new KeyDerivation(KeyDerivation.DEFAULT_WATCH_ONLY_FINGERPRINT, scriptType.getDefaultDerivationPath(policyType)));
         return keystore;
     }
 

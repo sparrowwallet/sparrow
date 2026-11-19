@@ -318,7 +318,7 @@ public class DevicePane extends TitledDescriptionPane {
                     }
                     for(PolicyAndScriptType type : types) {
                         MenuItem item = new MenuItem(type.getDescription());
-                        final List<ChildNumber> derivation = type.scriptType().getDefaultDerivation();
+                        final List<ChildNumber> derivation = type.scriptType().getDefaultDerivation(type.policyType());
                         item.setOnAction(event -> {
                             importMenuButton.setDisable(true);
                             wallet.setPolicyType(type.policyType());
@@ -330,7 +330,7 @@ public class DevicePane extends TitledDescriptionPane {
                     List<ScriptType> scriptTypes = ScriptType.getScriptTypesForPolicyType(wallet.getPolicyType()).stream().filter(device::supportsScriptType).toList();
                     for(ScriptType scriptType : scriptTypes) {
                         MenuItem item = new MenuItem(scriptType.getDescription());
-                        final List<ChildNumber> derivation = scriptType.getDefaultDerivation();
+                        final List<ChildNumber> derivation = scriptType.getDefaultDerivation(wallet.getPolicyType());
                         item.setOnAction(event -> {
                             importMenuButton.setDisable(true);
                             importKeystore(derivation);
@@ -348,7 +348,7 @@ public class DevicePane extends TitledDescriptionPane {
                 int scriptAccountsLength = ScriptType.P2SH.equals(wallet.getScriptType()) ? 1 : accounts.length;
                 for(int i = 0; i < scriptAccountsLength; i++) {
                     MenuItem item = new MenuItem(accounts[i]);
-                    final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(i);
+                    final List<ChildNumber> derivation = wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType(), i);
                     item.setOnAction(event -> {
                         importMenuButton.setDisable(true);
                         importKeystore(derivation);
@@ -466,7 +466,7 @@ public class DevicePane extends TitledDescriptionPane {
             return defaultDerivation.getDerivation();
         }
 
-        return wallet == null || wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
+        return wallet == null || wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType());
     }
 
     private void unlock(Device device) {
@@ -858,8 +858,10 @@ public class DevicePane extends TitledDescriptionPane {
 
     private void importKeystore(List<ChildNumber> derivation, Keystore keystore) {
         if(wallet.getScriptType() == null) {
-            ScriptType scriptType = Arrays.stream(ScriptType.ADDRESSABLE_TYPES).filter(type -> type.getDefaultDerivation().getFirst().equals(derivation.getFirst())).findFirst().orElse(ScriptType.P2PKH);
             PolicyType policyType = wallet.getPolicyType() != null ? wallet.getPolicyType() : PolicyType.SINGLE_HD;
+            List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(policyType);
+            ScriptType scriptType = scriptTypes.stream().filter(type -> type.getDefaultDerivation(policyType).getFirst().equals(derivation.getFirst())).findFirst()
+                    .orElse(scriptTypes.getFirst());
             wallet.setName(device.getModel().toDisplayString());
             wallet.setPolicyType(policyType);
             wallet.setScriptType(scriptType);

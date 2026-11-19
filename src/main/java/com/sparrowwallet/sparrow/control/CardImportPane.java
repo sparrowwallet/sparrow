@@ -62,7 +62,7 @@ public class CardImportPane extends TitledDescriptionPane {
             return defaultDerivation.getDerivation();
         }
 
-        return wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation();
+        return wallet.getScriptType() == null ? ScriptType.P2WPKH.getDefaultDerivation() : wallet.getScriptType().getDefaultDerivation(wallet.getPolicyType());
     }
 
     @Override

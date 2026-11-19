@@ -108,7 +108,7 @@ public class Bip39Dialog extends NewWalletDialog {
         if(!passphrase.getText().isEmpty()) {
             try {
                 PolicyAndScriptType type = scriptType.getSelectedItem();
-                Keystore keystore = importer.getKeystore(type.policyType(), type.scriptType().getDefaultDerivation(), getWords(), passphrase.getText());
+                Keystore keystore = importer.getKeystore(type.policyType(), type.scriptType().getDefaultDerivation(type.policyType()), getWords(), passphrase.getText());
                 PassphraseDialog passphraseDialog = new PassphraseDialog(walletName, keystore, true);
                 String confirmation = passphraseDialog.showDialog(SparrowTerminal.get().getGui());
                 if(confirmation == null || !confirmation.equals(passphrase.getText())) {
@@ -185,7 +185,7 @@ public class Bip39Dialog extends NewWalletDialog {
         Wallet wallet = new Wallet(walletName);
         wallet.setPolicyType(type.policyType());
         wallet.setScriptType(type.scriptType());
-        Keystore keystore = importer.getKeystore(type.policyType(), wallet.getScriptType().getDefaultDerivation(), getWords(), passphrase.getText());
+        Keystore keystore = importer.getKeystore(type.policyType(), wallet.getScriptType().getDefaultDerivation(type.policyType()), getWords(), passphrase.getText());
         wallet.getKeystores().add(keystore);
         wallet.setDefaultPolicy(Policy.getPolicy(type.policyType(), wallet.getScriptType(), wallet.getKeystores(), 1));
         if(type.policyType() == PolicyType.SINGLE_SP) {
