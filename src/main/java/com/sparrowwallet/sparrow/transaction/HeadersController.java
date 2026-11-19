@@ -1330,7 +1330,8 @@ public class HeadersController extends TransactionFormController implements Init
         List<Device> signingDevices = AppServices.getDevices().stream().filter(device -> fingerprints.contains(device.getFingerprint())).collect(Collectors.toList());
         if(signingDevices.isEmpty() &&
                 (headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getSource().equals(KeystoreSource.HW_USB) || keystore.getSource().equals(KeystoreSource.SW_WATCH) || keystore.getWalletModel().isCard()) ||
-                        (headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_SEED)) && headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_WATCH))))) {
+                        (headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_SEED)) && headersForm.getSigningWallet().getKeystores().stream().anyMatch(keystore -> keystore.getSource().equals(KeystoreSource.SW_WATCH))
+                                && headersForm.getSigningWallet().getKeystores().stream().noneMatch(keystore -> keystore.getWalletModel().isCard())))) {
             return;
         }
 
