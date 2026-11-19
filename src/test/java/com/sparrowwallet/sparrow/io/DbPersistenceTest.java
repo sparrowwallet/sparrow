@@ -168,6 +168,30 @@ public class DbPersistenceTest {
         }
     }
 
+    @Test
+    public void objectInChildSchemaRejected() throws Exception {
+        for(String ddl : List.of("create constant \"wallet_%s\".k value 1", "create domain \"wallet_%s\".dm as int default 0",
+                "create force trigger \"wallet_%s\".tg before insert on \"wallet_%s\".\"wallet\" for each row call \"com.sparrowwallet.Missing\"",
+                "create table \"wallet_%s\".g(a int, b int generated always as (a + 1))", "create table PUBLIC.g(a int, b int generated always as (a + 1))",
+                "create table PUBLIC.c(a int check (a > 0))")) {
+            Storage storage = createUnencryptedWallet("Savings");
+            Wallet wallet = createWallet("Savings");
+            storage.saveWallet(wallet);
+            Wallet child = wallet.addChildWallet(StandardAccount.ACCOUNT_1);
+            storage.saveWallet(child);
+            storage.closeAndWait();
+
+            String path = storage.getWalletFile().getAbsolutePath();
+            String url = "jdbc:h2:" + path.substring(0, path.length() - ".mv.db".length()) + ";DATABASE_TO_UPPER=false;DB_CLOSE_ON_EXIT=FALSE";
+            try(Connection connection = DriverManager.getConnection(url, "sa", ""); Statement statement = connection.createStatement()) {
+                statement.execute(ddl.replace("%s", child.getName()));
+            }
+
+            assertRejected(storage.getWalletFile());
+            Files.delete(storage.getWalletFile().toPath());
+        }
+    }
+
     private static final String TEST_XPUB = "xpub6BrhGFTWPd3DXo8s2BPxHHzCmBCyj8QvamcEUaq8EDwnwXpvvcU9LzpJqENHcqHkqwTn2vPhynGVoEqj3PAB3NxnYZrvCsSfoCniJKaggdy";
 
     private Wallet createWallet(String walletName) {

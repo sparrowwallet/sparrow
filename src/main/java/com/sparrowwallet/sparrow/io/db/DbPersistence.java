@@ -149,9 +149,8 @@ public class DbPersistence implements Persistence {
         ECKey encryptionKey = getEncryptionKey(password, storage.getWalletFile(), alreadyDerivedKey);
 
         try {
-            validateSchema(storage, MASTER_SCHEMA, encryptionKey);
+            validateFile(storage, encryptionKey);
             migrate(storage, MASTER_SCHEMA, encryptionKey);
-            validateSchema(storage, MASTER_SCHEMA, encryptionKey);
 
             Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
             masterWallet = jdbi.withHandle(handle -> {
@@ -164,6 +163,7 @@ public class DbPersistence implements Persistence {
             }
 
             Map<WalletAndKey, Storage> childWallets = loadChildWallets(storage, masterWallet, encryptionKey);
+            validateFile(storage, encryptionKey);
             masterWallet.setChildWallets(childWallets.keySet().stream().map(WalletAndKey::getWallet).collect(Collectors.toList()));
 
             createUpdateExecutor(masterWallet);
@@ -184,9 +184,7 @@ public class DbPersistence implements Persistence {
         List<String> childSchemas = schemas.stream().filter(schema -> schema.startsWith(WALLET_SCHEMA_PREFIX) && !schema.equals(MASTER_SCHEMA)).collect(Collectors.toList());
         Map<WalletAndKey, Storage> childWallets = new TreeMap<>();
         for(String schema : childSchemas) {
-            validateSchema(storage, schema, encryptionKey);
             migrate(storage, schema, encryptionKey);
-            validateSchema(storage, schema, encryptionKey);
 
             Jdbi childJdbi = getJdbi(storage, getFilePassword(encryptionKey));
             Wallet wallet = childJdbi.withHandle(handle -> {
@@ -635,7 +633,8 @@ public class DbPersistence implements Persistence {
         }
     }
 
-    private void validateSchema(Storage storage, String schema, ECKey encryptionKey) throws StorageException {
+    //Checks every schema in the file at once, before any is migrated and again once all have been, since the cost of a query here grows with the whole file
+    private void validateFile(Storage storage, ECKey encryptionKey) throws StorageException {
         Jdbi jdbi = getJdbi(storage, getFilePassword(encryptionKey));
         try {
             jdbi.useHandle(handle -> {
@@ -649,45 +648,45 @@ public class DbPersistence implements Persistence {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected database triggers: " + String.join(", ", triggers) + "."));
                 }
 
-                List<String> checkConstraints = handle.createQuery("SELECT CHECK_CLAUSE FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS WHERE UPPER(CONSTRAINT_SCHEMA) = UPPER(:schema)")
-                        .bind("schema", schema).mapTo(String.class).list();
+                List<String> checkConstraints = handle.createQuery("SELECT CHECK_CLAUSE FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA <> 'INFORMATION_SCHEMA'")
+                        .mapTo(String.class).list();
                 if(!checkConstraints.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected check constraints: " + String.join(", ", checkConstraints) + "."));
                 }
 
-                List<String> nonBaseTables = handle.createQuery("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) "
-                        + "AND TABLE_TYPE <> 'BASE TABLE'").bind("schema", schema)
+                List<String> nonBaseTables = handle.createQuery("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA' "
+                        + "AND TABLE_TYPE <> 'BASE TABLE'")
                         .map((rs, ctx) -> rs.getString("TABLE_NAME") + " (" + rs.getString("TABLE_TYPE") + ")").list();
                 if(!nonBaseTables.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected database object types: " + String.join(", ", nonBaseTables) + "."));
                 }
 
-                List<String> linkedTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND STORAGE_TYPE = 'TABLE LINK'")
-                        .bind("schema", schema).mapTo(String.class).list();
+                List<String> linkedTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA' AND STORAGE_TYPE = 'TABLE LINK'")
+                        .mapTo(String.class).list();
                 if(!linkedTables.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected linked tables: " + String.join(", ", linkedTables) + "."));
                 }
 
-                List<String> engineTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) "
-                        + "AND TABLE_TYPE = 'BASE TABLE' AND (TABLE_CLASS IS NULL OR TABLE_CLASS <> :tableClass)").bind("schema", schema).bind("tableClass", H2_BASE_TABLE_CLASS).mapTo(String.class).list();
+                List<String> engineTables = handle.createQuery("SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA' "
+                        + "AND TABLE_TYPE = 'BASE TABLE' AND (TABLE_CLASS IS NULL OR TABLE_CLASS <> :tableClass)").bind("tableClass", H2_BASE_TABLE_CLASS).mapTo(String.class).list();
                 if(!engineTables.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected table storage engines: " + String.join(", ", engineTables) + "."));
                 }
 
-                List<String> synonyms = handle.createQuery("SELECT SYNONYM_NAME FROM INFORMATION_SCHEMA.SYNONYMS WHERE UPPER(SYNONYM_SCHEMA) = UPPER(:schema)")
-                        .bind("schema", schema).mapTo(String.class).list();
+                List<String> synonyms = handle.createQuery("SELECT SYNONYM_NAME FROM INFORMATION_SCHEMA.SYNONYMS WHERE SYNONYM_SCHEMA <> 'INFORMATION_SCHEMA'")
+                        .mapTo(String.class).list();
                 if(!synonyms.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected synonyms: " + String.join(", ", synonyms) + "."));
                 }
 
-                List<String> generatedColumns = handle.createQuery("SELECT TABLE_NAME || '.' || COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND GENERATION_EXPRESSION IS NOT NULL")
-                        .bind("schema", schema).mapTo(String.class).list();
+                List<String> generatedColumns = handle.createQuery("SELECT TABLE_NAME || '.' || COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA' AND GENERATION_EXPRESSION IS NOT NULL")
+                        .mapTo(String.class).list();
                 if(!generatedColumns.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected generated columns: " + String.join(", ", generatedColumns) + "."));
                 }
 
                 List<String[]> defaultColumns = handle.createQuery("SELECT TABLE_NAME, COLUMN_NAME, COLUMN_DEFAULT, COLUMN_ON_UPDATE FROM INFORMATION_SCHEMA.COLUMNS "
-                        + "WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND (COLUMN_DEFAULT IS NOT NULL OR COLUMN_ON_UPDATE IS NOT NULL)").bind("schema", schema)
+                        + "WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA' AND (COLUMN_DEFAULT IS NOT NULL OR COLUMN_ON_UPDATE IS NOT NULL)")
                         .map((rs, ctx) -> new String[] {rs.getString("TABLE_NAME"), rs.getString("COLUMN_NAME"), rs.getString("COLUMN_DEFAULT"), rs.getString("COLUMN_ON_UPDATE")}).list();
                 List<String> unexpectedDefaults = new ArrayList<>();
                 for(String[] column : defaultColumns) {
@@ -710,9 +709,9 @@ public class DbPersistence implements Persistence {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected database constants: " + String.join(", ", constants) + "."));
                 }
 
-                List<String> serializedColumns = handle.createQuery("SELECT TABLE_NAME || '.' || COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE UPPER(TABLE_SCHEMA) = UPPER(:schema) AND DATA_TYPE = 'JAVA_OBJECT' "
-                        + "UNION SELECT OBJECT_NAME FROM INFORMATION_SCHEMA.ELEMENT_TYPES WHERE UPPER(OBJECT_SCHEMA) = UPPER(:schema) AND OBJECT_TYPE = 'TABLE' AND DATA_TYPE = 'JAVA_OBJECT'")
-                        .bind("schema", schema).mapTo(String.class).list();
+                List<String> serializedColumns = handle.createQuery("SELECT TABLE_NAME || '.' || COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA <> 'INFORMATION_SCHEMA' AND DATA_TYPE = 'JAVA_OBJECT' "
+                        + "UNION SELECT OBJECT_NAME FROM INFORMATION_SCHEMA.ELEMENT_TYPES WHERE OBJECT_SCHEMA <> 'INFORMATION_SCHEMA' AND OBJECT_TYPE = 'TABLE' AND DATA_TYPE = 'JAVA_OBJECT'")
+                        .mapTo(String.class).list();
                 if(!serializedColumns.isEmpty()) {
                     throw new RuntimeException(new StorageException("Wallet file contains unexpected serialized object columns: " + String.join(", ", serializedColumns) + "."));
                 }
