@@ -351,12 +351,12 @@ public class WalletLabels implements WalletImport, WalletExport {
     }
 
     private static void addChangedEntry(Map<Wallet, List<Entry>> changedEntries, Entry entry) {
-        List<Entry> entries = changedEntries.computeIfAbsent(entry.getWallet(), wallet -> new ArrayList<>());
+        List<Entry> entries = changedEntries.computeIfAbsent(entry.getOwningWallet(), wallet -> new ArrayList<>());
         entries.add(entry);
     }
 
     private static void addChangedUtxo(Map<Wallet, List<BlockTransactionHashIndex>> changedUtxos, TransactionHashIndexEntry utxoEntry) {
-        List<BlockTransactionHashIndex> utxos = changedUtxos.computeIfAbsent(utxoEntry.getWallet(), w -> new ArrayList<>());
+        List<BlockTransactionHashIndex> utxos = changedUtxos.computeIfAbsent(utxoEntry.getOwningWallet(), w -> new ArrayList<>());
         utxos.add(utxoEntry.getHashIndex());
     }
 

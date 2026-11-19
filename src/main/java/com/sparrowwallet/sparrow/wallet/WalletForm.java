@@ -790,7 +790,7 @@ public class WalletForm {
 
     @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
-        if(event.getWallet() == wallet) {
+        if(event.fromThisOrNested(wallet)) {
             Platform.runLater(() -> EventManager.get().post(new WalletDataChangedEvent(wallet)));
         }
     }

@@ -62,7 +62,7 @@ public class UtxosDialog extends WalletDialog {
                     if(dateCell.getEntry() instanceof UtxoEntry utxoEntry) {
                         utxoEntry.getHashIndex().setStatus(utxoEntry.getHashIndex().getStatus() == Status.FROZEN ? null : Status.FROZEN);
                         utxos.invalidate();
-                        EventManager.get().post(new WalletUtxoStatusChangedEvent(utxoEntry.getWallet(), List.of(utxoEntry.getHashIndex())));
+                        EventManager.get().post(new WalletUtxoStatusChangedEvent(utxoEntry.getOwningWallet(), List.of(utxoEntry.getHashIndex())));
                     }
                 }
             }

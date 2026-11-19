@@ -83,7 +83,7 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
             if(utxoEntry.getHashIndex().getStatus() != Status.FROZEN) {
                 hyperlink.setText("");
                 utxoEntry.getHashIndex().setStatus(Status.FROZEN);
-                EventManager.get().post(new WalletUtxoStatusChangedEvent(utxoEntry.getWallet(), Collections.singletonList(utxoEntry.getHashIndex())));
+                EventManager.get().post(new WalletUtxoStatusChangedEvent(utxoEntry.getOwningWallet(), Collections.singletonList(utxoEntry.getHashIndex())));
             }
         });
 

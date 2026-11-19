@@ -15,12 +15,14 @@ import java.util.List;
 import java.util.Objects;
 
 public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> {
+    private final Wallet owningWallet;
     private final BlockTransactionHashIndex hashIndex;
     private final Type type;
     private final KeyPurpose keyPurpose;
 
     public HashIndexEntry(Wallet wallet, BlockTransactionHashIndex hashIndex, Type type, KeyPurpose keyPurpose) {
         super(wallet.isNested() ? wallet.getMasterWallet() : wallet, hashIndex.getLabel(), hashIndex.getSpentBy() != null ? List.of(new HashIndexEntry(wallet, hashIndex.getSpentBy(), Type.INPUT, keyPurpose)) : Collections.emptyList());
+        this.owningWallet = wallet;
         this.hashIndex = hashIndex;
         this.type = type;
         this.keyPurpose = keyPurpose;
@@ -31,6 +33,11 @@ public class HashIndexEntry extends Entry implements Comparable<HashIndexEntry> 
                 EventManager.get().post(new WalletEntryLabelsChangedEvent(wallet, this));
             }
         });
+    }
+
+    @Override
+    public Wallet getOwningWallet() {
+        return owningWallet;
     }
 
     public BlockTransactionHashIndex getHashIndex() {

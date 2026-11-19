@@ -495,23 +495,22 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
     }
 
     private static void freezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<BlockTransactionHashIndex> utxos = getMenuUtxoEntries(treeTableView, hashIndexEntry, e -> !e.getHashIndex().isSpent()).stream()
-                .map(HashIndexEntry::getHashIndex)
-                .filter(ref -> ref.getStatus() != Status.FROZEN)
-                .collect(Collectors.toList());
-
-        utxos.forEach(ref -> ref.setStatus(Status.FROZEN));
-        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), utxos));
+        setUtxoStatus(getMenuUtxoEntries(treeTableView, hashIndexEntry, e -> !e.getHashIndex().isSpent() && e.getHashIndex().getStatus() != Status.FROZEN), Status.FROZEN);
     }
 
     private static void unfreezeUtxo(TreeTableView<Entry> treeTableView, HashIndexEntry hashIndexEntry) {
-        List<BlockTransactionHashIndex> utxos = getMenuUtxoEntries(treeTableView, hashIndexEntry, e -> !e.getHashIndex().isSpent()).stream()
-                .map(HashIndexEntry::getHashIndex)
-                .filter(ref -> ref.getStatus() == Status.FROZEN)
-                .collect(Collectors.toList());
+        setUtxoStatus(getMenuUtxoEntries(treeTableView, hashIndexEntry, e -> !e.getHashIndex().isSpent() && e.getHashIndex().getStatus() == Status.FROZEN), null);
+    }
 
-        utxos.forEach(ref -> ref.setStatus(null));
-        EventManager.get().post(new WalletUtxoStatusChangedEvent(hashIndexEntry.getWallet(), utxos));
+    //A selection can span a wallet and its nested wallets, and each change is saved by the wallet that stores the output
+    private static void setUtxoStatus(List<HashIndexEntry> utxoEntries, Status status) {
+        Map<Wallet, List<BlockTransactionHashIndex>> walletUtxos = new LinkedHashMap<>();
+        for(HashIndexEntry utxoEntry : utxoEntries) {
+            utxoEntry.getHashIndex().setStatus(status);
+            walletUtxos.computeIfAbsent(utxoEntry.getOwningWallet(), wallet -> new ArrayList<>()).add(utxoEntry.getHashIndex());
+        }
+
+        walletUtxos.forEach((wallet, utxos) -> EventManager.get().post(new WalletUtxoStatusChangedEvent(wallet, utxos)));
     }
 
     private String getTooltip(TransactionEntry transactionEntry) {
@@ -765,7 +764,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                     freezeUtxos.setOnAction(AE -> {
                         hide();
                         unfrozenUtxos.forEach(utxo -> utxo.setStatus(Status.FROZEN));
-                        EventManager.get().post(new WalletUtxoStatusChangedEvent(wallet, unfrozenUtxos));
+                        EventManager.get().post(new WalletUtxoStatusChangedEvent(node.getWallet(), unfrozenUtxos));
                     });
                     getItems().add(freezeUtxos);
                 }
@@ -777,7 +776,7 @@ public class EntryCell extends TreeTableCell<Entry, Entry> implements Confirmati
                     unfreezeUtxos.setOnAction(AE -> {
                         hide();
                         frozenUtxos.forEach(utxo -> utxo.setStatus(null));
-                        EventManager.get().post(new WalletUtxoStatusChangedEvent(wallet, frozenUtxos));
+                        EventManager.get().post(new WalletUtxoStatusChangedEvent(node.getWallet(), frozenUtxos));
                     });
                     getItems().add(unfreezeUtxos);
                 }

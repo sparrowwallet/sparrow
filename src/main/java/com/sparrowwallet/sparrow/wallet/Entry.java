@@ -28,6 +28,13 @@ public abstract class Entry {
         return wallet;
     }
 
+    /**
+     * The wallet that stores the object of this entry, which is a nested wallet where the entry is shown under its master.
+     */
+    public Wallet getOwningWallet() {
+        return wallet;
+    }
+
     public String getLabel() {
         return labelProperty.get();
     }

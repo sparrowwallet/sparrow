@@ -265,7 +265,7 @@ public class TransactionsController extends WalletFormController implements Init
 
     @Subscribe
     public void walletUtxoStatusChanged(WalletUtxoStatusChangedEvent event) {
-        if(event.getWallet().equals(getWalletForm().getWallet())) {
+        if(event.fromThisOrNested(getWalletForm().getWallet())) {
             transactionsTable.refresh();
         }
     }
