@@ -3,6 +3,9 @@ package com.sparrowwallet.sparrow.net;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcMethod;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcOptional;
+import com.github.arteam.simplejsonrpc.core.annotation.JsonRpcParam;
 import com.github.arteam.simplejsonrpc.server.JsonRpcServer;
 import com.google.common.base.Splitter;
 import com.google.common.net.HostAndPort;
@@ -21,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +33,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private static final Logger log = LoggerFactory.getLogger(TcpTransport.class);
@@ -251,8 +256,11 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             try {
                 String received = readInputStream(in);
                 wireLog.info("< " + received);
-                if(isNotification(received)) {
+                MessageType messageType = getMessageType(received);
+                if(messageType == MessageType.SUBSCRIPTION_NOTIFICATION) {
                     jsonRpcServer.handle(received, subscriptionService);
+                } else if(messageType == MessageType.OTHER_NOTIFICATION) {
+                    warnUnhandledNotification();
                 } else {
                     deliverResponse(received);
                 }
@@ -418,23 +426,73 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         return sequence == null ? 0L : sequence;
     }
 
-    private static boolean isNotification(String json) {
+    //The params of each notification the subscription service handles, by name, and those of them it requires
+    private record SubscriptionParams(Set<String> names, Set<String> required) {}
+
+    private static final Map<String, SubscriptionParams> SUBSCRIPTION_PARAMS = Arrays.stream(SubscriptionService.class.getMethods())
+            .filter(method -> method.isAnnotationPresent(JsonRpcMethod.class))
+            .collect(Collectors.toUnmodifiableMap(method -> method.getAnnotation(JsonRpcMethod.class).value(), method -> new SubscriptionParams(
+                    Arrays.stream(method.getParameters()).map(parameter -> parameter.getAnnotation(JsonRpcParam.class).value()).collect(Collectors.toUnmodifiableSet()),
+                    Arrays.stream(method.getParameters()).filter(parameter -> !parameter.isAnnotationPresent(JsonRpcOptional.class))
+                            .map(parameter -> parameter.getAnnotation(JsonRpcParam.class).value()).collect(Collectors.toUnmodifiableSet()))));
+
+    private static final long UNHANDLED_NOTIFICATION_WARNING_MILLIS = TimeUnit.MINUTES.toMillis(1);
+    private static final AtomicLong lastUnhandledNotificationWarning = new AtomicLong();
+
+    enum MessageType { RESPONSE, SUBSCRIPTION_NOTIFICATION, OTHER_NOTIFICATION }
+
+    //A notification names a method, and is passed on only where the subscription service handles that method with these params
+    static MessageType getMessageType(String json) {
         try(JsonParser parser = JSON_FACTORY.createParser(json)) {
             if(parser.nextToken() != JsonToken.START_OBJECT) {
-                return false;
+                return MessageType.RESPONSE;
             }
+
+            String method = null;
+            int paramCount = -1;
+            Set<String> paramNames = null;
             while(parser.nextToken() == JsonToken.FIELD_NAME) {
                 String field = parser.currentName();
                 JsonToken value = parser.nextToken();
-                if("method".equals(field)) {
-                    return value == JsonToken.VALUE_STRING;
+                if("method".equals(field) && value == JsonToken.VALUE_STRING) {
+                    method = parser.getText();
+                } else if("params".equals(field) && value == JsonToken.START_ARRAY) {
+                    paramCount = 0;
+                    while(parser.nextToken() != JsonToken.END_ARRAY) {
+                        parser.skipChildren();
+                        paramCount++;
+                    }
+                } else if("params".equals(field) && value == JsonToken.START_OBJECT) {
+                    paramNames = new LinkedHashSet<>();
+                    while(parser.nextToken() == JsonToken.FIELD_NAME) {
+                        paramNames.add(parser.currentName());
+                        parser.nextToken();
+                        parser.skipChildren();
+                    }
+                } else {
+                    parser.skipChildren();
                 }
-                parser.skipChildren();
             }
-            return false;
+
+            if(method == null) {
+                return MessageType.RESPONSE;
+            }
+
+            SubscriptionParams params = SUBSCRIPTION_PARAMS.get(method);
+            boolean handled = params != null && (paramNames != null ? params.names().containsAll(paramNames) && paramNames.containsAll(params.required())
+                    : paramCount >= params.required().size() && paramCount <= params.names().size());
+            return handled ? MessageType.SUBSCRIPTION_NOTIFICATION : MessageType.OTHER_NOTIFICATION;
         } catch(Exception e) {
             log.warn("Could not parse JSON-RPC message from server: " + e.getMessage());
-            return false;
+            return MessageType.RESPONSE;
+        }
+    }
+
+    private static void warnUnhandledNotification() {
+        long now = System.currentTimeMillis();
+        long last = lastUnhandledNotificationWarning.get();
+        if(now - last >= UNHANDLED_NOTIFICATION_WARNING_MILLIS && lastUnhandledNotificationWarning.compareAndSet(last, now)) {
+            log.warn("Ignoring notifications from server that do not match a subscription");
         }
     }
 
