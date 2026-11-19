@@ -213,7 +213,7 @@ public class TcpOverTlsTransport extends TcpTransport {
                 x509Certs[i] = (X509Certificate)certs[i];
             }
 
-            String authType = x509Certs[0].getPublicKey().getAlgorithm().equals("EC") ? "ECDHE_ECDSA" : "RSA";
+            String authType = x509Certs[0].getPublicKey().getAlgorithm().equals("EC") ? "ECDHE_ECDSA" : "ECDHE_RSA";
             defaultTm.checkServerTrusted(x509Certs, authType);
 
             //Match the hostname as CA validated connections do, so that a certificate saved here can be validated when it is used
