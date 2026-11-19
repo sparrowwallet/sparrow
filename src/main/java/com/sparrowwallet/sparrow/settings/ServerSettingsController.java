@@ -4,7 +4,6 @@ import com.github.arteam.simplejsonrpc.client.exception.JsonRpcException;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.Subscribe;
 import com.google.common.net.HostAndPort;
-import com.google.common.net.InetAddresses;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.OsType;
 import com.sparrowwallet.drongo.policy.PolicyType;
@@ -882,7 +881,7 @@ public class ServerSettingsController extends SettingsDetailController {
             coreServerWarningShown = true;
 
             //A host that is not an IP literal is not resolved here, so it can only be reported as unconfirmed
-            String location = InetAddresses.isInetAddress(coreServer.getHost()) ? " is not on" : " could not be confirmed to be on";
+            String location = IpAddressMatcher.isIpLiteral(coreServer.getHost()) ? " is not on" : " could not be confirmed to be on";
             StringBuilder warning = new StringBuilder("Bitcoin Core at " + coreServer.getHostAndPort() + location + " this computer or your local network.\n");
             if(AppServices.isUsingProxy()) {
                 String proxy = config.isUseProxy() ? "configured proxy" : "internal Tor proxy";
@@ -911,7 +910,7 @@ public class ServerSettingsController extends SettingsDetailController {
             return false;
         }
 
-        if(!InetAddresses.isInetAddress(host)) {
+        if(!IpAddressMatcher.isIpLiteral(host)) {
             //Resolving a hostname here would block the user interface thread, and an unresolved host cannot be shown to be local
             return true;
         }

@@ -16,7 +16,6 @@ package com.sparrowwallet.sparrow.net;
  * limitations under the License.
  */
 
-import com.google.common.net.InetAddresses;
 import com.sparrowwallet.sparrow.AppServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +121,16 @@ public final class IpAddressMatcher {
         }
     }
 
+    //An IP literal as InetAddress itself reads one, rather than as a looser parse would, so that no string it accepts is then resolved as a name
+    public static boolean isIpLiteral(String host) {
+        try {
+            InetAddress.ofLiteral(host);
+            return true;
+        } catch(IllegalArgumentException e) {
+            return false;
+        }
+    }
+
     public static boolean isLocalNetworkName(String host) {
         String lowerHost = host.toLowerCase(Locale.ROOT);
         return "localhost".equals(lowerHost) || LOCAL_DOMAIN_SUFFIXES.stream().anyMatch(lowerHost::endsWith);
@@ -135,7 +144,7 @@ public final class IpAddressMatcher {
 
             //Matching a hostname against the local ranges requires resolving it, which leaks the name to (and trusts the answer of) the local DNS resolver even when a proxy is configured
             //Only IP literals are considered potentially local when using a proxy, since local network names have already returned above
-            if(AppServices.isUsingProxy() && !InetAddresses.isInetAddress(address)) {
+            if(AppServices.isUsingProxy() && !isIpLiteral(address)) {
                 log.info("Avoiding local DNS resolution of " + address + ", assuming it is a non-local address to be resolved by the configured proxy");
                 return false;
             }
