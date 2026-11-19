@@ -1980,11 +1980,13 @@ public class ElectrumServer {
             try {
                 //One object written once per event: the height and the header read separately can straddle a new block
                 ChainTip announced = AppServices.getAnnouncedTip();
-                if(announced != null && announced.height() >= store.getStartHeight() && announced.height() <= store.getTipHeight()
-                        && !announced.header().getHash().equals(store.getHash(announced.height()))) {
-                    //Never serve a stored header while the store tip disagrees with the announced tip: the tie form of a reorg
+                if(announced != null && announced.height() >= store.getStartHeight() && (announced.height() > store.getTipHeight()
+                        || !announced.header().getHash().equals(store.getHash(announced.height())))) {
+                    //Never serve a stored header until the store has reached the announced tip: a reorg replaces stored headers below the new tip
+                    //whether it ties the store tip or lengthens the chain, and only reaching the tip shows which
                     syncHeaders(announced);
-                } else if(height > store.getTipHeight()) {
+                }
+                if(height > store.getTipHeight()) {
                     syncHeadersTo(height);      //the sync service has not caught up, so fetch on this thread
                 }
 

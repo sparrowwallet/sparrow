@@ -288,7 +288,7 @@ public class HeaderSyncTest {
         BlockHeader verified = new ElectrumServer().getVerifiedHeader(11);
 
         assertEquals(branch.get(10).getHash(), verified.getHash());
-        assertEquals(11, store.getTipHeight());
+        assertEquals(12, store.getTipHeight());
         assertEquals(branch.get(5).getHash(), store.getHeader(6).getHash());
         assertEquals(5, ElectrumServer.lastReorgForkHeight);
         assertEquals(5, listener.getForkHeight());
@@ -487,6 +487,38 @@ public class HeaderSyncTest {
         assertEquals(chain.getLast().getHash(), verified.getHash());
         assertEquals(chain.getLast().getHash(), store.getTipHash());
         assertEquals(Integer.MAX_VALUE, ElectrumServer.lastReorgForkHeight);
+        assertNull(listener.getForkHeight());
+    }
+
+    /**
+     * A reorg that also lengthens the chain announces a tip above the store, which still holds the replaced headers below it until the sync service
+     * catches up. A proof for a transaction in a replacing block has to be checked against that block, not the one it replaced.
+     */
+    @Test
+    public void reconcilesBeforeServingAStoredHeaderBelowAnAnnouncedTipOnAnotherBranch() throws Exception {
+        List<BlockHeader> chain = mineChain(Network.REGTEST.getGenesisHeader(), 10, CHAIN_TIME);
+        List<BlockHeader> branch = fork(chain, 8, 3);
+        HeaderStore store = seedStore(chain, 10);
+        serve(branch);
+        AppServices.setAnnouncedTip(new ChainTip(11, branch.getLast()));
+
+        BlockHeader verified = new ElectrumServer().getVerifiedHeader(10);
+
+        assertEquals(branch.get(9).getHash(), verified.getHash());
+        assertEquals(branch.getLast().getHash(), store.getTipHash());
+        assertEquals(8, listener.getForkHeight());
+    }
+
+    @Test
+    public void extendsTheStoreWithoutFetchingWhenTheAnnouncedTipIsTheNextBlock() throws Exception {
+        List<BlockHeader> chain = mineChain(Network.REGTEST.getGenesisHeader(), 11, CHAIN_TIME);
+        HeaderStore store = seedStore(chain, 10);
+        FakeElectrumServerRpc fake = serve(chain);
+        AppServices.setAnnouncedTip(new ChainTip(11, chain.getLast()));
+
+        assertEquals(chain.get(9).getHash(), new ElectrumServer().getVerifiedHeader(10).getHash());
+        assertEquals(11, store.getTipHeight());
+        assertEquals(0, fake.getChunkRequests());
         assertNull(listener.getForkHeight());
     }
 
