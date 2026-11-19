@@ -59,7 +59,11 @@ public class ZBar {
                     int result = scanner.scanImage(image);
                     if(result != 0) {
                         String symbolData = image.getFirstSymbol().getData();
-                        return new Scan(getRawBytes(symbolData), symbolData);
+                        //ZBar returns the data transcoded to text and cut at the first NUL, so the bytes of binary data cannot be recovered from it.
+                        //Only printable ASCII is certain to match its bytes, and anything else is left to the other scanners
+                        if(isPrintableAscii(symbolData)) {
+                            return new Scan(getRawBytes(symbolData), symbolData);
+                        }
                     }
                 }
             }
@@ -101,6 +105,10 @@ public class ZBar {
         }
 
         return outputData;
+    }
+
+    static boolean isPrintableAscii(String str) {
+        return str != null && !str.isEmpty() && str.chars().allMatch(c -> (c >= 0x20 && c < 0x7F) || c == '\t' || c == '\n' || c == '\r');
     }
 
     private static byte[] getRawBytes(String str) {
