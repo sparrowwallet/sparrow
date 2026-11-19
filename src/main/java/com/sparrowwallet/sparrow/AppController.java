@@ -22,6 +22,7 @@ import com.sparrowwallet.sparrow.io.*;
 import com.sparrowwallet.sparrow.io.bbqr.BBQR;
 import com.sparrowwallet.sparrow.io.bbqr.BBQRType;
 import com.sparrowwallet.sparrow.net.ElectrumServer;
+import com.sparrowwallet.sparrow.net.Protocol;
 import com.sparrowwallet.sparrow.net.ServerType;
 import com.sparrowwallet.sparrow.settings.SettingsGroup;
 import com.sparrowwallet.sparrow.settings.SettingsDialog;
@@ -3224,7 +3225,7 @@ public class AppController implements Initializable {
 
     @Subscribe
     public void cormorantPruneStatus(CormorantPruneStatusEvent event) {
-        if(event.legacyWalletExists()) {
+        if(event.legacyWalletExists() && Config.get().getCoreServer().getProtocol() != Protocol.HTTPS) {
             Optional<ButtonType> optButtonType = AppServices.showErrorDialog("Error importing Bitcoin Core descriptor wallet",
                     "The connected node is pruned at " + event.getPruneDateAsString() + ", but the wallet birthday for " + event.getWallet().getFullDisplayName() + " is set to " + event.getScanDateAsString() + ".\n\n" +
                             "Do you want to try using the existing legacy Bitcoin Core wallet?", ButtonType.YES, ButtonType.NO);

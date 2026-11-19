@@ -3394,8 +3394,9 @@ public class ElectrumServer {
                     ElectrumServer electrumServer = new ElectrumServer();
 
                     if(Config.get().getServerType() == ServerType.BITCOIN_CORE) {
+                        boolean https = Config.get().getCoreServer() != null && Config.get().getCoreServer().getProtocol() == Protocol.HTTPS;
                         try {
-                            if(Config.get().isUseLegacyCoreWallet()) {
+                            if(Config.get().isUseLegacyCoreWallet() && !https) {
                                 throw new CormorantBitcoindException("Legacy wallet configured");
                             }
                             if(ElectrumServer.cormorant == null) {
@@ -3406,6 +3407,10 @@ public class ElectrumServer {
                             throw new ServerException(e.getMessage());
                         } catch(CormorantBitcoindException e) {
                             ElectrumServer.cormorant = null;
+                            if(https) {
+                                throw new ServerException("Upgrade Bitcoin Core to v24 or later to connect over https.");
+                            }
+
                             log.debug("Cannot start cormorant: " + e.getMessage() + ". Starting BWT...");
 
                             Bwt.initialize();
