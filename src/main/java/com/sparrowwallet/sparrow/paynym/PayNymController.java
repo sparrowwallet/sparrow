@@ -11,6 +11,7 @@ import com.sparrowwallet.drongo.protocol.*;
 import com.sparrowwallet.drongo.psbt.PSBT;
 import com.sparrowwallet.drongo.wallet.*;
 import com.sparrowwallet.sparrow.AppServices;
+import com.sparrowwallet.sparrow.UnitFormat;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.control.*;
 import com.sparrowwallet.sparrow.event.*;
@@ -564,6 +565,18 @@ public class PayNymController {
                 walletTransaction = getWalletTransaction(wallet, payNym, new byte[80], null);
             } catch(InsufficientFundsException e2) {
                 AppServices.showErrorDialog("Insufficient Funds", "There are not enough funds in this wallet to broadcast the notification transaction.");
+                followingList.refresh();
+                return;
+            }
+        }
+
+        double feeRate = walletTransaction.getFeeRate();
+        if(feeRate > AppServices.getLongFeeRatesRange().getLast()) {
+            UnitFormat format = Config.get().getUnitFormat() == null ? UnitFormat.DOT : Config.get().getUnitFormat();
+            Optional<ButtonType> optType = AppServices.showWarningDialog("Very high fee rate!",
+                    "This transaction pays a very high fee rate of " + format.formatDecimalValue(feeRate, 0) + " sats/vB.\n\nBroadcast this transaction?",
+                    ButtonType.YES, ButtonType.NO);
+            if(optType.isEmpty() || optType.get() != ButtonType.YES) {
                 followingList.refresh();
                 return;
             }
