@@ -3,6 +3,7 @@ package com.sparrowwallet.sparrow.io;
 import com.google.common.eventbus.Subscribe;
 import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
+import com.sparrowwallet.drongo.KeyPurpose;
 import com.sparrowwallet.drongo.crypto.Argon2KeyDeriver;
 import com.sparrowwallet.drongo.crypto.ECKey;
 import com.sparrowwallet.drongo.policy.Policy;
@@ -14,9 +15,13 @@ import com.sparrowwallet.drongo.wallet.KeystoreSource;
 import com.sparrowwallet.drongo.wallet.StandardAccount;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.drongo.wallet.WalletModel;
+import com.sparrowwallet.drongo.wallet.WalletNode;
 import com.sparrowwallet.sparrow.EventManager;
 import com.sparrowwallet.sparrow.event.WalletBlockHeightChangedEvent;
+import com.sparrowwallet.sparrow.event.WalletEntryLabelsChangedEvent;
 import com.sparrowwallet.sparrow.event.WalletPasswordChangeFailedEvent;
+import com.sparrowwallet.sparrow.io.db.DbPersistence;
+import com.sparrowwallet.sparrow.wallet.NodeEntry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
@@ -35,9 +40,11 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DbPersistenceTest {
@@ -642,6 +649,40 @@ public class DbPersistenceTest {
         Assertions.assertEquals(1, walletsDirFiles == null ? -1 : walletsDirFiles.length, "files were left in the wallets directory");
         String[] tempFiles = tempDir.toFile().list((dir, name) -> name.equals("temp.db") || name.startsWith("sparrowenc"));
         Assertions.assertEquals(0, tempFiles == null ? -1 : tempFiles.length, "temporary files were left alongside the wallet file");
+    }
+
+    @Test
+    public void longAddressLabelDoesNotBlockLaterUpdates() throws Exception {
+        Persistence persistence = PersistenceType.DB.getInstance();
+        Storage storage = new Storage(persistence, tempDir.resolve("Labels." + PersistenceType.DB.getExtension()).toFile());
+        storage.setKeyDeriver(new Argon2KeyDeriver());
+        storage.setEncryptionPubKey(Storage.NO_PASSWORD_KEY);
+        Wallet wallet = createWallet("Labels");
+        storage.saveWallet(wallet);
+
+        WalletNode firstNode = new WalletNode(wallet, KeyPurpose.RECEIVE, 0);
+        firstNode.setLabel("a".repeat(300));
+        wallet.getNode(KeyPurpose.RECEIVE).getChildren().add(firstNode);
+        ((DbPersistence)persistence).walletEntryLabelsChanged(new WalletEntryLabelsChangedEvent(wallet, new NodeEntry(wallet, firstNode, false)));
+        persistence.updateWallet(storage, wallet);
+
+        WalletNode secondNode = new WalletNode(wallet, KeyPurpose.RECEIVE, 1);
+        secondNode.setLabel("Second");
+        wallet.getNode(KeyPurpose.RECEIVE).getChildren().add(secondNode);
+        ((DbPersistence)persistence).walletEntryLabelsChanged(new WalletEntryLabelsChangedEvent(wallet, new NodeEntry(wallet, secondNode, false)));
+        persistence.updateWallet(storage, wallet);
+        storage.closeAndWait();
+
+        Storage reopened = new Storage(PersistenceType.DB, storage.getWalletFile());
+        try {
+            Wallet loaded = reopened.loadUnencryptedWallet().getWallet();
+            Map<Integer, String> labels = loaded.getNode(KeyPurpose.RECEIVE).getChildren().stream().filter(node -> node.getLabel() != null)
+                    .collect(Collectors.toMap(WalletNode::getIndex, WalletNode::getLabel));
+            Assertions.assertEquals("a".repeat(255), labels.get(0));
+            Assertions.assertEquals("Second", labels.get(1));
+        } finally {
+            reopened.closeAndWait();
+        }
     }
 
     @Test

@@ -353,11 +353,13 @@ public class DbPersistence implements Persistence {
                         if(addressNode.getId() == null) {
                             WalletNode purposeNode = wallet.getNode(addressNode.getKeyPurpose());
                             if(purposeNode.getId() == null) {
-                                long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null, null, null);
+                                long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), walletNodeDao.truncate(purposeNode.getLabel()),
+                                        wallet.getId(), null, null, null);
                                 purposeNode.setId(purposeNodeId);
                             }
 
-                            long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId(), addressNode.getAddressData(), addressNode.getSilentPaymentTweak());
+                            long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), walletNodeDao.truncate(addressNode.getLabel()), wallet.getId(),
+                                    purposeNode.getId(), addressNode.getAddressData(), addressNode.getSilentPaymentTweak());
                             addressNode.setId(nodeId);
                         } else if(addressNode.getAddress() != null) {
                             walletNodeDao.updateNodeAddressData(addressNode.getId(), addressNode.getAddressData());
@@ -412,11 +414,13 @@ public class DbPersistence implements Persistence {
                             if(addressNode.getId() == null) {
                                 WalletNode purposeNode = wallet.getNode(addressNode.getKeyPurpose());
                                 if(purposeNode.getId() == null) {
-                                    long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), purposeNode.getLabel(), wallet.getId(), null, null, null);
+                                    long purposeNodeId = walletNodeDao.insertWalletNode(purposeNode.getDerivationPath(), walletNodeDao.truncate(purposeNode.getLabel()),
+                                            wallet.getId(), null, null, null);
                                     purposeNode.setId(purposeNodeId);
                                 }
 
-                                long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), addressNode.getLabel(), wallet.getId(), purposeNode.getId(), addressNode.getAddressData(), addressNode.getSilentPaymentTweak());
+                                long nodeId = walletNodeDao.insertWalletNode(addressNode.getDerivationPath(), walletNodeDao.truncate(addressNode.getLabel()), wallet.getId(),
+                                        purposeNode.getId(), addressNode.getAddressData(), addressNode.getSilentPaymentTweak());
                                 addressNode.setId(nodeId);
                             } else if(addressNode.getAddress() != null) {
                                 walletNodeDao.updateNodeAddressData(addressNode.getId(), addressNode.getAddressData());
@@ -472,7 +476,7 @@ public class DbPersistence implements Persistence {
                 if(!dirtyPersistables.labelKeystores.isEmpty()) {
                     KeystoreDao keystoreDao = handle.attach(KeystoreDao.class);
                     for(Keystore keystore : dirtyPersistables.labelKeystores) {
-                        keystoreDao.updateLabel(keystore.getLabel(), keystore.getId());
+                        keystoreDao.updateLabel(keystoreDao.truncate(keystore.getLabel()), keystore.getId());
                     }
                 }
 
