@@ -19,7 +19,7 @@ public class TorHttpProxySupplier implements IHttpProxySupplier {
             return null;
         }
 
-        return new HttpProxy(HttpProxyProtocol.SOCKS, hostAndPort.getHost(), hostAndPort.getPort());
+        return new HttpProxy(HttpProxyProtocol.SOCKS, hostAndPort.getHost(), hostAndPort.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
     }
 
     public HostAndPort getTorProxy() {
@@ -28,9 +28,9 @@ public class TorHttpProxySupplier implements IHttpProxySupplier {
 
     // shouldn't call directly but use httpClientService.setTorProxy()
     public void _setTorProxy(HostAndPort hostAndPort) {
-        // set proxy
-        this.torProxy = hostAndPort;
+        //The proxy to apply is computed first, so a proxy that cannot be applied is not reported as the one in use
         this.httpProxy = computeHttpProxy(hostAndPort);
+        this.torProxy = hostAndPort;
     }
 
     @Override

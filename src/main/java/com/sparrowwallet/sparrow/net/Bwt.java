@@ -191,7 +191,7 @@ public class Bwt {
 
         HostAndPort torProxy = getTorProxy();
         if(Protocol.isOnionAddress(bwtConfig.bitcoindUrl) && torProxy != null) {
-            bwtConfig.bitcoindProxy = torProxy.toString();
+            bwtConfig.bitcoindProxy = HostAndPort.fromParts(torProxy.getHost(), torProxy.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT)).toString();
         }
 
         if((config.getCoreAuthType() == CoreAuthType.COOKIE || config.getCoreAuth() == null || config.getCoreAuth().length() < 2) && config.getCoreDataDir() != null) {

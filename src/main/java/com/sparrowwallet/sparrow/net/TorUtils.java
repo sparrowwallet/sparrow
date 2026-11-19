@@ -37,7 +37,7 @@ public class TorUtils {
         if(AppServices.isTorRunning()) {
             Tor.getDefault().changeIdentity();
         } else {
-            HostAndPort control = HostAndPort.fromParts(proxy.getHost(), proxy.getPort() + 1);
+            HostAndPort control = HostAndPort.fromParts(proxy.getHost(), proxy.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT) + 1);
             InetAddress controlAddress;
             try {
                 controlAddress = InetAddress.getByName(control.getHost());

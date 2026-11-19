@@ -4,6 +4,7 @@ import com.google.common.net.HostAndPort;
 import com.googlecode.lanterna.gui2.Label;
 import com.sparrowwallet.sparrow.AppServices;
 import com.sparrowwallet.sparrow.io.Config;
+import com.sparrowwallet.sparrow.net.ProxyTcpOverTlsTransport;
 import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
@@ -55,7 +56,7 @@ public class ProxyStatusLabel extends Label {
             return new Task<>() {
                 protected Void call() throws IOException {
                     HostAndPort proxyHostAndPort = HostAndPort.fromString(Config.get().getProxyServer());
-                    Socket socket = new Socket(proxyHostAndPort.getHost(), proxyHostAndPort.getPort());
+                    Socket socket = new Socket(proxyHostAndPort.getHost(), proxyHostAndPort.getPortOrDefault(ProxyTcpOverTlsTransport.DEFAULT_PROXY_PORT));
                     socket.close();
 
                     return null;
