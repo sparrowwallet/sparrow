@@ -172,21 +172,24 @@ public class MnemonicGridDialog extends Dialog<List<String>> {
         List<String> abbreviations = selectedCells.stream()
                 .map(position -> (String)spreadsheetView.getGrid().getRows().get(position.getRow()).get(position.getColumn()).getItem()).collect(Collectors.toList());
 
-        boolean isInteger = abbreviations.stream().allMatch(Utils::isNumber);
-        boolean isHex = abbreviations.stream().allMatch(Utils::isHex);
+        //Decided from the whole grid, as a selection from a hex grid can contain only decimal digits
+        List<String> gridCells = spreadsheetView.getGrid().getRows().stream().flatMap(List::stream).map(cell -> (String)cell.getItem())
+                .filter(cell -> cell != null && !cell.isEmpty()).toList();
+        boolean isHex = !gridCells.isEmpty() && gridCells.stream().allMatch(Utils::isHex) && gridCells.stream().anyMatch(cell -> !Utils.isNumber(cell));
+        boolean isInteger = !isHex && abbreviations.stream().allMatch(Utils::isNumber);
 
         List<String> words = new ArrayList<>();
         for(String abbreviation : abbreviations) {
-            if(isInteger) {
+            if(isHex) {
                 try {
-                    int index = Integer.parseInt(abbreviation);
+                    int index = Integer.parseInt(abbreviation, 16);
                     words.add(Bip39MnemonicCode.INSTANCE.getWordList().get(index - 1));
                 } catch(NumberFormatException e) {
                     //ignore
                 }
-            } else if(isHex) {
+            } else if(isInteger) {
                 try {
-                    int index = Integer.parseInt(abbreviation, 16);
+                    int index = Integer.parseInt(abbreviation);
                     words.add(Bip39MnemonicCode.INSTANCE.getWordList().get(index - 1));
                 } catch(NumberFormatException e) {
                     //ignore
