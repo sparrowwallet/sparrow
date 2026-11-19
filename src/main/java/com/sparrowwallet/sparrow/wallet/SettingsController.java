@@ -696,9 +696,8 @@ public class SettingsController extends WalletFormController implements Initiali
                         EventManager.get().post(new StorageEvent(walletId, TimedEvent.Action.END, "Done"));
                         ECKey encryptionFullKey = keyDerivationService.getValue();
                         Key key = new Key(encryptionFullKey.getPrivKeyBytes(), walletForm.getStorage().getKeyDeriver().getSalt(), EncryptionType.Deriver.ARGON2);
-                        masterWallet.decrypt(key);
-
                         if(masterWallet.getKeystores().stream().anyMatch(ks -> ks.getSource() != KeystoreSource.SW_SEED)) {
+                            masterWallet.decrypt(key);
                             try {
                                 for(StandardAccount standardAccount : standardAccounts) {
                                     Wallet childWallet = masterWallet.addChildWallet(standardAccount);
@@ -710,8 +709,12 @@ public class SettingsController extends WalletFormController implements Initiali
                                 key.clear();
                             }
                         } else if(discoverAccounts) {
-                            ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(masterWallet, standardAccounts);
+                            //Discovery can take a while, during which the open wallet stays encrypted
+                            Wallet discoveryWallet = masterWallet.copy();
+                            discoveryWallet.decrypt(key);
+                            ElectrumServer.AccountDiscoveryService accountDiscoveryService = new ElectrumServer.AccountDiscoveryService(discoveryWallet, standardAccounts);
                             accountDiscoveryService.setOnSucceeded(event -> {
+                                masterWallet.decrypt(key);
                                 addAndEncryptAccounts(masterWallet, accountDiscoveryService.getValue(), key);
                                 if(accountDiscoveryService.getValue().isEmpty()) {
                                     AppServices.showAlertDialog("No Accounts Found", "No new accounts with existing transactions were found. " +
@@ -721,11 +724,12 @@ public class SettingsController extends WalletFormController implements Initiali
                             });
                             accountDiscoveryService.setOnFailed(event -> {
                                 log.error("Failed to discover accounts", event.getSource().getException());
-                                addAndEncryptAccounts(masterWallet, Collections.emptyList(), key);
+                                key.clear();
                                 AppServices.showErrorDialog("Failed to discover accounts", event.getSource().getException().getMessage());
                             });
                             accountDiscoveryService.start();
                         } else {
+                            masterWallet.decrypt(key);
                             addAndEncryptAccounts(masterWallet, standardAccounts, key);
                         }
                     });
