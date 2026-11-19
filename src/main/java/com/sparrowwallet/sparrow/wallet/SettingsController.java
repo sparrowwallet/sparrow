@@ -1048,7 +1048,8 @@ public class SettingsController extends WalletFormController implements Initiali
             }
         }
 
-        WalletPasswordDialog dlg = new WalletPasswordDialog(null, requirement, suggestChangePassword, walletForm.getStorage().isInWalletsDir());
+        WalletPasswordDialog dlg = new WalletPasswordDialog(null, requirement, suggestChangePassword, walletForm.getStorage().isInWalletsDir(),
+                walletForm.getStorage().isInWalletsDir() || walletForm.getStorage().hasBackups());
         dlg.initOwner(apply.getScene().getWindow());
         Optional<SecureString> password = walletForm.isLocked() ? Optional.empty() : dlg.showAndWait();
         if(password.isPresent() && walletForm.isLocked()) {

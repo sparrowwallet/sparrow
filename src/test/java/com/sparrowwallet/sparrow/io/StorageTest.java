@@ -169,6 +169,41 @@ public class StorageTest extends IoTest {
     }
 
     @Test
+    public void deleteBackupsInPreviousWalletsFolder() throws IOException {
+        File walletFile = new File(tempDir.toFile(), "Savings.mv.db");
+        Storage storage = new Storage(PersistenceType.DB, walletFile);
+        Assertions.assertFalse(storage.isInWalletsDir());
+        Assertions.assertFalse(storage.hasBackups());
+
+        File backupDir = new File(tempDir.toFile(), Storage.WALLETS_BACKUP_DIR);
+        Assertions.assertTrue(backupDir.mkdir());
+        File backup = new File(backupDir, "Savings-20250101120000.mv.db");
+        File otherBackup = new File(backupDir, "Other-20250101120000.mv.db");
+        Assertions.assertTrue(backup.createNewFile());
+        Assertions.assertTrue(otherBackup.createNewFile());
+
+        Assertions.assertTrue(storage.hasBackups());
+        storage.deleteBackups();
+        Assertions.assertFalse(backup.exists());
+        Assertions.assertTrue(otherBackup.exists());
+        Assertions.assertFalse(storage.hasBackups());
+    }
+
+    @Test
+    public void renameBackupsMovesBackupsToTheRenamedWalletsBackupFolder() throws IOException {
+        File previousBackupDir = createBackupDir("Old-20250101120000.mv.db", "Other-20250101120000.mv.db");
+        File walletsBackupDir = createBackupDir();
+
+        Storage oldStorage = new Storage(PersistenceType.DB, new File(previousBackupDir.getParentFile(), "Old.mv.db"));
+        Storage newStorage = new Storage(PersistenceType.DB, new File(walletsBackupDir.getParentFile(), "New.mv.db"));
+        oldStorage.renameBackups(previousBackupDir, walletsBackupDir, newStorage);
+
+        assertBackups(previousBackupDir, PersistenceType.DB, "Old.mv.db");
+        assertBackups(previousBackupDir, PersistenceType.DB, "Other.mv.db", "Other-20250101120000.mv.db");
+        assertBackups(walletsBackupDir, PersistenceType.DB, "New.mv.db", "New-20250101120000.mv.db");
+    }
+
+    @Test
     public void renameBackupsMovesBackupsToTheRenamedWallet() throws IOException {
         File backupDir = createBackupDir("Old-20250101120000.mv.db", "Old-20210101120000.json", "Old-20200101120000",
                 "OldX-20250101120000.mv.db", "Old-2021-20250101120000.mv.db", "New-20240101120000.mv.db");

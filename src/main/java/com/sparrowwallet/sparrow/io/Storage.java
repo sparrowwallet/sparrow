@@ -283,34 +283,47 @@ public class Storage {
     }
 
     public void deleteBackups() {
-        //Backups are only written for wallets in the wallets folder, so any backups matching the name of a wallet elsewhere belong to another wallet
+        for(File backupDir : getBackupDirs()) {
+            for(File backup : getBackups(backupDir, null)) {
+                IOUtils.secureDelete(backup);
+            }
+        }
+    }
+
+    public boolean hasBackups() {
+        return getBackupDirs().stream().anyMatch(backupDir -> getBackups(backupDir, null).length > 0);
+    }
+
+    /**
+     * Backups are written to the backup folder of the wallets folder. A wallet outside it may have been left in a previous wallets folder, whose backup
+     * folder still holds its backups, since Sparrow creates a backup folder only inside a wallets folder.
+     */
+    private List<File> getBackupDirs() {
         if(isInWalletsDir()) {
-            deleteBackups(null);
+            return List.of(getWalletsBackupDir());
         }
-    }
 
-    private void deleteBackups(String prefix) {
-        File[] backups = getBackups(prefix);
-        for(File backup : backups) {
-            IOUtils.secureDelete(backup);
-        }
-    }
-
-    File[] getBackups(String prefix) {
-        return getBackups(getWalletsBackupDir(), prefix);
+        File previousBackupDir = new File(walletFile.getAbsoluteFile().getParentFile(), WALLETS_BACKUP_DIR);
+        return previousBackupDir.isDirectory() ? List.of(previousBackupDir) : Collections.emptyList();
     }
 
     public void renameBackups(Storage renamedStorage) {
-        if(isInWalletsDir()) {
-            renameBackups(getWalletsBackupDir(), renamedStorage);
+        //A renamed wallet is written to the wallets folder, so backups from a previous wallets folder are moved to where it will look for them
+        File targetDir = renamedStorage.isInWalletsDir() ? getWalletsBackupDir() : null;
+        for(File backupDir : getBackupDirs()) {
+            renameBackups(backupDir, targetDir == null ? backupDir : targetDir, renamedStorage);
         }
     }
 
     void renameBackups(File backupDir, Storage renamedStorage) {
+        renameBackups(backupDir, backupDir, renamedStorage);
+    }
+
+    void renameBackups(File sourceDir, File targetDir, Storage renamedStorage) {
         String walletName = persistence.getWalletName(walletFile, null);
         String renamedWalletName = renamedStorage.persistence.getWalletName(renamedStorage.walletFile, null);
-        for(File backup : getBackups(backupDir, null)) {
-            File renamedBackup = new File(backupDir, renamedWalletName + backup.getName().substring(walletName.length()));
+        for(File backup : getBackups(sourceDir, null)) {
+            File renamedBackup = new File(targetDir, renamedWalletName + backup.getName().substring(walletName.length()));
             try {
                 Files.move(backup.toPath(), renamedBackup.toPath());
             } catch(IOException e) {

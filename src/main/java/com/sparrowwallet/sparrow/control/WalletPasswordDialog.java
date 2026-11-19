@@ -29,6 +29,10 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
     }
 
     public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword, boolean backupSupported) {
+        this(walletName, requirement, suggestChangePassword, backupSupported, backupSupported);
+    }
+
+    public WalletPasswordDialog(String walletName, PasswordRequirement requirement, boolean suggestChangePassword, boolean backupSupported, boolean backupsDeletable) {
         this.requirement = requirement;
         this.password = new ViewPasswordField();
         this.passwordConfirm = new ViewPasswordField();
@@ -69,6 +73,12 @@ public class WalletPasswordDialog extends Dialog<SecureString> {
             deleteBackups.visibleProperty().bind(backupExisting.visibleProperty().not());
             content.getChildren().addAll(backupExisting, deleteBackups);
             backupExisting.setSelected(true);
+            deleteBackups.setSelected(true);
+        } else if(backupsDeletable && (requirement == PasswordRequirement.UPDATE_EMPTY || requirement == PasswordRequirement.UPDATE_SET)) {
+            //A wallet outside the wallets folder takes no new backups, but may still have ones made there before
+            deleteBackups.managedProperty().bind(deleteBackups.visibleProperty());
+            deleteBackups.visibleProperty().bind(backupExisting.visibleProperty().not());
+            content.getChildren().add(deleteBackups);
             deleteBackups.setSelected(true);
         }
 
