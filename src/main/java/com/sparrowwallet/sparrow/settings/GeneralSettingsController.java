@@ -208,7 +208,7 @@ public class GeneralSettingsController extends SettingsDetailController {
     }
 
     private void updateCurrencies(ExchangeSource exchangeSource) {
-        if(Config.get().getMode() == Mode.OFFLINE) {
+        if(Config.get().getMode() == Mode.OFFLINE || AppServices.isWaitingForTor()) {
             Currency configCurrency = Config.get().getFiatCurrency();
             updateCurrencies(configCurrency == null || exchangeSource == ExchangeSource.NONE ? List.of() : List.of(configCurrency));
             return;

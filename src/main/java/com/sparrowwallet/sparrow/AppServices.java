@@ -388,6 +388,9 @@ public class AppServices {
 
             if(failEvent.getSource().getException() instanceof ProxyServerException && Config.get().isUseProxy() && Config.get().isAutoSwitchProxy() && Config.get().requiresTor()) {
                 Config.get().setUseProxy(false);
+                //These are started again once Tor is running
+                ratesService.cancel();
+                versionCheckService.cancel();
                 Platform.runLater(() -> restartService(torService));
                 return;
             }
@@ -570,6 +573,11 @@ public class AppServices {
 
     public static boolean isTorRunning() {
         return Tor.getDefault() != null;
+    }
+
+    //Until internal Tor is running there is no proxy for requests that must use it, and these would otherwise be made directly
+    public static boolean isWaitingForTor() {
+        return Config.get().requiresInternalTor() && !isTorRunning();
     }
 
     public static boolean isUsingProxy() {
@@ -1276,6 +1284,11 @@ public class AppServices {
     }
 
     private static void openAuth47Uri(URI uri) {
+        if(isWaitingForTor()) {
+            showErrorDialog("Tor Not Running", "Authentication must be done over Tor, which is not yet running. Try again once Sparrow is connected.");
+            return;
+        }
+
         try {
             Auth47 auth47 = new Auth47(uri);
             List<ScriptType> scriptTypes = PaymentCode.SEGWIT_SCRIPT_TYPES;
@@ -1297,6 +1310,11 @@ public class AppServices {
     }
 
     private static void openLnurlAuthUri(URI uri) {
+        if(isWaitingForTor()) {
+            showErrorDialog("Tor Not Running", "Authentication must be done over Tor, which is not yet running. Try again once Sparrow is connected.");
+            return;
+        }
+
         try {
             LnurlAuth lnurlAuth = new LnurlAuth(uri);
             List<ScriptType> scriptTypes = ScriptType.getAddressableScriptTypes(PolicyType.SINGLE_HD);
@@ -1537,7 +1555,9 @@ public class AppServices {
 
             if(Config.get().getMode() != Mode.OFFLINE && event.getExchangeSource() != ExchangeSource.NONE) {
                 ratesService = createRatesService(event.getExchangeSource(), event.getCurrency());
-                ratesService.start();
+                if(!isWaitingForTor()) {
+                    ratesService.start();
+                }
             }
         }
     }
@@ -1553,7 +1573,9 @@ public class AppServices {
 
         if(Config.get().getMode() != Mode.OFFLINE && event.isEnabled() && Network.get() == Network.MAINNET) {
             versionCheckService = createVersionCheckService();
-            versionCheckService.start();
+            if(!isWaitingForTor()) {
+                versionCheckService.start();
+            }
         }
     }
 
