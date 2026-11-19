@@ -431,6 +431,10 @@ public class ServerSettingsController extends SettingsDetailController {
         });
 
         boolean isConnected = AppServices.isConnecting() || AppServices.isConnected();
+        //A connection waiting to retry would read these settings while they are being edited, so it is stopped and restarted once they are closed
+        if(!isConnected && AppServices.cancelConnection()) {
+            getMasterController().reconnectOnClosingProperty().set(true);
+        }
 
         if(Config.get().getServerType() == ServerType.BITCOIN_CORE && AppServices.isConnecting()) {
             testResults.appendText("Connecting to server, please wait...");
