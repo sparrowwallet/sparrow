@@ -3719,7 +3719,7 @@ public class ElectrumServer {
                     } catch(ServerException | ElectrumServerRpcException e) {
                         //A failed call says nothing about the chain on its own, but a server answering every request for these headers with an error
                         //has not substantiated the tip any more than one serving the wrong headers
-                        if(failedTip != tip || !isConnected()) {
+                        if(!tip.isSameBlock(failedTip) || !isConnected()) {
                             failedTip = tip;
                             throw e;
                         }
@@ -3742,7 +3742,7 @@ public class ElectrumServer {
             ChainTip storeTip = getStoreTip();
             Platform.runLater(() -> {
                 //A run overtaken by a later announcement has nothing left to correct
-                if(tip != announcedTip) {
+                if(!tip.isSameBlock(announcedTip)) {
                     return;
                 }
 
