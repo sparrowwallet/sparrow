@@ -558,6 +558,14 @@ public class HeadersController extends TransactionFormController implements Init
             SigHash psbtSigHash = silentPaymentOutput ? requiredSigHash : psbt.getPsbtInputs().stream().map(PSBTInput::getSigHash).filter(Objects::nonNull).findFirst().orElse(requiredSigHash);
             sigHash.setItems(FXCollections.observableList(silentPaymentOutput ? List.of(requiredSigHash) : (taprootInput ? SigHash.TAPROOT_SIGNING_TYPES : SigHash.LEGACY_SIGNING_TYPES)));
             sigHash.setValue(psbtSigHash);
+            //Silent payments require every input to sign with SIGHASH_ALL, so the only value offered replaces any other the PSBT requests
+            if(silentPaymentOutput && headersForm.isEditable()) {
+                for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
+                    if(psbtInput.getSigHash() != null && psbtInput.getSigHash() != SigHash.ALL && psbtInput.getSigHash() != SigHash.DEFAULT) {
+                        psbtInput.setSigHash(requiredSigHash == SigHash.DEFAULT && !psbtInput.isTaproot() ? SigHash.ALL : requiredSigHash);
+                    }
+                }
+            }
             sigHash.setConverter(new StringConverter<>() {
                 @Override
                 public String toString(SigHash sigHash) {

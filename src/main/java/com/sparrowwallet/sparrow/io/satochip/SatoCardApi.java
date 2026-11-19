@@ -162,6 +162,7 @@ public class SatoCardApi extends CardApi {
 
     void sign(Wallet wallet, PSBT psbt) throws CardException {
         Map<PSBTInput, WalletNode> signingNodes = wallet.getSigningNodes(psbt);
+        signingNodes.keySet().forEach(PSBTInput::verifySilentPaymentSigHash);
         for(PSBTInput psbtInput : psbt.getPsbtInputs()) {
             if(!psbtInput.isSigned()) {
                 WalletNode signingNode = signingNodes.get(psbtInput);
