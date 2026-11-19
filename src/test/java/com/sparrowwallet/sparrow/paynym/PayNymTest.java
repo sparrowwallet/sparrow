@@ -30,4 +30,26 @@ public class PayNymTest {
         String corrupted = PAYMENT_CODE.substring(0, PAYMENT_CODE.length() - 1) + (PAYMENT_CODE.endsWith("A") ? "B" : "A");
         assertTrue(PayNym.fromString(corrupted, "id", "+name", true, Collections.emptyList(), Collections.emptyList()).isEmpty());
     }
+
+    @Test
+    public void omitsAPaymentCodeWithAnInvalidKey() {
+        //Parses and passes its checksum, but the key's x coordinate is not on the curve
+        String invalidKey = "PM8TJWnHNrXcofmpzddV4aoaZMMN3C7QhbymGxWYBQVKjs1fochBZk1dZ7ZnoqMkg2YwtACR3eRMipK7KqvQ6cG9dyc2eLFuwsA8SSuUHxRERKBFNx5G";
+        assertTrue(PayNym.fromString(invalidKey, "id", "+name", true, Collections.emptyList(), Collections.emptyList()).isEmpty());
+    }
+
+    @Test
+    public void removesControlCharactersFromName() {
+        PayNym payNym = PayNym.fromString(PAYMENT_CODE, "id", " +name\u0000\u001f\u007f\u0085 ", true, Collections.emptyList(), Collections.emptyList()).orElseThrow();
+        assertEquals("+name", payNym.nymName());
+
+        PayNym formatted = PayNym.fromString(PAYMENT_CODE, "id", "\u202e+na\u200bme\ufeff\u2066", true, Collections.emptyList(), Collections.emptyList()).orElseThrow();
+        assertEquals("+name", formatted.nymName());
+    }
+
+    @Test
+    public void nameOfOnlyControlCharactersUsesPaymentCode() {
+        PayNym payNym = PayNym.fromString(PAYMENT_CODE, "id", "\u0007\u0008", true, Collections.emptyList(), Collections.emptyList()).orElseThrow();
+        assertEquals(payNym.paymentCode().toAbbreviatedString(), payNym.nymName());
+    }
 }

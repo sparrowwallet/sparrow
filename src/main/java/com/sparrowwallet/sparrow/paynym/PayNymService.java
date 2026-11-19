@@ -1,5 +1,6 @@
 package com.sparrowwallet.sparrow.paynym;
 
+import com.sparrowwallet.drongo.address.Address;
 import com.sparrowwallet.drongo.bip47.InvalidPaymentCodeException;
 import com.sparrowwallet.drongo.bip47.PaymentCode;
 import com.sparrowwallet.drongo.crypto.ChildNumber;
@@ -203,7 +204,8 @@ public class PayNymService {
 
             //A payment code identifies itself, so a PayNym looked up by payment code must share its key and chain code, differing at most in the segwit feature bit
             PaymentCode requestedCode = getRequestedPaymentCode(nymIdentifier);
-            if(requestedCode != null && !requestedCode.getNotificationAddress().equals(code.getNotificationAddress())) {
+            Address notificationAddress = code.getNotificationAddress();
+            if(requestedCode != null && !requestedCode.getNotificationAddress().equals(notificationAddress)) {
                 throw new IllegalStateException("PayNym server returned payment code " + code + " for requested payment code " + requestedCode);
             }
 
@@ -212,7 +214,7 @@ public class PayNymService {
             }
 
             List<Map<String, Object>> followingMaps = (List<Map<String, Object>>)nymMap.get("following");
-            //An entry whose payment code does not parse is omitted rather than failing the whole PayNym
+            //An entry whose payment code does not parse or has no valid key is omitted rather than failing the whole PayNym
             List<PayNym> following = followingMaps.stream().flatMap(followingMap -> {
                 return PayNym.fromString((String)followingMap.get("code"), (String)followingMap.get("nymId"), (String)followingMap.get("nymName"), (Boolean)followingMap.get("segwit"), Collections.emptyList(), Collections.emptyList()).stream();
             }).collect(Collectors.toList());
