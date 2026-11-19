@@ -32,6 +32,8 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
 
         UtxoEntry utxoEntry = addressStatus == null ? null : addressStatus.getUtxoEntry();
         EntryCell.applyRowStyles(this, utxoEntry);
+        //Kept through empty updates, as the row styles are applied to a refilled cell according to whether it already has this class
+        getStyleClass().add("address-cell");
         setContextMenu(null);
 
         if (empty) {
@@ -47,7 +49,6 @@ public class AddressCell extends TreeTableCell<Entry, UtxoEntry.AddressStatus> {
                 tooltip.setShowDelay(Duration.millis(250));
                 tooltip.setText(getTooltipText(utxoEntry, addressStatus.isDuplicate(), addressStatus.isDustAttack()));
                 setTooltip(tooltip);
-                getStyleClass().add("address-cell");
 
                 if(addressStatus.isDustAttack()) {
                     setGraphic(getDustAttackHyperlink(utxoEntry));
