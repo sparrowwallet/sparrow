@@ -31,7 +31,7 @@
         <RowConstraints />
         <RowConstraints />
     </rowConstraints>
-    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+    <Form GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0" styleClass="narrow-labels">
         <Fieldset fx:id="inputFieldset" inputGrow="SOMETIMES" text="Input" wrapWidth="680">
             <Field text="Outpoint:" styleClass="label-button">
                 <IdLabel fx:id="outpoint" />
@@ -93,10 +93,10 @@
         </Fieldset>
     </Form>
 
-    <Form GridPane.columnIndex="1" GridPane.rowIndex="4">
+    <Form GridPane.columnIndex="1" GridPane.rowIndex="4" styleClass="narrow-labels">
         <Fieldset fx:id="locktimeFieldset" text="Locktime (nSequence)" inputGrow="SOMETIMES">
             <Field text="Type:">
-                <SegmentedButton>
+                <SegmentedButton minWidth="-Infinity">
                     <toggleGroup>
                         <ToggleGroup fx:id="locktimeToggleGroup" />
                     </toggleGroup>

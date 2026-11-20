@@ -8,6 +8,10 @@
     -fx-background-color: #3da0e3;
 }
 
+.root.narrow-window .list-menu, .root.narrow-window .list-item {
+    -fx-pref-width: 110;
+}
+
 .list-item * {
     -fx-fill: #fff;
 }

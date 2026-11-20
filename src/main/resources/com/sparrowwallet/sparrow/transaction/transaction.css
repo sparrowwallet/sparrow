@@ -37,3 +37,15 @@
 }
 
 .hide-amounts .output-value, .hide-amounts .output-other-value { -fx-fill: -fx-control-inner-background }
+
+#txtree {
+    -fx-min-width: 170;
+}
+
+.root.narrow-window #txtree {
+    -fx-min-width: 120;
+}
+
+.root.narrow-window .narrow-labels .fieldset:horizontal .label-container {
+    -fx-pref-width: 70px;
+}

@@ -84,6 +84,7 @@ import static com.sparrowwallet.sparrow.control.DownloadVerifierDialog.*;
 
 public class AppController implements Initializable {
     private static final Logger log = LoggerFactory.getLogger(AppController.class);
+    private static final double NARROW_WINDOW_WIDTH = 900;
 
     public static final String DRAG_OVER_CLASS = "drag-over";
     public static final String LONG_TRANSACTION_TAB_CLASS = "long-transaction-tab";
@@ -396,6 +397,14 @@ public class AppController implements Initializable {
         if(Config.get().isChunkAddresses()) {
             rootBox.getStyleClass().add("chunk-addresses");
         }
+        rootBox.widthProperty().addListener((_, _, width) -> {
+            boolean narrow = width.doubleValue() < NARROW_WINDOW_WIDTH;
+            if(narrow && !rootBox.getStyleClass().contains("narrow-window")) {
+                rootBox.getStyleClass().add("narrow-window");
+            } else if(!narrow) {
+                rootBox.getStyleClass().remove("narrow-window");
+            }
+        });
         hideEmptyUsedAddressesProperty.set(Config.get().isHideEmptyUsedAddresses());
         hideEmptyUsedAddresses.selectedProperty().bindBidirectional(hideEmptyUsedAddressesProperty);
 

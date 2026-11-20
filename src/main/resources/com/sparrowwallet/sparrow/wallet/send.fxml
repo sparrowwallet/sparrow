@@ -56,11 +56,11 @@
                 <Form styleClass="title-form" GridPane.columnIndex="0" GridPane.rowIndex="1">
                     <Fieldset inputGrow="ALWAYS" text="Fee"/>
                 </Form>
-                <HBox GridPane.columnIndex="1" GridPane.rowIndex="1" GridPane.columnSpan="2" GridPane.halignment="RIGHT" alignment="CENTER_RIGHT">
+                <HBox GridPane.columnIndex="0" GridPane.rowIndex="1" GridPane.columnSpan="3" GridPane.halignment="RIGHT" alignment="CENTER_RIGHT" pickOnBounds="false">
                     <padding>
                         <Insets right="10.0" />
                     </padding>
-                    <SegmentedButton>
+                    <SegmentedButton minWidth="-Infinity">
                         <toggleGroup>
                             <ToggleGroup fx:id="feeSelectionToggleGroup" />
                         </toggleGroup>
@@ -133,7 +133,7 @@
                     </Fieldset>
                 </Form>
                 <AnchorPane GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.columnSpan="2">
-                    <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false" minHeight="135">
+                    <BlockTargetFeeRatesChart fx:id="blockTargetFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="0" animated="false" minHeight="135">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
                         </xAxis>
@@ -141,7 +141,7 @@
                             <NumberAxis side="LEFT" forceZeroInRange="false" />
                         </yAxis>
                     </BlockTargetFeeRatesChart>
-                    <MempoolSizeFeeRatesChart fx:id="mempoolSizeFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" animated="false" minHeight="135">
+                    <MempoolSizeFeeRatesChart fx:id="mempoolSizeFeeRatesChart" styleClass="feeRatesChart" legendVisible="false" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="0" animated="false" minHeight="135">
                         <xAxis>
                             <CategoryAxis side="BOTTOM" />
                         </xAxis>
@@ -149,7 +149,7 @@
                             <NumberAxis side="LEFT" />
                         </yAxis>
                     </MempoolSizeFeeRatesChart>
-                    <RecentBlocksView fx:id="recentBlocksView" styleClass="feeRatesChart" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="74" translateY="30" minHeight="135"/>
+                    <RecentBlocksView fx:id="recentBlocksView" styleClass="feeRatesChart" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="20" AnchorPane.rightAnchor="0" translateY="30" minHeight="135"/>
                 </AnchorPane>
             </GridPane>
             <StackPane VBox.vgrow="SOMETIMES">
@@ -158,13 +158,13 @@
         </VBox>
     </center>
     <bottom>
-        <AnchorPane>
+        <HBox alignment="CENTER_LEFT">
             <padding>
-                <Insets left="25.0" right="25.0" bottom="25.0" />
+                <Insets left="30.0" right="35.0" bottom="25.0" />
             </padding>
-            <HBox AnchorPane.leftAnchor="5" alignment="CENTER_LEFT">
-                <Label text="Optimize:" styleClass="buttonRowLabel" />
-                <SegmentedButton>
+            <HBox alignment="CENTER_LEFT" minWidth="-Infinity">
+                <Label text="Optimize:" styleClass="buttonRowLabel" minWidth="-Infinity" />
+                <SegmentedButton minWidth="-Infinity">
                     <toggleGroup>
                         <ToggleGroup fx:id="optimizationToggleGroup" />
                     </toggleGroup>
@@ -194,7 +194,8 @@
                     </graphic>
                 </Label>
             </HBox>
-            <HBox AnchorPane.rightAnchor="10">
+            <Region HBox.hgrow="ALWAYS" minWidth="20" />
+            <HBox minWidth="-Infinity">
                 <Button fx:id="clearButton" text="Clear" cancelButton="true" onAction="#clear" />
                 <Region HBox.hgrow="ALWAYS" style="-fx-min-width: 20px" />
                 <Button fx:id="notificationButton" text="Broadcast Notification" contentDisplay="RIGHT" graphicTextGap="5" onAction="#broadcastNotification">
@@ -208,6 +209,6 @@
                     </graphic>
                 </Button>
             </HBox>
-        </AnchorPane>
+        </HBox>
     </bottom>
 </BorderPane>

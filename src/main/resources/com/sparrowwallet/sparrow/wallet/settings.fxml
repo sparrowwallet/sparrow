@@ -81,7 +81,7 @@
                                 <DescriptorArea fx:id="descriptor" editable="false" styleClass="uneditable-codearea" prefHeight="27" maxHeight="27" />
                             </content>
                         </VirtualizedScrollPane>
-                        <Button accessibleText="Scan QR Code" fx:id="scanDescriptorQR" onAction="#scanDescriptorQR">
+                        <Button accessibleText="Scan QR Code" fx:id="scanDescriptorQR" onAction="#scanDescriptorQR" minWidth="-Infinity">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                             </graphic>
@@ -89,7 +89,7 @@
                                 <Tooltip text="Scan a QR code" />
                             </tooltip>
                         </Button>
-                        <Button accessibleText="Show QR Code" fx:id="showDescriptorQR" onAction="#showDescriptorQR">
+                        <Button accessibleText="Show QR Code" fx:id="showDescriptorQR" onAction="#showDescriptorQR" minWidth="-Infinity">
                             <graphic>
                                 <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="QRCODE" />
                             </graphic>

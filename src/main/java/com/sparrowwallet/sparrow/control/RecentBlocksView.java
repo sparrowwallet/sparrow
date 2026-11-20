@@ -35,6 +35,7 @@ public class RecentBlocksView extends Pane {
     private static final Pattern ELAPSED_PATTERN = Pattern.compile("(\\d+)([mhd]) ago");
 
     private final CompositeDisposable disposables = new CompositeDisposable();
+    private final Rectangle clip = new Rectangle(-20, -40, CUBE_SPACING * 3 - 20, 100);
 
     private final ObjectProperty<List<BlockCube>> cubesProperty = new SimpleObjectProperty<>(new ArrayList<>());
     private final Tooltip tooltip = new Tooltip();
@@ -47,8 +48,8 @@ public class RecentBlocksView extends Pane {
             }
         });
 
-        Rectangle clip = new Rectangle(-20, -40, CUBE_SPACING * 3 - 20, 100);
         setClip(clip);
+        widthProperty().addListener((_, _, _) -> clipToWidth());
 
         Observable<Long> intervalObservable = Observable.interval(1, TimeUnit.MINUTES);
         disposables.add(intervalObservable.observeOn(JavaFxScheduler.platform()).subscribe(_ -> {
@@ -136,6 +137,13 @@ public class RecentBlocksView extends Pane {
             cube.setTranslateX(i * CUBE_SPACING);
             getChildren().add(cube);
         }
+    }
+
+    private void clipToWidth() {
+        int visibleCubes = (int)Math.clamp(Math.floor((getWidth() + 20) / CUBE_SPACING), 1, 3);
+        double visibleWidth = visibleCubes * CUBE_SPACING - 20;
+        clip.setWidth(visibleWidth);
+        setTranslateX(Math.max(0, getWidth() - visibleWidth));
     }
 
     private void createSeparator() {

@@ -44,11 +44,11 @@
         <RowConstraints />
         <RowConstraints vgrow="SOMETIMES" />
    </rowConstraints>
-    <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2">
-        <Fieldset text="Transaction" inputGrow="SOMETIMES" wrapWidth="620">
+    <Form GridPane.columnIndex="0" GridPane.rowIndex="0" GridPane.columnSpan="2" styleClass="narrow-labels">
+        <Fieldset text="Transaction" inputGrow="SOMETIMES" wrapWidth="500">
             <Field text="Txid:" styleClass="label-button">
                 <IdLabel fx:id="id"/>
-                <SegmentedButton>
+                <SegmentedButton minWidth="-Infinity">
                     <buttons>
                         <ToggleButton accessibleText="Copy Transaction ID" accessibleRole="BUTTON" fx:id="copyTxid" onAction="#copyId">
                             <graphic>
@@ -84,7 +84,7 @@
             </VBox>
         </Tab>
         <Tab text="Detail" closable="false">
-            <GridPane hgap="10.0" vgap="10.0">
+            <GridPane hgap="10.0" vgap="10.0" styleClass="narrow-labels">
                 <columnConstraints>
                     <ColumnConstraints percentWidth="50" />
                     <ColumnConstraints percentWidth="50" />
@@ -106,7 +106,7 @@
                 <Form GridPane.columnIndex="1" GridPane.rowIndex="0">
                     <Fieldset fx:id="locktimeFieldset" text="Absolute Locktime" inputGrow="SOMETIMES">
                         <Field text="Type:">
-                            <SegmentedButton>
+                            <SegmentedButton minWidth="-Infinity">
                                 <toggleGroup>
                                     <ToggleGroup fx:id="locktimeToggleGroup" />
                                 </toggleGroup>

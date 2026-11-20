@@ -108,6 +108,11 @@ public class TransactionController implements Initializable {
 
     private void initializeTxTree() {
         txTreeWidthProperty.bind(txSplitPane.widthProperty().multiply(txSplitPane.getDividers().getFirst().positionProperty()));
+        txtree.minWidthProperty().addListener((_, oldWidth, newWidth) -> {
+            if(newWidth.doubleValue() < oldWidth.doubleValue() && txSplitPane.getWidth() > 0 && txtree.getWidth() <= oldWidth.doubleValue() + 1) {
+                Platform.runLater(() -> txSplitPane.setDividerPosition(0, newWidth.doubleValue() / txSplitPane.getWidth()));
+            }
+        });
 
         HeadersForm headersForm = new HeadersForm(txdata);
         TreeItem<TransactionForm> rootItem = new TreeItem<>(headersForm);

@@ -78,20 +78,20 @@
                     </Label>
                 </Group>
                 <Region style="-fx-pref-width: 5" />
-                <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" />
+                <ToggleButton fx:id="maxButton" text="Max" onAction="#setMaxInput" minWidth="-Infinity" />
             </Field>
         </Fieldset>
     </Form>
     <Form GridPane.columnIndex="2" GridPane.rowIndex="0">
         <Fieldset inputGrow="ALWAYS" style="-fx-padding: 5 0 0 0">
             <HBox>
-                <Button accessibleText="Scan QR Code" text="" fx:id="scanQrButton" onAction="#scanQrAddress" prefHeight="30">
+                <Button accessibleText="Scan QR Code" text="" fx:id="scanQrButton" onAction="#scanQrAddress" prefHeight="30" minWidth="-Infinity">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="CAMERA" />
                     </graphic>
                 </Button>
                 <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="addPaymentButton" text="Add" onAction="#addPayment" prefHeight="30">
+                <Button fx:id="addPaymentButton" text="Add" onAction="#addPayment" prefHeight="30" minWidth="-Infinity">
                     <graphic>
                         <Glyph fontFamily="Font Awesome 5 Free Solid" fontSize="12" icon="PLUS" />
                     </graphic>

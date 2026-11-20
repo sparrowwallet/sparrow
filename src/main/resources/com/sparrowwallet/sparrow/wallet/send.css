@@ -30,7 +30,7 @@
 
 .amount-field {
     -fx-pref-width: 140px;
-    -fx-min-width: 140px;
+    -fx-min-width: 100px;
     -fx-max-width: 140px;
 }
 
@@ -40,6 +40,7 @@
 }
 
 .feeRatesChart {
+    -fx-min-width: 150px;
     -fx-max-width: 335px;
     -fx-max-height: 130px;
 }
@@ -59,6 +60,10 @@
 
 .inactive {
     -fx-opacity: 0.3;
+}
+
+#targetBlocks, #feeRange {
+    -fx-min-width: 240px;
 }
 
 #feeRateField .input-container {
