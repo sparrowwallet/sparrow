@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -65,6 +66,7 @@ public class TcpTransportTimeoutTest {
                 //Must fail within the configured read timeout - if this test hangs instead of throwing, the regression is back
                 Duration limit = Duration.ofSeconds(transport.readTimeouts[0] + 5);
                 assertTimeoutPreemptively(limit, () -> assertThrows(IOException.class, () -> transport.pass(pingRequest(1))));
+                assertEquals(1, transport.getTimeoutCount(), "A request left unanswered must count as a timeout, which halves batch page sizes");
             } finally {
                 //Let the server thread unwind and close the accepted socket rather than parking on the gate until JVM exit
                 firstReplyGate.countDown();
@@ -85,8 +87,8 @@ public class TcpTransportTimeoutTest {
                 Duration limit = Duration.ofSeconds(transport.readTimeouts[0] + 5);
                 assertTimeoutPreemptively(limit, () -> assertThrows(IOException.class, () -> transport.pass(pingRequest(1))));
 
-                //A read timeout must not fail the connection - the escalating timeouts and halved batch page sizes
-                //that follow depend on retrying over the same transport, discarding the stale response when it arrives
+                //A read timeout must not fail the connection - the retry with a halved batch page size that follows is sent
+                //over the same transport, discarding the stale response when it arrives
                 assertTrue(transport.isConnected(), "Transport must remain connected after a read timeout");
 
                 //Release the first reply only now, so it is guaranteed to arrive after the timeout rather than after a sleep
@@ -95,6 +97,50 @@ public class TcpTransportTimeoutTest {
             } finally {
                 //No-op unless an assertion above failed before the gate was released
                 firstReplyGate.countDown();
+                transport.close();
+            }
+        }
+    }
+
+    /**
+     * A server that answers requests in turn, as electrs does, still has a request queued when the first read timeout passes, so sending it again only
+     * doubles the work. The response must be waited for over the longer timeouts, and a slow response must not count as a timeout that halves page sizes.
+     */
+    @Test
+    public void slowResponseIsWaitedForWithoutResending() throws Exception {
+        try(ServerSocket serverSocket = createServerSocket()) {
+            TcpTransport transport = connectTransport(serverSocket);
+            Arrays.fill(transport.readTimeouts, 1, transport.readTimeouts.length, 3);
+
+            AtomicInteger received = new AtomicInteger();
+            Thread serverThread = new Thread(() -> {
+                try(Socket accepted = serverSocket.accept()) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(accepted.getInputStream(), StandardCharsets.UTF_8));
+                    PrintWriter out = new PrintWriter(new OutputStreamWriter(accepted.getOutputStream(), StandardCharsets.UTF_8));
+                    int id = 1;
+                    while(in.readLine() != null) {
+                        received.incrementAndGet();
+                        if(id == 1) {
+                            Thread.sleep(1500);
+                        }
+                        out.println(pingResponse(id++));
+                        out.flush();
+                    }
+                } catch(Exception e) {
+                    //Expected once the test tears down the server and transport
+                }
+            });
+            serverThread.setDaemon(true);
+            serverThread.start();
+
+            try {
+                Duration limit = Duration.ofSeconds(transport.readTimeouts[1] + 5);
+                assertEquals(pingResponse(1), assertTimeoutPreemptively(limit, () -> transport.pass(pingRequest(1))));
+                assertEquals(1, received.get(), "The request must not be sent again while its response is awaited");
+                assertEquals(0, transport.getTimeoutCount(), "A slow response must not count as a timeout");
+
+                assertEquals(pingResponse(2), assertTimeoutPreemptively(limit, () -> transport.pass(pingRequest(2))));
+            } finally {
                 transport.close();
             }
         }

@@ -75,6 +75,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
     private volatile boolean closed = false;
     private boolean firstRead = true;
     private int readTimeoutIndex;
+    private volatile int timeoutCount;
     private int requestIdCount = 1;
 
     private final char[] readBuffer = new char[8192];
@@ -165,19 +166,19 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
         //This deadline must bound the entire wait for a response, not just acquiring readLock below. The read thread releases
         //readLock while blocked on the socket, so tryLock() returns almost immediately and the real wait is the await further down
-        long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS));
+        if(readTimeoutIndex == readTimeouts.length - 1) {
+            readTimeoutIndex--;
+        }
+
+        long startNanos = System.nanoTime();
+        long deadlineNanos = getDeadlineNanos(startNanos);
 
         try {
             if(!readLock.tryLock(deadlineNanos - System.nanoTime(), TimeUnit.NANOSECONDS)) {
-                escalateReadTimeout();
-                throw new IOException("No response from server");
+                throw timeout();
             }
         } catch(InterruptedException e) {
             throw new IOException("Read thread interrupted");
-        }
-
-        if(readTimeoutIndex == readTimeouts.length - 1) {
-            readTimeoutIndex--;
         }
 
         try {
@@ -189,8 +190,12 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
             while(reading && running) {
                 long remainingNanos = deadlineNanos - System.nanoTime();
                 if(remainingNanos <= 0) {
-                    escalateReadTimeout();
-                    throw new IOException("No response from server");
+                    if(readTimeoutIndex < readTimeouts.length - 1) {
+                        extendReadTimeout();
+                        deadlineNanos = getDeadlineNanos(startNanos);
+                        continue;
+                    }
+                    throw timeout();
                 }
 
                 try {
@@ -220,11 +225,23 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         }
     }
 
-    //Note the connection is deliberately left open here - callers retry over the same transport with the escalated
-    //timeout and a halved batch page size, discarding the stale response that a slow server eventually delivers
-    private void escalateReadTimeout() {
-        readTimeoutIndex = Math.min(readTimeoutIndex + 1, readTimeouts.length - 1);
-        log.warn("No response from server, setting read timeout to " + readTimeouts[readTimeoutIndex] + " secs");
+    private long getDeadlineNanos(long startNanos) {
+        return startNanos + TimeUnit.MILLISECONDS.toNanos((readTimeouts[readTimeoutIndex] * 1000L) + (requestIdCount * PER_REQUEST_READ_TIMEOUT_MILLIS));
+    }
+
+    //Keep waiting for the response rather than sending the request again. A server that answers requests in turn, as electrs does, still has the request
+    //queued, so a resend only arrives behind it and doubles the work. The longer timeout is kept for later requests to this server
+    private void extendReadTimeout() {
+        readTimeoutIndex++;
+        log.info("No response from server in " + readTimeouts[readTimeoutIndex - 1] + " secs, waiting up to " + readTimeouts[readTimeoutIndex] + " secs");
+    }
+
+    //Note the connection is deliberately left open here - callers retry over the same transport with a halved batch page size,
+    //discarding the stale response that a slow server eventually delivers
+    private IOException timeout() {
+        timeoutCount++;
+        log.warn("No response from server in " + readTimeouts[readTimeoutIndex] + " secs");
+        return new IOException("No response from server");
     }
 
     public void readInputLoop() throws ServerException {
@@ -418,7 +435,7 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
 
     @Override
     public int getTimeoutCount() {
-        return readTimeoutIndex;
+        return timeoutCount;
     }
 
     static long getDeliveredResponses() {

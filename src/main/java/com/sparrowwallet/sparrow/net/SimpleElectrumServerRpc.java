@@ -24,6 +24,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(SimpleElectrumServerRpc.class);
     private static final int MAX_TARGET_BLOCKS = 25;
     private static final int MAX_RETRIES = 5;
+    private static final int PING_MAX_RETRIES = 2;
     private static final int RETRY_DELAY = 1;
 
     private final AtomicLong idCounter = new AtomicLong();
@@ -32,7 +33,7 @@ public class SimpleElectrumServerRpc implements ElectrumServerRpc {
     public void ping(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            new RetryLogic<>(MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
+            new RetryLogic<>(PING_MAX_RETRIES, RETRY_DELAY, IllegalStateException.class).getResult(() ->
                     client.createRequest().method("server.ping").id(idCounter.incrementAndGet()).executeNullable());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error pinging server", e);

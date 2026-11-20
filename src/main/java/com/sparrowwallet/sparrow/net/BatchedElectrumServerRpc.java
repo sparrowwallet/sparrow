@@ -24,6 +24,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     private static final Logger log = LoggerFactory.getLogger(BatchedElectrumServerRpc.class);
     static final int DEFAULT_MAX_ATTEMPTS = 5;
     static final int RETRY_DELAY_SECS = 1;
+    static final int PING_MAX_ATTEMPTS = 2; //Each attempt already waits through every read timeout, so further attempts only delay noticing
     static final int HEADERS_BATCH_PAGE_SIZE = 4; //Four difficulty periods of headers is ~1.3MB of hex, within every server's max response size
     static final int MERKLE_BATCH_PAGE_SIZE = 250; //A proof is max MerkleBranch.MAX_DEPTH sibling hashes, so ~1.1KB of JSON: 250 of them is ~275KB
 
@@ -39,7 +40,7 @@ public class BatchedElectrumServerRpc implements ElectrumServerRpc {
     public void ping(Transport transport) {
         try {
             JsonRpcClient client = new JsonRpcClient(transport);
-            new RetryLogic<>(DEFAULT_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
+            new RetryLogic<>(PING_MAX_ATTEMPTS, RETRY_DELAY_SECS, IllegalStateException.class).getResult(() ->
                     client.createRequest().method("server.ping").id(idCounter.incrementAndGet()).executeNullable());
         } catch(Exception e) {
             throw new ElectrumServerRpcException("Error pinging server", e);
