@@ -420,6 +420,53 @@ public class TransactionProofTest {
     }
 
     /**
+     * A server can report a transaction on a branch it has moved to before the tip of that branch is announced, leaving the store on the branch it
+     * replaced. The proof is checked against the server's chain before it is taken as false, and the store is brought onto that chain.
+     */
+    @Test
+    public void provesATransactionOnABranchNotYetAnnounced() throws Exception {
+        Wallet wallet = testWallet();
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveTransaction(transaction);
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        reorganiseStoreAbove(PROVEN_HEIGHT - 1);
+        server.serveChain(chain);       //the server has moved back to the original branch, and has not yet announced its tip
+        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = references(wallet, reference(transaction, PROVEN_HEIGHT));
+
+        ElectrumServer electrumServer = new ElectrumServer();
+        electrumServer.getReferencedTransactions(wallet, nodeTransactionMap);
+        electrumServer.postProofEvents(wallet);
+
+        BlockTransaction written = wallet.getWalletTransaction(transaction.getTxId());
+        assertEquals(PROVEN_HEIGHT, written.getHeight());
+        assertEquals(chain.get(PROVEN_HEIGHT - 1).getHash(), written.getBlockHash());
+        assertEquals(chain.get(PROVEN_HEIGHT - 1).getHash(), ElectrumServer.getHeaderStore().getHash(PROVEN_HEIGHT));
+        assertTrue(listener.getFailed().isEmpty());
+    }
+
+    /**
+     * A proof that does not match the stored header is checked against the server's chain, and a server that cannot be reached for that check has
+     * failed a call rather than shown the proof false: the pass fails, and nothing is reported against the server.
+     */
+    @Test
+    public void failsThePassWhereTheServersChainCannotBeFetchedForAProof() throws Exception {
+        Wallet wallet = testWallet();
+        Transaction transaction = blockTransactions.getFirst();
+        server.serveTransaction(transaction);
+        server.serveProof(transaction, PROVEN_HEIGHT, 0);
+        reorganiseStoreAbove(PROVEN_HEIGHT - 1);
+        server.serveChain(chain);
+        server.setHeadersFailure(new ElectrumServerRpcException("Connection lost"));
+        Map<WalletNode, Set<BlockTransactionHash>> nodeTransactionMap = references(wallet, reference(transaction, PROVEN_HEIGHT));
+
+        ElectrumServer electrumServer = new ElectrumServer();
+        assertThrows(ServerException.class, () -> electrumServer.getReferencedTransactions(wallet, nodeTransactionMap));
+        electrumServer.postProofEvents(wallet);
+
+        assertTrue(listener.getFailed().isEmpty());
+    }
+
+    /**
      * The CVE-2017-12842 forgery: a fake transaction whose txid is one half of a genuine 64 byte transaction mined in the block, with the other half
      * presented as its sibling. The verifier rejects it because that concatenation deserializes as a transaction, which no inner node of a real tree
      * can. A rejected branch is a proof that does not verify rather than an exception escaping the pass.
@@ -1324,6 +1371,11 @@ public class TransactionProofTest {
             replacement.add(previous);
         }
 
+        //The store follows the server, so the server serves the chain the store has been reorganised onto
+        List<BlockHeader> servedChain = new ArrayList<>(chain.subList(0, forkHeight));
+        servedChain.addAll(replacement);
+        server.serveChain(servedChain);
+
         return replacement;
     }
 
@@ -1506,7 +1558,7 @@ public class TransactionProofTest {
      * proof for is answered with the error sentinel every attempt, which is a server that will not substantiate what it reported.
      */
     private class FakeProofServer extends SimpleElectrumServerRpc {
-        private final List<BlockHeader> chain;
+        private volatile List<BlockHeader> chain;
         private final Map<String, TransactionMerkleProof> proofs = new HashMap<>();
         private final Map<String, Integer> refusals = new HashMap<>();
         private final Map<String, String> rawTransactions = new HashMap<>();
@@ -1690,6 +1742,11 @@ public class TransactionProofTest {
 
         public void setServedChainLength(int servedChainLength) {
             this.servedChainLength = servedChainLength;
+        }
+
+        public void serveChain(List<BlockHeader> chain) {
+            this.chain = List.copyOf(chain);
+            this.servedChainLength = chain.size();
         }
 
         public int getProofRequests() {

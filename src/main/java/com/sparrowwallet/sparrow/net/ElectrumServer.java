@@ -1391,6 +1391,33 @@ public class ElectrumServer {
     }
 
     /**
+     * The verified header at a height once the store has been brought onto the server's chain, or null where that could not be done. A server can report
+     * a transaction on a branch it has moved to before announcing that branch's tip, so a proof is only taken as false against the chain the server is on.
+     */
+    private BlockHeader getReconciledHeader(int height) throws ServerException {
+        synchronized(headerSyncLock) {
+            HeaderStore store = getHeaderStore();
+            try {
+                if(height < store.getStartHeight() || height > store.getTipHeight()) {
+                    return null;
+                }
+                reconcile(store, store.getTipHeight());
+            } catch(VerificationException e) {
+                log.debug("Could not reconcile the block header store with the server's chain", e);
+                return null;    //the server cannot substantiate a chain that replaces the stored one, so the proof stands as false
+            } catch(UnsupportedMethodException e) {
+                throw e;
+            } catch(ElectrumServerRpcException e) {
+                throw new ServerException(e.getMessage(), e.getCause());    //a failed call rather than a finding about the proof
+            } catch(IOException e) {
+                throw new ServerException("Could not write to the block header store", e);
+            }
+        }
+
+        return getVerifiedHeader(height);
+    }
+
+    /**
      * Verifies an inclusion proof for each given (transaction, height) pair, returning those proven with the header they were proven against. What is
      * missing was refused or shown false, told apart by what the server did rather than said: one unable to keep up fails whole batches and recovers
      * within the retries, while one that cannot substantiate a pair leaves it unanswered while its siblings succeed.
@@ -1445,7 +1472,12 @@ public class ElectrumServer {
                     } else if(verifyProof(reference.getHash(), proof, header)) {
                         proven.put(reference, header);
                     } else {
-                        failedProofs.add(reference);        //the branch does not reconstruct against a verified header
+                        BlockHeader serverHeader = getReconciledHeader(reference.getHeight());
+                        if(serverHeader != null && !serverHeader.getHash().equals(header.getHash()) && verifyProof(reference.getHash(), proof, serverHeader)) {
+                            proven.put(reference, serverHeader);
+                        } else {
+                            failedProofs.add(reference);    //the branch does not reconstruct against a verified header
+                        }
                     }
                 }
             }
