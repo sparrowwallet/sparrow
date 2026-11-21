@@ -4,6 +4,7 @@ import com.sparrowwallet.drongo.ExtendedKey;
 import com.sparrowwallet.drongo.KeyDerivation;
 import com.sparrowwallet.drongo.Network;
 import com.sparrowwallet.drongo.Utils;
+import com.sparrowwallet.drongo.policy.PolicyType;
 import com.sparrowwallet.drongo.wallet.Keystore;
 import com.sparrowwallet.drongo.wallet.Wallet;
 import com.sparrowwallet.hummingbird.registry.CryptoCoinInfo;
@@ -22,6 +23,38 @@ import java.util.List;
 import java.util.Locale;
 
 public class UROutputDescriptorTest extends IoTest {
+
+    @Test
+    public void testNativeSegwitSinglesigURExport() throws Exception {
+        Network.set(Network.TESTNET);
+        Wallet wallet = importTestWallet("cc-singlesig-keystore-1.json", new ColdcardSinglesig());
+        List<ScriptExpression> expressions = List.of(ScriptExpression.WITNESS_PUBLIC_KEY_HASH);
+        assertSinglesigURExport(wallet, expressions);
+    }
+
+    @Test
+    public void testNestedSegwitSinglesigURExport() throws Exception {
+        Network.set(Network.MAINNET);
+        Wallet wallet = importTestWallet("specter-wallet.json", new SpecterDesktop());
+        List<ScriptExpression> expressions = List.of(ScriptExpression.SCRIPT_HASH, ScriptExpression.WITNESS_PUBLIC_KEY_HASH);
+        assertSinglesigURExport(wallet, expressions);
+    }
+
+    @Test
+    public void testTaprootSinglesigURExport() throws Exception {
+        Network.set(Network.MAINNET);
+        Wallet wallet = importTestWallet("descriptor-taproot.txt", new Descriptor());
+        List<ScriptExpression> expressions = List.of(ScriptExpression.TAPROOT);
+        assertSinglesigURExport(wallet, expressions);
+    }
+
+    @Test
+    public void testLegacySinglesigURExport() throws Exception {
+        Network.set(Network.TESTNET);
+        Wallet wallet = importTestWallet("descriptor-legacy.txt", new Descriptor());
+        List<ScriptExpression> expressions = List.of(ScriptExpression.PUBLIC_KEY_HASH);
+        assertSinglesigURExport(wallet, expressions);
+    }
 
     @Test
     public void testNativeSegwitMultisigURExport() throws Exception {
@@ -69,6 +102,22 @@ public class UROutputDescriptorTest extends IoTest {
         Assertions.assertEquals(Network.get() == Network.MAINNET ? CryptoCoinInfo.Network.MAINNET : CryptoCoinInfo.Network.TESTNET, exportedKey.getUseInfo().getNetwork());
         Assertions.assertFalse(exportedKey.isPrivateKey());
     }
+
+
+    private void assertSinglesigURExport(Wallet wallet, List<ScriptExpression> expectedExpressions) {
+        Assertions.assertEquals(PolicyType.SINGLE_HD, wallet.getPolicyType());
+        Assertions.assertEquals(1, wallet.getKeystores().size());
+
+        CryptoOutput output = Assertions.assertInstanceOf(CryptoOutput.class, SettingsController.getUROutputDescriptor(wallet));
+
+        Assertions.assertEquals(expectedExpressions, output.getScriptExpressions());
+
+        CryptoHDKey exportedKey = output.getHdKey();
+        Assertions.assertNotNull(exportedKey);
+
+        assertCryptoHDKey(wallet.getKeystores().getFirst(), exportedKey);
+    }
+
 
     private void assertMultisigURExport(Wallet wallet, List<ScriptExpression> expectedExpressions, int expectedThreshold, int expectedCosigners) {
 
