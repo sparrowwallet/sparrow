@@ -437,6 +437,9 @@ public class PaymentController extends WalletFormController implements Initializ
             setSilentPaymentAddress(dnsPayment.bitcoinURI().getSilentPaymentAddress());
         } else if(dnsPayment.hasAddress()) {
             DnsPaymentCache.putDnsPayment(dnsPayment.bitcoinURI().getAddress(), dnsPayment);
+        } else if(dnsPayment.hasOtherNetworkSilentPaymentAddress()) {
+            AppServices.showWarningDialog("Different Network", "The DNS payment instruction for " + dnsPayment.hrn() + " resolved correctly but contains a silent payment address for a different network.");
+            return;
         } else {
             AppServices.showWarningDialog("No Address Provided", "The DNS payment instruction for " + dnsPayment.hrn() + " resolved correctly but did not contain a bitcoin address.");
             return;

@@ -645,6 +645,8 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
                 return new SilentPayment(dnsPayment.bitcoinURI().getSilentPaymentAddress(), label, value, sendMax);
             } else if(dnsPayment.hasAddress()) {
                 return new Payment(dnsPayment.bitcoinURI().getAddress(), label, value, sendMax);
+            } else if(dnsPayment.hasOtherNetworkSilentPaymentAddress()) {
+                throw new IllegalArgumentException("Payment to " + dnsPayment + " contains a silent payment address for a different network.");
             } else {
                 throw new IllegalArgumentException("Payment to " + dnsPayment + " has no associated address.");
             }
