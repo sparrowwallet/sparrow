@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -141,6 +142,45 @@ public class TcpTransportTimeoutTest {
 
                 assertEquals(pingResponse(2), assertTimeoutPreemptively(limit, () -> transport.pass(pingRequest(2))));
             } finally {
+                transport.close();
+            }
+        }
+    }
+
+    @Test
+    public void requestIsPendingUntilItsResponseArrives() throws Exception {
+        try(ServerSocket serverSocket = createServerSocket()) {
+            TcpTransport transport = connectTransport(serverSocket);
+            CountDownLatch firstReplyGate = new CountDownLatch(1);
+            startServer(serverSocket, firstReplyGate);
+
+            try {
+                assertFalse(transport.isRequestPending());
+
+                AtomicReference<Object> result = new AtomicReference<>();
+                Thread requestThread = new Thread(() -> {
+                    try {
+                        result.set(transport.pass(pingRequest(1)));
+                    } catch(IOException e) {
+                        result.set(e);
+                    }
+                });
+                requestThread.setDaemon(true);
+                requestThread.start();
+
+                assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+                    while(!transport.isRequestPending()) {
+                        Thread.onSpinWait();
+                    }
+                });
+
+                firstReplyGate.countDown();
+                requestThread.join(Duration.ofSeconds(transport.readTimeouts[0] + 5));
+                assertFalse(requestThread.isAlive(), "The request must complete once its reply is released");
+                assertEquals(pingResponse(1), result.get(), "The request must return its reply rather than fail");
+                assertFalse(transport.isRequestPending(), "No request may be pending once its response has arrived");
+            } finally {
+                firstReplyGate.countDown();
                 transport.close();
             }
         }

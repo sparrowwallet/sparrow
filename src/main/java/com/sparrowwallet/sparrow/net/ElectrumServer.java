@@ -298,7 +298,12 @@ public class ElectrumServer {
     }
 
     public void ping() throws ServerException {
-        electrumServerRpc.ping(getTransport());
+        //A request awaiting its response already shows whether the server is still there, and a ping would wait behind it,
+        //costing a full sync cycle on a server that answers requests in turn, as electrs does
+        CloseableTransport closeableTransport = getTransport();
+        if(!(closeableTransport instanceof TcpTransport tcpTransport && tcpTransport.isRequestPending())) {
+            electrumServerRpc.ping(closeableTransport);
+        }
     }
 
     public List<String> getServerVersion() throws ServerException {

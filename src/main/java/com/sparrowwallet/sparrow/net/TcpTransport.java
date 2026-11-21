@@ -433,6 +433,10 @@ public class TcpTransport implements CloseableTransport, TimeoutCounter {
         }
     }
 
+    public boolean isRequestPending() {
+        return clientRequestLock.isLocked();
+    }
+
     @Override
     public int getTimeoutCount() {
         return timeoutCount;
