@@ -91,6 +91,21 @@ cd {yourPathToSparrow}/sparrow  # if you aren't already in the sparrow folder
 
 The binaries (and installers) will be placed in the `build/jpackage` folder.
 
+#### Building v2.5.3 to v2.5.6
+
+These releases check the checksums of their dependencies against those recorded in `gradle/verification-metadata.xml`.
+After they were released, `com.sparrowwallet:hid4java:0.8.1` and `com.sparrowwallet:usb4java:1.3.6` were published to Maven Central with additional descriptive metadata in their POM files.
+The jar files are unchanged, but the two POM files no longer match their recorded checksums, so the build stops with a dependency verification error.
+To build these releases, run:
+
+```shell
+./gradlew jpackage --dependency-verification lenient
+```
+
+Gradle will then report verification failures without stopping the build.
+Check the report in `build/reports/dependency-verification/` lists exactly two failures, for `hid4java-0.8.1.pom` and `usb4java-1.3.6.pom`.
+Any other failure indicates a problem and should be reported.
+
 ### Verifying the binaries are identical
 
 Verify the built binaries against the released binaries on https://github.com/sparrowwallet/sparrow/releases.
