@@ -346,7 +346,7 @@ public class AppServices {
 
             if(failEvent.getSource().getException() instanceof TlsServerException tlsServerException && failEvent.getSource().getException().getCause() != null) {
                 connectionService.setRestartOnFailure(false);
-                if(tlsServerException.getCause().getMessage().contains("PKIX path building failed")) {
+                if(tlsServerException.isCertificatePathFailure()) {
                     File crtFile = Config.get().getElectrumServerCert();
                     if(crtFile != null && Config.get().getServerType() == ServerType.ELECTRUM_SERVER) {
                         AppServices.showErrorDialog("SSL Handshake Failed", "The configured server certificate at " + crtFile.getAbsolutePath() + " did not match the certificate provided by the server at " + tlsServerException.getServer().getHost() + "." +

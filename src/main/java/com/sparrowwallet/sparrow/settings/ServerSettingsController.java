@@ -703,7 +703,7 @@ public class ServerSettingsController extends SettingsDetailController {
 
         if(exception instanceof TlsServerException && exception.getCause() != null) {
             TlsServerException tlsServerException = (TlsServerException)exception;
-            if(exception.getCause().getMessage().contains("PKIX path building failed")) {
+            if(tlsServerException.isCertificatePathFailure()) {
                 File configCrtFile = Config.get().getElectrumServerCert();
                 File savedCrtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
                 if(savedCrtFile == null) {

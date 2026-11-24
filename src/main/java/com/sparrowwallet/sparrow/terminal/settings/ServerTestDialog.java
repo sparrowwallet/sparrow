@@ -19,6 +19,7 @@ import javafx.util.Duration;
 import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -198,16 +199,18 @@ public class ServerTestDialog extends DialogWindow {
         String reason = exception.getCause() != null ? exception.getCause().getMessage() : exception.getMessage();
         if(exception instanceof TlsServerException && exception.getCause() != null) {
             TlsServerException tlsServerException = (TlsServerException)exception;
-            if(exception.getCause().getMessage().contains("PKIX path building failed")) {
+            if(tlsServerException.isCertificatePathFailure()) {
                 File configCrtFile = Config.get().getElectrumServerCert();
                 File savedCrtFile = Storage.getCertificateFile(tlsServerException.getServer().getHost());
                 if(savedCrtFile == null) {
                     savedCrtFile = Storage.getCaCertificateFile(tlsServerException.getServer().getHost());
                 }
                 if(configCrtFile == null && savedCrtFile != null) {
-                    Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed." +
-                            "\n\nThis may indicate a man-in-the-middle attack!" +
-                            "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
+                    Date expiredAt = TcpOverTlsTransport.getExpiredAt(savedCrtFile);
+                    String problem = expiredAt != null ? "The saved certificate for the server at " + tlsServerException.getServer().getHost() + " expired at " + expiredAt + ", and the certificate the server provided could not be verified." +
+                            "\n\nThis may be simply due to a certificate renewal, or it may indicate a man-in-the-middle attack."
+                            : "The certificate provided by the server at " + tlsServerException.getServer().getHost() + " appears to have changed.\n\nThis may indicate a man-in-the-middle attack!";
+                    Optional<ButtonType> optButton = AppServices.showErrorDialog("SSL Handshake Failed", problem + "\n\nDo you still want to proceed?", ButtonType.NO, ButtonType.YES);
                     if(optButton.isPresent() && optButton.get() == ButtonType.YES) {
                         if(savedCrtFile.delete()) {
                             Platform.runLater(this::startElectrumConnection);

@@ -33,9 +33,18 @@ public class TlsServerException extends ServerException {
         return server;
     }
 
+    public boolean isCertificatePathFailure() {
+        return isCertificatePathFailure(getCause());
+    }
+
+    private static boolean isCertificatePathFailure(Throwable cause) {
+        //A server certificate with the same subject as the saved certificate fails path validation rather than path building
+        return cause != null && cause.getMessage() != null && (cause.getMessage().contains("PKIX path building failed") || cause.getMessage().contains("PKIX path validation failed"));
+    }
+
     private static String getMessage(Throwable cause, HostAndPort server) {
         if(cause != null) {
-            if(cause.getMessage().contains("PKIX path building failed")) {
+            if(isCertificatePathFailure(cause)) {
                 File configCrtFile = Config.get().getElectrumServerCert();
                 File savedCrtFile = Storage.getCertificateFile(server.getHost());
                 if(configCrtFile != null) {
