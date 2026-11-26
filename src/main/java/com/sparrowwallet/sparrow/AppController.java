@@ -2128,6 +2128,17 @@ public class AppController implements Initializable {
             }
 
             try {
+                AppServices.verifySilentPaymentScripts(null, psbt);
+            } catch(InvalidSilentPaymentException e) {
+                Optional<ButtonType> result = AppServices.showWarningDialog("Unverified Silent Payment Outputs",
+                        "The silent payments outputs of this PSBT cannot be verified, so it cannot be signed, exported or broadcast. These outputs may not pay the addresses they are shown as paying.\n\n" +
+                        e.getMessage() + "\n\nOpen the transaction to inspect it?", ButtonType.YES, ButtonType.NO);
+                if(result.isEmpty() || result.get() != ButtonType.YES) {
+                    return;
+                }
+            }
+
+            try {
                 psbt.verifySigHashes();
             } catch(PSBTSignatureException e) {
                 Optional<ButtonType> result = AppServices.showWarningDialog("Non-Default Sighash",
