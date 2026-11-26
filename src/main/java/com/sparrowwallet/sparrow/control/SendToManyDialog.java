@@ -184,7 +184,10 @@ public class SendToManyDialog extends Dialog<List<Payment>> {
     }
 
     private void getPayments() {
-        if(needsResolution() && Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
+        if(needsResolution() && AppServices.isTorStarting()) {
+            AppServices.showErrorDialog("Tor Starting", "Sparrow connects once Tor has started. Try again once Sparrow is connected to resolve the addresses.");
+            return;
+        } else if(needsResolution() && Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
             if(Config.get().getConnectToResolve() == null || Config.get().getConnectToResolve() == Boolean.FALSE) {
                 Platform.runLater(() -> {
                     ConfirmationAlert confirmationAlert = new ConfirmationAlert("Connect to resolve?", "You are currently offline. Connect to resolve the addresses?", ButtonType.NO, ButtonType.YES);

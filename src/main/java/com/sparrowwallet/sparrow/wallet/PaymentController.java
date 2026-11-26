@@ -203,6 +203,8 @@ public class PaymentController extends WalletFormController implements Initializ
                     DnsPayment cachedDnsPayment = DnsPaymentCache.getDnsPayment(dnsPaymentHrn);
                     if(cachedDnsPayment != null) {
                         setDnsPayment(cachedDnsPayment);
+                    } else if(AppServices.isTorStarting()) {
+                        //Sparrow connects once Tor has started, and the name is resolved then
                     } else if(Config.get().hasServer() && !AppServices.isConnected() && !AppServices.isConnecting()) {
                         if(Config.get().getConnectToResolve() == null || Config.get().getConnectToResolve() == Boolean.FALSE) {
                             Platform.runLater(() -> {
@@ -219,19 +221,7 @@ public class PaymentController extends WalletFormController implements Initializ
                             Platform.runLater(() -> EventManager.get().post(new RequestConnectEvent()));
                         }
                     } else {
-                        DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
-                        dnsPaymentService.setOnSucceeded(_ -> {
-                            if(isCurrentHrn(dnsPaymentHrn)) {
-                                dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
-                            }
-                        });
-                        dnsPaymentService.setOnFailed(failEvent -> {
-                            Throwable exception = failEvent.getSource().getException();
-                            if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
-                                AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
-                            }
-                        });
-                        dnsPaymentService.start();
+                        resolveDnsPayment(dnsPaymentHrn);
                     }
                 }
 
@@ -423,6 +413,22 @@ public class PaymentController extends WalletFormController implements Initializ
         if(existingPayNym != null && payNym.nymName().equals(existingPayNym.nymName())) {
             sendController.updateTransaction();
         }
+    }
+
+    private void resolveDnsPayment(String dnsPaymentHrn) {
+        DnsPaymentService dnsPaymentService = new DnsPaymentService(dnsPaymentHrn);
+        dnsPaymentService.setOnSucceeded(_ -> {
+            if(isCurrentHrn(dnsPaymentHrn)) {
+                dnsPaymentService.getValue().ifPresent(dnsPayment -> setDnsPayment(dnsPayment));
+            }
+        });
+        dnsPaymentService.setOnFailed(failEvent -> {
+            Throwable exception = failEvent.getSource().getException();
+            if(isCurrentHrn(dnsPaymentHrn) && exception != null && !(exception.getCause() instanceof TimeoutException)) {
+                AppServices.showErrorDialog("Validation failed for " + dnsPaymentHrn, Throwables.getRootCause(exception).getMessage());
+            }
+        });
+        dnsPaymentService.start();
     }
 
     //Resolution is slow enough that several may be in flight at once, since every keystroke forming a valid hrn starts one.
@@ -996,6 +1002,23 @@ public class PaymentController extends WalletFormController implements Initializ
     @Subscribe
     public void openWallets(OpenWalletsEvent event) {
         updateOpenWallets(event.getWallets());
+    }
+
+    @Override
+    @Subscribe
+    public void walletTabsClosed(WalletTabsClosedEvent event) {
+        if(event.getClosedWalletTabData().stream().anyMatch(tabData -> tabData.getWalletForm() == sendController.getWalletForm())) {
+            EventManager.get().unregister(this);
+        }
+    }
+
+    @Subscribe
+    public void connection(ConnectionEvent event) {
+        //A name entered while offline or before Tor was running has not been looked up, and is resolved now that it can be
+        Optional<String> optDnsPaymentHrn = DnsPayment.getHrn(address.getText());
+        if(optDnsPaymentHrn.isPresent() && dnsPaymentProperty.get() == null) {
+            resolveDnsPayment(optDnsPaymentHrn.get());
+        }
     }
 
     @Subscribe

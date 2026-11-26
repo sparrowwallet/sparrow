@@ -580,6 +580,10 @@ public class AppServices {
         return Config.get().requiresInternalTor() && !isTorRunning();
     }
 
+    public static boolean isTorStarting() {
+        return get().torService != null && get().torService.getState() == Worker.State.RUNNING;
+    }
+
     public static boolean isUsingProxy() {
         return isTorRunning() || Config.get().isUseProxy();
     }

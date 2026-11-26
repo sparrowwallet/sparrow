@@ -257,6 +257,12 @@ public class SendController extends WalletFormController implements Initializabl
         initializeTabHeader(0);
 
         paymentTabs.getTabs().addListener((ListChangeListener<Tab>) c -> {
+            while(c.next()) {
+                if(c.wasRemoved()) {
+                    c.getRemoved().stream().filter(tab -> !c.getList().contains(tab)).forEach(tab -> EventManager.get().unregister(tab.getUserData()));
+                }
+            }
+
             if(tabHeader != null) {
                 tabHeader.setVisible(c.getList().size() > 1);
             }
@@ -1112,7 +1118,6 @@ public class SendController extends WalletFormController implements Initializabl
                 controller.clear();
                 firstTab = false;
             } else {
-                EventManager.get().unregister(controller);
                 iterator.remove();
             }
         }
