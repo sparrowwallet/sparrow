@@ -90,12 +90,16 @@ public class Payjoin {
             }
 
             URI finalUri = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), uri.getQuery() == null ? appendQuery : uri.getQuery() + "&" + appendQuery, uri.getFragment());
-            log.info("Sending PSBT to " + finalUri.toURL());
+            if(AppServices.isWaitingForTor()) {
+                throw new PayjoinReceiverException("The payjoin transaction must be requested over Tor, which is not yet running. Try again once Sparrow is connected.");
+            }
 
             HttpClientService httpClientService = AppServices.getHttpClientService();
             if(httpClientService.getTorProxy() == null && Protocol.isOnionHost(finalUri.getHost())) {
                 throw new PayjoinReceiverException("Configure a Tor proxy to get a payjoin transaction from " + finalUri.getHost() + ".");
             }
+
+            log.info("Sending PSBT to " + finalUri.toURL());
 
             String response = httpClientService.postString(HTTP_USAGE, finalUri.toString(), null, "text/plain", base64Psbt);
             PSBT proposalPsbt = PSBT.fromString(response.trim());
