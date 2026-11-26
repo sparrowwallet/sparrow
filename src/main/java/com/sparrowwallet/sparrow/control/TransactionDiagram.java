@@ -1020,7 +1020,7 @@ public class TransactionDiagram extends GridPane {
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Image");
-        fileChooser.setInitialFileName(getDiagramTitle() + ".png");
+        AppServices.setInitialFileName(fileChooser, getDiagramTitle() + ".png");
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {

@@ -57,6 +57,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.text.Font;
+import javafx.stage.FileChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -1168,6 +1169,17 @@ public class AppServices {
 
     public static Window getActiveWindow() {
         return Stage.getWindows().stream().filter(Window::isFocused).findFirst().orElse(get().walletWindows.keySet().iterator().hasNext() ? get().walletWindows.keySet().iterator().next() : (Stage.getWindows().iterator().hasNext() ? Stage.getWindows().iterator().next() : null));
+    }
+
+    public static void setInitialFileName(FileChooser fileChooser, String fileName, String... otherExtensions) {
+        fileChooser.setInitialFileName(fileName);
+
+        //The macOS save panel removes the extension from the initial file name, and only restores it from a matching extension filter
+        int dot = fileName.lastIndexOf('.');
+        if(OsType.getCurrent() == OsType.MACOS && dot > 0 && dot < fileName.length() - 1) {
+            Stream.concat(Stream.of(fileName.substring(dot + 1)), Stream.of(otherExtensions)).forEach(extension ->
+                    fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(extension.toUpperCase(Locale.ROOT) + " files", "*." + extension)));
+        }
     }
 
     public static void moveToActiveWindowScreen(Dialog<?> dialog) {

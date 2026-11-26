@@ -101,7 +101,7 @@ public class FileKeystoreExportPane extends TitledDescriptionPane {
         fileChooser.setTitle("Export " + exporter.getWalletModel().toDisplayString() + " File");
         String extension = exporter.getExportFileExtension(keystore);
         String fileName = keystore.getLabel();
-        fileChooser.setInitialFileName(fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));
+        AppServices.setInitialFileName(fileChooser, fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);

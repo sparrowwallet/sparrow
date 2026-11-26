@@ -147,7 +147,7 @@ public class TextAreaDialog extends Dialog<String> {
                     fileChooser.setTitle("Save File");
 
                     if(fileName != null) {
-                        fileChooser.setInitialFileName(fileName);
+                        AppServices.setInitialFileName(fileChooser, fileName);
                     }
 
                     AppServices.moveToActiveWindowScreen(window, 800, 450);

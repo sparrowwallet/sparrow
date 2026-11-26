@@ -49,7 +49,7 @@ public class PdfUtils {
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save PDF");
-        fileChooser.setInitialFileName(walletName + ".pdf");
+        AppServices.setInitialFileName(fileChooser, walletName + ".pdf");
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {
@@ -180,7 +180,7 @@ public class PdfUtils {
         Stage window = new Stage();
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Save Border Wallet Grid");
-        fileChooser.setInitialFileName("BorderWalletEntropyGrid.pdf");
+        AppServices.setInitialFileName(fileChooser, "BorderWalletEntropyGrid.pdf");
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);
         if(file != null) {

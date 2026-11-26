@@ -321,7 +321,7 @@ public class SearchWalletDialog extends Dialog<Entry> {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Export search results to CSV");
-        fileChooser.setInitialFileName(getDialogPane().getHeaderText() + ".csv");
+        AppServices.setInitialFileName(fileChooser, getDialogPane().getHeaderText() + ".csv");
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);

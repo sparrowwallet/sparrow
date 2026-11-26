@@ -110,7 +110,7 @@ public class FileWalletExportPane extends TitledDescriptionPane {
         if(exporter.exportsAllWallets()) {
             fileName = wallet.getMasterName() + postfix;
         }
-        fileChooser.setInitialFileName(fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));
+        AppServices.setInitialFileName(fileChooser, fileName + (extension == null || extension.isEmpty() ? "" : "." + extension));
 
         AppServices.moveToActiveWindowScreen(window, 800, 450);
         File file = fileChooser.showSaveDialog(window);

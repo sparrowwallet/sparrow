@@ -789,7 +789,7 @@ public class AppController implements Initializable {
                    fileName += ".txn";
                }
 
-               fileChooser.setInitialFileName(fileName);
+               AppServices.setInitialFileName(fileChooser, fileName);
             }
 
             AppServices.moveToActiveWindowScreen(window, 800, 450);
@@ -863,10 +863,10 @@ public class AppController implements Initializable {
                 }
 
                 if(asText) {
-                    fileName += ".txt";
+                    AppServices.setInitialFileName(fileChooser, fileName, "txt");
+                } else {
+                    AppServices.setInitialFileName(fileChooser, fileName);
                 }
-
-                fileChooser.setInitialFileName(fileName);
             }
 
             AppServices.moveToActiveWindowScreen(window, 800, 450);
