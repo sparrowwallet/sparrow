@@ -71,10 +71,16 @@ public enum BBQREncoding {
                 Inflater inflater = new Inflater(10, true);
                 ByteArrayInputStream in = new ByteArrayInputStream(data);
                 InflaterInputStream zIn = new InflaterInputStream(in, inflater);
-                byte[] decoded = zIn.readAllBytes();
+                byte[] decoded = zIn.readNBytes(MAX_INFLATED_SIZE + 1);
                 zIn.close();
 
+                if(decoded.length > MAX_INFLATED_SIZE) {
+                    throw new BBQREncodingException("Decompressed data exceeds " + (MAX_INFLATED_SIZE / (1024 * 1024)) + " MiB");
+                }
+
                 return decoded;
+            } catch(BBQREncodingException e) {
+                throw e;
             } catch(Exception e) {
                 throw new BBQREncodingException("Error inflating with zlib", e);
             }
@@ -85,6 +91,8 @@ public enum BBQREncoding {
             return 8;
         }
     };
+
+    private static final int MAX_INFLATED_SIZE = 64 * 1024 * 1024;
 
     public static BBQREncoding fromString(String code) {
         for(BBQREncoding encoding : values()) {
