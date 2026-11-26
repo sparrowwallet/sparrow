@@ -24,7 +24,11 @@
     -fx-border-color: derive(-fx-background, -5%);
 }
 
-.multiple-tabs .send-form {
+#paymentTabs .send-form {
+    -fx-padding: 10px 0px 10px 0px;
+}
+
+#paymentTabs.multiple-tabs .send-form {
     -fx-padding: 9px 0px 9px 0px;
 }
 
