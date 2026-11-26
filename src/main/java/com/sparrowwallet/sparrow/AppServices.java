@@ -1434,11 +1434,16 @@ public class AppServices {
 
     private static Wallet selectWallet(List<PolicyType> policyTypes, List<ScriptType> scriptTypes, boolean taprootAllowed, boolean privateKeysRequired, String actionDescription, boolean alwaysAsk) {
         Wallet wallet = null;
-        List<Wallet> wallets = get().getOpenWallets().keySet().stream().filter(w -> w.isValid() && policyTypes.contains(w.getPolicyType()) && scriptTypes.contains(w.getScriptType())
+        List<Wallet> eligibleWallets = get().getOpenWallets().keySet().stream().filter(w -> w.isValid() && policyTypes.contains(w.getPolicyType()) && scriptTypes.contains(w.getScriptType())
                 && (!privateKeysRequired || w.getKeystores().stream().allMatch(Keystore::hasPrivateKey))).collect(Collectors.toList());
-        if(wallets.isEmpty()) {
+        Set<Wallet> lockedWallets = get().walletWindows.values().stream().flatMap(List::stream).filter(walletTabData -> walletTabData.getWalletForm().isLocked())
+                .map(WalletTabData::getWallet).collect(Collectors.toSet());
+        List<Wallet> wallets = eligibleWallets.stream().filter(w -> !lockedWallets.contains(w)).collect(Collectors.toList());
+        if(eligibleWallets.isEmpty()) {
             boolean taprootOpen = get().getOpenWallets().keySet().stream().anyMatch(w -> w.getScriptType() == ScriptType.P2TR);
             showErrorDialog("No wallet available", "Open a" + (taprootOpen && !taprootAllowed ? " non-Taproot" : "") + (privateKeysRequired ? " software" : "") + " wallet to " + actionDescription + ".");
+        } else if(wallets.isEmpty()) {
+            showErrorDialog("Wallet locked", "Unlock a wallet to " + actionDescription + ".");
         } else if(wallets.size() == 1 && !alwaysAsk) {
             wallet = wallets.iterator().next();
         } else {
